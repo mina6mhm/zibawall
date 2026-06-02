@@ -100,6 +100,9 @@ export default function LoginPage() {
         localStorage.setItem('token', data.token);
         localStorage.setItem('user', JSON.stringify(data.user));
 
+        // اضافه شدن کوکی برای خوانده شدن توسط میدلور (اعتبار ۳۰ روز)
+        document.cookie = `token=${data.token}; path=/; max-age=2592000`;
+
         // بررسی اینکه آیا کاربر جدید است یا یوزرنیم ندارد
         if (data.isNewUser || !data.user.username) {
           setStep('username'); // انتقال به مرحله انتخاب یوزرنیم
@@ -132,6 +135,10 @@ export default function LoginPage() {
       if (res.ok) {
         localStorage.setItem('token', data.token);
         localStorage.setItem('user', JSON.stringify(data.user));
+        
+        // اضافه شدن کوکی برای خوانده شدن توسط میدلور (اعتبار ۳۰ روز)
+        document.cookie = `token=${data.token}; path=/; max-age=2592000`;
+        
         router.push('/');
       } else {
         alert(data.error || "خطا در ورود");
@@ -214,7 +221,6 @@ export default function LoginPage() {
 
         {/* ----------------- حالت ۱: دریافت شماره موبایل ----------------- */}
         {step === 'mobile' && (
-           // کدهای قبلی حالت موبایل ...
           <div className="w-full flex flex-col items-center animate-in fade-in duration-300">
             <h1 className="text-xl font-bold text-zinc-900 mb-8">ثبت نام یا ورود</h1>
 
@@ -248,7 +254,6 @@ export default function LoginPage() {
 
         {/* ----------------- حالت ۲: تایید کد (OTP) ----------------- */}
         {step === 'otp' && (
-          // کدهای قبلی حالت OTP ...
           <div className="w-full flex flex-col items-center animate-in fade-in duration-300">
             <h1 className="text-xl font-bold text-zinc-900 mb-4">احراز هویت شما</h1>
 
@@ -335,7 +340,6 @@ export default function LoginPage() {
 
         {/* ----------------- حالت ۴: ورود با رمز عبور ----------------- */}
         {step === 'password' && (
-           // کدهای قبلی ورود با رمز عبور ...
            <div className="w-full flex flex-col items-center animate-in fade-in duration-300">
             <h1 className="text-xl font-bold text-zinc-900 mb-8">ورود با رمز عبور</h1>
 

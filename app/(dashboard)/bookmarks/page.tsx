@@ -76,9 +76,17 @@ export default function BookmarksPage() {
 
   return (
     <div className="flex flex-col min-h-screen bg-white pb-24">
-      {/* هدر */}
-      <div className="sticky top-0 z-20 bg-white px-4 py-4 border-b border-zinc-100 flex items-center justify-between">
-        <h1 className="text-xl font-bold text-zinc-900">نشان‌شده‌ها</h1>
+        {/* هدر */}
+      <div className="sticky top-0 z-20 bg-white px-4 pt-5 pb-4 border-b border-zinc-100">
+        <div className="flex justify-between items-center w-full">
+          <h1 className="text-xl font-bold text-zinc-900">نشان‌شده‌ها</h1>
+          {/* لوگو سایت (چپ) */}
+          <img 
+            src="/logo.png" 
+            alt="لوگو زیباوال" 
+            className="h-8 w-auto object-contain" 
+          />
+        </div>
       </div>
 
       <div className="px-4 mt-6">
