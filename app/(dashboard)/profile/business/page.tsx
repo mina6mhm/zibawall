@@ -709,7 +709,7 @@ export default function BusinessRegistrationPage() {
           </div>
         )}
 
-        {/* دکمه‌های ناوبری (پایین فرم) */}
+        {/* دکمه‌ های ناوبری (پایین فرم) */}
         <div className="mt-10 pt-6 border-t border-zinc-100 flex items-center justify-between">
           
           {step > 1 ? (
