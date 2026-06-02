@@ -274,7 +274,6 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
         )}
       </div>
 
-       
       {salon.socials && (
   <div className="flex justify-center flex-wrap gap-4 mb-6 px-2">
     
