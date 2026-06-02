@@ -1,0 +1,93 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Salon {
+  id           String   @id @default(uuid())
+  name         String
+  province     String
+  city         String
+  address      String
+  lat          Float?
+  lng          Float?
+  phones       String[] // آرایه ای از شماره تلفن ها
+  workingHours String
+  closedDays   String[] // آرایه ای از روزهای تعطیل
+  
+  rating       Float    @default(0)
+  reviewsCount Int      @default(0)
+  
+  tags         String[] // آرایه ای از تگ ها/خدمات
+  imageUrl     String   // تصویر اصلی کارت
+  description  String
+  portfolios   String[] // تصاویر گالری
+  
+  // ارتباط با کاربر (صاحب سالن)
+  userId       String   @unique
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // روابط دیتابیسی
+  socials      Social?  // ارتباط یک به یک با شبکه‌های اجتماعی
+  reviews      Review[] // ارتباط یک به چند با نظرات
+  
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+// جدول شبکه های اجتماعی (Socials)
+model Social {
+  id        String  @id @default(uuid())
+  website   String?
+  instagram String?
+  whatsapp  String?
+  telegram  String?
+  rubika    String?
+  bale      String?
+
+  // ارتباط با سالن (هر سالن یک ردیف شبکه اجتماعی دارد)
+  salonId   String  @unique
+  salon     Salon   @relation(fields: [salonId], references: [id], onDelete: Cascade)
+}
+
+// جدول نظرات (Review)
+model Review {
+  id        String   @id @default(uuid())
+  name      String   // اسم کاربر
+  rating    Float    // امتیاز
+  comment   String?  // متن نظر (اختیاری)
+  
+  // ارتباط با سالن (هر نظر متعلق به یک سالن است)
+  salonId   String
+  salon     Salon    @relation(fields: [salonId], references: [id], onDelete: Cascade)
+  
+  createdAt DateTime @default(now())
+}
+
+model User {
+  id            String   @id @default(uuid())
+  name          String?
+  username      String?  @unique
+  phone         String?  @unique
+  email         String?  @unique
+
+  passwordHash  String?
+
+  role          String   @default("USER")
+
+  otpCode       String?
+  otpExpiresAt  DateTime?
+
+  // ارتباط با سالن (هر کاربر می‌تواند یک سالن داشته باشد)
+  salon         Salon?
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([phone])
+  @@index([email])
+}
