@@ -12,6 +12,7 @@ model Salon {
   name         String
   province     String
   city         String
+  district     String?
   address      String
   lat          Float?
   lng          Float?
