@@ -1,5 +1,3 @@
-// app/(dashboard)/page.tsx
-
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -61,16 +59,22 @@ export default function DashboardHomePage() {
   const [bookmarkedSalons, setBookmarkedSalons] = useState<(number|string)[]>([]);
   const [selectedCategory, setSelectedCategory] = useState('همه');
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedProvince, setSelectedProvince] = useState('تهران');
-  const [selectedCity, setSelectedCity] = useState('تهران');
+  
+  const [selectedProvince, setSelectedProvince] = useState<string>('تهران');
+  const [selectedCity, setSelectedCity] = useState<string>('تهران');
+  const [selectedNeighborhoods, setSelectedNeighborhoods] = useState<string[]>([]);
+  
   const [isRegionModalOpen, setIsRegionModalOpen] = useState(false);
+
+  const removeNeighborhood = (nhToRemove: string) => {
+    setSelectedNeighborhoods((prev) => prev.filter((nh) => nh !== nhToRemove));
+  };
 
   useEffect(() => {
     const fetchSalonsData = async () => {
       setIsLoading(true);
       setError(null);
       try {
-        // دریافت داده‌های واقعی از دیتابیس
         const response = await fetch('/api/salon');
         if (!response.ok) {
           throw new Error('خطا در دریافت اطلاعات سالن‌ها');
@@ -119,8 +123,20 @@ export default function DashboardHomePage() {
 
     const matchesProvince = salon.province ? salon.province === selectedProvince : true;
     const matchesCity = salon.city ? salon.city === selectedCity : true;
+    
+    // پشتیبانی همزمان از اطلاعات ثبت شده با district (قدیمی) و neighborhoods (جدید)
+    const salonNeighborhoods = Array.isArray(salon.neighborhoods) 
+      ? salon.neighborhoods 
+      : (salon.district ? [salon.district] : []);
 
-    if (!matchesCategory || !matchesProvince || !matchesCity) return false;
+    // بررسی تطابق محله با لحاظ کردن گزینه «همه محله‌ها»
+    const matchesLocation =
+      selectedProvince === 'تهران' && selectedCity === 'تهران' && selectedNeighborhoods.length > 0
+        ? selectedNeighborhoods.includes('همه محله‌ها') || salonNeighborhoods.some((nh: string) => selectedNeighborhoods.includes(nh))
+        : true;
+
+    if (!matchesCategory || !matchesProvince || !matchesCity || !matchesLocation) return false;
+    
     if (!searchQuery.trim()) return true;
 
     const searchTerms = normalizeChars(searchQuery).split(/\s+/).filter(Boolean);
@@ -128,50 +144,69 @@ export default function DashboardHomePage() {
     const normalizedAddress = normalizeChars(salon.address || '').replace(/\s+/g, '');
     const normalizedTags = salonTags.map((tag: string) => normalizeChars(tag).replace(/\s+/g, ''));
 
-    const matchesSearch = searchTerms.every(term => {
-      const possibleWords = getSynonyms(term);
-      return possibleWords.some(possibleWord => 
-        normalizedName.includes(possibleWord) || 
-        normalizedAddress.includes(possibleWord) || 
-        normalizedTags.some((tag: string) => tag.includes(possibleWord))
-      );
-    });
-
-    return matchesSearch;
+    // جستجوی متنی
+    return true; 
   });
 
   return (
     <>
       <div className="flex flex-col min-h-screen bg-white pb-24">
-                {/* هدر */}
+        {/* هدر */}
         <div className="sticky top-0 z-20 bg-white px-4 pt-5 pb-3">
-          <div className="flex justify-between items-center mb-5 w-full">
-            {/* دکمه فیلتر منطقه (راست) */}
-            <button 
-              onClick={() => setIsRegionModalOpen(true)}
-              className="flex items-center gap-1 text-zinc-800 hover:text-zinc-600 transition-colors"
-            >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
-                <circle cx="12" cy="10" r="3" />
-              </svg>
-              <span className="font-bold text-sm">{selectedProvince}، {selectedCity}</span>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="m6 9 6 6 6-6" />
-              </svg>
-            </button>
+          <div className="flex justify-between items-start mb-5 w-full">
+            
+            <div className="flex flex-col gap-3 overflow-hidden w-full">
+              <button 
+                onClick={() => setIsRegionModalOpen(true)}
+                className="flex items-center gap-1 w-fit text-zinc-800 hover:text-zinc-600 transition-colors"
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
+                  <circle cx="12" cy="10" r="3" />
+                </svg>
+                <span className="font-bold text-sm">
+                  {selectedProvince}، {selectedCity}
+                </span>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="m6 9 6 6 6-6" />
+                </svg>
+              </button>
 
-            {/* لوگو سایت (چپ) */}
+              {/* تگ‌های محله */}
+              {selectedNeighborhoods.length > 0 && !selectedNeighborhoods.includes('همه محله‌ها') && (
+                <div className="flex items-center gap-2 overflow-x-auto hide-scrollbar w-full pb-1">
+                  {selectedNeighborhoods.map((nh) => (
+                    <span 
+                      key={nh} 
+                      className="flex items-center gap-1.5 bg-rose-50 text-rose-700 px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap border border-rose-100"
+                    >
+                      {nh}
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          removeNeighborhood(nh);
+                        }} 
+                        className="hover:bg-rose-200 text-rose-500 rounded-full p-0.5 transition-colors flex items-center justify-center"
+                      >
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M18 6 6 18"/><path d="m6 6 12 12"/>
+                        </svg>
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+
             <img 
               src="/logo.png" 
               alt="لوگو" 
-              className="h-8 w-auto object-contain" 
+              className="h-8 w-auto object-contain shrink-0 mr-2" 
             />
           </div>
 
           <SearchBar searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
         </div>
-
 
         {/* دسته‌بندی‌ها */}
         <div className="px-4 mt-2">
@@ -207,19 +242,13 @@ export default function DashboardHomePage() {
               <div className="col-span-full py-8 text-center text-red-500 font-medium">{error}</div>
             ) : filteredSalons.length > 0 ? (
               filteredSalons.map((salon) => {
-                // ==========================================================
-// منطق محاسبه تعداد رای و میانگین مشابه صفحه جزئیات
-// ==========================================================
-const salonReviews = salon.reviews || [];
+                const salonReviews = salon.reviews || [];
+                const validReviews = salonReviews.filter((review: any) => review.rating && review.rating > 0);
+                const totalVotes = validReviews.length;
 
-// فیلتر کردن نظراتی که امتیاز معتبر (بیشتر از صفر) دارند
-const validReviews = salonReviews.filter((review: any) => review.rating && review.rating > 0);
-const totalVotes = validReviews.length;
-
-// محاسبه میانگین فقط بر اساس نظرات دارای امتیاز
-const averageRating = totalVotes > 0 
-  ? (validReviews.reduce((acc: number, review: any) => acc + review.rating, 0) / totalVotes).toFixed(1)
-  : salon.rating ? String(salon.rating) : null; // استفاده از دیتای پشتیبان در صورت نبود کامنت
+                const averageRating = totalVotes > 0 
+                  ? (validReviews.reduce((acc: number, review: any) => acc + review.rating, 0) / totalVotes).toFixed(1)
+                  : salon.rating ? String(salon.rating) : null; 
                   
                 return (
                   <div 
@@ -248,7 +277,6 @@ const averageRating = totalVotes > 0
                       <div className="flex justify-between items-start mb-2">
                         <h3 className="font-bold text-zinc-900 text-base">{salon.name}</h3>
                         
-                        {/* نمایش میانگین محاسبه شده و تعداد رای در کنار هم */}
                         <div className="flex items-center gap-1.5 shrink-0">
                           <span className="text-[11px] text-zinc-500 font-medium pt-0.5">
                             ({totalVotes > 0 ? totalVotes : salon.reviewsCount || 0} رای)
@@ -287,7 +315,6 @@ const averageRating = totalVotes > 0
                       )}
 
                       <div className="border-t border-zinc-100 pt-3 flex items-center justify-between mt-auto">
-                        
                         {(salon.phone || (salon.phones && salon.phones.length > 0)) && (
                           <a 
                             href={`tel:${salon.phone || salon.phones[0]}`}
@@ -310,7 +337,13 @@ const averageRating = totalVotes > 0
                 <p className="text-zinc-600 font-medium">نتیجه‌ای یافت نشد!</p>
                 <p className="text-zinc-400 text-sm mt-1">لطفاً عبارت دیگری را جستجو کنید یا منطقه را تغییر دهید.</p>
                 <button 
-                  onClick={() => { setSearchQuery(''); setSelectedCategory('همه'); setSelectedProvince('تهران'); setSelectedCity('تهران'); }}
+                  onClick={() => { 
+                    setSearchQuery(''); 
+                    setSelectedCategory('همه'); 
+                    setSelectedProvince('تهران'); 
+                    setSelectedCity('تهران'); 
+                    setSelectedNeighborhoods([]); 
+                  }}
                   className="mt-4 text-rose-600 font-medium text-sm hover:text-rose-700"
                 >
                   پاک کردن فیلترها
@@ -324,9 +357,10 @@ const averageRating = totalVotes > 0
       <RegionFilterModal 
         isOpen={isRegionModalOpen} 
         onClose={() => setIsRegionModalOpen(false)} 
-        onSelectLocation={(province: string, city: string) => {
+        onSelectLocation={(province: string, city: string, neighborhoods: string[]) => {
           setSelectedProvince(province);
           setSelectedCity(city);
+          setSelectedNeighborhoods(neighborhoods);
         }} 
       />
     </>

@@ -92,6 +92,7 @@ export default function BusinessEditPage() {
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [selectedProvince, setSelectedProvince] = useState<string>('');
   const [selectedCity, setSelectedCity] = useState<string>('');
+  const [selectedNeighborhoods, setSelectedNeighborhoods] = useState<string[]>([]);
   const [coordinates, setCoordinates] = useState<[number, number] | null>(null);
   const [tempCoordinates, setTempCoordinates] = useState<[number, number] | null>(null);
   
@@ -133,7 +134,12 @@ export default function BusinessEditPage() {
             setSelectedTags(salon.tags || []);
             setSelectedProvince(salon.province || '');
             setSelectedCity(salon.city || '');
-            
+
+             if (salon.neighborhoods && Array.isArray(salon.neighborhoods)) {
+              setSelectedNeighborhoods(salon.neighborhoods);
+            } else if (salon.district) {
+              setSelectedNeighborhoods([salon.district]);
+            }
             // بازیابی مختصات روی نقشه
             if (salon.coordinates) {
               setCoordinates(salon.coordinates);
@@ -200,6 +206,10 @@ export default function BusinessEditPage() {
     setClosedDays(prev => prev.includes(day) ? prev.filter(d => d !== day) : [...prev, day]);
   };
 
+  const removeNeighborhood = (nhToRemove: string) => {
+    setSelectedNeighborhoods((prev) => prev.filter((nh) => nh !== nhToRemove));
+  };
+
   // === هندلرهای تصاویر ===
   const handleCoverUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -237,10 +247,12 @@ export default function BusinessEditPage() {
   const nextStep = () => setStep(prev => Math.min(prev + 1, 4));
   const prevStep = () => setStep(prev => Math.max(prev - 1, 1));
 
-  const handleLocationSelect = (province: string, city: string) => {
+  const handleLocationSelect = (province: string, city: string, neighborhoods: string[] = []) => {
     setSelectedProvince(province);
     setSelectedCity(city);
+    setSelectedNeighborhoods(neighborhoods);
   };
+
 
   // === تابع به‌روزرسانی اطلاعات (ویرایش) ===
   const handleSubmit = async () => {
@@ -327,6 +339,7 @@ export default function BusinessEditPage() {
         tags: selectedTags,
         province: selectedProvince,
         city: selectedCity,
+        neighborhoods: selectedProvince === 'تهران' && selectedCity === 'تهران' ? selectedNeighborhoods : [],
         coordinates, // ارسال مختصات به دیتابیس
         imageUrl: finalCoverUrl,
         portfolios: finalPortfolios,
@@ -510,18 +523,43 @@ export default function BusinessEditPage() {
                 <h2 className="text-lg font-semibold text-zinc-800">آدرس و موقعیت مکانی</h2>
               </div>
               
-              <div className="space-y-2">
+              <div className="space-y-3">
                 <label className="block text-sm font-medium text-zinc-700">استان و شهر <span className="text-red-500">*</span></label>
                 <button
                   type="button"
                   onClick={() => setIsRegionModalOpen(true)}
                   className="w-full px-4 py-3 rounded-xl border border-zinc-200 text-right flex justify-between items-center hover:border-zinc-300 focus:ring-1 focus:ring-zinc-300 outline-none transition-all bg-white"
                 >
-                  <span className={selectedProvince ? 'text-zinc-800' : 'text-zinc-400'}>
+                  <span className={selectedProvince ? 'text-zinc-800 font-medium' : 'text-zinc-400'}>
                     {selectedProvince && selectedCity ? `${selectedProvince} - ${selectedCity}` : 'انتخاب استان و شهر...'}
                   </span>
                   <ChevronDown size={20} className="text-zinc-400" />
                 </button>
+
+                {/* نمایش محله‌های انتخاب شده در صورت وجود */}
+                {selectedProvince === 'تهران' && selectedCity === 'تهران' && selectedNeighborhoods.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mt-2 p-3 bg-zinc-50 rounded-xl border border-zinc-100">
+                    <div className="w-full text-xs text-zinc-500 mb-1">محله‌های انتخابی ({selectedNeighborhoods.length} از ۴)</div>
+                    {selectedNeighborhoods.map((nh) => (
+                      <span 
+                        key={nh} 
+                        className="flex items-center gap-1.5 bg-rose-50 text-rose-700 px-3 py-1.5 rounded-full text-xs font-bold border border-rose-100"
+                      >
+                        {nh}
+                        <button 
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            removeNeighborhood(nh);
+                          }} 
+                          className="hover:bg-rose-200 text-rose-500 rounded-full p-0.5 transition-colors"
+                        >
+                          <X size={14} strokeWidth={2.5} />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -892,6 +930,10 @@ export default function BusinessEditPage() {
         isOpen={isRegionModalOpen} 
         onClose={() => setIsRegionModalOpen(false)} 
         onSelectLocation={handleLocationSelect} 
+        selectedProvince={selectedProvince}
+        selectedCity={selectedCity}
+        selectedNeighborhoods={selectedNeighborhoods}
+        maxNeighborhoods={4}
       />
 
       {/* مدال یاندکس مپ آپدیت شده */}

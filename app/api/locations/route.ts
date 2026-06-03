@@ -1,16 +1,17 @@
-// app/api/locations/route.ts
+//app/api/locations/route.ts
 import { NextResponse } from 'next/server';
-import locationsData from '@/lib/data/locations.json';
+import locationsData from '@/lib/data/locations.json'; // مسیر فایل جیسون شما
 
 export async function GET() {
   try {
-    // تبدیل ساختار JSON جدید به ساختاری که فرانت‌اند انتظار دارد
-    const formattedData = locationsData.map((prov, index) => ({
+    const formattedData = locationsData.map((prov: any, index: number) => ({
       id: String(index + 1),
-      name: prov.province,
-      cities: prov.cities.map((city, cityIndex) => ({
+      name: prov.province || prov.name,
+      districts: prov.districts, // آبجکت مناطق و محله‌ها
+      cities: prov.cities.map((city: any, cityIndex: number) => ({
         id: `${index + 1}-${cityIndex + 1}`,
-        name: city
+        name: typeof city === 'string' ? city : city.name,
+        districts: typeof city === 'object' ? city.districts : undefined
       }))
     }));
 

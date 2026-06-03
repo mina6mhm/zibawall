@@ -1,135 +1,351 @@
-//components/RegionFilterModal.tsx
-'use client';
-import { useState, useEffect } from 'react';
+"use client";
 
-// ۱. تعریف تایپ دیتا
+import { useState, useEffect } from "react";
+import { X, ChevronLeft, Check } from "lucide-react";
+
+interface CityData {
+  id: string;
+  name: string;
+  districts?: Record<string, string[]>;
+}
+
 interface LocationData {
   id: string;
   name: string;
-  cities?: { id: string; name: string }[];
+  cities?: CityData[];
+  districts?: Record<string, string[]>;
 }
 
-// ۲. تعریف تایپ پراپ‌های ورودی
 interface RegionFilterModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onSelectLocation: (
+    province: string,
+    city: string,
+    neighborhoods: string[]
+  ) => void;
+  selectedProvince?: string;
   selectedCity?: string;
-  selectedRegion?: string;
-  // تغییر: حالا استان و شهر را برمی‌گردانیم
-  onSelectLocation?: (province: string, city: string) => void;
+  selectedNeighborhoods?: string[];
+  maxNeighborhoods?: number;
 }
 
-export default function RegionFilterModal({ 
-  isOpen, 
-  onClose, 
-  selectedCity, 
-  selectedRegion, 
-  onSelectLocation 
+export default function RegionFilterModal({
+  isOpen,
+  onClose,
+  onSelectLocation,
+  selectedProvince,
+  selectedCity,
+  selectedNeighborhoods: initialNeighborhoods = [],
+  maxNeighborhoods,
 }: RegionFilterModalProps) {
-  
   const [locations, setLocations] = useState<LocationData[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  // استیت برای مدیریت استانی که کاربر روی آن کلیک کرده تا شهرهایش را ببیند
-  const [activeProvince, setActiveProvince] = useState<LocationData | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  const [step, setStep] = useState<"province" | "city" | "neighborhood">(
+    "province"
+  );
+  const [activeProvince, setActiveProvince] = useState<LocationData | null>(
+    null
+  );
+  const [activeCity, setActiveCity] = useState<CityData | null>(null);
+
+  const [selectedNeighborhoods, setSelectedNeighborhoods] = useState<string[]>(
+    initialNeighborhoods
+  );
 
   useEffect(() => {
-    if (isOpen && locations.length === 0) {
-      setIsLoading(true);
-      fetch('/api/locations')
-        .then((res) => res.json())
-        .then((data: LocationData[]) => {
-          setLocations(data);
-          setIsLoading(false);
-        })
-        .catch((err) => {
-          console.error("خطا:", err);
-          setIsLoading(false);
-        });
-    }
-  }, [isOpen, locations.length]);
+    const fetchLocations = async () => {
+      try {
+        const response = await fetch("/api/locations");
+        if (!response.ok) throw new Error("Failed to fetch");
+        const data = await response.json();
+        setLocations(data);
 
-  // وقتی مودال بسته می‌شود، به مرحله انتخاب استان برگردیم
+        if (selectedProvince && selectedCity) {
+          const currentProvince = data.find((p: LocationData) => p.name === selectedProvince);
+          if (currentProvince) {
+            setActiveProvince(currentProvince);
+            const currentCity = currentProvince.cities?.find((c: CityData) => c.name === selectedCity);
+            if (currentCity) {
+              // فقط اگر استان تهران و شهر تهران باشد، محله‌ها را از استان می‌گیریم
+              let cityDistricts = currentCity.districts;
+              if (currentProvince.name === 'تهران' && currentCity.name === 'تهران') {
+                cityDistricts = currentCity.districts || currentProvince.districts;
+              } else {
+                cityDistricts = undefined; 
+              }
+
+              if (cityDistricts && Object.keys(cityDistricts).length > 0) {
+                setActiveCity({ ...currentCity, districts: cityDistricts });
+                setStep("neighborhood");
+              } else {
+                setStep("city");
+              }
+            } else {
+              setStep("city");
+            }
+          }
+        }
+      } catch (error) {
+        console.error("Error loading locations:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchLocations();
+  }, [selectedProvince, selectedCity]);
+
+  const initialNeighborhoodsStr = JSON.stringify(initialNeighborhoods);
+
   useEffect(() => {
-    if (!isOpen) {
-      setActiveProvince(null);
+    if (isOpen) {
+      setSelectedNeighborhoods(JSON.parse(initialNeighborhoodsStr));
     }
-  }, [isOpen]);
+  }, [isOpen, initialNeighborhoodsStr]);
+
 
   if (!isOpen) return null;
 
-  const handleCitySelect = (cityName: string) => {
-    if (onSelectLocation && activeProvince) {
-      // تغییر مهم: اینجا نام استان و سپس نام شهر را پاس می‌دهیم
-      onSelectLocation(activeProvince.name, cityName); 
+  const handleProvinceSelect = (province: LocationData) => {
+    setActiveProvince(province);
+    setStep("city");
+  };
+
+  const handleCitySelect = (city: CityData) => {
+    // فقط برای استان تهران و شهر تهران ارث‌بری محله انجام شود
+    let cityDistricts = city.districts;
+    if (activeProvince?.name === 'تهران' && city.name === 'تهران') {
+      cityDistricts = city.districts || activeProvince?.districts;
+    } else {
+      cityDistricts = undefined; // برای شهرهایی مثل آبعلی محله‌ای نشان داده نمی‌شود
     }
+
+    if (cityDistricts && Object.keys(cityDistricts).length > 0) {
+      setActiveCity({ ...city, districts: cityDistricts });
+      setStep("neighborhood");
+      if (city.name !== activeCity?.name) {
+        setSelectedNeighborhoods([]);
+      }
+    } else {
+      onSelectLocation(activeProvince!.name, city.name, []);
+      resetModal();
+    }
+  };
+
+  const toggleNeighborhood = (neighborhood: string) => {
+    setSelectedNeighborhoods((prev) => {
+      // اگر روی "همه محله‌ها" کلیک شد، بقیه حذف بشن
+      if (neighborhood === 'همه محله‌ها') {
+        return ['همه محله‌ها'];
+      }
+
+      // اگر روی محله‌ای به جز "همه محله‌ها" کلیک شد، "همه محله‌ها" رو حذف کن
+      const withoutAll = prev.filter(n => n !== 'همه محله‌ها');
+      const isSelected = withoutAll.includes(neighborhood);
+      
+      if (isSelected) {
+        return withoutAll.filter((n) => n !== neighborhood);
+      } else {
+        if (maxNeighborhoods && withoutAll.length >= maxNeighborhoods) {
+          alert(`شما حداکثر می‌توانید ${maxNeighborhoods} محله انتخاب کنید.`);
+          return withoutAll;
+        }
+        return [...withoutAll, neighborhood];
+      }
+    });
+  };
+
+  const handleConfirmSelection = () => {
+    if (activeProvince && activeCity) {
+      onSelectLocation(
+        activeProvince.name,
+        activeCity.name,
+        selectedNeighborhoods
+      );
+      resetModal();
+    }
+  };
+
+  const resetModal = () => {
+    setStep("province");
+    setActiveProvince(null);
+    setActiveCity(null);
+    setSelectedNeighborhoods([]);
     onClose();
   };
 
+  const handleBack = () => {
+    if (step === "neighborhood") {
+      setStep("city");
+      return;
+    }
+    if (step === "city") {
+      setStep("province");
+      setActiveProvince(null);
+      setActiveCity(null);
+      return;
+    }
+  };
+
+  const renderContent = () => {
+    if (loading) {
+      return (
+        <div className="p-8 text-center text-zinc-500">
+          در حال بارگذاری...
+        </div>
+      );
+    }
+
+    if (step === "province") {
+      return (
+        <ul className="p-4 space-y-2">
+          {locations.map((prov) => (
+            <li
+              key={prov.id}
+              className="flex justify-between items-center p-3.5 bg-zinc-50 hover:bg-rose-50 rounded-xl cursor-pointer border border-transparent hover:border-rose-100 transition-colors"
+              onClick={() => handleProvinceSelect(prov)}
+            >
+              <span className="text-zinc-800 font-medium">{prov.name}</span>
+              <ChevronLeft className="w-5 h-5 text-zinc-400" />
+            </li>
+          ))}
+        </ul>
+      );
+    }
+
+    if (step === "city" && activeProvince) {
+      return (
+        <ul className="p-4 space-y-2">
+          {(activeProvince.cities || []).map((city) => (
+            <li
+              key={city.id}
+              className="flex justify-between items-center p-3.5 bg-zinc-50 hover:bg-rose-50 rounded-xl cursor-pointer border border-transparent hover:border-rose-100 transition-colors"
+              onClick={() => handleCitySelect(city)}
+            >
+              <span className="text-zinc-800 font-medium">{city.name}</span>
+              <ChevronLeft className="w-5 h-5 text-zinc-400" />
+            </li>
+          ))}
+        </ul>
+      );
+    }
+
+    if (step === "neighborhood" && activeCity?.districts) {
+      const allNeighborhoods = Array.from(
+        new Set(Object.values(activeCity.districts).flat())
+      ).sort((a, b) => a.localeCompare(b, "fa"));
+
+      // اضافه کردن "همه محله‌ها"
+      const displayNeighborhoods = ["همه محله‌ها", ...allNeighborhoods];
+
+      return (
+        <div className="p-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+            {displayNeighborhoods.map((nh: string, index: number) => {
+              const isSelected = selectedNeighborhoods.includes(nh);
+
+              return (
+                <button
+                  type="button"
+                  key={`${nh}-${index}`}
+                  onClick={() => toggleNeighborhood(nh)}
+                  className={`flex w-full text-right items-center gap-3 p-3 rounded-xl cursor-pointer border transition-colors ${
+                    isSelected
+                      ? "border-rose-500 bg-rose-50/50"
+                      : "border-zinc-200 hover:bg-zinc-50"
+                  }`}
+                >
+                  <div
+                    className={`w-5 h-5 rounded border flex items-center justify-center shrink-0 transition-colors ${
+                      isSelected
+                        ? "bg-rose-500 border-rose-500"
+                        : "border-zinc-300"
+                    }`}
+                  >
+                    {isSelected && <Check className="w-3.5 h-3.5 text-white" />}
+                  </div>
+
+                  <span
+                    className={`text-sm ${
+                      isSelected
+                        ? "text-rose-700 font-semibold"
+                        : "text-zinc-700"
+                    }`}
+                  >
+                    {nh}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      );
+    }
+
+    return null;
+  };
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-      <div className="bg-white w-full max-w-md rounded-2xl shadow-xl overflow-hidden flex flex-col max-h-[80vh]">
-        
-        {/* هدر مودال */}
-        <div className="p-4 border-b flex justify-between items-center bg-zinc-50">
-          <h2 className="font-bold text-zinc-800">
-            {activeProvince ? `انتخاب شهر در ${activeProvince.name}` : 'انتخاب استان'}
-          </h2>
-          <button onClick={onClose} className="text-zinc-500 hover:text-zinc-800 p-1">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="18" y1="6" x2="6" y2="18"></line>
-              <line x1="6" y1="6" x2="18" y2="18"></line>
-            </svg>
+    <div
+      dir="rtl"
+      className="fixed inset-0 z-[9999] flex items-end md:items-center justify-center bg-black/60 md:p-4 backdrop-blur-sm"
+      onClick={resetModal}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()} 
+        className="bg-white w-full max-h-[calc(100dvh-1rem)] md:h-auto md:max-h-[85vh] md:max-w-lg rounded-t-2xl md:rounded-2xl shadow-xl flex flex-col overflow-hidden animate-in slide-in-from-bottom-4 md:zoom-in-95 duration-200"
+      >
+        <div className="flex items-center justify-between p-4 md:p-5 border-b border-zinc-100 shrink-0 bg-white z-10">
+          <div className="flex items-center gap-2">
+            {step !== "province" && (
+              <button
+                type="button"
+                onClick={handleBack}
+                className="p-1.5 hover:bg-zinc-100 rounded-full transition-colors"
+              >
+                <ChevronLeft className="w-5 h-5 rotate-180 text-zinc-600" />
+              </button>
+            )}
+            <h2 className="text-lg font-bold text-zinc-900">
+              {step === "province"
+                ? "انتخاب استان"
+                : step === "city"
+                ? `شهرهای ${activeProvince?.name || ""}`
+                : `محله‌های ${activeCity?.name || ""}`}
+            </h2>
+          </div>
+          <button
+            type="button"
+            onClick={resetModal}
+            className="p-1.5 bg-zinc-100 hover:bg-zinc-200 text-zinc-600 rounded-full transition-colors"
+          >
+            <X className="w-5 h-5" />
           </button>
         </div>
-        
-        {/* محتوای مودال */}
-        <div className="p-4 overflow-y-auto flex-grow hide-scrollbar">
-          {isLoading ? (
-            <div className="flex justify-center items-center py-10">
-              <p className="text-zinc-500 text-sm">در حال بارگذاری شهرها...</p>
-            </div>
-          ) : activeProvince ? (
-            // مرحله دوم: نمایش شهرهای استان انتخاب شده
-            <div>
-              <button 
-                onClick={() => setActiveProvince(null)}
-                className="mb-4 text-sm text-rose-600 flex items-center gap-1 hover:text-rose-700"
-              >
-                &rarr; بازگشت به لیست استان‌ها
-              </button>
-              <ul className="space-y-2">
-                {activeProvince.cities?.map((city) => (
-                  <li key={city.id}>
-                    <button
-                      onClick={() => handleCitySelect(city.name)}
-                      className="w-full text-right px-4 py-3 rounded-lg hover:bg-zinc-100 transition-colors text-zinc-700 font-medium"
-                    >
-                      {city.name}
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ) : (
-            // مرحله اول: نمایش لیست استان‌ها
-            <ul className="space-y-2">
-              {locations.map((province) => (
-                <li key={province.id}>
-                  <button
-                    onClick={() => setActiveProvince(province)}
-                    className="w-full flex justify-between items-center px-4 py-3 rounded-lg hover:bg-zinc-100 transition-colors text-zinc-700 font-medium"
-                  >
-                    <span>{province.name}</span>
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-zinc-400">
-                      <path d="M15 18l-6-6 6-6"/>
-                    </svg>
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
+
+        <div className="flex-1 min-h-0 overflow-y-auto hide-scrollbar">
+          {renderContent()}
         </div>
 
+        {step === "neighborhood" && (
+          <div className="shrink-0 z-20 bg-white border-t border-zinc-100 shadow-[0_-4px_15px_-5px_rgba(0,0,0,0.08)] p-4 pb-[calc(env(safe-area-inset-bottom)+1rem)]">
+            <button
+              type="button"
+              onClick={handleConfirmSelection}
+              disabled={selectedNeighborhoods.length === 0}
+              className="w-full bg-rose-600 hover:bg-rose-700 text-white py-3.5 rounded-xl text-base font-bold transition-colors flex justify-center items-center gap-2 disabled:bg-rose-300 disabled:cursor-not-allowed"
+            >
+              <span>تایید انتخاب</span>
+              {selectedNeighborhoods.length > 0 && !selectedNeighborhoods.includes('همه محله‌ها') && (
+                <span className="bg-white/20 px-2 py-0.5 rounded-md text-sm">
+                  {selectedNeighborhoods.length.toLocaleString("fa")} محله
+                </span>
+              )}
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
