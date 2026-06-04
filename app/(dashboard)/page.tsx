@@ -30,15 +30,68 @@ const SYNONYM_GROUPS = [
   ['اپیلاسیون', 'لیزر', 'موزدایی', 'وکس', 'اصلاح']
 ];
 
+// --- تابع محاسبه اختلاف حروف (فاصله لون‌اشتاین) برای تشخیص غلط املایی ---
+const getDistance = (a: string, b: string) => {
+  if (a.length === 0) return b.length;
+  if (b.length === 0) return a.length;
+  const matrix = [];
+  for (let i = 0; i <= b.length; i++) matrix[i] = [i];
+  for (let j = 0; j <= a.length; j++) matrix[0][j] = j;
+  for (let i = 1; i <= b.length; i++) {
+    for (let j = 1; j <= a.length; j++) {
+      if (b.charAt(i - 1) === a.charAt(j - 1)) {
+        matrix[i][j] = matrix[i - 1][j - 1];
+      } else {
+        matrix[i][j] = Math.min(
+          matrix[i - 1][j - 1] + 1, // جایگزینی (مثل س به ش)
+          Math.min(matrix[i][j - 1] + 1, // درج (مثل مینا به مبینا)
+          matrix[i - 1][j] + 1) // حذف
+        );
+      }
+    }
+  }
+  return matrix[b.length][a.length];
+};
+
+// --- آپدیت تابع مترادف‌ها (پشتیبانی از غلط املایی) ---
 const getSynonyms = (word: string): string[] => {
   for (const group of SYNONYM_GROUPS) {
     const normalizedGroup = group.map(normalizeChars);
-    if (normalizedGroup.includes(word)) {
-      return normalizedGroup;
-    }
+    
+    // بررسی تطابق دقیق یا داشتن حداکثر ۱-۲ غلط املایی
+    const isMatch = normalizedGroup.some(w => {
+      if (w === word) return true;
+      if (word.length > 3) {
+        const maxDist = word.length > 5 ? 2 : 1; // کلمات طولانی‌تر اجازه ۲ غلط دارند
+        return getDistance(w, word) <= maxDist;
+      }
+      return false;
+    });
+
+    if (isMatch) return normalizedGroup;
   }
   return [word];
 };
+
+// --- تابع بررسی تطابق در متن با انعطاف‌پذیری ---
+const isFuzzyMatch = (text: string, searchWord: string) => {
+  if (!text) return false;
+  const textNoSpace = text.replace(/\s+/g, '');
+  const searchNoSpace = searchWord.replace(/\s+/g, '');
+  
+  // ۱. بررسی اینکه کلمه دقیقاً داخل متن باشد
+  if (textNoSpace.includes(searchNoSpace)) return true;
+  
+  // ۲. بررسی حالت کلمه به کلمه برای خطای املایی
+  if (searchNoSpace.length > 3) {
+    const words = text.split(/\s+/);
+    const maxDist = searchNoSpace.length > 5 ? 2 : 1;
+    return words.some(w => getDistance(w, searchNoSpace) <= maxDist);
+  }
+  return false;
+};
+
+ 
 
 const BookmarkIcon = ({ isActive, className }: { isActive: boolean, className?: string }) => (
   <svg viewBox="0 0 24 24" className={className} 
@@ -139,14 +192,27 @@ export default function DashboardHomePage() {
     
     if (!searchQuery.trim()) return true;
 
-    const searchTerms = normalizeChars(searchQuery).split(/\s+/).filter(Boolean);
-    const normalizedName = normalizeChars(salon.name || '').replace(/\s+/g, '');
-    const normalizedAddress = normalizeChars(salon.address || '').replace(/\s+/g, '');
-    const normalizedTags = salonTags.map((tag: string) => normalizeChars(tag).replace(/\s+/g, ''));
+         const searchTerms = normalizeChars(searchQuery).split(/\s+/).filter(Boolean);
+    
+    // در اینجا فاصله‌ها را نگه می‌داریم تا کلمات قابل تشخیص باشند
+    const normalizedName = normalizeChars(salon.name || '');
+    const normalizedAddress = normalizeChars(salon.address || '');
+    const normalizedTags = salonTags.map((tag: string) => normalizeChars(tag));
 
-    // جستجوی متنی
-    return true; 
-  });
+    // جستجوی متنی هوشمند با پشتیبانی از غلط‌های املایی
+    return searchTerms.every((term) => {
+      const synonyms = getSynonyms(term);
+      
+      return synonyms.some((syn) => {
+        return (
+          isFuzzyMatch(normalizedName, syn) ||
+          isFuzzyMatch(normalizedAddress, syn) ||
+          normalizedTags.some((tag: string) => isFuzzyMatch(tag, syn))
+        );
+      });
+    });
+   });
+
 
   return (
     <>

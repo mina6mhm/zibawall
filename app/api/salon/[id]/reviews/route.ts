@@ -16,12 +16,14 @@ export async function POST(
     const resolvedParams = await params;
     const salonId = resolvedParams.id;
 
-    if (!name || !comment) {
+        // اگر نه نام وجود داشت، یا اینکه کاربر نه امتیاز داده و نه متنی نوشته
+    if (!name || (rating === 0 && !comment)) {
       return NextResponse.json(
-        { error: "نام و متن نظر الزامی است" },
+        { error: "نام و حداقل یکی از موارد (امتیاز یا متن نظر) الزامی است" },
         { status: 400 }
       );
     }
+
 
     // بررسی اینکه آیا کاربر با این نام قبلاً برای این سالن نظر داده است یا خیر
     const existingReviews = await prisma.review.findMany({
