@@ -111,13 +111,21 @@ export default function ProfilePage() {
     }
   };
 
-  const handleLogout = () => {
+    const handleLogout = () => {
     const isConfirmed = window.confirm('آیا مطمئن هستید که می‌خواهید از حساب خود خارج شوید؟');
     if (isConfirmed) {
+      // 1. پاک کردن اطلاعات از لوکال استوریج
       localStorage.removeItem('user');
-      router.push('/login'); 
+      localStorage.removeItem('token'); 
+      
+      // 2. پاک کردن کوکی برای Middleware
+      document.cookie = "token=; path=/; max-age=0"; 
+      
+      // 3. رفرش کامل صفحه برای اعمال تغییرات در سرور و کلاینت
+      window.location.href = '/login'; 
     }
   };
+
 
   const hasBusiness = !!salonData;
 
@@ -190,7 +198,7 @@ export default function ProfilePage() {
                     value={userData.name} 
                     onChange={(e) => setUserData({...userData, name: e.target.value})} 
                     className={inputBaseClasses}
-                    placeholder="مثال: علی احمدی"
+                    
                   />
                 </div>
 

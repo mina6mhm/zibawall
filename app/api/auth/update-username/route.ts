@@ -1,3 +1,5 @@
+// app/api/auth/update-username/route.ts
+
 import { NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 import jwt from 'jsonwebtoken';

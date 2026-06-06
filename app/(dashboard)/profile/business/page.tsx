@@ -1,3 +1,4 @@
+//app/(dashboard)/profile/business/page.tsx
 'use client';
 
 import { useState } from 'react';
@@ -86,6 +87,11 @@ export default function BusinessRegistrationPage() {
   const [workingHours, setWorkingHours] = useState('');
   const [description, setDescription] = useState('');
   const [address, setAddress] = useState('');
+
+    // استیت‌های مربوط به افزودن تگ دلخواه
+  const [customServices, setCustomServices] = useState<Record<string, string[]>>({});
+  const [newTagInputs, setNewTagInputs] = useState<Record<string, string>>({});
+
   
   // مختصات نقشه
   const [coordinates, setCoordinates] = useState<[number, number]>([35.6997, 51.3380]); // پیش‌فرض: تهران
@@ -120,6 +126,39 @@ export default function BusinessRegistrationPage() {
   const toggleTag = (tag: string) => {
     setSelectedTags(prev => prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]);
   };
+
+    const handleAddCustomTag = (category: string) => {
+    const tag = newTagInputs[category]?.trim();
+    if (!tag) return;
+
+    // اضافه کردن تگ به لیست تگ‌های اختصاصی همان دسته
+    setCustomServices(prev => ({
+      ...prev,
+      [category]: [...(prev[category] || []), tag]
+    }));
+
+    // انتخاب خودکار تگ اضافه شده
+    if (!selectedTags.includes(tag)) {
+      setSelectedTags(prev => [...prev, tag]);
+    }
+
+    // خالی کردن اینپوت
+    setNewTagInputs(prev => ({ ...prev, [category]: '' }));
+  };
+
+    const handleRemoveCustomTag = (category: string, tagToRemove: string) => {
+    // حذف از لیست خدمات اختصاصی همان دسته
+    setCustomServices(prev => ({
+      ...prev,
+      [category]: prev[category]?.filter(tag => tag !== tagToRemove) || []
+    }));
+
+    // حذف خودکار از لیست تگ‌های انتخاب‌شده
+    if (selectedTags.includes(tagToRemove)) {
+      setSelectedTags(prev => prev.filter(t => t !== tagToRemove));
+    }
+  };
+
 
   const toggleCategory = (category: string) => {
     setExpandedCategories(prev => prev.includes(category) ? prev.filter(c => c !== category) : [...prev, category]);
@@ -242,6 +281,23 @@ export default function BusinessRegistrationPage() {
         const portfolioData = await portfolioRes.json();
         uploadedPortfolioUrls = portfolioData.urls;
       }
+
+      const formattedTags = selectedTags.map(tagName => {
+        // ۱. ابتدا می‌گردد تا ببیند این تگ در خدمات پیش‌فرض کدام دسته است
+        for (const [category, services] of Object.entries(SERVICE_DETAILS)) {
+          if (services.includes(tagName)) {
+            return { name: tagName, category: category };
+          }
+        }
+
+        for (const [category, services] of Object.entries(customServices)) {
+          if (services.includes(tagName)) {
+            return { name: tagName, category: category };
+          }
+        }
+
+        return { name: tagName, category: 'سایر' }; // فقط برای رفع خطای احتمالی تایپ‌اسکریپت
+      });
 
       // --- ۳. ارسال اطلاعات نهایی به دیتابیس ---
       const payload = {
@@ -440,7 +496,7 @@ export default function BusinessRegistrationPage() {
                 {/* نمایش محله‌های انتخاب شده در صورت وجود */}
                 {selectedProvince === 'تهران' && selectedCity === 'تهران' && selectedNeighborhoods.length > 0 && (
                   <div className="flex flex-wrap gap-2 mt-2 p-3 bg-zinc-50 rounded-xl border border-zinc-100">
-                    <div className="w-full text-xs text-zinc-500 mb-1">محله‌های انتخابی ({selectedNeighborhoods.length} از ۴)</div>
+                 <div className="w-full text-xs text-zinc-500 mb-1">محله‌های انتخابی ({selectedNeighborhoods.length.toLocaleString('fa', { useGrouping: false })} از ۴)</div>
                     {selectedNeighborhoods.map((nh) => (
                       <span 
                         key={nh} 
@@ -522,7 +578,7 @@ export default function BusinessRegistrationPage() {
           </div>
         )}
 
-        {/* ================= مرحله ۲: خدمات ================= */}
+                {/* ================= مرحله ۲: خدمات ================= */}
         {step === 2 && (
           <div className="space-y-6 animate-fade-in">
             <div className="flex items-center justify-between border-b border-zinc-100 pb-3">
@@ -530,37 +586,129 @@ export default function BusinessRegistrationPage() {
                 <CheckCircle2 className="text-zinc-700" size={24} />
                 <h2 className="text-lg font-semibold text-zinc-800">خدمات قابل ارائه</h2>
               </div>
-              <span className="text-xs text-rose-600 bg-rose-50 px-3 py-1 rounded-full font-medium">{selectedTags.length.toLocaleString('fa-IR')} خدمت انتخاب شده</span>
+              <span className="text-xs text-rose-600 bg-rose-50 px-3 py-1 rounded-full font-medium">
+                {selectedTags.length.toLocaleString('fa-IR')} خدمت انتخاب شده
+              </span>
             </div>
-            <p className="text-sm text-zinc-500 -mt-2">جزئیات خدماتی که در سالن شما ارائه می‌شود را با دقت انتخاب کنید تا مشتریان راحت‌تر شما را پیدا کنند.</p>
+            <p className="text-sm text-zinc-500 -mt-2">
+              جزئیات خدماتی که در سالن شما ارائه می‌شود را با دقت انتخاب کنید تا مشتریان راحت‌تر شما را پیدا کنند.
+            </p>
+            
             <div className="space-y-4">
-              {Object.entries(SERVICE_DETAILS).map(([category, services]) => {
+              {Object.keys(SERVICE_DETAILS).map((category) => {
                 const isExpanded = expandedCategories.includes(category);
-                const selectedCount = services.filter(s => selectedTags.includes(s)).length;
+                const defaultServices = SERVICE_DETAILS[category as keyof typeof SERVICE_DETAILS] || [];
+                const categoryCustomServices = customServices[category] || [];
+                // ترکیب خدمات پیش‌فرض با خدماتی که کاربر دستی تایپ کرده است
+                const categoryServices = [...defaultServices, ...categoryCustomServices];
+                const selectedCount = categoryServices.filter(s => selectedTags.includes(s)).length;
+                
                 return (
                   <div key={category} className="border border-zinc-100 rounded-xl overflow-hidden bg-zinc-50/50">
-                    <button type="button" onClick={() => toggleCategory(category)} className="w-full flex items-center justify-between p-4 bg-white hover:bg-zinc-50 transition-colors">
+                    <button 
+                      type="button" 
+                      onClick={() => toggleCategory(category)} 
+                      className="w-full flex items-center justify-between p-4 bg-white hover:bg-zinc-50 transition-colors"
+                    >
                       <div className="flex items-center gap-3">
                         <span className="font-medium text-zinc-800">{category}</span>
-                        {selectedCount > 0 && <span className="text-xs bg-rose-50 text-rose-600 px-2 py-0.5 rounded-full font-medium">{selectedCount.toLocaleString('fa-IR')} مورد</span>}
+                        {selectedCount > 0 && (
+                          <span className="text-xs bg-rose-50 text-rose-600 px-2 py-0.5 rounded-full font-medium">
+                            {selectedCount.toLocaleString('fa-IR')} مورد
+                          </span>
+                        )}
                       </div>
-                      {isExpanded ? <ChevronUp size={20} className="text-zinc-400" /> : <ChevronDown size={20} className="text-zinc-400" />}
+                      {isExpanded ? (
+                        <ChevronUp size={20} className="text-zinc-400" />
+                      ) : (
+                        <ChevronDown size={20} className="text-zinc-400" />
+                      )}
                     </button>
+                    
                     {isExpanded && (
-                      <div className="p-4 border-t border-zinc-100 flex flex-wrap gap-2">
-                        {services.map(service => (
+                      <div className="p-4 border-t border-zinc-100 flex flex-col gap-4">
+                        {/* لیست تگ‌ها */}
+                        <div className="flex flex-wrap gap-2">
+                          {categoryServices.map(service => {
+                            const isDefault = defaultServices.includes(service);
+                            const isSelected = selectedTags.includes(service);
+
+                            if (isDefault) {
+                              // دکمه تگ عادی
+                              return (
+                                <button 
+                                  key={service} 
+                                  type="button" 
+                                  onClick={() => toggleTag(service)} 
+                                  className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+                                    isSelected
+                                      ? 'bg-rose-50 border border-rose-200 text-rose-600'
+                                      : 'bg-white border border-zinc-200 text-zinc-600 hover:border-zinc-300 hover:bg-zinc-50'
+                                  }`}
+                                >
+                                  {service}
+                                </button>
+                              );
+                            } else {
+                              // دکمه تگ کاستوم (تمایز رنگ و دکمه ضربدر)
+                              return (
+                                <div 
+                                  key={service} 
+                                  className={`flex items-center gap-1 pl-2 pr-4 py-1.5 rounded-xl text-sm font-medium transition-all border ${
+                                    isSelected 
+                                      ? 'bg-amber-50 border-amber-300 text-amber-700 shadow-sm shadow-amber-100' 
+                                      : 'bg-white border-dashed border-amber-300 text-amber-600 hover:bg-amber-50/50'
+                                  }`}
+                                >
+                                  <button 
+                                    type="button" 
+                                    onClick={() => toggleTag(service)} 
+                                    className="flex-1 text-right py-0.5"
+                                  >
+                                    {service}
+                                  </button>
+                                  <button 
+                                    type="button" 
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleRemoveCustomTag(category, service);
+                                    }} 
+                                    className={`p-1 rounded-full transition-colors ${
+                                      isSelected ? 'text-amber-500 hover:bg-amber-200' : 'text-amber-400 hover:bg-amber-100 hover:text-amber-600'
+                                    }`}
+                                    title="حذف کامل این خدمت"
+                                  >
+                                    <X size={16} strokeWidth={2.5} />
+                                  </button>
+                                </div>
+                              );
+                            }
+                          })}
+                        </div>
+
+                        {/* بخش افزودن خدمت جدید */}
+                        <div className="flex items-center gap-2 mt-1 pt-3 border-t border-zinc-100/60">
+                          <input 
+                            type="text" 
+                            value={newTagInputs[category] || ''}
+                            onChange={(e) => setNewTagInputs({...newTagInputs, [category]: e.target.value})}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault();
+                                handleAddCustomTag(category);
+                              }
+                            }}
+                            placeholder={`افزودن خدمت جدید به ${category}...`} 
+                            className="flex-1 text-sm px-4 py-2.5 rounded-xl border border-zinc-200 focus:border-zinc-300 focus:ring-1 focus:ring-zinc-300 outline-none transition-all"
+                          />
                           <button 
-                            key={service} 
                             type="button" 
-                            onClick={() => toggleTag(service)} 
-                            className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${
-                              selectedTags.includes(service) 
-                                ? 'bg-rose-50 border border-rose-200 text-rose-600' 
-                                : 'bg-white border border-zinc-200 text-zinc-600 hover:border-zinc-300 hover:bg-zinc-50'
-                            }`}>
-                            {service}
+                            onClick={() => handleAddCustomTag(category)}
+                            className="px-3 py-2.5 bg-zinc-100 text-zinc-600 hover:bg-zinc-200 hover:text-zinc-800 rounded-xl transition-colors flex items-center justify-center gap-1 font-medium text-sm"
+                          >
+                            <Plus size={18} /> افزودن
                           </button>
-                        ))}
+                        </div>
                       </div>
                     )}
                   </div>

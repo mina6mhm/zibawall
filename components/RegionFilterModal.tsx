@@ -101,9 +101,35 @@ export default function RegionFilterModal({
 
   useEffect(() => {
     if (isOpen) {
+      // بازیابی محله‌های انتخاب شده
       setSelectedNeighborhoods(JSON.parse(initialNeighborhoodsStr));
+
+      // اگر قبلا استان و شهر انتخاب شده‌اند، مستقیم برو به مرحله محله‌ها
+      if (selectedProvince && selectedCity && locations.length > 0) {
+        const currentProvince = locations.find((p) => p.name === selectedProvince);
+        const currentCity = currentProvince?.cities?.find((c) => c.name === selectedCity);
+
+        if (currentProvince && currentCity) {
+          setActiveProvince(currentProvince);
+          
+          let cityDistricts = currentCity.districts;
+          if (currentProvince.name === 'تهران' && currentCity.name === 'تهران') {
+            cityDistricts = currentCity.districts || currentProvince.districts;
+          } else {
+            cityDistricts = undefined;
+          }
+
+          if (cityDistricts && Object.keys(cityDistricts).length > 0) {
+            setActiveCity({ ...currentCity, districts: cityDistricts });
+            setStep("neighborhood");
+          } else {
+            setActiveCity(currentCity);
+            setStep("city");
+          }
+        }
+      }
     }
-  }, [isOpen, initialNeighborhoodsStr]);
+  }, [isOpen, initialNeighborhoodsStr, selectedProvince, selectedCity, locations]);
 
 
   if (!isOpen) return null;
@@ -125,8 +151,15 @@ export default function RegionFilterModal({
     if (cityDistricts && Object.keys(cityDistricts).length > 0) {
       setActiveCity({ ...city, districts: cityDistricts });
       setStep("neighborhood");
+      
+      // 👇 تغییر مهم در اینجاست
       if (city.name !== activeCity?.name) {
-        setSelectedNeighborhoods([]);
+        // اگر شهری که کلیک کرده، همون شهرِ از قبل انتخاب شده است، محله‌ها رو پاک نکن
+        if (city.name === selectedCity) {
+          setSelectedNeighborhoods([...initialNeighborhoods]);
+        } else {
+          setSelectedNeighborhoods([]);
+        }
       }
     } else {
       onSelectLocation(activeProvince!.name, city.name, []);

@@ -233,6 +233,7 @@ export default function LoginPage() {
                 value={mobile}
                 onChange={(e) => setMobile(e.target.value)}
                 className="w-full bg-white text-zinc-900 border border-zinc-300 rounded-xl px-4 py-3 text-left focus:outline-none focus:border-zinc-900 placeholder-zinc-400 transition-colors"
+                suppressHydrationWarning={true}
               />
             </div>
 
@@ -273,6 +274,7 @@ export default function LoginPage() {
                   onKeyDown={(e) => handleOtpKeyDown(index, e)}
                   disabled={timeLeft === 0}
                   className="w-12 h-12 text-center text-xl font-bold bg-white text-zinc-900 border border-zinc-300 rounded-xl focus:outline-none focus:border-zinc-900 disabled:bg-zinc-100 disabled:text-zinc-500 transition-colors"
+                  suppressHydrationWarning={true}
                 />
               ))}
             </div>

@@ -24,8 +24,7 @@ model Salon {
   rating       Float    @default(0)
   reviewsCount Int      @default(0)
   
-  tags         String[] // آرایه ای از تگ ها/خدمات
-  imageUrl     String   // تصویر اصلی کارت
+  tags         Json     @default("[]")  imageUrl     String   // تصویر اصلی کارت
   description  String
   portfolios   String[] // تصاویر گالری
   
