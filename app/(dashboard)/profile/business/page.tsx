@@ -312,11 +312,12 @@ export default function BusinessRegistrationPage() {
         phones: phones.filter(p => p.trim() !== ''),
         workingHours,
         closedDays,
-        tags: selectedTags,
+        // 👇 اینجا به جای selectedTags باید formattedTags ارسال شود
+        tags: formattedTags, 
         description: description || 'توضیحات پیش‌فرض سالن', 
         socials,
-        imageUrl: uploadedCoverUrl,             // لینک کاور ذخیره شده در آروان
-        portfolios: uploadedPortfolioUrls,      // آرایه لینک‌های نمونه کار ذخیره شده
+        imageUrl: uploadedCoverUrl,             
+        portfolios: uploadedPortfolioUrls,      
       };
 
       const res = await fetch('/api/salon', {

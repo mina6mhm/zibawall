@@ -90,15 +90,24 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
         setSalon(data);
         setLocalReviews(data.reviews || []);
 
-        // محاسبه دسته‌بندی‌ها و باز گذاشتن پیش‌فرض آن‌ها
+                // محاسبه دسته‌بندی‌ها و باز گذاشتن پیش‌فرض آن‌ها
         if (data.tags) {
           const categories = new Set<string>();
-          data.tags.forEach((tag: string) => {
-            const category = Object.keys(CATEGORY_MAPPING).find(key => CATEGORY_MAPPING[key].includes(tag)) || 'سایر خدمات';
+          data.tags.forEach((tag: any) => {
+            let category = 'سایر خدمات';
+            // اگر تگ به فرمت جدید (آبجکت) بود
+            if (typeof tag === 'object' && tag !== null && tag.category) {
+              category = tag.category;
+            } 
+            // اگر تگ به فرمت قدیمی (رشته) بود
+            else if (typeof tag === 'string') {
+              category = Object.keys(CATEGORY_MAPPING).find(key => CATEGORY_MAPPING[key].includes(tag)) || 'سایر خدمات';
+            }
             categories.add(category);
           });
           setExpandedCategories(Array.from(categories));
         }
+
 
       } catch (error) {
         console.error("Error fetching salon:", error);
@@ -131,15 +140,31 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
     );
   }
 
-  // گروه‌بندی تگ‌ها (خدمات)
+    // گروه‌بندی تگ‌ها (خدمات)
   const groupedServices: Record<string, string[]> = {};
   if (salon.tags) {
-    salon.tags.forEach((tag: string) => {
-      const category = Object.keys(CATEGORY_MAPPING).find(key => CATEGORY_MAPPING[key].includes(tag)) || 'سایر خدمات';
-      if (!groupedServices[category]) groupedServices[category] = [];
-      groupedServices[category].push(tag);
+    salon.tags.forEach((tag: any) => {
+      let name = '';
+      let category = 'سایر خدمات';
+
+      // پشتیبانی از فرمت جدید
+      if (typeof tag === 'object' && tag !== null) {
+        name = tag.name;
+        category = tag.category || 'سایر خدمات';
+      } 
+      // پشتیبانی از فرمت قدیمی
+      else if (typeof tag === 'string') {
+        name = tag;
+        category = Object.keys(CATEGORY_MAPPING).find(key => CATEGORY_MAPPING[key].includes(tag)) || 'سایر خدمات';
+      }
+
+      if (name) {
+        if (!groupedServices[category]) groupedServices[category] = [];
+        groupedServices[category].push(name);
+      }
     });
   }
+
 
   // فیلتر کردن نظراتی که امتیاز بزرگتر از صفر دارند برای محاسبه میانگین
   const ratedReviews = localReviews.filter(review => review.rating > 0);

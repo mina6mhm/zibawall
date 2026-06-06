@@ -91,8 +91,6 @@ const isFuzzyMatch = (text: string, searchWord: string) => {
   return false;
 };
 
- 
-
 const BookmarkIcon = ({ isActive, className }: { isActive: boolean, className?: string }) => (
   <svg viewBox="0 0 24 24" className={className} 
        stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"
@@ -171,7 +169,10 @@ export default function DashboardHomePage() {
 
   const filteredSalons = salons.filter((salon) => {
     const validTagsForCategory = CATEGORY_MAPPING[selectedCategory] || [];
-    const salonTags = salon.tags || [];
+    
+    // تبدیل تگ‌ها به رشته (مدیریت آبجکت‌های Prisma)
+    const salonTags = (salon.tags || []).map((t: any) => typeof t === 'object' && t !== null ? t.name : t);
+    
     const matchesCategory = selectedCategory === 'همه' || salonTags.some((tag: string) => validTagsForCategory.includes(tag));
 
     const matchesProvince = salon.province ? salon.province === selectedProvince : true;
@@ -192,7 +193,7 @@ export default function DashboardHomePage() {
     
     if (!searchQuery.trim()) return true;
 
-         const searchTerms = normalizeChars(searchQuery).split(/\s+/).filter(Boolean);
+    const searchTerms = normalizeChars(searchQuery).split(/\s+/).filter(Boolean);
     
     // در اینجا فاصله‌ها را نگه می‌داریم تا کلمات قابل تشخیص باشند
     const normalizedName = normalizeChars(salon.name || '');
@@ -211,8 +212,7 @@ export default function DashboardHomePage() {
         );
       });
     });
-   });
-
+  });
 
   return (
     <>
@@ -312,6 +312,9 @@ export default function DashboardHomePage() {
                 const validReviews = salonReviews.filter((review: any) => review.rating && review.rating > 0);
                 const totalVotes = validReviews.length;
 
+                // تبدیل تگ‌ها برای رندر در لیست
+                const salonTags = (salon.tags || []).map((t: any) => typeof t === 'object' && t !== null ? t.name : t);
+
                 const averageRating = totalVotes > 0 
                   ? (validReviews.reduce((acc: number, review: any) => acc + review.rating, 0) / totalVotes).toFixed(1)
                   : salon.rating ? String(salon.rating) : null; 
@@ -365,16 +368,16 @@ export default function DashboardHomePage() {
                         <span className="text-xs">{salon.address || 'بدون آدرس'}</span>
                       </div>
 
-                      {salon.tags && salon.tags.length > 0 && (
+                      {salonTags && salonTags.length > 0 && (
                         <div className="flex flex-wrap gap-1.5 mb-4">
-                          {salon.tags.slice(0, 3).map((tag: string, idx: number) => (
+                          {salonTags.slice(0, 3).map((tag: string, idx: number) => (
                             <span key={idx} className="bg-zinc-100/80 text-zinc-600 text-[11px] px-2.5 py-1 rounded-md font-medium">
                               {tag}
                             </span>
                           ))}
-                          {salon.tags.length > 3 && (
+                          {salonTags.length > 3 && (
                             <span className="bg-zinc-100/80 text-zinc-500 text-[11px] px-2 py-1 rounded-md font-medium">
-                              +{salon.tags.length - 3}
+                              +{salonTags.length - 3}
                             </span>
                           )}
                         </div>
