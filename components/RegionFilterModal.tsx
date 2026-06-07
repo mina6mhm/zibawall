@@ -24,9 +24,9 @@ interface RegionFilterModalProps {
     city: string,
     neighborhoods: string[]
   ) => void;
-  selectedProvince?: string;
-  selectedCity?: string;
-  selectedNeighborhoods?: string[];
+  initialProvince?: string;        // 👈 نام پراپ اصلاح شد
+  initialCity?: string;            // 👈 نام پراپ اصلاح شد
+  initialNeighborhoods?: string[]; // 👈 نام پراپ اصلاح شد
   maxNeighborhoods?: number;
 }
 
@@ -34,9 +34,9 @@ export default function RegionFilterModal({
   isOpen,
   onClose,
   onSelectLocation,
-  selectedProvince,
-  selectedCity,
-  selectedNeighborhoods: initialNeighborhoods = [],
+  initialProvince,
+  initialCity,
+  initialNeighborhoods = [],
   maxNeighborhoods,
 }: RegionFilterModalProps) {
   const [locations, setLocations] = useState<LocationData[]>([]);
@@ -54,6 +54,7 @@ export default function RegionFilterModal({
     initialNeighborhoods
   );
 
+  // واکشی اطلاعات شهرها و استان‌ها
   useEffect(() => {
     const fetchLocations = async () => {
       try {
@@ -62,13 +63,12 @@ export default function RegionFilterModal({
         const data = await response.json();
         setLocations(data);
 
-        if (selectedProvince && selectedCity) {
-          const currentProvince = data.find((p: LocationData) => p.name === selectedProvince);
+        if (initialProvince && initialCity) {
+          const currentProvince = data.find((p: LocationData) => p.name === initialProvince);
           if (currentProvince) {
             setActiveProvince(currentProvince);
-            const currentCity = currentProvince.cities?.find((c: CityData) => c.name === selectedCity);
+            const currentCity = currentProvince.cities?.find((c: CityData) => c.name === initialCity);
             if (currentCity) {
-              // فقط اگر استان تهران و شهر تهران باشد، محله‌ها را از استان می‌گیریم
               let cityDistricts = currentCity.districts;
               if (currentProvince.name === 'تهران' && currentCity.name === 'تهران') {
                 cityDistricts = currentCity.districts || currentProvince.districts;
@@ -95,19 +95,20 @@ export default function RegionFilterModal({
     };
 
     fetchLocations();
-  }, [selectedProvince, selectedCity]);
+  }, [initialProvince, initialCity]);
 
   const initialNeighborhoodsStr = JSON.stringify(initialNeighborhoods);
 
+  // آپدیت مودال در زمان باز شدن
   useEffect(() => {
     if (isOpen) {
-      // بازیابی محله‌های انتخاب شده
+      // بازیابی محله‌های انتخاب شده قبلی
       setSelectedNeighborhoods(JSON.parse(initialNeighborhoodsStr));
 
-      // اگر قبلا استان و شهر انتخاب شده‌اند، مستقیم برو به مرحله محله‌ها
-      if (selectedProvince && selectedCity && locations.length > 0) {
-        const currentProvince = locations.find((p) => p.name === selectedProvince);
-        const currentCity = currentProvince?.cities?.find((c) => c.name === selectedCity);
+      // تنظیم مجدد استان و شهر به مقادیر اولیه پاس داده شده
+      if (initialProvince && initialCity && locations.length > 0) {
+        const currentProvince = locations.find((p) => p.name === initialProvince);
+        const currentCity = currentProvince?.cities?.find((c) => c.name === initialCity);
 
         if (currentProvince && currentCity) {
           setActiveProvince(currentProvince);
@@ -129,8 +130,7 @@ export default function RegionFilterModal({
         }
       }
     }
-  }, [isOpen, initialNeighborhoodsStr, selectedProvince, selectedCity, locations]);
-
+  }, [isOpen, initialNeighborhoodsStr, initialProvince, initialCity, locations]);
 
   if (!isOpen) return null;
 
@@ -140,26 +140,22 @@ export default function RegionFilterModal({
   };
 
   const handleCitySelect = (city: CityData) => {
-    // فقط برای استان تهران و شهر تهران ارث‌بری محله انجام شود
     let cityDistricts = city.districts;
     if (activeProvince?.name === 'تهران' && city.name === 'تهران') {
       cityDistricts = city.districts || activeProvince?.districts;
     } else {
-      cityDistricts = undefined; // برای شهرهایی مثل آبعلی محله‌ای نشان داده نمی‌شود
+      cityDistricts = undefined; 
     }
 
     if (cityDistricts && Object.keys(cityDistricts).length > 0) {
       setActiveCity({ ...city, districts: cityDistricts });
       setStep("neighborhood");
       
-      // 👇 تغییر مهم در اینجاست
-      if (city.name !== activeCity?.name) {
-        // اگر شهری که کلیک کرده، همون شهرِ از قبل انتخاب شده است، محله‌ها رو پاک نکن
-        if (city.name === selectedCity) {
-          setSelectedNeighborhoods([...initialNeighborhoods]);
-        } else {
-          setSelectedNeighborhoods([]);
-        }
+      // اگر شهری که کلیک کرده، همون شهرِ اولیه است محله‌ها را نگه دار
+      if (city.name === initialCity) {
+        setSelectedNeighborhoods([...initialNeighborhoods]);
+      } else {
+        setSelectedNeighborhoods([]);
       }
     } else {
       onSelectLocation(activeProvince!.name, city.name, []);
@@ -169,12 +165,10 @@ export default function RegionFilterModal({
 
   const toggleNeighborhood = (neighborhood: string) => {
     setSelectedNeighborhoods((prev) => {
-      // اگر روی "همه محله‌ها" کلیک شد، بقیه حذف بشن
       if (neighborhood === 'همه محله‌ها') {
         return ['همه محله‌ها'];
       }
 
-      // اگر روی محله‌ای به جز "همه محله‌ها" کلیک شد، "همه محله‌ها" رو حذف کن
       const withoutAll = prev.filter(n => n !== 'همه محله‌ها');
       const isSelected = withoutAll.includes(neighborhood);
       
@@ -270,12 +264,9 @@ export default function RegionFilterModal({
         new Set(Object.values(activeCity.districts).flat())
       ).sort((a, b) => a.localeCompare(b, "fa"));
 
-            // اگر maxNeighborhoods پاس داده شده باشد (مثل ثبت کسب‌وکار)، "همه محله‌ها" را حذف می‌کنیم
-      // در غیر این صورت (مثل سرچ) "همه محله‌ها" را نمایش می‌دهیم
       const displayNeighborhoods = maxNeighborhoods 
         ? allNeighborhoods 
         : ["همه محله‌ها", ...allNeighborhoods];
-
 
       return (
         <div className="p-4">

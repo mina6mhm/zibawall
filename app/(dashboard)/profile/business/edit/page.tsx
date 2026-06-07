@@ -451,6 +451,7 @@ export default function BusinessEditPage() {
           </div>
         ))}
       </div>
+      
 
       <div className="bg-white rounded-2xl shadow-sm border border-zinc-100 p-5 md:p-8">
         
@@ -949,15 +950,16 @@ export default function BusinessEditPage() {
         </div>
       </div>
 
-      <RegionFilterModal 
+            <RegionFilterModal 
         isOpen={isRegionModalOpen} 
         onClose={() => setIsRegionModalOpen(false)} 
         onSelectLocation={handleLocationSelect} 
-        selectedProvince={selectedProvince}
-        selectedCity={selectedCity}
-        selectedNeighborhoods={selectedNeighborhoods}
+        initialProvince={selectedProvince}
+        initialCity={selectedCity}
+        initialNeighborhoods={selectedNeighborhoods}
         maxNeighborhoods={4}
       />
+
 
       {isMapModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-fade-in">

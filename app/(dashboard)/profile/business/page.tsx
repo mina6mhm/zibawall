@@ -949,15 +949,16 @@ export default function BusinessRegistrationPage() {
         </div>
       </div>
 
-      <RegionFilterModal 
+            <RegionFilterModal 
         isOpen={isRegionModalOpen} 
         onClose={() => setIsRegionModalOpen(false)} 
         onSelectLocation={handleLocationSelect} 
-        selectedProvince={selectedProvince}
-        selectedCity={selectedCity}
-        selectedNeighborhoods={selectedNeighborhoods}
+        initialProvince={selectedProvince}
+        initialCity={selectedCity}
+        initialNeighborhoods={selectedNeighborhoods}
         maxNeighborhoods={4} 
       />
+
 
       {isMapModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-fade-in">

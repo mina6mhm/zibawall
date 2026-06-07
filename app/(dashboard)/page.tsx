@@ -423,15 +423,33 @@ export default function DashboardHomePage() {
         </div>
       </div>
 
-      <RegionFilterModal 
+                  <RegionFilterModal 
         isOpen={isRegionModalOpen} 
         onClose={() => setIsRegionModalOpen(false)} 
+        // 👇 این سه خط رو اضافه کنید تا مقادیر فعلی به مودال پاس داده بشن
+        initialProvince={selectedProvince}
+        initialCity={selectedCity}
+        initialNeighborhoods={selectedNeighborhoods}
+        
         onSelectLocation={(province: string, city: string, neighborhoods: string[]) => {
-          setSelectedProvince(province);
-          setSelectedCity(city);
-          setSelectedNeighborhoods(neighborhoods);
+          if (province !== selectedProvince || city !== selectedCity) {
+            setSelectedProvince(province);
+            setSelectedCity(city);
+            setSelectedNeighborhoods(neighborhoods);
+          } else {
+            setSelectedProvince(province);
+            setSelectedCity(city);
+            setSelectedNeighborhoods((prev) => {
+              if (neighborhoods.includes('همه محله‌ها')) {
+                return ['همه محله‌ها'];
+              }
+              const combined = [...prev, ...neighborhoods].filter((nh) => nh !== 'همه محله‌ها');
+              return Array.from(new Set(combined)); 
+            });
+          }
         }} 
       />
+
     </>
   );
 }
