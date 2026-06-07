@@ -270,8 +270,12 @@ export default function RegionFilterModal({
         new Set(Object.values(activeCity.districts).flat())
       ).sort((a, b) => a.localeCompare(b, "fa"));
 
-      // اضافه کردن "همه محله‌ها"
-      const displayNeighborhoods = ["همه محله‌ها", ...allNeighborhoods];
+            // اگر maxNeighborhoods پاس داده شده باشد (مثل ثبت کسب‌وکار)، "همه محله‌ها" را حذف می‌کنیم
+      // در غیر این صورت (مثل سرچ) "همه محله‌ها" را نمایش می‌دهیم
+      const displayNeighborhoods = maxNeighborhoods 
+        ? allNeighborhoods 
+        : ["همه محله‌ها", ...allNeighborhoods];
+
 
       return (
         <div className="p-4">

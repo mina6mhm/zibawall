@@ -6,8 +6,10 @@ import { useRouter } from "next/navigation";
 import { CATEGORY_MAPPING } from "@/lib/data";
 import { 
   ArrowRight, Star, MapPin, Clock, Phone,
-  Navigation, CheckCircle2, CalendarOff, X, MessageCircle, ChevronDown, ChevronUp, Globe, Send, Map
+  Navigation, CheckCircle2, CalendarOff, X, MessageCircle, ChevronDown, ChevronUp, Globe, Send, Map, Bookmark
 } from "lucide-react";
+import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
+
 
 export default function SalonDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params);
@@ -17,6 +19,9 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
   const [salon, setSalon] = useState<any | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [hasAlreadyReviewed, setHasAlreadyReviewed] = useState(false);
+
+  // استیت بوک‌مارک
+  const [isBookmarked, setIsBookmarked] = useState(false);
 
   // استیت‌های عکس، فرم نظر و لیست نظرات
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
@@ -80,6 +85,10 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
       try {
         const salonId = resolvedParams.id;
 
+        // بررسی وضعیت بوک‌مارک از لوکال استوریج
+        const savedBookmarks = JSON.parse(localStorage.getItem('bookmarkedSalons') || '[]');
+        setIsBookmarked(savedBookmarks.includes(salonId));
+
         // دریافت اطلاعات سالن از دیتابیس
         const response = await fetch(`/api/salon/${salonId}`);
         if (!response.ok) {
@@ -90,7 +99,7 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
         setSalon(data);
         setLocalReviews(data.reviews || []);
 
-                // محاسبه دسته‌بندی‌ها و باز گذاشتن پیش‌فرض آن‌ها
+        // محاسبه دسته‌بندی‌ها و باز گذاشتن پیش‌فرض آن‌ها
         if (data.tags) {
           const categories = new Set<string>();
           data.tags.forEach((tag: any) => {
@@ -107,7 +116,6 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
           });
           setExpandedCategories(Array.from(categories));
         }
-
 
       } catch (error) {
         console.error("Error fetching salon:", error);
@@ -140,20 +148,17 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
     );
   }
 
-    // گروه‌بندی تگ‌ها (خدمات)
+  // گروه‌بندی تگ‌ها (خدمات)
   const groupedServices: Record<string, string[]> = {};
   if (salon.tags) {
     salon.tags.forEach((tag: any) => {
       let name = '';
       let category = 'سایر خدمات';
 
-      // پشتیبانی از فرمت جدید
       if (typeof tag === 'object' && tag !== null) {
         name = tag.name;
         category = tag.category || 'سایر خدمات';
-      } 
-      // پشتیبانی از فرمت قدیمی
-      else if (typeof tag === 'string') {
+      } else if (typeof tag === 'string') {
         name = tag;
         category = Object.keys(CATEGORY_MAPPING).find(key => CATEGORY_MAPPING[key].includes(tag)) || 'سایر خدمات';
       }
@@ -165,25 +170,37 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
     });
   }
 
-
-  // فیلتر کردن نظراتی که امتیاز بزرگتر از صفر دارند برای محاسبه میانگین
   const ratedReviews = localReviews.filter(review => review.rating > 0);
   const totalVotes = ratedReviews.length;
   const averageRating = totalVotes > 0 
     ? (ratedReviews.reduce((acc, review) => acc + review.rating, 0) / totalVotes).toFixed(1)
     : "0.0";
 
-  // فیلتر کردن نظراتی که فقط متن دارند برای نمایش در لیست پایین
   const textReviews = localReviews.filter(review => review.comment && review.comment.trim() !== "");
 
-  // تابع ثبت نظر
+  // هندلر تغییر وضعیت بوک‌مارک
+  const toggleBookmark = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!salon) return;
+    
+    let savedBookmarks = JSON.parse(localStorage.getItem('bookmarkedSalons') || '[]');
+    
+    if (isBookmarked) {
+      savedBookmarks = savedBookmarks.filter((id: string) => id !== salon.id);
+    } else {
+      savedBookmarks.push(salon.id);
+    }
+    
+    localStorage.setItem('bookmarkedSalons', JSON.stringify(savedBookmarks));
+    setIsBookmarked(!isBookmarked);
+  };
+
   const handleReviewSubmit = async () => {
     setReviewError(""); 
     setSuccessMessage("");
 
     const isTextEmpty = !reviewText.trim();
 
-    // اعتبارسنجی اصلاح شده
     if (hasAlreadyReviewed) {
       if (isTextEmpty) {
         setReviewError("لطفاً متن نظر خود را بنویسید.");
@@ -197,12 +214,11 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
     }
     
     try {
-        // ارسال به API بک‌اند
         const response = await fetch(`/api/salon/${salon.id}/reviews`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ 
-            name: loggedInUserName, // استفاده از متغیر نام کاربر لاگین شده
+            name: loggedInUserName,
             rating: hasAlreadyReviewed ? 0 : userRating, 
             comment: reviewText.trim() 
           })
@@ -218,13 +234,10 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
           throw new Error(result.error || "خطا در ثبت اطلاعات در سرور");
         }
 
-        // آپدیت موفقیت آمیز در فرانت‌اند
         setLocalReviews([result, ...localReviews]); 
-        
         setSuccessMessage("نظر شما با موفقیت ثبت شد!");
-        setReviewText(""); // پاک کردن متن نظر برای کامنت‌های بعدی
+        setReviewText(""); 
         
-        // اگر اولین بار بود که امتیاز می‌داد، آن را در لوکال استوریج ذخیره می‌کنیم
         if (!hasAlreadyReviewed && userRating > 0) {
           setHasAlreadyReviewed(true);
           localStorage.setItem(`has_reviewed_${salon.id}_${loggedInUserName}`, "true");
@@ -236,7 +249,6 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
     }
   };
 
-  // استخراج کارت اطلاعات سالن به عنوان متغیر برای جلوگیری از تکرار کد
   const salonInfoCard = (
     <div className="bg-white rounded-2xl p-6 shadow-sm border border-zinc-200">
       <div className="flex justify-between items-start mb-4">
@@ -280,7 +292,6 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
         )}
       </div>
 
-      {/* نمایش نقشه (با قابلیت کلیک برای باز شدن مودال) */}
       <div 
         onClick={() => setShowRoutingModal(true)}
         className="relative w-full h-36 md:h-48 bg-zinc-100 rounded-xl mb-6 overflow-hidden cursor-pointer group border border-zinc-200 shadow-sm"
@@ -300,73 +311,40 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
       </div>
 
       {salon.socials && (
-  <div className="flex justify-center flex-wrap gap-4 mb-6 px-2">
-    
-    {salon.socials.website && (
-      <a href={salon.socials.website.startsWith('http') ? salon.socials.website : `https://${salon.socials.website}`} target="_blank" rel="noopener noreferrer" className="group flex items-center justify-center w-10 h-10 bg-zinc-50 rounded-full hover:bg-white hover:shadow-md hover:-translate-y-1 transition-all duration-300 border border-transparent hover:border-zinc-100" title="وب‌سایت">
-        <img 
-          src="/web.png" 
-          alt="وب‌سایت" 
-          className="w-5 h-5 object-contain grayscale opacity-60 group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-300" 
-        />
-      </a>
-    )}
+        <div className="flex justify-center flex-wrap gap-4 mb-6 px-2">
+          {salon.socials.website && (
+            <a href={salon.socials.website.startsWith('http') ? salon.socials.website : `https://${salon.socials.website}`} target="_blank" rel="noopener noreferrer" className="group flex items-center justify-center w-10 h-10 bg-zinc-50 rounded-full hover:bg-white hover:shadow-md hover:-translate-y-1 transition-all duration-300 border border-transparent hover:border-zinc-100" title="وب‌سایت">
+              <img src="/web.png" alt="وب‌سایت" className="w-5 h-5 object-contain grayscale opacity-60 group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-300" />
+            </a>
+          )}
+          {salon.socials.instagram && (
+            <a href={`https://instagram.com/${salon.socials.instagram.replace('@', '')}`} target="_blank" rel="noopener noreferrer" className="group flex items-center justify-center w-10 h-10 bg-zinc-50 rounded-full hover:bg-white hover:shadow-md hover:-translate-y-1 transition-all duration-300 border border-transparent hover:border-zinc-100" title="اینستاگرام">
+              <img src="/instagram.png" alt="اینستاگرام" className="w-5 h-5 object-contain grayscale opacity-60 group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-300" />
+            </a>
+          )}
+          {salon.socials.whatsapp && (
+            <a href={`https://wa.me/${salon.socials.whatsapp}`} target="_blank" rel="noopener noreferrer" className="group flex items-center justify-center w-10 h-10 bg-zinc-50 rounded-full hover:bg-white hover:shadow-md hover:-translate-y-1 transition-all duration-300 border border-transparent hover:border-zinc-100" title="واتس‌اپ">
+              <img src="/whatsapp.png" alt="واتس‌اپ" className="w-5 h-5 object-contain grayscale opacity-60 group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-300" />
+            </a>
+          )}
+          {salon.socials.telegram && (
+            <a href={`https://t.me/${salon.socials.telegram.replace('@', '')}`} target="_blank" rel="noopener noreferrer" className="group flex items-center justify-center w-10 h-10 bg-zinc-50 rounded-full hover:bg-white hover:shadow-md hover:-translate-y-1 transition-all duration-300 border border-transparent hover:border-zinc-100" title="تلگرام">
+              <img src="/telegram.png" alt="تلگرام" className="w-5 h-5 object-contain grayscale opacity-60 group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-300" />
+            </a>
+          )}
+          {salon.socials.bale && (
+            <a href={`https://ble.ir/${salon.socials.bale.replace('@', '')}`} target="_blank" rel="noopener noreferrer" className="group flex items-center justify-center w-10 h-10 bg-zinc-50 rounded-full hover:bg-white hover:shadow-md hover:-translate-y-1 transition-all duration-300 border border-transparent hover:border-zinc-100" title="بله">
+              <img src="/bale.png" alt="بله" className="w-5 h-5 object-contain grayscale opacity-60 group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-300" />
+            </a>
+          )}
+          {salon.socials.rubika && (
+            <a href={`https://rubika.ir/${salon.socials.rubika.replace('@', '')}`} target="_blank" rel="noopener noreferrer" className="group flex items-center justify-center w-10 h-10 bg-zinc-50 rounded-full hover:bg-white hover:shadow-md hover:-translate-y-1 transition-all duration-300 border border-transparent hover:border-zinc-100" title="روبیکا">
+              <img src="/rubika.png" alt="روبیکا" className="w-5 h-5 object-contain grayscale opacity-60 group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-300" />
+            </a>
+          )}
+        </div>
+      )}
 
-    {salon.socials.instagram && (
-      <a href={`https://instagram.com/${salon.socials.instagram.replace('@', '')}`} target="_blank" rel="noopener noreferrer" className="group flex items-center justify-center w-10 h-10 bg-zinc-50 rounded-full hover:bg-white hover:shadow-md hover:-translate-y-1 transition-all duration-300 border border-transparent hover:border-zinc-100" title="اینستاگرام">
-        <img 
-          src="/instagram.png" 
-          alt="اینستاگرام" 
-          className="w-5 h-5 object-contain grayscale opacity-60 group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-300" 
-        />
-      </a>
-    )}
-
-    {salon.socials.whatsapp && (
-      <a href={`https://wa.me/${salon.socials.whatsapp}`} target="_blank" rel="noopener noreferrer" className="group flex items-center justify-center w-10 h-10 bg-zinc-50 rounded-full hover:bg-white hover:shadow-md hover:-translate-y-1 transition-all duration-300 border border-transparent hover:border-zinc-100" title="واتس‌اپ">
-        <img 
-          src="/whatsapp.png" 
-          alt="واتس‌اپ" 
-          className="w-5 h-5 object-contain grayscale opacity-60 group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-300" 
-        />
-      </a>
-    )}
-
-    {salon.socials.telegram && (
-      <a href={`https://t.me/${salon.socials.telegram.replace('@', '')}`} target="_blank" rel="noopener noreferrer" className="group flex items-center justify-center w-10 h-10 bg-zinc-50 rounded-full hover:bg-white hover:shadow-md hover:-translate-y-1 transition-all duration-300 border border-transparent hover:border-zinc-100" title="تلگرام">
-        <img 
-          src="/telegram.png" 
-          alt="تلگرام" 
-          className="w-5 h-5 object-contain grayscale opacity-60 group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-300" 
-        />
-      </a>
-    )}
-
-    {salon.socials.bale && (
-      <a href={`https://ble.ir/${salon.socials.bale.replace('@', '')}`} target="_blank" rel="noopener noreferrer" className="group flex items-center justify-center w-10 h-10 bg-zinc-50 rounded-full hover:bg-white hover:shadow-md hover:-translate-y-1 transition-all duration-300 border border-transparent hover:border-zinc-100" title="بله">
-        <img 
-          src="/bale.png" 
-          alt="بله" 
-          className="w-5 h-5 object-contain grayscale opacity-60 group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-300" 
-        />
-      </a>
-    )}
-
-    {salon.socials.rubika && (
-      <a href={`https://rubika.ir/${salon.socials.rubika.replace('@', '')}`} target="_blank" rel="noopener noreferrer" className="group flex items-center justify-center w-10 h-10 bg-zinc-50 rounded-full hover:bg-white hover:shadow-md hover:-translate-y-1 transition-all duration-300 border border-transparent hover:border-zinc-100" title="روبیکا">
-        <img 
-          src="/rubika.png" 
-          alt="روبیکا" 
-          className="w-5 h-5 object-contain grayscale opacity-60 group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-300" 
-        />
-      </a>
-    )}
-
-  </div>
-)}
-
-
-      {/* دکمه تماس */}
       <div className="flex">
         {salon.phones && salon.phones.length > 0 && (
             <a
@@ -382,8 +360,7 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
 
   return (
     <>
-      {/* مودال بزرگ‌نمایی تصویر */}
-      {selectedImage && (
+            {selectedImage && (
         <div 
           className="fixed inset-0 z-[100] flex items-center justify-center bg-black/85 backdrop-blur-sm p-4"
           onClick={() => setSelectedImage(null)}
@@ -391,21 +368,44 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
           <div className="relative max-w-4xl w-full max-h-[90vh] flex items-center justify-center">
             <button 
               onClick={() => setSelectedImage(null)}
-              className="absolute -top-12 right-0 text-white hover:text-gray-300 p-2"
+              className="absolute -top-12 right-0 text-white hover:text-gray-300 p-2 z-[110]"
             >
               <X className="w-8 h-8" />
             </button>
-            <img 
-              src={selectedImage} 
-              alt="بزرگنمایی" 
-              className="max-w-full max-h-[85vh] object-contain rounded-lg"
-              onClick={(e) => e.stopPropagation()} 
-            />
+            
+            {/* نمایش در موبایل: قابلیت زوم با انگشت فعال است */}
+            <div className="w-full h-full sm:hidden flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
+              <TransformWrapper
+                initialScale={1}
+                minScale={1}
+                maxScale={4}
+                centerOnInit={true}
+                wheel={{ disabled: true }} // زوم با غلتک موس غیرفعال تا فقط مخصوص تاچ موبایل باشد
+              >
+                <TransformComponent wrapperClass="!w-full !h-full flex items-center justify-center">
+                  <img 
+                    src={selectedImage} 
+                    alt="بزرگنمایی" 
+                    className="max-w-full max-h-[85vh] object-contain rounded-lg"
+                  />
+                </TransformComponent>
+              </TransformWrapper>
+            </div>
+
+            {/* نمایش در دسکتاپ: بدون قابلیت زوم (مثل قبل) */}
+            <div className="hidden sm:flex items-center justify-center w-full h-full">
+              <img 
+                src={selectedImage} 
+                alt="بزرگنمایی" 
+                className="max-w-full max-h-[85vh] object-contain rounded-lg"
+                onClick={(e) => e.stopPropagation()} 
+              />
+            </div>
+
           </div>
         </div>
       )}
 
-      {/* مودال انتخاب مسیریاب */}
       {showRoutingModal && salon.coordinates && (
         <div 
           className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm sm:p-4"
@@ -423,7 +423,6 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
             </div>
             
             <div className="flex flex-col gap-3">
-              {/* نشان */}
               <a 
                 href={`https://neshan.org/maps/routing?orig=&dest=${salon.coordinates[0]},${salon.coordinates[1]}`} 
                 target="_blank" rel="noopener noreferrer"
@@ -433,7 +432,6 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
                 <img src="/neshan.png" alt="لوگوی نشان" className="w-7 h-7 object-contain" />
               </a>
               
-              {/* بلد */}
               <a 
                 href={`https://balad.ir/route?dest=${salon.coordinates[0]},${salon.coordinates[1]}`} 
                 target="_blank" rel="noopener noreferrer"
@@ -443,7 +441,6 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
                 <img src="/balad.png" alt="لوگوی بلد" className="w-7 h-7 object-contain" />
               </a>
               
-              {/* گوگل مپ */}
               <a 
                 href={`https://www.google.com/maps/dir/?api=1&destination=${salon.coordinates[0]},${salon.coordinates[1]}`} 
                 target="_blank" rel="noopener noreferrer"
@@ -458,22 +455,35 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
       )}
 
       <div className="max-w-5xl mx-auto pb-24 px-4 sm:px-6 mt-8">
-        {/* هدر و دکمه بازگشت */}
-        <button
-          onClick={() => router.back()}
-          className="flex items-center text-zinc-600 hover:text-zinc-900 mb-8 transition font-medium"
-        >
-          <ArrowRight className="w-5 h-5 ml-2" />
-          بازگشت
-        </button>
+        
+        {/* هدر: دکمه بازگشت و دکمه بوک‌مارک در یک ردیف */}
+        <div className="flex justify-between items-center mb-8">
+          <button
+            onClick={() => router.back()}
+            className="flex items-center text-zinc-600 hover:text-zinc-900 transition font-medium"
+          >
+            <ArrowRight className="w-5 h-5 ml-2" />
+            بازگشت
+          </button>
 
-        {/* ساختار یکپارچه شده گرید */}
+          <button 
+            onClick={toggleBookmark}
+            className="flex items-center justify-center p-2 rounded-full hover:bg-zinc-100 transition-colors group"
+            title={isBookmarked ? "حذف از نشان‌شده‌ها" : "افزودن به نشان‌شده‌ها"}
+          >
+            <Bookmark 
+              className={`w-6 h-6 transition-colors ${
+                isBookmarked 
+                  ? "text-zinc-900 fill-zinc-900" 
+                  : "text-zinc-500 group-hover:text-zinc-900"
+              }`} 
+            />
+          </button>
+        </div>
+
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           
-          {/* ستون سمت راست: تمام محتواها (گالری، درباره ما، خدمات، نظرات) */}
           <div className="lg:col-span-2 space-y-8">
-            
-            {/* گالری تصاویر */}
             <div className="space-y-4">
               <div 
                 className="w-full h-80 bg-zinc-200 rounded-2xl overflow-hidden relative group cursor-pointer border border-zinc-100"
@@ -494,7 +504,6 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
                 </div>
               </div>
               
-              {/* نمونه کارها */}
               {salon.portfolios && salon.portfolios.length > 0 && (
                   <div className="flex gap-4 overflow-x-auto pb-2 hide-scrollbar">
                   {salon.portfolios.map((imgUrl: string, index: number) => (
@@ -510,12 +519,10 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
               )}
             </div>
 
-            {/* کارت اطلاعات - فقط در موبایل (اینجا رندر می‌شود تا بعد از گالری باشد) */}
             <div className="block lg:hidden">
               {salonInfoCard}
             </div>
 
-            {/* درباره سالن */}
             <section className="bg-white rounded-2xl p-6 shadow-sm border border-zinc-200">
               <h2 className="text-xl font-bold text-zinc-900 mb-4">درباره سالن</h2>
               <p className="text-zinc-600 leading-relaxed text-justify">
@@ -523,7 +530,6 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
               </p>
             </section>
 
-            {/* خدمات */}
             <section className="bg-white rounded-2xl p-6 shadow-sm border border-zinc-200">
               <h2 className="text-xl font-bold text-zinc-900 mb-6">خدمات ما</h2>
               <div className="space-y-4">
@@ -566,14 +572,12 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
               </div>
             </section>
 
-            {/* نظرات */}
             <section className="bg-white rounded-2xl p-6 shadow-sm border border-zinc-200 mb-8">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-xl font-bold text-zinc-900">نظرات مشتریان</h2>
                 <span className="text-sm font-medium text-zinc-500 bg-zinc-100 px-3 py-1 rounded-full">{textReviews.length} نظر ثبت شده</span>
               </div>
 
-              {/* فرم ثبت نظر جدید */}
               <div className="bg-zinc-50 rounded-xl p-5 mb-8 border border-zinc-100">
                   <h3 className="font-medium text-zinc-800 mb-4">
                       {hasAlreadyReviewed ? "ثبت نظر جدید" : "امتیاز و نظر خود را ثبت کنید"}
@@ -620,7 +624,6 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
                   </button>
               </div>
 
-              {/* لیست نظرات متنی */}
               <div className="space-y-4">
                 {textReviews.length > 0 ? (
                   textReviews.map((review) => (
@@ -648,7 +651,6 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
             </section>
           </div>
 
-          {/* ستون سمت چپ: سایدبار اطلاعات تماس و رزرو (فقط در دسکتاپ نمایش داده می‌شود) */}
           <div className="hidden lg:block lg:col-span-1 h-fit sticky top-6">
             {salonInfoCard}
           </div>

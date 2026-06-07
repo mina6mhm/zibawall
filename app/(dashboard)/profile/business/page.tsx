@@ -88,13 +88,14 @@ export default function BusinessRegistrationPage() {
   const [description, setDescription] = useState('');
   const [address, setAddress] = useState('');
 
-    // استیت‌های مربوط به افزودن تگ دلخواه
+  // استیت‌های مربوط به افزودن تگ دلخواه
   const [customServices, setCustomServices] = useState<Record<string, string[]>>({});
   const [newTagInputs, setNewTagInputs] = useState<Record<string, string>>({});
 
   
-  // مختصات نقشه
+  // مختصات نقشه اصلی و موقت
   const [coordinates, setCoordinates] = useState<[number, number]>([35.6997, 51.3380]); // پیش‌فرض: تهران
+  const [tempCoordinates, setTempCoordinates] = useState<[number, number]>([35.6997, 51.3380]);
   
   const [phones, setPhones] = useState<string[]>(['']);
   const [closedDays, setClosedDays] = useState<string[]>([]);
@@ -127,7 +128,7 @@ export default function BusinessRegistrationPage() {
     setSelectedTags(prev => prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]);
   };
 
-    const handleAddCustomTag = (category: string) => {
+  const handleAddCustomTag = (category: string) => {
     const tag = newTagInputs[category]?.trim();
     if (!tag) return;
 
@@ -146,7 +147,7 @@ export default function BusinessRegistrationPage() {
     setNewTagInputs(prev => ({ ...prev, [category]: '' }));
   };
 
-    const handleRemoveCustomTag = (category: string, tagToRemove: string) => {
+  const handleRemoveCustomTag = (category: string, tagToRemove: string) => {
     // حذف از لیست خدمات اختصاصی همان دسته
     setCustomServices(prev => ({
       ...prev,
@@ -194,7 +195,7 @@ export default function BusinessRegistrationPage() {
     setPortfolios(prev => prev.filter((_, i) => i !== index));
   };
 
-    const nextStep = () => {
+  const nextStep = () => {
     // اعتبارسنجی مرحله ۱
     if (step === 1) {
       // بررسی اینکه حداقل یک شماره تماس وارد شده باشد
@@ -213,8 +214,6 @@ export default function BusinessRegistrationPage() {
         return; // توقف اجرا و جلوگیری از رفتن به مرحله بعد
       }
     }
-
-    // در صورت نیاز می‌توانید برای مراحل بعدی (۲ و ۳) هم شرط مشابهی اضافه کنید
 
     setStep(prev => Math.min(prev + 1, 4));
   };
@@ -307,8 +306,7 @@ export default function BusinessRegistrationPage() {
         city: selectedCity,
         neighborhoods: selectedNeighborhoods,
         address,
-        lat: coordinates[0],
-        lng: coordinates[1],
+        coordinates,
         phones: phones.filter(p => p.trim() !== ''),
         workingHours,
         closedDays,
@@ -481,7 +479,7 @@ export default function BusinessRegistrationPage() {
                 <h2 className="text-lg font-semibold text-zinc-800">آدرس و موقعیت مکانی</h2>
               </div>
               
-                            <div className="space-y-3">
+              <div className="space-y-3">
                 <label className="block text-sm font-medium text-zinc-700">استان و شهر <span className="text-red-500">*</span></label>
                 <button
                   type="button"
@@ -531,7 +529,7 @@ export default function BusinessRegistrationPage() {
                 ></textarea>
               </div>
               
-                            {/* بخش انتخاب و نمایش نقشه - کاملا خارج از کادر خاکستری */}
+              {/* بخش انتخاب و نمایش نقشه */}
               {locationSelected ? (
                 <div className="w-full space-y-3 animate-fade-in mt-6">
                   {/* کادر مستطیلی نقشه */}
@@ -551,7 +549,10 @@ export default function BusinessRegistrationPage() {
                     </div>
                     <button 
                       type="button" 
-                      onClick={() => setIsMapModalOpen(true)} 
+                      onClick={() => {
+                        setTempCoordinates(coordinates);
+                        setIsMapModalOpen(true);
+                      }} 
                       className="text-rose-600 text-sm font-medium hover:bg-rose-50 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1"
                     >
                       <MapPin size={16} /> ویرایش موقعیت
@@ -568,7 +569,10 @@ export default function BusinessRegistrationPage() {
                   </div>
                   <button 
                     type="button" 
-                    onClick={() => setIsMapModalOpen(true)} 
+                    onClick={() => {
+                      setTempCoordinates(coordinates);
+                      setIsMapModalOpen(true);
+                    }} 
                     className="mt-2 bg-white border border-zinc-200 shadow-sm px-5 py-2.5 rounded-xl text-zinc-700 text-sm font-medium hover:bg-zinc-100 flex items-center gap-2"
                   >
                     <MapPin size={18} className="text-zinc-600" /> انتخاب از روی نقشه
@@ -579,7 +583,7 @@ export default function BusinessRegistrationPage() {
           </div>
         )}
 
-                {/* ================= مرحله ۲: خدمات ================= */}
+        {/* ================= مرحله ۲: خدمات ================= */}
         {step === 2 && (
           <div className="space-y-6 animate-fade-in">
             <div className="flex items-center justify-between border-b border-zinc-100 pb-3">
@@ -952,7 +956,7 @@ export default function BusinessRegistrationPage() {
         selectedProvince={selectedProvince}
         selectedCity={selectedCity}
         selectedNeighborhoods={selectedNeighborhoods}
-        maxNeighborhoods={4} // محدودیت انتخاب محله
+        maxNeighborhoods={4} 
       />
 
       {isMapModalOpen && (
@@ -966,9 +970,9 @@ export default function BusinessRegistrationPage() {
               </button>
             </div>
             
-            {/* جایگزین کردن div مربوط به iframe با کد زیر */}
             <div className="flex-1 relative bg-zinc-100 w-full h-full z-0">
-              <MapPicker position={coordinates} setPosition={setCoordinates} />
+              {/* ارسال مختصات موقت به نقشه */}
+              <MapPicker position={tempCoordinates} setPosition={setTempCoordinates} />
             </div>
             
             <div className="p-4 bg-white border-t border-zinc-100 flex justify-between items-center gap-3 z-10 relative">
@@ -981,10 +985,11 @@ export default function BusinessRegistrationPage() {
                 </button>
                 <button 
                   onClick={() => {
+                    // با زدن دکمه تایید، مختصات موقت در مختصات اصلی ذخیره می‌شود
+                    setCoordinates(tempCoordinates);
                     setLocationSelected(true);
                     setIsMapModalOpen(false);
-                    // coordinates اکنون حاوی [lat, lng] دقیق است
-                    console.log('مختصات انتخاب شده:', coordinates); 
+                    console.log('مختصات انتخاب شده:', tempCoordinates); 
                   }} 
                   className="flex-1 md:flex-none px-6 py-2.5 rounded-xl bg-rose-600 text-white font-medium hover:bg-rose-700 transition-colors shadow-md shadow-rose-200 flex items-center justify-center gap-2"
                 >

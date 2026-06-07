@@ -106,6 +106,9 @@ export default function BookmarksPage() {
               const averageRating = totalVotes > 0 
                 ? (validReviews.reduce((acc: number, review: any) => acc + review.rating, 0) / totalVotes).toFixed(1)
                 : salon.rating ? String(salon.rating) : null;
+                
+              // تبدیل تگ‌ها برای جلوگیری از خطای رندر آبجکت
+              const salonTags = (salon.tags || []).map((t: any) => typeof t === 'object' && t !== null ? t.name : t);
 
               return (
                 <div 
@@ -156,17 +159,17 @@ export default function BookmarksPage() {
                       <span className="text-xs">{salon.address || 'بدون آدرس'}</span>
                     </div>
 
-                    {/* بخش تگ‌ها که اضافه شد */}
-                    {salon.tags && salon.tags.length > 0 && (
+                    {/* بخش تگ‌ها که اصلاح شد */}
+                    {salonTags && salonTags.length > 0 && (
                       <div className="flex flex-wrap gap-1.5 mb-4">
-                        {salon.tags.slice(0, 3).map((tag: string, idx: number) => (
+                        {salonTags.slice(0, 3).map((tag: string, idx: number) => (
                           <span key={idx} className="bg-zinc-100/80 text-zinc-600 text-[11px] px-2.5 py-1 rounded-md font-medium">
                             {tag}
                           </span>
                         ))}
-                        {salon.tags.length > 3 && (
+                        {salonTags.length > 3 && (
                           <span className="bg-zinc-100/80 text-zinc-500 text-[11px] px-2 py-1 rounded-md font-medium">
-                            +{salon.tags.length - 3}
+                            +{salonTags.length - 3}
                           </span>
                         )}
                       </div>
