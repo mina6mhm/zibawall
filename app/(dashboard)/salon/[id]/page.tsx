@@ -466,19 +466,29 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
             بازگشت
           </button>
 
-          <button 
+                    <button 
             onClick={toggleBookmark}
             className="flex items-center justify-center p-2 rounded-full hover:bg-zinc-100 transition-colors group"
             title={isBookmarked ? "حذف از نشان‌شده‌ها" : "افزودن به نشان‌شده‌ها"}
           >
-            <Bookmark 
+            {/* استفاده از SVG اختصاصی مشابه داشبورد */}
+            <svg 
+              viewBox="0 0 24 24" 
               className={`w-6 h-6 transition-colors ${
                 isBookmarked 
-                  ? "text-zinc-900 fill-zinc-900" 
+                  ? "text-zinc-900" 
                   : "text-zinc-500 group-hover:text-zinc-900"
-              }`} 
-            />
+              }`}
+              fill={isBookmarked ? "currentColor" : "none"} 
+              stroke="currentColor" 
+              strokeWidth="2.2" 
+              strokeLinecap="round" 
+              strokeLinejoin="round"
+            >
+              <path d="M6 4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v17.5l-6-4-6 4V4z" />
+            </svg>
           </button>
+
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">

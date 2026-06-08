@@ -1,4 +1,4 @@
-//app/(dashboard)/profile/business/page.tsx
+// app/(dashboard)/profile/business/page.tsx
 'use client';
 
 import { useState } from 'react';
@@ -26,9 +26,11 @@ import {
   ImagePlus,
   UploadCloud,
   FileText,
-  ImageIcon
+  ImageIcon,
+  CreditCard // <-- اضافه شد
 } from 'lucide-react';
 import RegionFilterModal from '@/components/RegionFilterModal'; 
+import SubscriptionPicker from '@/components/SubscriptionPicker'; // <-- اضافه شد
 
 // لود کردن نقشه فقط در سمت کلاینت
 const MapPicker = dynamic(() => import('@/components/MapPicker'), {
@@ -82,6 +84,9 @@ export default function BusinessRegistrationPage() {
   const [isMapModalOpen, setIsMapModalOpen] = useState(false);
   const [isRegionModalOpen, setIsRegionModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // استیت انتخاب پلن (اضافه شد)
+  const [selectedPlanId, setSelectedPlanId] = useState<string>('monthly');
 
   const [name, setName] = useState('');
   const [workingHours, setWorkingHours] = useState('');
@@ -215,7 +220,7 @@ export default function BusinessRegistrationPage() {
       }
     }
 
-    setStep(prev => Math.min(prev + 1, 4));
+    setStep(prev => Math.min(prev + 1, 5)); // تغییر از 4 به 5
   };
   const prevStep = () => setStep(prev => Math.max(prev - 1, 1));
 
@@ -310,12 +315,12 @@ export default function BusinessRegistrationPage() {
         phones: phones.filter(p => p.trim() !== ''),
         workingHours,
         closedDays,
-        // 👇 اینجا به جای selectedTags باید formattedTags ارسال شود
         tags: formattedTags, 
         description: description || 'توضیحات پیش‌فرض سالن', 
         socials,
         imageUrl: uploadedCoverUrl,             
-        portfolios: uploadedPortfolioUrls,      
+        portfolios: uploadedPortfolioUrls,   
+        planId: selectedPlanId, // <-- ارسال پلن انتخاب شده به بک‌اند (اضافه شد)
       };
 
       const res = await fetch('/api/salon', {
@@ -347,7 +352,7 @@ export default function BusinessRegistrationPage() {
         </Link>
         <div>
           <h1 className="text-2xl font-bold text-zinc-900">ثبت کسب‌وکار جدید</h1>
-          <p className="text-zinc-500 text-sm mt-1">مرحله {step.toLocaleString('fa-IR')} از ۴</p>
+          <p className="text-zinc-500 text-sm mt-1">مرحله {step.toLocaleString('fa-IR')} از ۵</p> {/* تغییر به 5 */}
         </div>
       </div>
 
@@ -357,7 +362,8 @@ export default function BusinessRegistrationPage() {
           { id: 1, title: 'اطلاعات پایه' },
           { id: 2, title: 'خدمات' },
           { id: 3, title: 'ارتباطات' },
-          { id: 4, title: 'تصاویر' }
+          { id: 4, title: 'تصاویر' },
+          { id: 5, title: 'اشتراک' } // <-- مرحله جدید اضافه شد
         ].map((item) => (
           <div key={item.id} className="flex flex-col items-center gap-2 bg-white px-2">
             <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm transition-colors ${
@@ -917,6 +923,24 @@ export default function BusinessRegistrationPage() {
           </div>
         )}
 
+        {/* ================= مرحله ۵: انتخاب اشتراک (اضافه شد) ================= */}
+        {step === 5 && (
+          <div className="space-y-6 animate-fade-in">
+            <div className="flex items-center gap-2 border-b border-zinc-100 pb-3">
+              <CreditCard className="text-zinc-700" size={24} />
+              <h2 className="text-lg font-semibold text-zinc-800">انتخاب پلن اشتراک</h2>
+            </div>
+            <p className="text-sm text-zinc-500 -mt-2">
+              برای نمایش کسب‌وکار شما در پلتفرم، لطفاً یک پلن اشتراک انتخاب کنید.
+            </p>
+            
+            <SubscriptionPicker 
+              selectedPlanId={selectedPlanId} 
+              onSelectPlan={setSelectedPlanId} 
+            />
+          </div>
+        )}
+
         {/* دکمه‌ های ناوبری (پایین فرم) */}
         <div className="mt-10 pt-6 border-t border-zinc-100 flex items-center justify-between">
           
@@ -926,7 +950,7 @@ export default function BusinessRegistrationPage() {
             </button>
           ) : <div></div>}
 
-          {step < 4 ? (
+          {step < 5 ? ( // تغییر از 4 به 5
             <button type="button" onClick={nextStep} className="flex items-center gap-2 bg-rose-600 text-white px-8 py-3 rounded-xl font-medium hover:bg-rose-700 transition shadow-lg shadow-rose-200">
               مرحله بعد <ArrowLeft size={20} />
             </button>
@@ -942,7 +966,7 @@ export default function BusinessRegistrationPage() {
               ) : (
                 <Save size={20} /> 
               )}
-              {isSubmitting ? 'در حال ثبت...' : 'ثبت و ذخیره'}
+              {isSubmitting ? 'در حال ثبت...' : 'ثبت و پرداخت'}
             </button>
           )}
 
