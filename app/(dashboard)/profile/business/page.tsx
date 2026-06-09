@@ -73,7 +73,6 @@ const SERVICE_DETAILS = {
 };
 
 const WEEK_DAYS = ['شنبه', 'یکشنبه', 'دوشنبه', 'سه‌شنبه', 'چهارشنبه', 'پنج‌شنبه', 'جمعه'];
-const MAX_PORTFOLIOS = 20;
 
 export default function BusinessRegistrationPage() {
   const router = useRouter();
@@ -86,7 +85,9 @@ export default function BusinessRegistrationPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // استیت انتخاب پلن (اضافه شد)
-  const [selectedPlanId, setSelectedPlanId] = useState<string>('monthly');
+  const [selectedPlanId, setSelectedPlanId] = useState<string>('monthly-advanced');
+
+  const maxPortfolios = selectedPlanId === 'monthly-advanced' ? 30 : 10;
 
   const [name, setName] = useState('');
   const [workingHours, setWorkingHours] = useState('');
@@ -184,17 +185,20 @@ export default function BusinessRegistrationPage() {
   const removeCoverImage = () => setCoverImage(null);
 
   // هندلر آپلود نمونه کارها
-  const handlePortfoliosUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handlePortfoliosUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       const filesArray = Array.from(e.target.files);
-      const availableSlots = MAX_PORTFOLIOS - portfolios.length;
+      const availableSlots = maxPortfolios - portfolios.length;
       const newFiles = filesArray.slice(0, availableSlots);
       
       if (newFiles.length > 0) {
         setPortfolios(prev => [...prev, ...newFiles]);
+      } else {
+        alert(`شما در این اشتراک حداکثر می‌توانید ${maxPortfolios} عکس آپلود کنید.`);
       }
     }
   };
+
 
   const removePortfolio = (index: number) => {
     setPortfolios(prev => prev.filter((_, i) => i !== index));
@@ -234,7 +238,7 @@ export default function BusinessRegistrationPage() {
     setSelectedNeighborhoods((prev) => prev.filter((nh) => nh !== nhToRemove));
   };
 
-  const handleSubmit = async () => {
+    const handleSubmit = async () => {
     if (!name || !selectedProvince || !selectedCity || !address || !workingHours) {
       alert('لطفاً تمام فیلدهای ستاره‌دار در مرحله اول را پر کنید.');
       return;
@@ -287,23 +291,16 @@ export default function BusinessRegistrationPage() {
       }
 
       const formattedTags = selectedTags.map(tagName => {
-        // ۱. ابتدا می‌گردد تا ببیند این تگ در خدمات پیش‌فرض کدام دسته است
         for (const [category, services] of Object.entries(SERVICE_DETAILS)) {
-          if (services.includes(tagName)) {
-            return { name: tagName, category: category };
-          }
+          if (services.includes(tagName)) return { name: tagName, category: category };
         }
-
         for (const [category, services] of Object.entries(customServices)) {
-          if (services.includes(tagName)) {
-            return { name: tagName, category: category };
-          }
+          if (services.includes(tagName)) return { name: tagName, category: category };
         }
-
-        return { name: tagName, category: 'سایر' }; // فقط برای رفع خطای احتمالی تایپ‌اسکریپت
+        return { name: tagName, category: 'سایر' };
       });
 
-      // --- ۳. ارسال اطلاعات نهایی به دیتابیس ---
+      // --- ۳. ارسال اطلاعات نهایی به دیتابیس (تغییر یافته برای درگاه پرداخت) ---
       const payload = {
         userPhone: user.phone,
         name,
@@ -320,25 +317,35 @@ export default function BusinessRegistrationPage() {
         socials,
         imageUrl: uploadedCoverUrl,             
         portfolios: uploadedPortfolioUrls,   
-        planId: selectedPlanId, // <-- ارسال پلن انتخاب شده به بک‌اند (اضافه شد)
+        planId: selectedPlanId, // ارسال شناسه پلن انتخابی
       };
 
-      const res = await fetch('/api/salon', {
+      // تغییر آدرس از /api/salon به API جدید برای ایجاد پرداخت
+      const response = await fetch('/api/business/create-pending', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
+        body: JSON.stringify(payload),
       });
 
-      if (res.ok) {
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || data.error || 'خطا در ارتباط با سرور');
+      }
+
+      // ۴. بررسی وجود لینک پرداخت و انتقال کاربر
+      if (data.paymentUrl) {
+        // اگر سرور لینک پرداخت برگرداند، کاربر را به درگاه منتقل کن
+        window.location.href = data.paymentUrl;
+      } else {
+        // اگر پرداخت نیاز نبود یا درگاه تستی بود
         alert('کسب‌وکار شما با موفقیت ثبت شد!');
         router.push('/');
-      } else {
-        const data = await res.json();
-        alert(`خطا: ${data.error}`);
       }
+
     } catch (error: any) {
       console.error(error);
-      alert(error.message || 'خطا در ارتباط با سرور. لطفاً اتصال اینترنت خود را بررسی کنید.');
+      alert(error.message || 'خطایی رخ داد. لطفاً دوباره تلاش کنید.');
     } finally {
       setIsSubmitting(false);
     }
@@ -367,18 +374,15 @@ export default function BusinessRegistrationPage() {
         ].map((item) => (
           <div key={item.id} className="flex flex-col items-center gap-2 bg-white px-2">
             <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm transition-colors ${
-              step >= item.id ? 'bg-rose-600 text-white shadow-md shadow-rose-200' : 'bg-zinc-100 text-zinc-500 border border-zinc-200'
+              step >= item.id ? 'bg-rose-600 text-white' : 'bg-zinc-100 text-zinc-500 border border-zinc-200'
             }`}>
               {step > item.id ? <CheckCircle2 size={20} /> : item.id.toLocaleString('fa-IR')}
             </div>
-            <span className={`text-xs md:text-sm font-medium ${step >= item.id ? 'text-rose-600' : 'text-zinc-400'}`}>
-              {item.title}
-            </span>
           </div>
         ))}
       </div>
 
-      <div className="bg-white rounded-2xl shadow-sm border border-zinc-100 p-5 md:p-8">
+      <div className="bg-white rounded-2xl border border-zinc-100 p-5 md:p-8">
         
         {/* ================= مرحله ۱: اطلاعات پایه ================= */}
         {step === 1 && (
@@ -873,14 +877,14 @@ export default function BusinessRegistrationPage() {
               <div className="flex items-center justify-between">
                 <h3 className="font-medium text-zinc-800">نمونه کارها (اختیاری)</h3>
                 <span className="text-xs bg-zinc-100 text-zinc-600 px-3 py-1 rounded-full font-medium">
-                  {portfolios.length.toLocaleString('fa-IR')} از {MAX_PORTFOLIOS.toLocaleString('fa-IR')}
+                  {portfolios.length.toLocaleString('fa-IR')} از {maxPortfolios.toLocaleString('fa-IR')}
                 </span>
               </div>
               <p className="text-sm text-zinc-500 -mt-2">
                 تصاویر باکیفیت از کارهای خود قرار دهید تا مشتریان بیشتری جذب کنید.
               </p>
               
-              {portfolios.length < MAX_PORTFOLIOS && (
+              {portfolios.length < maxPortfolios && (
                 <label className="cursor-pointer bg-zinc-50 border-2 border-dashed border-zinc-300 rounded-2xl p-8 flex flex-col items-center justify-center text-center gap-3 hover:bg-zinc-100 transition-colors">
                   <div className="w-14 h-14 bg-white text-rose-600 rounded-full flex items-center justify-center shadow-sm mb-2 border border-zinc-200">
                     <UploadCloud size={30} />
@@ -1026,7 +1030,6 @@ export default function BusinessRegistrationPage() {
           </div>
         </div>
       )}
-
     </div>
   );
 }

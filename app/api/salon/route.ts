@@ -1,73 +1,15 @@
 //app/api/salon/route.ts
 import { NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
+import { checkSubscriptions } from '@/lib/checkSubscriptions';
 
 const prisma = new PrismaClient();
 
 // ۱. اضافه شدن این خط برای جلوگیری از کش شدن و نمایش دیتای لحظه‌ای
 export const dynamic = 'force-dynamic';
 
-export async function POST(req: Request) {
-  try {
-    const body = await req.json();
-
-    const user = await prisma.user.findUnique({
-      where: { phone: body.userPhone }
-    });
-
-    if (!user) {
-      return NextResponse.json({ error: 'کاربر یافت نشد' }, { status: 404 });
-    }
-
-    const existingSalon = await prisma.salon.findUnique({
-      where: { userId: user.id }
-    });
-
-    if (existingSalon) {
-      return NextResponse.json({ error: 'شما قبلا یک کسب‌وکار ثبت کرده‌اید' }, { status: 400 });
-    }
-
-    const newSalon = await prisma.salon.create({
-      data: {
-        name: body.name,
-        province: body.province,
-        city: body.city,
-        neighborhoods: body.neighborhoods || [],
-        address: body.address,
-        phones: body.phones,
-        workingHours: body.workingHours,
-        closedDays: body.closedDays,
-        tags: body.tags,
-        description: body.description,
-        imageUrl: body.imageUrl,
-        portfolios: body.portfolios || [],
-        userId: user.id,
-
-        lat: body.coordinates && body.coordinates.length === 2 ? body.coordinates[0] : null,
-        lng: body.coordinates && body.coordinates.length === 2 ? body.coordinates[1] : null,
-        
-        socials: {
-          create: {
-            website: body.socials.website || null,
-            instagram: body.socials.instagram || null,
-            whatsapp: body.socials.whatsapp || null,
-            telegram: body.socials.telegram || null,
-            rubika: body.socials.rubika || null,
-            bale: body.socials.bale || null,
-          }
-        }
-      }
-    });
-
-    return NextResponse.json({ success: true, salon: newSalon }, { status: 201 });
-
-  } catch (error) {
-    console.error('Error creating salon:', error);
-    return NextResponse.json({ error: 'خطای سرور در ثبت اطلاعات' }, { status: 500 });
-  }
-}
-
 export async function GET(req: Request) {
+ await checkSubscriptions();
   try {
     const { searchParams } = new URL(req.url);
     const userPhone = searchParams.get('userPhone');
@@ -75,22 +17,36 @@ export async function GET(req: Request) {
     // اگر شماره تلفن ارسال نشده بود (دریافت همه سالن‌ها برای صفحه اصلی)
     if (!userPhone) {
       const allSalons = await prisma.salon.findMany({
-        orderBy: { createdAt: 'desc' },
-        // ۲. اضافه شدن include برای دریافت نظرات هر سالن جهت محاسبه صحیح امتیازات
-        include: {
-          reviews: true,
-        },
-      });
-      
-      const formattedSalons = allSalons.map(s => ({
-        ...s,
-        coordinates: (s.lat && s.lng) ? [s.lat, s.lng] : null
-      }));
+  where: {
+    status: 'ACTIVE',
+    subscriptionExpiresAt: {
+      gt: new Date(),
+    },
+  },
+  include: {
+    reviews: true,
+  },
+});
 
-      return NextResponse.json({ salons: formattedSalons }, { status: 200 });
-    }
+const sortedSalons = allSalons.sort((a, b) => {
+  const aAdvanced = a.planId === 'monthly-advanced' ? 1 : 0;
+  const bAdvanced = b.planId === 'monthly-advanced' ? 1 : 0;
 
-    // دریافت سالن یک کاربر خاص (صفحه ویرایش)
+  if (aAdvanced !== bAdvanced) {
+    return bAdvanced - aAdvanced;
+  }
+
+  return (
+    new Date(b.createdAt).getTime() -
+    new Date(a.createdAt).getTime()
+  );
+});
+
+return NextResponse.json(
+  { salons: sortedSalons },
+  { status: 200 }
+);
+  }
     const user = await prisma.user.findUnique({
       where: { phone: userPhone }
     });
@@ -141,6 +97,24 @@ export async function PUT(req: Request) {
       return NextResponse.json({ error: 'سالنی برای ویرایش یافت نشد' }, { status: 404 });
     }
 
+    const maxPortfolios =
+  existingSalon.planId === 'monthly-advanced'
+    ? 30
+    : 10;
+
+if (
+  body.portfolios &&
+  body.portfolios.length > maxPortfolios
+) {
+  return NextResponse.json(
+    {
+      error: `حداکثر ${maxPortfolios} نمونه کار مجاز است`
+    },
+    {
+      status: 400
+    }
+  );
+}
     const updatedSalon = await prisma.salon.update({
       where: { userId: user.id },
       data: {
