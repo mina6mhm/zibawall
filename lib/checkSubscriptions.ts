@@ -1,6 +1,5 @@
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+//lib/checkSubscriptions.ts
+import { prisma } from '@/lib/prisma';
 
 export async function checkSubscriptions() {
   const now = new Date();
@@ -43,7 +42,7 @@ export async function checkSubscriptions() {
 
     if (!salon.user?.phone) continue;
 
-    // ارسال پیامک
+    //  ارسال پیامک
     // await sendSms(...)
 
     await prisma.salon.update({

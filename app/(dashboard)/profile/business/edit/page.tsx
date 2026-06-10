@@ -69,11 +69,11 @@ const SERVICE_DETAILS = {
 };
 
 const WEEK_DAYS = ['شنبه', 'یکشنبه', 'دوشنبه', 'سه‌شنبه', 'چهارشنبه', 'پنج‌شنبه', 'جمعه'];
-const MAX_PORTFOLIOS = 20;
 
 export default function BusinessEditPage() {
   const router = useRouter();
-  
+  const [userPlan, setUserPlan] = useState<'normal' | 'advanced'>('normal');
+  const [maxPortfolios, setMaxPortfolios] = useState<number>(10);
   // استیت‌های مربوط به مراحل و رابط کاربری
   const [step, setStep] = useState(1);
   const [isLoadingData, setIsLoadingData] = useState(true);
@@ -209,6 +209,11 @@ export default function BusinessEditPage() {
             if (salon.portfolios && Array.isArray(salon.portfolios)) {
               setExistingPortfolios(salon.portfolios);
             }
+            if (salon.planId === 'monthly-advanced') {
+              setMaxPortfolios(30);
+            } else {
+              setMaxPortfolios(10);
+            }
           } else {
             router.push('/profile/business');
           }
@@ -290,7 +295,7 @@ export default function BusinessEditPage() {
     if (e.target.files) {
       const filesArray = Array.from(e.target.files);
       const currentTotal = existingPortfolios.length + portfolios.length;
-      const availableSlots = MAX_PORTFOLIOS - currentTotal;
+      const availableSlots = maxPortfolios - currentTotal; // استفاده از استیت داینامیک
       const newFiles = filesArray.slice(0, availableSlots);
       if (newFiles.length > 0) setPortfolios(prev => [...prev, ...newFiles]);
     }
@@ -869,16 +874,16 @@ export default function BusinessEditPage() {
               )}
             </div>
 
-            {/* بخش دوم: نمونه کارها */}
+                        {/* بخش دوم: نمونه کارها */}
             <div className="space-y-4 pt-4 border-t border-zinc-100">
               <div className="flex items-center justify-between">
                 <h3 className="font-medium text-zinc-800">نمونه کارها (اختیاری)</h3>
                 <span className="text-xs bg-zinc-100 text-zinc-600 px-3 py-1 rounded-full font-medium">
-                  {totalPortfoliosCount.toLocaleString('fa-IR')} از {MAX_PORTFOLIOS.toLocaleString('fa-IR')} تصویر
+                  {totalPortfoliosCount.toLocaleString('fa-IR')} از {maxPortfolios.toLocaleString('fa-IR')} تصویر
                 </span>
               </div>
               
-              {totalPortfoliosCount < MAX_PORTFOLIOS && (
+              {totalPortfoliosCount < maxPortfolios && (
                 <label className="cursor-pointer bg-zinc-50 border-2 border-dashed border-zinc-300 rounded-2xl p-8 flex flex-col items-center justify-center text-center gap-3 hover:bg-zinc-100 transition-colors">
                   <div className="w-14 h-14 bg-white text-rose-600 rounded-full flex items-center justify-center shadow-sm mb-2 border border-zinc-200">
                     <UploadCloud size={30} />
@@ -893,7 +898,6 @@ export default function BusinessEditPage() {
                   />
                 </label>
               )}
-
 
               {totalPortfoliosCount > 0 && (
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 mt-6">

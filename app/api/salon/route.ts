@@ -1,9 +1,8 @@
 //app/api/salon/route.ts
 import { NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
 import { checkSubscriptions } from '@/lib/checkSubscriptions';
 
-const prisma = new PrismaClient();
+import { prisma } from '@/lib/prisma';
 
 // ۱. اضافه شدن این خط برای جلوگیری از کش شدن و نمایش دیتای لحظه‌ای
 export const dynamic = 'force-dynamic';
@@ -27,7 +26,7 @@ export async function GET(req: Request) {
     reviews: true,
   },
 });
-
+  
 const sortedSalons = allSalons.sort((a, b) => {
   const aAdvanced = a.planId === 'monthly-advanced' ? 1 : 0;
   const bAdvanced = b.planId === 'monthly-advanced' ? 1 : 0;
@@ -66,7 +65,11 @@ return NextResponse.json(
 
     const formattedSalon = {
       ...salon,
-      coordinates: (salon.lat && salon.lng) ? [salon.lat, salon.lng] : null
+      coordinates:
+       salon.lat !== null &&
+       salon.lng !== null
+       ? [salon.lat, salon.lng]
+       : null  
     };
 
     return NextResponse.json({ salon: formattedSalon }, { status: 200 });
@@ -108,7 +111,7 @@ if (
 ) {
   return NextResponse.json(
     {
-      error: `حداکثر ${maxPortfolios} نمونه کار مجاز است`
+     error: `حداکثر ${maxPortfolios} نمونه کار مجاز است`
     },
     {
       status: 400
@@ -171,25 +174,45 @@ export async function DELETE(req: Request) {
     const id = searchParams.get('id');
 
     if (!id) {
-      return NextResponse.json({ error: 'آیدی کسب‌وکار ارسال نشده است' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'آیدی کسب‌وکار ارسال نشده است' },
+        { status: 400 }
+      );
     }
 
-    const existingSalon = await prisma.salon.findUnique({
-      where: { id }
+    const salon = await prisma.salon.findUnique({
+      where: { id },
     });
 
-    if (!existingSalon) {
-      return NextResponse.json({ error: 'کسب‌وکاری یافت نشد' }, { status: 404 });
+    if (!salon) {
+      return NextResponse.json(
+        { error: 'کسب‌وکاری یافت نشد' },
+        { status: 404 }
+      );
     }
 
+    // تغییر این بخش: استفاده از delete به جای update
     await prisma.salon.delete({
-      where: { id }
+      where: { id },
     });
 
-    return NextResponse.json({ success: true, message: 'کسب‌وکار با موفقیت حذف شد' }, { status: 200 });
-
+    return NextResponse.json(
+      {
+        success: true,
+        message: 'کسب‌وکار با موفقیت کامل حذف شد',
+      },
+      { status: 200 }
+    );
   } catch (error) {
-    console.error('Error deleting salon:', error);
-    return NextResponse.json({ error: 'خطای سرور در حذف اطلاعات' }, { status: 500 });
+    console.error(error);
+
+    return NextResponse.json(
+      {
+        error: 'خطای سرور در حذف کسب‌وکار',
+      },
+      {
+        status: 500,
+      }
+    );
   }
 }

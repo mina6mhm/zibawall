@@ -87,7 +87,7 @@ export default function BusinessRegistrationPage() {
   // استیت انتخاب پلن (اضافه شد)
   const [selectedPlanId, setSelectedPlanId] = useState<string>('monthly-advanced');
 
-  const maxPortfolios = selectedPlanId === 'monthly-advanced' ? 30 : 10;
+  const maxPortfolios = 10; // سقف پیش‌فرض برای همه در مرحله ساخت کسب‌وکار
 
   const [name, setName] = useState('');
   const [workingHours, setWorkingHours] = useState('');
@@ -333,15 +333,28 @@ export default function BusinessRegistrationPage() {
         throw new Error(data.message || data.error || 'خطا در ارتباط با سرور');
       }
 
-      // ۴. بررسی وجود لینک پرداخت و انتقال کاربر
-      if (data.paymentUrl) {
-        // اگر سرور لینک پرداخت برگرداند، کاربر را به درگاه منتقل کن
+      // ۴. بررسی وجود لینک پرداخت و انتقال 
+      if (data.success) {
+        // اگر API پاسخ موفقیت‌آمیز داد (با تغییراتی که در سرور اعمال کردیم)
+        alert('کسب‌وکار شما با موفقیت ثبت و فعال شد!');
+        router.push('/'); // هدایت به داشبورد
+      } else if (data.paymentUrl) {
+        // این بخش برای سازگاری با حالت آنلاین (در آینده) باقی می‌ماند
         window.location.href = data.paymentUrl;
       } else {
-        // اگر پرداخت نیاز نبود یا درگاه تستی بود
+        // حالت fallback
         alert('کسب‌وکار شما با موفقیت ثبت شد!');
         router.push('/');
       }
+
+     // if (data.paymentUrl) {
+        // اگر سرور لینک پرداخت برگرداند، کاربر را به درگاه منتقل کن
+      //  window.location.href = data.paymentUrl;
+     // } else {
+        // اگر پرداخت نیاز نبود یا درگاه تستی بود
+      //  alert('کسب‌وکار شما با موفقیت ثبت شد!');
+      //  router.push('/');
+    //  }
 
     } catch (error: any) {
       console.error(error);
@@ -900,7 +913,9 @@ export default function BusinessRegistrationPage() {
                   />
                 </label>
               )}
-
+<p className="text-xs text-blue-600 mb-4 bg-blue-50 p-2 rounded-md">
+  در مرحله ثبت اولیه امکان آپلود حداکثر ۱۰ نمونه‌کار وجود دارد. در صورت خرید اشتراک پیشرفته، پس از تکمیل ثبت‌نام می‌توانید تا ۳۰ نمونه‌کار به پروفایل خود اضافه کنید.
+</p>
               {portfolios.length > 0 && (
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 mt-6">
                   {portfolios.map((file, index) => (

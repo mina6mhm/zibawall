@@ -1,9 +1,7 @@
 // app/api/business/create-pending/route.ts
 
 import { NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { prisma } from '@/lib/prisma';
 
 // قیمت پلن‌ها باید در سرور تعریف شود تا امنیت حفظ شود
 const PLAN_PRICES: { [key: string]: number } = {
@@ -33,95 +31,58 @@ export async function POST(request: Request) {
 
     // بررسی اینکه آیا کاربر قبلاً سالن ثبت کرده یا نه
     const existingSalon = await prisma.salon.findUnique({
-  where: {
-    userId: user.id,
-  },
-  include: {
-    payments: true,
-  },
-});
-
-if (existingSalon) {
-
-  // اگر قبلاً سالن فعال یا غیرفعال دارد
-  if (
-    existingSalon.status === 'ACTIVE' ||
-    existingSalon.status === 'INACTIVE'
-  ) {
-    return NextResponse.json(
-      {
-        message: 'شما قبلاً یک سالن ثبت کرده‌اید.',
-      },
-      {
-        status: 409,
-      }
-    );
-  }
-
-  // فقط برای PENDING_PAYMENT
-  const tenMinutesAgo = new Date(
-    Date.now() - 10 * 60 * 1000
-  );
-
-  const isExpiredPending =
-    existingSalon.status === 'PENDING_PAYMENT' &&
-    existingSalon.createdAt < tenMinutesAgo;
-
-  // اگر پرداخت منقضی شده باشد حذفش می‌کنیم
-  if (isExpiredPending) {
-    await prisma.salon.delete({
-      where: {
-        id: existingSalon.id,
-      },
+      where: { userId: user.id },
+      include: { payments: true },
     });
-  } else {
-    // هنوز 10 دقیقه تمام نشده
-    return NextResponse.json(
-      {
-        message:
-          'درخواست پرداخت قبلی شما هنوز فعال است. لطفاً پرداخت را تکمیل کنید یا چند دقیقه دیگر دوباره تلاش کنید.',
-      },
-      {
-        status: 409,
+
+    if (existingSalon) {
+      if (existingSalon.status === 'ACTIVE' || existingSalon.status === 'INACTIVE') {
+        return NextResponse.json({ message: 'شما قبلاً یک سالن ثبت کرده‌اید.' }, { status: 409 });
       }
-    );
-  }
-}
+
+      const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000);
+      const isExpiredPending = existingSalon.status === 'PENDING_PAYMENT' && existingSalon.createdAt < tenMinutesAgo;
+
+      if (isExpiredPending) {
+        await prisma.salon.delete({ where: { id: existingSalon.id } });
+      } else {
+        return NextResponse.json(
+          { message: 'درخواست پرداخت قبلی شما هنوز فعال است. لطفاً پرداخت را تکمیل کنید یا چند دقیقه دیگر دوباره تلاش کنید.' },
+          { status: 409 }
+        );
+      }
+    }
+
     // ۳. تعیین قیمت از روی شناسه پلن
     const amount = PLAN_PRICES[planId];
     if (!amount) {
       return NextResponse.json({ message: 'پلن اشتراک نامعتبر است.' }, { status: 400 });
     }
 
-    const maxPortfolios =
-  planId === 'monthly-advanced'
-    ? 30
-    : 10;
+    // در مرحله ثبت‌نام اولیه، همه کاربران نهایتاً 10 نمونه‌کار می‌توانند آپلود کنند
+const MAX_INITIAL_PORTFOLIOS = 10;
 
-if (
-  portfolios &&
-  portfolios.length > maxPortfolios
-) {
-  return NextResponse.json(
-    {
-      message: `حداکثر ${maxPortfolios} نمونه کار مجاز است`
-    },
-    {
-      status: 400
-    }
-  );
+if (portfolios && portfolios.length > MAX_INITIAL_PORTFOLIOS) {
+  return NextResponse.json({ 
+    message: `در مرحله ثبت اولیه، حداکثر ${MAX_INITIAL_PORTFOLIOS} نمونه کار مجاز است.` 
+  }, { status: 400 });
 }
     
-    // ۴. ساخت سالن با وضعیت "در انتظار پرداخت"
+    // --- تغییر اول: محاسبه تاریخ انقضای اشتراک (مثلاً ۱ ماه بعد) ---
+    const expirationDate = new Date();
+    expirationDate.setMonth(expirationDate.getMonth() + 1);
+
+    // ۴. ساخت سالن با وضعیت "فعال" به جای "در انتظار پرداخت"
     const newSalon = await prisma.salon.create({
         data: {
           name, province, city, neighborhoods, address,
           lat: coordinates?.[0], lng: coordinates?.[1],
           phones, workingHours, closedDays, tags, description, imageUrl, portfolios,
           planId,
-          status: 'PENDING_PAYMENT', // وضعیت اولیه
+          status: 'ACTIVE', // --- تغییر دوم: وضعیت به ACTIVE تغییر یافت ---
+          subscriptionExpiresAt: expirationDate, // --- تغییر سوم: ثبت تاریخ انقضا ---
           userId: user.id,
-          socials: { // ساخت ردیف شبکه‌های اجتماعی مرتبط
+          socials: { 
             create: {
               website: socials.website, instagram: socials.instagram, whatsapp: socials.whatsapp,
               telegram: socials.telegram, rubika: socials.rubika, bale: socials.bale,
@@ -130,6 +91,8 @@ if (
         },
     });
 
+    // --- تغییر چهارم: کامنت کردن موقت سیستم پرداخت و زرین پال ---
+    /*
     // ۵. ساخت رکورد پرداخت برای این سالن
     const newPayment = await prisma.payment.create({
         data: { amount, planId, status: 'PENDING', salonId: newSalon.id }
@@ -141,7 +104,7 @@ if (
     
     const zarinpalPayload = {
       merchant_id: merchantId,
-      amount: amount, // زرین پال تومان دریافت می‌کند
+      amount: amount * 10,
       callback_url: callbackUrl,
       description: `خرید اشتراک برای سالن ${name}`,
       metadata: { mobile: userPhone },
@@ -170,6 +133,14 @@ if (
     // ۸. ارسال لینک پرداخت به فرانت‌اند
     const paymentUrl = `https://www.zarinpal.com/pg/StartPay/${authority}`;
     return NextResponse.json({ paymentUrl });
+    */
+
+    // --- تغییر پنجم: بازگرداندن پیام موفقیت به جای لینک پرداخت ---
+    return NextResponse.json({ 
+      success: true, 
+      salonId: newSalon.id, 
+      message: 'سالن با موفقیت ثبت و فعال شد' 
+    });
 
   } catch (error) {
     console.error('Create-Pending Error:', error);

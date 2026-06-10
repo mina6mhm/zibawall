@@ -60,6 +60,7 @@ model Salon {
   updatedAt             DateTime    @updatedAt
 
   @@index([status])
+  @@index([status, subscriptionExpiresAt])
 }
 
 // جدول شبکه های اجتماعی (Socials)

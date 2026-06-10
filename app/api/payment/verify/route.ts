@@ -1,10 +1,10 @@
 // app/api/payment/verify/route.ts
 
 import { NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
 import { add } from 'date-fns'; // کتابخانه برای محاسبات تاریخ
 
-const prisma = new PrismaClient();
+export const dynamic = 'force-dynamic';
+import { prisma } from '@/lib/prisma';
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
@@ -33,12 +33,16 @@ export async function GET(request: Request) {
     const verificationRes = await fetch('https://api.zarinpal.com/pg/v4/payment/verify.json', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-      body: JSON.stringify({ merchant_id: merchantId, authority, amount }),
+      body: JSON.stringify({
+        merchant_id: merchantId,
+        authority,
+        amount: amount * 10
+      }),
     });
 
     const verificationData = await verificationRes.json();
     
-    if (verificationData.errors.length > 0) {
+    if (verificationData?.errors?.length > 0) {
       await prisma.payment.update({ where: { id: payment.id }, data: { status: 'FAILED' } });
       return NextResponse.redirect(`${redirectBaseUrl}/payment/failed?error=verification_failed`);
     }
@@ -60,7 +64,6 @@ export async function GET(request: Request) {
     id: payment.salonId,
   },
 });
-
 const currentExpireDate =
   salon?.subscriptionExpiresAt &&
   salon.subscriptionExpiresAt > new Date()
@@ -82,7 +85,7 @@ await tx.salon.update({
     reminderSentAt: null,
   },
 });
-
+});
       // هدایت کاربر به صفحه پروفایل با پیام موفقیت
       return NextResponse.redirect(`${redirectBaseUrl}/profile/business?payment=success`);
     } else {
