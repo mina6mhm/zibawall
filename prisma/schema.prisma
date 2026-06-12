@@ -43,7 +43,7 @@ model Salon {
 
   // فیلدهای جدید برای سیستم اشتراک
   status                SalonStatus @default(PENDING_PAYMENT)
-  planId                String?     
+  planId                String?
   subscriptionExpiresAt DateTime?
   reminderSentAt        DateTime?
   
