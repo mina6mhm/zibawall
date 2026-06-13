@@ -1,10 +1,10 @@
 // app/(dashboard)/bookmarks/page.tsx
-
 'use client';
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
+// کامپوننت آیکون بوک‌مارک (مشابه قبل)
 const BookmarkIcon = ({ isActive, className }: { isActive: boolean, className?: string }) => (
   <svg viewBox="0 0 24 24" className={className} 
        stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"
@@ -27,7 +27,6 @@ export default function BookmarksPage() {
       setIsLoading(true);
       setError(null);
       try {
-        // خواندن آیدی‌های نشان‌شده از لوکال استوریج
         const savedBookmarksStr = localStorage.getItem('bookmarkedSalons');
         const bookmarkIds = savedBookmarksStr ? JSON.parse(savedBookmarksStr) : [];
         setSavedBookmarkIds(bookmarkIds);
@@ -38,7 +37,6 @@ export default function BookmarksPage() {
           return;
         }
 
-        // دریافت همه سالن‌ها
         const response = await fetch('/api/salon');
         if (!response.ok) {
           throw new Error('خطا در دریافت اطلاعات سالن‌ها');
@@ -46,7 +44,6 @@ export default function BookmarksPage() {
         
         const data = await response.json();
         
-        // فیلتر کردن سالن‌هایی که در لیست نشان‌شده‌ها هستند
         if (data.salons) {
           const filtered = data.salons.filter((salon: any) => bookmarkIds.includes(salon.id));
           setBookmarkedSalons(filtered);
@@ -63,24 +60,19 @@ export default function BookmarksPage() {
   }, []);
 
   const handleRemoveBookmark = (salonId: number | string, e: React.MouseEvent) => {
-    e.stopPropagation();
+    e.stopPropagation(); // جلوگیری از فعال شدن کلیک روی کارت
     
-    // حذف از لوکال استوریج
     const updatedIds = savedBookmarkIds.filter((id) => id !== salonId);
     localStorage.setItem('bookmarkedSalons', JSON.stringify(updatedIds));
     setSavedBookmarkIds(updatedIds);
-
-    // حذف از لیست نمایش
     setBookmarkedSalons((prev) => prev.filter((salon) => salon.id !== salonId));
   };
 
   return (
     <div className="flex flex-col min-h-screen bg-white pb-24">
-        {/* هدر */}
       <div className="sticky top-0 z-20 bg-white px-4 pt-5 pb-4 border-b border-zinc-100">
         <div className="flex justify-between items-center w-full">
           <h1 className="text-xl font-bold text-zinc-900">نشان‌شده‌ها</h1>
-          {/* لوگو سایت (چپ) */}
           <img 
             src="/logo.png" 
             alt="لوگو زیباوال" 
@@ -92,48 +84,51 @@ export default function BookmarksPage() {
       <div className="px-4 mt-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           {isLoading ? (
-            [1, 2].map((n) => (
-              <div key={n} className="bg-zinc-100 rounded-[10px] h-[340px] animate-pulse"></div>
+            // placeholder برای زمان بارگذاری (مشابه صفحه اصلی)
+            [1, 2, 3, 4].map((n) => (
+              <div key={n} className="bg-zinc-100 rounded-[10px] h-[300px] sm:h-[340px] animate-pulse"></div>
             ))
           ) : error ? (
             <div className="col-span-full py-8 text-center text-red-500 font-medium">{error}</div>
           ) : bookmarkedSalons.length > 0 ? (
             bookmarkedSalons.map((salon) => {
-              // محاسبه تعداد رای و میانگین مشابه صفحه اصلی
               const salonReviews = salon.reviews || [];
               const validReviews = salonReviews.filter((review: any) => review.rating && review.rating > 0);
               const totalVotes = validReviews.length;
               const averageRating = totalVotes > 0 
                 ? (validReviews.reduce((acc: number, review: any) => acc + review.rating, 0) / totalVotes).toFixed(1)
                 : salon.rating ? String(salon.rating) : null;
-                
-              // تبدیل تگ‌ها برای جلوگیری از خطای رندر آبجکت
               const salonTags = (salon.tags || []).map((t: any) => typeof t === 'object' && t !== null ? t.name : t);
 
               return (
+                // --- شروع تغییرات ظاهری کارت برای هماهنگی با صفحه اصلی ---
                 <div 
                   key={salon.id}
                   onClick={() => router.push(`/salon/${salon.id}`)}
                   className="cursor-pointer bg-white rounded-[10px] border border-zinc-200 overflow-hidden shadow-sm hover:shadow-md transition-shadow flex flex-col group relative"
                 >
-                  <div className="h-44 w-full bg-zinc-200 relative overflow-hidden">
+                  {/* ارتفاع تصویر کارت برای موبایل کم شده، برای دسکتاپ افزایش می‌یابد */}
+                  <div className="h-28 sm:h-40 w-full bg-zinc-200 relative overflow-hidden"> 
                     {salon.imageUrl ? (
                       <img src={salon.imageUrl} alt={salon.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-zinc-400 bg-zinc-100 text-sm">بدون تصویر</div>
                     )}
                     
+                    {/* دکمه حذف بوک‌مارک با استایل مشابه دکمه بوک‌مارک صفحه اصلی */}
                     <button 
                       onClick={(e) => handleRemoveBookmark(salon.id, e)}
-                      className="absolute top-3 right-3 w-8 h-8 bg-white/90 backdrop-blur rounded-full flex items-center justify-center transition-colors shadow-sm z-10 text-black hover:text-zinc-700"
+                      className={`absolute top-3 right-3 w-8 h-8 bg-white/90 backdrop-blur rounded-full flex items-center justify-center transition-colors shadow-sm z-10 text-black hover:text-zinc-700`} // استایل دکمه حذف
                       title="حذف از نشان‌شده‌ها"
                     >
                       <BookmarkIcon isActive={true} className="w-[18px] h-[18px]" />
                     </button>
                   </div>
 
-                  <div className="p-4 flex flex-col flex-grow">
-                    <div className="flex justify-between items-start mb-2">
+                  {/* پدینگ داخل کارت در موبایل کم شده، برای دسکتاپ افزایش می‌یابد */}
+                  <div className="p-3 sm:p-4 flex flex-col flex-grow"> 
+                    {/* فاصله‌های داخلی کارت کمی فشرده‌تر شده‌اند */}
+                    <div className="flex justify-between items-start mb-1.5"> 
                       <h3 className="font-bold text-zinc-900 text-base">{salon.name}</h3>
                       
                       <div className="flex items-center gap-1.5 shrink-0">
@@ -150,8 +145,7 @@ export default function BookmarksPage() {
                         )}
                       </div>
                     </div>
-                    
-                    <div className="flex items-center gap-1.5 text-zinc-500 mb-3">
+                    <div className="flex items-center gap-1.5 text-zinc-500 mb-2"> 
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                         <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
                         <circle cx="12" cy="10" r="3" />
@@ -159,9 +153,8 @@ export default function BookmarksPage() {
                       <span className="text-xs">{salon.address || 'بدون آدرس'}</span>
                     </div>
 
-                    {/* بخش تگ‌ها که اصلاح شد */}
                     {salonTags && salonTags.length > 0 && (
-                      <div className="flex flex-wrap gap-1.5 mb-4">
+                      <div className="flex flex-wrap gap-1.5 mb-3"> 
                         {salonTags.slice(0, 3).map((tag: string, idx: number) => (
                           <span key={idx} className="bg-zinc-100/80 text-zinc-600 text-[11px] px-2.5 py-1 rounded-md font-medium">
                             {tag}
@@ -175,12 +168,12 @@ export default function BookmarksPage() {
                       </div>
                     )}
 
-                    <div className="border-t border-zinc-100 pt-3 flex items-center justify-between mt-auto">
+                    <div className="border-t border-zinc-100 pt-2.5 flex items-center justify-between mt-auto"> 
                       {(salon.phone || (salon.phones && salon.phones.length > 0)) && (
                         <a 
                           href={`tel:${salon.phone || salon.phones[0]}`}
                           onClick={(e) => e.stopPropagation()}
-                          className="bg-zinc-900 text-white text-sm font-bold px-6 py-2.5 rounded-[6px] hover:bg-black transition-colors shadow-sm inline-flex items-center justify-center"
+                          className="bg-zinc-900 text-white text-sm font-bold px-5 py-2 rounded-[6px] hover:bg-black transition-colors shadow-sm inline-flex items-center justify-center" 
                         >
                           تماس
                         </a>
@@ -188,9 +181,11 @@ export default function BookmarksPage() {
                     </div>
                   </div>
                 </div>
+                // --- پایان تغییرات ظاهری کارت ---
               );
             })
           ) : (
+            // پیام برای زمانی که لیست بوک‌مارک خالی است (مشابه صفحه اصلی)
             <div className="col-span-full py-16 text-center flex flex-col items-center justify-center">
               <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" className="text-zinc-200 mb-4">
                 <path d="M6 4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v17.5l-6-4-6 4V4z" />
