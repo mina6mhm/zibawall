@@ -12,12 +12,6 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'شماره موبایل نامعتبر است' }, { status: 400 });
     }
 
-    // 👈 اضافه کردن شماره تست برای دور زدن ارسال پیامک
-    if (mobile === '09109827633') {
-      console.log(`\n🔑 ورود با اکانت تست: ${mobile} - بدون ارسال پیامک\n`);
-      return NextResponse.json({ message: 'کد با موفقیت ارسال/تولید شد' }, { status: 200 });
-    }
-
     // تولید کد ۵ رقمی تصادفی
     const otpCode = Math.floor(10000 + Math.random() * 90000).toString();
     const expiresAt = new Date(Date.now() + 2 * 60 * 1000); // 2 دقیقه اعتبار
@@ -45,7 +39,7 @@ export async function POST(req: Request) {
           templateId: 193575, // شناسه قالب شما
           parameters: [
             {
-              name: "CODE", 
+              name: "CODE", // نام متغیر در پنل sms.ir
               value: otpCode
             }
           ]
@@ -60,6 +54,7 @@ export async function POST(req: Request) {
       console.error("⚠️ هشدار: خطای شبکه در ارسال پیامک", smsError);
     }
 
+    // بازگرداندن پاسخ موفقیت آمیز به فرانت‌اند
     return NextResponse.json({ message: 'کد با موفقیت ارسال/تولید شد' }, { status: 200 });
 
   } catch (error) {
