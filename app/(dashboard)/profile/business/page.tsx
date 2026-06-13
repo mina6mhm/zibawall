@@ -851,28 +851,28 @@ export default function BusinessRegistrationPage() {
           </div>
         )}
 
-        {/* ================= مرحله ۴: تصاویر و نمونه کارها ================= */}
+                {/* ================= مرحله ۴: تصاویر و نمونه کارها ================= */}
         {step === 4 && (
-          <div className="space-y-10 animate-fade-in">
-            <div className="flex items-center gap-2 border-b border-zinc-100 pb-3">
-              <ImagePlus className="text-zinc-700" size={24} />
-              <h2 className="text-lg font-semibold text-zinc-800">تصاویر سالن</h2>
+          <div className="space-y-6 md:space-y-10 animate-fade-in">
+            <div className="flex items-center gap-1.5 md:gap-2 border-b border-zinc-100 pb-2 md:pb-3">
+              <ImagePlus className="text-zinc-700 w-5 h-5 md:w-6 md:h-6" />
+              <h2 className="text-base md:text-lg font-semibold text-zinc-800">تصاویر سالن</h2>
             </div>
 
             {/* بخش اول: کاور اصلی */}
-            <div className="space-y-4">
+            <div className="space-y-3 md:space-y-4">
               <div className="flex items-center justify-between">
-                <h3 className="font-medium text-zinc-800">عکس کاور اصلی <span className="text-red-500">*</span></h3>
-                <span className="text-xs text-zinc-500">برای نمایش در صفحه اصلی سالن</span>
+                <h3 className="text-sm md:text-base font-medium text-zinc-800">عکس کاور اصلی <span className="text-red-500">*</span></h3>
+                <span className="text-[10px] md:text-xs text-zinc-500">برای نمایش در صفحه اصلی سالن</span>
               </div>
               
               {!coverImage ? (
-                <label className="cursor-pointer bg-zinc-50 border-2 border-dashed border-zinc-300 rounded-2xl p-8 flex flex-col items-center justify-center text-center gap-3 hover:bg-zinc-100 transition-colors">
-                  <div className="w-14 h-14 bg-white text-rose-600 rounded-full flex items-center justify-center shadow-sm mb-2 border border-zinc-200">
-                    <ImageIcon size={30} />
+                <label className="cursor-pointer bg-zinc-50 border-2 border-dashed border-zinc-300 rounded-xl md:rounded-2xl p-5 md:p-8 flex flex-col items-center justify-center text-center gap-2 md:gap-3 hover:bg-zinc-100 transition-colors">
+                  <div className="w-10 h-10 md:w-14 md:h-14 bg-white text-rose-600 rounded-full flex items-center justify-center shadow-sm mb-1 md:mb-2 border border-zinc-200">
+                    <ImageIcon className="w-5 h-5 md:w-7 md:h-7" />
                   </div>
-                  <h3 className="font-medium text-zinc-800">برای آپلود کاور اصلی کلیک کنید</h3>
-                  <p className="text-sm text-zinc-500">فرمت‌های مجاز: JPG, PNG, WEBP</p>
+                  <h3 className="text-sm md:text-base font-medium text-zinc-800">برای آپلود کاور اصلی کلیک کنید</h3>
+                  <p className="text-xs md:text-sm text-zinc-500">فرمت‌های مجاز: JPG, PNG, WEBP</p>
                   <input 
                     type="file" 
                     accept="image/*" 
@@ -881,7 +881,7 @@ export default function BusinessRegistrationPage() {
                   />
                 </label>
               ) : (
-                <div className="relative group rounded-xl overflow-hidden aspect-video border border-zinc-200 shadow-sm max-w-lg">
+                <div className="relative group rounded-lg md:rounded-xl overflow-hidden aspect-video border border-zinc-200 shadow-sm max-w-lg">
                   <img 
                     src={URL.createObjectURL(coverImage)} 
                     alt="کاور اصلی" 
@@ -891,9 +891,9 @@ export default function BusinessRegistrationPage() {
                     <button 
                       type="button"
                       onClick={removeCoverImage}
-                      className="bg-white/90 p-3 rounded-full text-red-600 hover:bg-red-50 transition-colors flex items-center gap-2"
+                      className="bg-white/90 p-2 md:p-3 rounded-full text-red-600 hover:bg-red-50 transition-colors flex items-center gap-1.5 md:gap-2"
                     >
-                      <Trash2 size={20} /> <span className="font-medium">حذف کاور</span>
+                      <Trash2 className="w-4 h-4 md:w-5 md:h-5" /> <span className="text-sm md:text-base font-medium">حذف کاور</span>
                     </button>
                   </div>
                 </div>
@@ -901,24 +901,24 @@ export default function BusinessRegistrationPage() {
             </div>
 
             {/* بخش دوم: نمونه کارها */}
-            <div className="space-y-4 pt-4 border-t border-zinc-100">
+            <div className="space-y-3 md:space-y-4 pt-4 border-t border-zinc-100">
               <div className="flex items-center justify-between">
-                <h3 className="font-medium text-zinc-800">نمونه کارها (اختیاری)</h3>
-                <span className="text-xs bg-zinc-100 text-zinc-600 px-3 py-1 rounded-full font-medium">
+                <h3 className="text-sm md:text-base font-medium text-zinc-800">نمونه کارها (اختیاری)</h3>
+                <span className="text-[10px] md:text-xs bg-zinc-100 text-zinc-600 px-2.5 py-1 md:px-3 md:py-1 rounded-full font-medium">
                   {portfolios.length.toLocaleString('fa-IR')} از {maxPortfolios.toLocaleString('fa-IR')}
                 </span>
               </div>
-              <p className="text-sm text-zinc-500 -mt-2">
+              <p className="text-xs md:text-sm text-zinc-500 -mt-1 md:-mt-2">
                 تصاویر باکیفیت از کارهای خود قرار دهید تا مشتریان بیشتری جذب کنید.
               </p>
               
               {portfolios.length < maxPortfolios && (
-                <label className="cursor-pointer bg-zinc-50 border-2 border-dashed border-zinc-300 rounded-2xl p-8 flex flex-col items-center justify-center text-center gap-3 hover:bg-zinc-100 transition-colors">
-                  <div className="w-14 h-14 bg-white text-rose-600 rounded-full flex items-center justify-center shadow-sm mb-2 border border-zinc-200">
-                    <UploadCloud size={30} />
+                <label className="cursor-pointer bg-zinc-50 border-2 border-dashed border-zinc-300 rounded-xl md:rounded-2xl p-5 md:p-8 flex flex-col items-center justify-center text-center gap-2 md:gap-3 hover:bg-zinc-100 transition-colors">
+                  <div className="w-10 h-10 md:w-14 md:h-14 bg-white text-rose-600 rounded-full flex items-center justify-center shadow-sm mb-1 md:mb-2 border border-zinc-200">
+                    <UploadCloud className="w-5 h-5 md:w-7 md:h-7" />
                   </div>
-                  <h3 className="font-medium text-zinc-800">برای آپلود نمونه کارها کلیک کنید</h3>
-                  <p className="text-sm text-zinc-500">انتخاب همزمان چند عکس امکان‌پذیر است</p>
+                  <h3 className="text-sm md:text-base font-medium text-zinc-800">برای آپلود نمونه کارها کلیک کنید</h3>
+                  <p className="text-xs md:text-sm text-zinc-500">انتخاب همزمان چند عکس امکان‌پذیر است</p>
                   <input 
                     type="file" 
                     multiple 
@@ -928,13 +928,14 @@ export default function BusinessRegistrationPage() {
                   />
                 </label>
               )}
-<p className="text-xs text-blue-600 mb-4 bg-blue-50 p-2 rounded-md">
-  در مرحله ثبت اولیه امکان آپلود حداکثر ۱۰ نمونه‌کار وجود دارد. در صورت خرید اشتراک پیشرفته، پس از تکمیل ثبت‌نام می‌توانید تا ۳۰ نمونه‌کار به پروفایل خود اضافه کنید.
-</p>
+              <p className="text-[10px] md:text-xs text-blue-600 mb-4 bg-blue-50 p-2 md:p-2.5 rounded-lg md:rounded-xl">
+                در مرحله ثبت اولیه امکان آپلود حداکثر ۱۰ نمونه‌کار وجود دارد. در صورت خرید اشتراک پیشرفته، پس از تکمیل ثبت‌نام می‌توانید تا ۳۰ نمونه‌کار به پروفایل خود اضافه کنید.
+              </p>
+              
               {portfolios.length > 0 && (
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 mt-6">
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 md:gap-4 mt-4 md:mt-6">
                   {portfolios.map((file, index) => (
-                    <div key={index} className="relative group rounded-xl overflow-hidden aspect-square border border-zinc-200 shadow-sm">
+                    <div key={index} className="relative group rounded-lg md:rounded-xl overflow-hidden aspect-square border border-zinc-200 shadow-sm">
                       <img 
                         src={URL.createObjectURL(file)} 
                         alt={`نمونه کار ${index + 1}`} 
@@ -944,9 +945,9 @@ export default function BusinessRegistrationPage() {
                         <button 
                           type="button"
                           onClick={() => removePortfolio(index)}
-                          className="bg-white/90 p-2 rounded-full text-red-600 hover:bg-red-50 transition-colors"
+                          className="bg-white/90 p-1.5 md:p-2 rounded-full text-red-600 hover:bg-red-50 transition-colors"
                         >
-                          <Trash2 size={18} />
+                          <Trash2 className="w-4 h-4 md:w-[18px] md:h-[18px]" />
                         </button>
                       </div>
                     </div>
