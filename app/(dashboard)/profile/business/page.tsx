@@ -971,7 +971,7 @@ export default function BusinessRegistrationPage() {
 
           {step < 5 ? ( // تغییر از 4 به 5
             <button type="button" onClick={nextStep} className="flex items-center gap-2 bg-rose-600 text-white px-8 py-3 rounded-xl font-medium hover:bg-rose-700 transition shadow-lg shadow-rose-200">
-              مرحله بعد
+              مرحله بعد <ArrowLeft size={20} />
             </button>
           ) : (
             <button 
@@ -980,12 +980,14 @@ export default function BusinessRegistrationPage() {
               disabled={isSubmitting}
               className="flex items-center gap-2 bg-rose-600 text-white px-8 py-3 rounded-xl font-medium hover:bg-rose-700 transition shadow-lg shadow-rose-200 disabled:opacity-70 disabled:cursor-not-allowed"
             >
-              {isSubmitting ? (
-                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-              ) : (
-                <Save size={20} /> 
-              )}
-              {isSubmitting ? 'در حال ثبت...' : 'ثبت و پرداخت'}
+              <button 
+  type="button" 
+  onClick={handleSubmit} 
+  disabled={isSubmitting}
+  className="flex items-center gap-2 bg-rose-600 text-white px-8 py-3 rounded-xl font-medium hover:bg-rose-700 transition shadow-lg shadow-rose-200 disabled:opacity-70 disabled:cursor-not-allowed"
+>
+  {isSubmitting ? 'در حال ثبت...' : 'ثبت و پرداخت'}
+</button>
             </button>
           )}
 
