@@ -977,33 +977,33 @@ export default function BusinessRegistrationPage() {
         )}
 
         {/* دکمه‌ های ناوبری (پایین فرم) */}
-        <div className="mt-10 pt-6 border-t border-zinc-100 flex items-center justify-between">
+        <div className="mt-10 pt-6 border-t border-zinc-100 flex flex-col items-center justify-center gap-4"> 
           
-          {step > 1 ? (
-            <button type="button" onClick={prevStep} className="flex items-center gap-2 px-6 py-3 rounded-xl font-medium text-zinc-600 hover:bg-zinc-100 transition border border-transparent">
+          {/* دکمه مرحله قبل */}
+          {step > 1 && (
+            <button type="button" onClick={prevStep} className="w-full flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-medium text-zinc-600 hover:bg-zinc-100 transition border border-transparent">
               <ArrowRight size={20} /> مرحله قبل
             </button>
-          ) : <div></div>}
+          )}
 
-          {step < 5 ? ( // تغییر از 4 به 5
-            <button type="button" onClick={nextStep} className="flex items-center gap-2 bg-rose-600 text-white px-8 py-3 rounded-xl font-medium hover:bg-rose-700 transition shadow-lg shadow-rose-200">
+          {/* دکمه مرحله بعد / ثبت و پرداخت */}
+          {step < 5 ? ( 
+            <button type="button" onClick={nextStep} className="w-full flex items-center justify-center gap-2 bg-rose-600 text-white px-8 py-3 rounded-xl font-medium hover:bg-rose-700 transition shadow-lg shadow-rose-200">
               مرحله بعد <ArrowLeft size={20} />
             </button>
           ) : (
+            // دکمه ثبت و پرداخت نهایی
             <button 
               type="button" 
               onClick={handleSubmit} 
               disabled={isSubmitting}
-              className="flex items-center gap-2 bg-rose-600 text-white px-8 py-3 rounded-xl font-medium hover:bg-rose-700 transition shadow-lg shadow-rose-200 disabled:opacity-70 disabled:cursor-not-allowed"
+              className="w-full flex items-center justify-center gap-2 bg-rose-600 text-white px-8 py-3 rounded-xl font-medium hover:bg-rose-700 transition shadow-lg shadow-rose-200 disabled:opacity-70 disabled:cursor-not-allowed"
             >
-              <button 
-  type="button" 
-  onClick={handleSubmit} 
-  disabled={isSubmitting}
-  className="flex items-center gap-2 bg-rose-600 text-white px-8 py-3 rounded-xl font-medium hover:bg-rose-700 transition shadow-lg shadow-rose-200 disabled:opacity-70 disabled:cursor-not-allowed"
->
-  {isSubmitting ? 'در حال ثبت...' : 'ثبت و پرداخت'}
-</button>
+              {isSubmitting ? (
+                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+              ) : (
+                'ثبت و پرداخت' 
+              )}
             </button>
           )}
         </div>
