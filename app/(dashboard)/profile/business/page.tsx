@@ -977,18 +977,18 @@ export default function BusinessRegistrationPage() {
         )}
 
         {/* دکمه‌ های ناوبری (پایین فرم) */}
-        <div className="mt-10 pt-6 border-t border-zinc-100 flex flex-col items-center justify-center gap-4"> 
+        <div className="mt-10 pt-6 border-t border-zinc-100 flex flex-col md:flex-row md:justify-between items-center gap-4 md:gap-0"> {/* تغییر یافته */}
           
           {/* دکمه مرحله قبل */}
           {step > 1 && (
-            <button type="button" onClick={prevStep} className="w-full flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-medium text-zinc-600 hover:bg-zinc-100 transition border border-transparent">
+            <button type="button" onClick={prevStep} className="w-full md:w-auto flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-medium text-zinc-600 hover:bg-zinc-100 transition border border-transparent">
               <ArrowRight size={20} /> مرحله قبل
             </button>
           )}
 
           {/* دکمه مرحله بعد / ثبت و پرداخت */}
           {step < 5 ? ( 
-            <button type="button" onClick={nextStep} className="w-full flex items-center justify-center gap-2 bg-rose-600 text-white px-8 py-3 rounded-xl font-medium hover:bg-rose-700 transition shadow-lg shadow-rose-200">
+            <button type="button" onClick={nextStep} className="w-full md:w-auto flex items-center justify-center gap-2 bg-rose-600 text-white px-8 py-3 rounded-xl font-medium hover:bg-rose-700 transition shadow-lg shadow-rose-200">
               مرحله بعد <ArrowLeft size={20} />
             </button>
           ) : (
@@ -997,7 +997,7 @@ export default function BusinessRegistrationPage() {
               type="button" 
               onClick={handleSubmit} 
               disabled={isSubmitting}
-              className="w-full flex items-center justify-center gap-2 bg-rose-600 text-white px-8 py-3 rounded-xl font-medium hover:bg-rose-700 transition shadow-lg shadow-rose-200 disabled:opacity-70 disabled:cursor-not-allowed"
+              className="w-full md:w-auto flex items-center justify-center gap-2 bg-rose-600 text-white px-8 py-3 rounded-xl font-medium hover:bg-rose-700 transition shadow-lg shadow-rose-200 disabled:opacity-70 disabled:cursor-not-allowed"
             >
               {isSubmitting ? (
                 <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
