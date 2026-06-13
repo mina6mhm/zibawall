@@ -971,7 +971,7 @@ export default function BusinessRegistrationPage() {
 
           {step < 5 ? ( // تغییر از 4 به 5
             <button type="button" onClick={nextStep} className="flex items-center gap-2 bg-rose-600 text-white px-8 py-3 rounded-xl font-medium hover:bg-rose-700 transition shadow-lg shadow-rose-200">
-              مرحله بعد <ArrowLeft size={20} />
+              مرحله بعد
             </button>
           ) : (
             <button 
