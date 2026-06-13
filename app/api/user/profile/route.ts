@@ -9,19 +9,18 @@ const prisma = new PrismaClient();
 // دریافت اطلاعات کاربر و سالن او
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
-  const phone = searchParams.get('phone'); // فرض بر این است که شماره موبایل را می‌فرستیم
+  const email = searchParams.get('email'); // تغییر به ایمیل
 
-  if (!phone) return NextResponse.json({ error: 'شماره موبایل الزامی است' }, { status: 400 });
+  if (!email) return NextResponse.json({ error: 'ایمیل الزامی است' }, { status: 400 });
 
   try {
     const user = await prisma.user.findUnique({
-      where: { phone },
-      include: { salon: true } // گرفتن اطلاعات سالن همراه با کاربر
+      where: { email }, // جستجو بر اساس ایمیل
+      include: { salon: true } 
     });
 
     if (!user) return NextResponse.json({ error: 'کاربر یافت نشد' }, { status: 404 });
 
-    // حذف پسورد هش شده از خروجی برای امنیت
     const { passwordHash, ...safeUser } = user;
     return NextResponse.json(safeUser);
   } catch (error) {
@@ -33,11 +32,15 @@ export async function GET(request: Request) {
 export async function PUT(request: Request) {
   try {
     const body = await request.json();
-    const { phone, name, email, newPassword, username } = body;
+    // حذف phone و استفاده از email به عنوان شناسه اصلی
+    const { email, name, newPassword, username } = body;
 
-    let updateData: any = { name, email };
+    if (!email) {
+      return NextResponse.json({ error: 'ایمیل برای شناسایی کاربر الزامی است' }, { status: 400 });
+    }
 
-    // اگر username ارسال شده بود، به دیتای آپدیت اضافه شود
+    let updateData: any = { name };
+
     if (username !== undefined) {
       updateData.username = username;
     }
@@ -47,7 +50,7 @@ export async function PUT(request: Request) {
     }
 
     const updatedUser = await prisma.user.update({
-      where: { phone },
+      where: { email }, // آپدیت بر اساس ایمیل
       data: updateData,
       include: { salon: true }
     });
@@ -56,7 +59,6 @@ export async function PUT(request: Request) {
     return NextResponse.json({ message: 'پروفایل آپدیت شد', user: safeUser });
     
   } catch (error: any) {
-    // خطای P2002 در پریزما به معنای نقض Unique Constraint است
     if (error.code === 'P2002' && error.meta?.target?.includes('username')) {
       return NextResponse.json(
         { error: 'این نام کاربری قبلاً توسط شخص دیگری ثبت شده است. لطفاً نام دیگری انتخاب کنید.' }, 

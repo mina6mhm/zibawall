@@ -1,8 +1,7 @@
-// app/(dashboard)/profile/page.tsx
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { User, Phone, LogOut, Store, Sparkles, Eye, EyeOff, Edit, AtSign, Trash2 } from 'lucide-react';
+import { User, Mail, LogOut, Store, Sparkles, Eye, EyeOff, Edit, AtSign, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
@@ -12,7 +11,7 @@ export default function ProfilePage() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   
-  const [userData, setUserData] = useState({ name: '', phone: '', email: '', username: '' });
+  const [userData, setUserData] = useState({ name: '', email: '', username: '' });
   const [newPassword, setNewPassword] = useState('');
   const [salonData, setSalonData] = useState<any>(null);
 
@@ -23,18 +22,17 @@ export default function ProfilePage() {
         const parsedUser = JSON.parse(storedUser);
         setUserData({ 
           name: parsedUser.name || '', 
-          phone: parsedUser.phone, 
           email: parsedUser.email || '',
           username: parsedUser.username || ''
         });
         
         try {
-          const res = await fetch(`/api/user/profile?phone=${parsedUser.phone}`);
+          // دریافت اطلاعات بر اساس ایمیل از API
+          const res = await fetch(`/api/user/profile?email=${parsedUser.email}`);
           if (res.ok) {
             const data = await res.json();
             setUserData({ 
               name: data.name || '', 
-              phone: data.phone, 
               email: data.email || '',
               username: data.username || ''
             });
@@ -55,7 +53,6 @@ export default function ProfilePage() {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          phone: userData.phone,
           name: userData.name,
           email: userData.email,
           username: userData.username,
@@ -65,12 +62,12 @@ export default function ProfilePage() {
 
       if (res.ok) {
         const data = await res.json();
-        localStorage.setItem('user', JSON.stringify(data.user || { ...userData, phone: userData.phone }));
+        localStorage.setItem('user', JSON.stringify(data.user || { ...userData }));
         alert('اطلاعات با موفقیت ذخیره شد!');
         setNewPassword('');
       } else {
         const errorData = await res.json();
-        alert(errorData.error || 'خطا در ذخیره اطلاعات (شاید این نام کاربری قبلا ثبت شده باشد)');
+        alert(errorData.error || 'خطا در ذخیره اطلاعات (شاید این ایمیل یا نام کاربری قبلا ثبت شده باشد)');
       }
     } catch (error) {
       console.error(error);
@@ -111,24 +108,17 @@ export default function ProfilePage() {
     }
   };
 
-    const handleLogout = () => {
+  const handleLogout = () => {
     const isConfirmed = window.confirm('آیا مطمئن هستید که می‌خواهید از حساب خود خارج شوید؟');
     if (isConfirmed) {
-      // 1. پاک کردن اطلاعات از لوکال استوریج
       localStorage.removeItem('user');
       localStorage.removeItem('token'); 
-      
-      // 2. پاک کردن کوکی برای Middleware
       document.cookie = "token=; path=/; max-age=0"; 
-      
-      // 3. رفرش کامل صفحه برای اعمال تغییرات در سرور و کلاینت
       window.location.href = '/login'; 
     }
   };
 
-
   const hasBusiness = !!salonData;
-
   const inputBaseClasses = "w-full border border-zinc-200 bg-zinc-50/50 rounded-2xl px-4 py-3 focus:bg-white focus:border-zinc-400 focus:ring-4 focus:ring-zinc-100 outline-none transition-all";
 
   return (
@@ -147,9 +137,11 @@ export default function ProfilePage() {
                   <AtSign size={14} /> {userData.username}
                 </span>
               )}
-              <span className="text-zinc-500 text-xs md:text-sm dir-ltr flex items-center gap-1.5 bg-zinc-50 px-2.5 py-1.5 rounded-xl border border-zinc-100">
-                <Phone size={14} /> {userData.phone || 'بدون شماره'}
-              </span>
+              {userData.email && (
+                <span className="text-zinc-500 text-xs md:text-sm dir-ltr flex items-center gap-1.5 bg-zinc-50 px-2.5 py-1.5 rounded-xl border border-zinc-100">
+                  <Mail size={14} /> {userData.email}
+                </span>
+              )}
             </div>
           </div>
         </div>
@@ -157,7 +149,7 @@ export default function ProfilePage() {
 
       <div className="max-w-4xl mx-auto w-full px-4 mt-6 md:mt-10 flex flex-col md:flex-row gap-6 md:gap-8">
         
-        {/* --- سایدبار یکپارچه و مینیمال --- */}
+        {/* --- سایدبار --- */}
         <div className="w-full md:w-64 shrink-0">
           <div className="flex flex-row md:flex-col p-1.5 gap-1.5 bg-zinc-100/70 rounded-2xl">
             <button 
@@ -192,13 +184,24 @@ export default function ProfilePage() {
             <div className="space-y-6 md:space-y-8 animate-in fade-in duration-300">
               <h2 className="text-xl font-bold text-zinc-800">اطلاعات شخصی</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5 md:gap-6">
+                
+                <div>
+                  <label className="block text-sm font-medium mb-2 text-zinc-700">ایمیل</label>
+                  <input 
+                    value={userData.email} 
+                    disabled 
+                    className="w-full border border-zinc-100 bg-zinc-50 rounded-2xl px-4 py-3 dir-ltr text-right text-zinc-400 cursor-not-allowed" 
+                    placeholder="example@email.com"
+                  />
+                  <p className="text-xs text-zinc-400 mt-1.5 pr-1">ایمیل حساب کاربری قابل تغییر نیست</p>
+                </div>
+
                 <div>
                   <label className="block text-sm font-medium mb-2 text-zinc-700">نام و نام خانوادگی</label>
                   <input 
                     value={userData.name} 
                     onChange={(e) => setUserData({...userData, name: e.target.value})} 
                     className={inputBaseClasses}
-                    
                   />
                 </div>
 
@@ -217,29 +220,10 @@ export default function ProfilePage() {
                   </div>
                   <p className="text-xs text-zinc-400 mt-1.5 pr-1">فقط انگلیسی، اعداد و خط‌تیره (_)</p>
                 </div>
-
-                <div>
-                  <label className="block text-sm font-medium mb-2 text-zinc-700">شماره موبایل</label>
-                  <input 
-                    value={userData.phone} 
-                    disabled 
-                    className="w-full border border-zinc-100 bg-zinc-50 rounded-2xl px-4 py-3 dir-ltr text-right text-zinc-400 cursor-not-allowed" 
-                  />
-                </div>
                 
                 <div>
-                  <label className="block text-sm font-medium mb-2 text-zinc-700">ایمیل</label>
-                  <input 
-                    value={userData.email} 
-                    onChange={(e) => setUserData({...userData, email: e.target.value})} 
-                    className={`${inputBaseClasses} dir-ltr text-right`}
-                    placeholder="example@email.com"
-                  />
-                </div>
-                
-                <div className="md:col-span-2">
                   <label className="block text-sm font-medium mb-2 text-zinc-700">رمز عبور جدید (اختیاری)</label>
-                  <div className="relative md:w-1/2">
+                  <div className="relative">
                     <input 
                       type={showPassword ? "text" : "password"} 
                       value={newPassword} 
@@ -258,7 +242,7 @@ export default function ProfilePage() {
                 </div>
               </div>
               
-              {/* --- دکمه‌های فرم ویرایش اطلاعات --- */}
+              {/* --- دکمه‌های فرم --- */}
               <div className="pt-4 border-t border-zinc-100 flex flex-col md:flex-row items-center justify-between gap-4">
                 <button 
                   onClick={handleSaveChanges} 
@@ -278,14 +262,13 @@ export default function ProfilePage() {
             </div>
           )}
 
-          {/* تب کسب و کار */}
+          {/* تب کسب و کار (تغییری نکرده است) */}
           {activeTab === 'business' && (
             <div className="animate-in fade-in duration-300">
               {hasBusiness ? (
                 <div className="space-y-6">
                   <h2 className="text-xl font-bold text-zinc-800">مدیریت کسب‌وکار من</h2>
                   
-                  {/* کادر جمع‌وجور اطلاعات سالن */}
                   <div className="bg-zinc-50/50 border border-zinc-100/80 rounded-2xl p-4 flex flex-row items-center gap-4 transition-all hover:border-zinc-200">
                     <div className="w-14 h-14 bg-white rounded-xl flex items-center justify-center border border-zinc-100 shrink-0">
                       <Store size={24} strokeWidth={1.5} className="text-rose-500" />
@@ -298,7 +281,6 @@ export default function ProfilePage() {
                     </div>
                   </div>
 
-                  {/* دکمه‌های اکشن */}
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-4">
                     <Link 
                       href={`/salon/${salonData.id || salonData._id}`} 
@@ -342,7 +324,6 @@ export default function ProfilePage() {
               )}
             </div>
           )}
-        
         </div>
       </div>
     </div>

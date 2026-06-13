@@ -29,6 +29,10 @@ export const metadata: Metadata = {
 // تنظیم رنگ نوار بالای گوشی (اختیاری)
 export const viewport: Viewport = {
   themeColor: '#ffffff',
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
 };
 
 export default function RootLayout({
