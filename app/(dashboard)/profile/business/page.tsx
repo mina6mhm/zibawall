@@ -364,97 +364,105 @@ export default function BusinessRegistrationPage() {
     }
   };
 
-  return (
-    <div className="max-w-4xl mx-auto pt-8 pb-28 px-4 md:py-12 md:px-0 animate-fade-in">
-      <div className="flex items-center gap-4 mb-8">
-        <Link href="/profile" className="p-2 hover:bg-zinc-100 rounded-full transition-colors">
-          <ArrowRight className="text-zinc-600" size={24} />
+   return (
+    <div className="max-w-4xl mx-auto pt-6 pb-32 px-4 md:pt-8 md:pb-28 md:px-0 animate-fade-in">
+      
+      {/* هدر و دکمه بازگشت */}
+      <div className="flex items-center gap-3 md:gap-4 mb-6 md:mb-8">
+        <Link href="/profile" className="p-1.5 md:p-2 hover:bg-zinc-100 rounded-full transition-colors">
+          <ArrowRight className="text-zinc-600 w-5 h-5 md:w-6 md:h-6" />
         </Link>
         <div>
-          <h1 className="text-2xl font-bold text-zinc-900">ثبت کسب‌وکار جدید</h1>
-          <p className="text-zinc-500 text-sm mt-1">مرحله {step.toLocaleString('fa-IR')} از ۵</p> {/* تغییر به 5 */}
+          <h1 className="text-xl md:text-2xl font-bold text-zinc-900">ثبت کسب‌وکار جدید</h1>
+          <p className="text-zinc-500 text-xs md:text-sm mt-0.5 md:mt-1">مرحله {step.toLocaleString('fa-IR')} از ۵</p> 
         </div>
       </div>
 
-      <div className="mb-8 flex items-center justify-between relative px-4">
-        <div className="absolute left-0 right-0 top-1/2 h-0.5 bg-zinc-200 -z-10 transform -translate-y-1/2 rounded-full"></div>
+      {/* نشانگر مراحل (Stepper) */}
+      <div className="mb-6 md:mb-8 flex items-center justify-between relative px-2 md:px-4">
+        {/* خط رابط بین مراحل */}
+        <div className="absolute left-0 right-0 top-1/2 h-0.5 bg-zinc-200 -z-10 transform -translate-y-1/2 rounded-full mx-4 md:mx-6"></div>
+        
         {[
           { id: 1, title: 'اطلاعات پایه' },
           { id: 2, title: 'خدمات' },
           { id: 3, title: 'ارتباطات' },
           { id: 4, title: 'تصاویر' },
-          { id: 5, title: 'اشتراک' } // <-- مرحله جدید اضافه شد
+          { id: 5, title: 'اشتراک' } 
         ].map((item) => (
-          <div key={item.id} className="flex flex-col items-center gap-2 bg-white px-2">
-            <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm transition-colors ${
-              step >= item.id ? 'bg-rose-600 text-white' : 'bg-zinc-100 text-zinc-500 border border-zinc-200'
+          // نکته: کلاس bg-[#f8fafc] را در صورتی که بک‌گراند کل صفحه شما رنگ دیگری است، با رنگ پس‌زمینه خودتان جایگزین کنید تا خط پشتی مخفی بماند.
+          <div key={item.id} className="flex flex-col items-center gap-2 bg-[#f8fafc] md:bg-transparent px-1 md:px-2 z-10" style={{ backgroundColor: 'var(--background, #fdfcfc)' }}> 
+            <div className={`w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center font-bold text-xs md:text-sm transition-colors ${
+              step >= item.id 
+                ? 'bg-rose-600 text-white shadow-sm' 
+                : 'bg-zinc-100 text-zinc-500 border border-zinc-200'
             }`}>
-              {step > item.id ? <CheckCircle2 size={20} /> : item.id.toLocaleString('fa-IR')}
+              {step > item.id ? <CheckCircle2 className="w-4 h-4 md:w-5 md:h-5" /> : item.id.toLocaleString('fa-IR')}
             </div>
           </div>
         ))}
       </div>
 
-      <div className="bg-white rounded-2xl border border-zinc-100 p-5 md:p-8">
-        
-        {/* ================= مرحله ۱: اطلاعات پایه ================= */}
+      {/* کانتینر سفیدرنگ فرم‌ها */}
+      <div className="bg-white rounded-xl md:rounded-2xl border border-zinc-100 shadow-sm p-4 md:p-8">
+                {/* ================= مرحله ۱: اطلاعات پایه ================= */}
         {step === 1 && (
-          <div className="space-y-8 animate-fade-in">
-            <section className="space-y-6">
-              <div className="flex items-center gap-2 border-b border-zinc-100 pb-3">
-                <Store className="text-zinc-700" size={24} />
-                <h2 className="text-lg font-semibold text-zinc-800">اطلاعات پایه سالن</h2>
+          <div className="space-y-6 md:space-y-8 animate-fade-in">
+            <section className="space-y-4 md:space-y-6">
+              <div className="flex items-center gap-2 border-b border-zinc-100 pb-2 md:pb-3">
+                <Store className="text-zinc-700 w-5 h-5 md:w-6 md:h-6" />
+                <h2 className="text-base md:text-lg font-semibold text-zinc-800">اطلاعات پایه سالن</h2>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                 
-                <div className="space-y-2">
-                  <label className="block text-sm font-medium text-zinc-700">نام سالن زیبایی <span className="text-red-500">*</span></label>
+                <div className="space-y-1.5 md:space-y-2">
+                  <label className="block text-xs md:text-sm font-medium text-zinc-700">نام سالن زیبایی <span className="text-red-500">*</span></label>
                   <input 
                     type="text" 
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder="مثال: سالن زیبایی گل‌ها" 
-                    className="w-full px-4 py-3 rounded-xl border border-zinc-200 focus:border-zinc-300 focus:ring-1 focus:ring-zinc-300 outline-none transition-all" 
+                    className="w-full px-3 py-2.5 md:px-4 md:py-3 text-sm md:text-base rounded-lg md:rounded-xl border border-zinc-200 focus:border-zinc-300 focus:ring-1 focus:ring-zinc-300 outline-none transition-all" 
                   />
                 </div>
                 
-                <div className="space-y-2">
-                  <label className="block text-sm font-medium text-zinc-700">ساعات کاری <span className="text-red-500">*</span></label>
+                <div className="space-y-1.5 md:space-y-2">
+                  <label className="block text-xs md:text-sm font-medium text-zinc-700">ساعات کاری <span className="text-red-500">*</span></label>
                   <div className="relative">
-                    <Clock className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400" size={20} />
+                    <Clock className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 w-4 h-4 md:w-5 md:h-5" />
                     <input 
                       type="text" 
                       value={workingHours}
                       onChange={(e) => setWorkingHours(e.target.value)}
                       placeholder="مثال: ۱۰ صبح تا ۸ شب" 
-                      className="w-full pr-10 pl-4 py-3 rounded-xl border border-zinc-200 focus:border-zinc-300 focus:ring-1 focus:ring-zinc-300 outline-none transition-all" 
+                      className="w-full pr-9 pl-3 py-2.5 md:pr-10 md:pl-4 md:py-3 text-sm md:text-base rounded-lg md:rounded-xl border border-zinc-200 focus:border-zinc-300 focus:ring-1 focus:ring-zinc-300 outline-none transition-all" 
                     />
                   </div>
                 </div>
 
-                <div className="space-y-2 md:col-span-2">
-                  <label className="block text-sm font-medium text-zinc-700">توضیحات و معرفی سالن <span className="text-red-500">*</span></label>
+                <div className="space-y-1.5 md:space-y-2 md:col-span-2">
+                  <label className="block text-xs md:text-sm font-medium text-zinc-700">توضیحات و معرفی سالن <span className="text-red-500">*</span></label>
                   <div className="relative">
-                    <FileText className="absolute right-3 top-4 text-zinc-400" size={20} />
+                    <FileText className="absolute right-3 top-3 md:top-4 text-zinc-400 w-4 h-4 md:w-5 md:h-5" />
                     <textarea 
                       rows={3} 
                       value={description}
                       onChange={(e) => setDescription(e.target.value)}
                       placeholder="توضیح مختصری درباره سابقه، خدمات ویژه و محیط سالن خود بنویسید..." 
-                      className="w-full pr-10 pl-4 py-3 rounded-xl border border-zinc-200 focus:border-zinc-300 focus:ring-1 focus:ring-zinc-300 outline-none transition-all resize-none"
+                      className="w-full pr-9 pl-3 py-2.5 md:pr-10 md:pl-4 md:py-3 text-sm md:text-base rounded-lg md:rounded-xl border border-zinc-200 focus:border-zinc-300 focus:ring-1 focus:ring-zinc-300 outline-none transition-all resize-none"
                     ></textarea>
                   </div>
                 </div>
 
-                <div className="space-y-3 md:col-span-2">
-                  <label className="block text-sm font-medium text-zinc-700">روزهای تعطیل در هفته</label>
-                  <div className="flex flex-wrap gap-2">
+                <div className="space-y-2 md:space-y-3 md:col-span-2">
+                  <label className="block text-xs md:text-sm font-medium text-zinc-700">روزهای تعطیل در هفته</label>
+                  <div className="flex flex-wrap gap-1.5 md:gap-2">
                     {WEEK_DAYS.map(day => (
                       <button
                         key={day}
                         type="button"
                         onClick={() => toggleClosedDay(day)}
-                        className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
+                        className={`px-3 py-1.5 md:px-4 md:py-2 rounded-lg md:rounded-xl text-xs md:text-sm font-medium transition-colors ${
                           closedDays.includes(day)
                             ? 'bg-rose-50 text-rose-600 border border-rose-200'
                             : 'bg-white border border-zinc-200 text-zinc-600 hover:bg-zinc-50'
@@ -466,63 +474,63 @@ export default function BusinessRegistrationPage() {
                   </div>
                 </div>
 
-                <div className="space-y-3 md:col-span-2 mt-2">
-                  <label className="block text-sm font-medium text-zinc-700">شماره تماس‌های سالن <span className="text-red-500">*</span></label>
-                  <div className="space-y-3">
+                <div className="space-y-2 md:space-y-3 md:col-span-2 mt-1 md:mt-2">
+                  <label className="block text-xs md:text-sm font-medium text-zinc-700">شماره تماس‌های سالن <span className="text-red-500">*</span></label>
+                  <div className="space-y-2 md:space-y-3">
                     {phones.map((phone, index) => (
                       <div key={index} className="flex gap-2">
                         <div className="relative flex-1">
-                          <Phone className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400" size={20} />
+                          <Phone className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 w-4 h-4 md:w-5 md:h-5" />
                           <input 
                             type="tel" 
                             value={phone} 
                             onChange={(e) => handlePhoneChange(index, e.target.value)} 
                             placeholder={`شماره تماس ${index + 1}`} 
-                            className="w-full pr-10 pl-4 py-3 rounded-xl border border-zinc-200 focus:border-zinc-300 focus:ring-1 focus:ring-zinc-300 outline-none transition-all text-left dir-ltr" 
+                            className="w-full pr-9 pl-3 py-2.5 md:pr-10 md:pl-4 md:py-3 text-sm md:text-base rounded-lg md:rounded-xl border border-zinc-200 focus:border-zinc-300 focus:ring-1 focus:ring-zinc-300 outline-none transition-all text-left dir-ltr" 
                           />
                         </div>
                         {phones.length > 1 && (
-                          <button type="button" onClick={() => handleRemovePhone(index)} className="p-3 text-red-500 bg-red-50 hover:bg-red-100 rounded-xl transition-colors">
-                            <Trash2 size={20} />
+                          <button type="button" onClick={() => handleRemovePhone(index)} className="p-2.5 md:p-3 text-red-500 bg-red-50 hover:bg-red-100 rounded-lg md:rounded-xl transition-colors">
+                            <Trash2 className="w-4 h-4 md:w-5 md:h-5" />
                           </button>
                         )}
                       </div>
                     ))}
                   </div>
-                  <button type="button" onClick={handleAddPhone} className="text-sm font-medium text-rose-600 flex items-center gap-1.5 mt-2 hover:text-rose-700 transition-colors">
-                    <Plus size={16} /> افزودن شماره جدید
+                  <button type="button" onClick={handleAddPhone} className="text-xs md:text-sm font-medium text-rose-600 flex items-center gap-1 md:gap-1.5 mt-1 md:mt-2 hover:text-rose-700 transition-colors">
+                    <Plus className="w-4 h-4 md:w-5 md:h-5" /> افزودن شماره جدید
                   </button>
                 </div>
               </div>
             </section>
 
-            <section className="space-y-6">
-              <div className="flex items-center gap-2 border-b border-zinc-100 pb-3">
-                <MapPin className="text-zinc-700" size={24} />
-                <h2 className="text-lg font-semibold text-zinc-800">آدرس و موقعیت مکانی</h2>
+            <section className="space-y-4 md:space-y-6 mt-6 md:mt-8">
+              <div className="flex items-center gap-2 border-b border-zinc-100 pb-2 md:pb-3">
+                <MapPin className="text-zinc-700 w-5 h-5 md:w-6 md:h-6" />
+                <h2 className="text-base md:text-lg font-semibold text-zinc-800">آدرس و موقعیت مکانی</h2>
               </div>
               
-              <div className="space-y-3">
-                <label className="block text-sm font-medium text-zinc-700">استان و شهر <span className="text-red-500">*</span></label>
+              <div className="space-y-2 md:space-y-3">
+                <label className="block text-xs md:text-sm font-medium text-zinc-700">استان و شهر <span className="text-red-500">*</span></label>
                 <button
                   type="button"
                   onClick={() => setIsRegionModalOpen(true)}
-                  className="w-full px-4 py-3 rounded-xl border border-zinc-200 text-right flex justify-between items-center hover:border-zinc-300 focus:ring-1 focus:ring-zinc-300 outline-none transition-all bg-white"
+                  className="w-full px-3 py-2.5 md:px-4 md:py-3 text-sm md:text-base rounded-lg md:rounded-xl border border-zinc-200 text-right flex justify-between items-center hover:border-zinc-300 focus:ring-1 focus:ring-zinc-300 outline-none transition-all bg-white"
                 >
                   <span className={selectedProvince ? 'text-zinc-800 font-medium' : 'text-zinc-400'}>
                     {selectedProvince && selectedCity ? `${selectedProvince} - ${selectedCity}` : 'انتخاب استان و شهر...'}
                   </span>
-                  <ChevronDown size={20} className="text-zinc-400" />
+                  <ChevronDown className="text-zinc-400 w-4 h-4 md:w-5 md:h-5" />
                 </button>
 
                 {/* نمایش محله‌های انتخاب شده در صورت وجود */}
                 {selectedProvince === 'تهران' && selectedCity === 'تهران' && selectedNeighborhoods.length > 0 && (
-                  <div className="flex flex-wrap gap-2 mt-2 p-3 bg-zinc-50 rounded-xl border border-zinc-100">
-                 <div className="w-full text-xs text-zinc-500 mb-1">محله‌های انتخابی ({selectedNeighborhoods.length.toLocaleString('fa', { useGrouping: false })} از ۴)</div>
+                  <div className="flex flex-wrap gap-1.5 md:gap-2 mt-1.5 md:mt-2 p-2.5 md:p-3 bg-zinc-50 rounded-lg md:rounded-xl border border-zinc-100">
+                    <div className="w-full text-[10px] md:text-xs text-zinc-500 mb-0.5 md:mb-1">محله‌های انتخابی ({selectedNeighborhoods.length.toLocaleString('fa', { useGrouping: false })} از ۴)</div>
                     {selectedNeighborhoods.map((nh) => (
                       <span 
                         key={nh} 
-                        className="flex items-center gap-1.5 bg-rose-50 text-rose-700 px-3 py-1.5 rounded-full text-xs font-bold border border-rose-100"
+                        className="flex items-center gap-1 md:gap-1.5 bg-rose-50 text-rose-700 px-2.5 py-1 md:px-3 md:py-1.5 rounded-full text-[10px] md:text-xs font-bold border border-rose-100"
                       >
                         {nh}
                         <button 
@@ -533,7 +541,7 @@ export default function BusinessRegistrationPage() {
                           }} 
                           className="hover:bg-rose-200 text-rose-500 rounded-full p-0.5 transition-colors"
                         >
-                          <X size={14} strokeWidth={2.5} />
+                          <X className="w-3 h-3 md:w-3.5 md:h-3.5" strokeWidth={2.5} />
                         </button>
                       </span>
                     ))}
@@ -541,22 +549,22 @@ export default function BusinessRegistrationPage() {
                 )}
               </div>
 
-              <div className="space-y-2">
-                <label className="block text-sm font-medium text-zinc-700">آدرس دقیق <span className="text-red-500">*</span></label>
+              <div className="space-y-1.5 md:space-y-2">
+                <label className="block text-xs md:text-sm font-medium text-zinc-700">آدرس دقیق <span className="text-red-500">*</span></label>
                 <textarea 
                   rows={3} 
                   value={address}
                   onChange={(e) => setAddress(e.target.value)}
                   placeholder="خیابان اصلی، کوچه، پلاک، طبقه..." 
-                  className="w-full px-4 py-3 rounded-xl border border-zinc-200 focus:border-zinc-300 focus:ring-1 focus:ring-zinc-300 outline-none transition-all resize-none"
+                  className="w-full px-3 py-2.5 md:px-4 md:py-3 text-sm md:text-base rounded-lg md:rounded-xl border border-zinc-200 focus:border-zinc-300 focus:ring-1 focus:ring-zinc-300 outline-none transition-all resize-none"
                 ></textarea>
               </div>
               
               {/* بخش انتخاب و نمایش نقشه */}
               {locationSelected ? (
-                <div className="w-full space-y-3 animate-fade-in mt-6">
+                <div className="w-full space-y-2 md:space-y-3 animate-fade-in mt-4 md:mt-6">
                   {/* کادر مستطیلی نقشه */}
-                  <div className="w-full h-48 md:h-56 rounded-2xl border border-zinc-200 overflow-hidden relative shadow-sm pointer-events-none bg-zinc-100">
+                  <div className="w-full h-36 md:h-56 rounded-xl md:rounded-2xl border border-zinc-200 overflow-hidden relative shadow-sm pointer-events-none bg-zinc-100">
                     <img 
                       src={`https://static-maps.yandex.ru/1.x/?ll=${coordinates[1]},${coordinates[0]}&z=15&l=map&size=600,250&pt=${coordinates[1]},${coordinates[0]},pm2rdm&lang=fa_IR`} 
                       alt="پیش‌نمایش نقشه" 
@@ -565,10 +573,10 @@ export default function BusinessRegistrationPage() {
                   </div>
 
                   {/* وضعیت و ویرایش - زیر نقشه */}
-                  <div className="flex items-center justify-between px-1 pt-1">
-                    <div className="flex items-center gap-2 text-green-600">
-                      <CheckCircle2 size={20} />
-                      <span className="font-medium text-zinc-800">موقعیت سالن ثبت شد</span>
+                  <div className="flex flex-row items-center justify-between px-1 pt-1">
+                    <div className="flex items-center gap-1.5 md:gap-2 text-green-600">
+                      <CheckCircle2 className="w-4 h-4 md:w-5 md:h-5" />
+                      <span className="text-xs md:text-sm font-medium text-zinc-800">موقعیت سالن ثبت شد</span>
                     </div>
                     <button 
                       type="button" 
@@ -576,19 +584,19 @@ export default function BusinessRegistrationPage() {
                         setTempCoordinates(coordinates);
                         setIsMapModalOpen(true);
                       }} 
-                      className="text-rose-600 text-sm font-medium hover:bg-rose-50 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1"
+                      className="text-rose-600 text-[10px] md:text-sm font-medium hover:bg-rose-50 px-2 py-1 md:px-3 md:py-1.5 rounded-lg transition-colors flex items-center gap-1"
                     >
-                      <MapPin size={16} /> ویرایش موقعیت
+                      <MapPin className="w-3.5 h-3.5 md:w-4 md:h-4" /> ویرایش موقعیت
                     </button>
                   </div>
                 </div>
               ) : (
-                <div className="bg-zinc-50 border border-dashed border-zinc-300 rounded-2xl p-6 flex flex-col items-center justify-center text-center gap-3 mt-4">
-                  <div className="w-12 h-12 bg-white text-zinc-400 rounded-full flex items-center justify-center shadow-sm mb-1 border border-zinc-200">
-                    <Map size={28} />
+                <div className="bg-zinc-50 border border-dashed border-zinc-300 rounded-xl md:rounded-2xl p-4 md:p-6 flex flex-col items-center justify-center text-center gap-2 md:gap-3 mt-3 md:mt-4">
+                  <div className="w-10 h-10 md:w-12 md:h-12 bg-white text-zinc-400 rounded-full flex items-center justify-center shadow-sm mb-1 border border-zinc-200">
+                    <Map className="w-5 h-5 md:w-7 md:h-7" />
                   </div>
                   <div>
-                    <p className="font-medium text-zinc-800">موقعیت سالن را روی نقشه مشخص کنید</p>
+                    <p className="text-xs md:text-sm font-medium text-zinc-800">موقعیت سالن را روی نقشه مشخص کنید</p>
                   </div>
                   <button 
                     type="button" 
@@ -596,33 +604,33 @@ export default function BusinessRegistrationPage() {
                       setTempCoordinates(coordinates);
                       setIsMapModalOpen(true);
                     }} 
-                    className="mt-2 bg-white border border-zinc-200 shadow-sm px-5 py-2.5 rounded-xl text-zinc-700 text-sm font-medium hover:bg-zinc-100 flex items-center gap-2"
+                    className="mt-1 md:mt-2 bg-white border border-zinc-200 shadow-sm px-4 py-2 md:px-5 md:py-2.5 rounded-lg md:rounded-xl text-zinc-700 text-xs md:text-sm font-medium hover:bg-zinc-100 flex items-center gap-1.5 md:gap-2"
                   >
-                    <MapPin size={18} className="text-zinc-600" /> انتخاب از روی نقشه
+                    <MapPin className="w-4 h-4 md:w-[18px] md:h-[18px] text-zinc-600" /> انتخاب از روی نقشه
                   </button>
                 </div>
               )}
             </section>
           </div>
         )}
-
-        {/* ================= مرحله ۲: خدمات ================= */}
+        
+                {/* ================= مرحله ۲: خدمات ================= */}
         {step === 2 && (
-          <div className="space-y-6 animate-fade-in">
-            <div className="flex items-center justify-between border-b border-zinc-100 pb-3">
-              <div className="flex items-center gap-2">
-                <CheckCircle2 className="text-zinc-700" size={24} />
-                <h2 className="text-lg font-semibold text-zinc-800">خدمات قابل ارائه</h2>
+          <div className="space-y-4 md:space-y-6 animate-fade-in">
+            <div className="flex items-center justify-between border-b border-zinc-100 pb-2 md:pb-3">
+              <div className="flex items-center gap-1.5 md:gap-2">
+                <CheckCircle2 className="text-zinc-700 w-5 h-5 md:w-6 md:h-6" />
+                <h2 className="text-base md:text-lg font-semibold text-zinc-800">خدمات قابل ارائه</h2>
               </div>
-              <span className="text-xs text-rose-600 bg-rose-50 px-3 py-1 rounded-full font-medium">
+              <span className="text-[10px] md:text-xs text-rose-600 bg-rose-50 px-2 py-0.5 md:px-3 md:py-1 rounded-full font-medium">
                 {selectedTags.length.toLocaleString('fa-IR')} خدمت انتخاب شده
               </span>
             </div>
-            <p className="text-sm text-zinc-500 -mt-2">
+            <p className="text-xs md:text-sm text-zinc-500 -mt-1 md:-mt-2">
               جزئیات خدماتی که در سالن شما ارائه می‌شود را با دقت انتخاب کنید تا مشتریان راحت‌تر شما را پیدا کنند.
             </p>
             
-            <div className="space-y-4">
+            <div className="space-y-3 md:space-y-4">
               {Object.keys(SERVICE_DETAILS).map((category) => {
                 const isExpanded = expandedCategories.includes(category);
                 const defaultServices = SERVICE_DETAILS[category as keyof typeof SERVICE_DETAILS] || [];
@@ -632,31 +640,31 @@ export default function BusinessRegistrationPage() {
                 const selectedCount = categoryServices.filter(s => selectedTags.includes(s)).length;
                 
                 return (
-                  <div key={category} className="border border-zinc-100 rounded-xl overflow-hidden bg-zinc-50/50">
+                  <div key={category} className="border border-zinc-100 rounded-lg md:rounded-xl overflow-hidden bg-zinc-50/50">
                     <button 
                       type="button" 
                       onClick={() => toggleCategory(category)} 
-                      className="w-full flex items-center justify-between p-4 bg-white hover:bg-zinc-50 transition-colors"
+                      className="w-full flex items-center justify-between p-3 md:p-4 bg-white hover:bg-zinc-50 transition-colors"
                     >
-                      <div className="flex items-center gap-3">
-                        <span className="font-medium text-zinc-800">{category}</span>
+                      <div className="flex items-center gap-2 md:gap-3">
+                        <span className="text-sm md:text-base font-medium text-zinc-800">{category}</span>
                         {selectedCount > 0 && (
-                          <span className="text-xs bg-rose-50 text-rose-600 px-2 py-0.5 rounded-full font-medium">
+                          <span className="text-[10px] md:text-xs bg-rose-50 text-rose-600 px-1.5 py-0.5 md:px-2 md:py-0.5 rounded-full font-medium">
                             {selectedCount.toLocaleString('fa-IR')} مورد
                           </span>
                         )}
                       </div>
                       {isExpanded ? (
-                        <ChevronUp size={20} className="text-zinc-400" />
+                        <ChevronUp className="text-zinc-400 w-4 h-4 md:w-5 md:h-5" />
                       ) : (
-                        <ChevronDown size={20} className="text-zinc-400" />
+                        <ChevronDown className="text-zinc-400 w-4 h-4 md:w-5 md:h-5" />
                       )}
                     </button>
                     
                     {isExpanded && (
-                      <div className="p-4 border-t border-zinc-100 flex flex-col gap-4">
+                      <div className="p-3 md:p-4 border-t border-zinc-100 flex flex-col gap-3 md:gap-4">
                         {/* لیست تگ‌ها */}
-                        <div className="flex flex-wrap gap-2">
+                        <div className="flex flex-wrap gap-1.5 md:gap-2">
                           {categoryServices.map(service => {
                             const isDefault = defaultServices.includes(service);
                             const isSelected = selectedTags.includes(service);
@@ -668,7 +676,7 @@ export default function BusinessRegistrationPage() {
                                   key={service} 
                                   type="button" 
                                   onClick={() => toggleTag(service)} 
-                                  className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+                                  className={`px-3 py-1.5 md:px-4 md:py-2 rounded-lg md:rounded-xl text-xs md:text-sm font-medium transition-all ${
                                     isSelected
                                       ? 'bg-rose-50 border border-rose-200 text-rose-600'
                                       : 'bg-white border border-zinc-200 text-zinc-600 hover:border-zinc-300 hover:bg-zinc-50'
@@ -682,7 +690,7 @@ export default function BusinessRegistrationPage() {
                               return (
                                 <div 
                                   key={service} 
-                                  className={`flex items-center gap-1 pl-2 pr-4 py-1.5 rounded-xl text-sm font-medium transition-all border ${
+                                  className={`flex items-center gap-0.5 md:gap-1 pl-1.5 pr-3 py-1 md:pl-2 md:pr-4 md:py-1.5 rounded-lg md:rounded-xl text-xs md:text-sm font-medium transition-all border ${
                                     isSelected 
                                       ? 'bg-amber-50 border-amber-300 text-amber-700 shadow-sm shadow-amber-100' 
                                       : 'bg-white border-dashed border-amber-300 text-amber-600 hover:bg-amber-50/50'
@@ -706,7 +714,7 @@ export default function BusinessRegistrationPage() {
                                     }`}
                                     title="حذف کامل این خدمت"
                                   >
-                                    <X size={16} strokeWidth={2.5} />
+                                    <X className="w-3.5 h-3.5 md:w-4 md:h-4" strokeWidth={2.5} />
                                   </button>
                                 </div>
                               );
@@ -715,7 +723,7 @@ export default function BusinessRegistrationPage() {
                         </div>
 
                         {/* بخش افزودن خدمت جدید */}
-                        <div className="flex items-center gap-2 mt-1 pt-3 border-t border-zinc-100/60">
+                        <div className="flex items-center gap-1.5 md:gap-2 mt-1 pt-2 md:pt-3 border-t border-zinc-100/60">
                           <input 
                             type="text" 
                             value={newTagInputs[category] || ''}
@@ -727,14 +735,14 @@ export default function BusinessRegistrationPage() {
                               }
                             }}
                             placeholder={`افزودن خدمت جدید به ${category}...`} 
-                            className="flex-1 text-sm px-4 py-2.5 rounded-xl border border-zinc-200 focus:border-zinc-300 focus:ring-1 focus:ring-zinc-300 outline-none transition-all"
+                            className="flex-1 text-xs md:text-sm px-3 py-2 md:px-4 md:py-2.5 rounded-lg md:rounded-xl border border-zinc-200 focus:border-zinc-300 focus:ring-1 focus:ring-zinc-300 outline-none transition-all"
                           />
                           <button 
                             type="button" 
                             onClick={() => handleAddCustomTag(category)}
-                            className="px-3 py-2.5 bg-zinc-100 text-zinc-600 hover:bg-zinc-200 hover:text-zinc-800 rounded-xl transition-colors flex items-center justify-center gap-1 font-medium text-sm"
+                            className="px-2 py-2 md:px-3 md:py-2.5 bg-zinc-100 text-zinc-600 hover:bg-zinc-200 hover:text-zinc-800 rounded-lg md:rounded-xl transition-colors flex items-center justify-center gap-1 font-medium text-xs md:text-sm whitespace-nowrap"
                           >
-                            <Plus size={18} /> افزودن
+                            <Plus className="w-4 h-4 md:w-[18px] md:h-[18px]" /> افزودن
                           </button>
                         </div>
                       </div>
@@ -746,92 +754,99 @@ export default function BusinessRegistrationPage() {
           </div>
         )}
 
-        {/* ================= مرحله ۳: شبکه‌های اجتماعی ================= */}
+               {/* ================= مرحله ۳: شبکه‌های اجتماعی ================= */}
         {step === 3 && (
-          <div className="space-y-6 animate-fade-in">
-            <div className="flex items-center gap-2 border-b border-zinc-100 pb-3">
-              <Globe className="text-zinc-700" size={24} />
-              <h2 className="text-lg font-semibold text-zinc-800">شبکه‌های اجتماعی (اختیاری)</h2>
+          <div className="space-y-4 md:space-y-6 animate-fade-in">
+            <div className="flex items-center gap-1.5 md:gap-2 border-b border-zinc-100 pb-2 md:pb-3">
+              <Globe className="text-zinc-700 w-5 h-5 md:w-6 md:h-6" />
+              <h2 className="text-base md:text-lg font-semibold text-zinc-800">شبکه‌های اجتماعی (اختیاری)</h2>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <label className="block text-sm font-medium text-zinc-700">اینستاگرام</label>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+              
+              <div className="space-y-1.5 md:space-y-2">
+                <label className="block text-xs md:text-sm font-medium text-zinc-700">اینستاگرام</label>
                 <div className="relative">
-                  <svg className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>
+                  <svg className="absolute right-2.5 md:right-3 top-1/2 -translate-y-1/2 text-zinc-400 w-4 h-4 md:w-5 md:h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>
                   <input 
                     type="text" 
                     value={socials.instagram}
                     onChange={(e) => setSocials({...socials, instagram: e.target.value})}
                     placeholder="ID اینستاگرام" 
-                    className="w-full pr-10 pl-4 py-3 rounded-xl border border-zinc-200 focus:border-zinc-300 focus:ring-1 focus:ring-zinc-300 outline-none transition-all text-left dir-ltr" 
+                    className="w-full pr-8 md:pr-10 pl-3 md:pl-4 py-2.5 md:py-3 text-sm md:text-base rounded-lg md:rounded-xl border border-zinc-200 focus:border-zinc-300 focus:ring-1 focus:ring-zinc-300 outline-none transition-all text-left dir-ltr" 
                   />
                 </div>
               </div>
-              <div className="space-y-2">
-                <label className="block text-sm font-medium text-zinc-700">واتساپ</label>
+
+              <div className="space-y-1.5 md:space-y-2">
+                <label className="block text-xs md:text-sm font-medium text-zinc-700">واتساپ</label>
                 <div className="relative">
-                  <MessageCircle className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400" size={20} />
+                  <MessageCircle className="absolute right-2.5 md:right-3 top-1/2 -translate-y-1/2 text-zinc-400 w-4 h-4 md:w-5 md:h-5" />
                   <input 
                     type="text" 
                     value={socials.whatsapp}
                     onChange={(e) => setSocials({...socials, whatsapp: e.target.value})}
                     placeholder="شماره واتساپ" 
-                    className="w-full pr-10 pl-4 py-3 rounded-xl border border-zinc-200 focus:border-zinc-300 focus:ring-1 focus:ring-zinc-300 outline-none transition-all text-left dir-ltr" 
+                    className="w-full pr-8 md:pr-10 pl-3 md:pl-4 py-2.5 md:py-3 text-sm md:text-base rounded-lg md:rounded-xl border border-zinc-200 focus:border-zinc-300 focus:ring-1 focus:ring-zinc-300 outline-none transition-all text-left dir-ltr" 
                   />
                 </div>
               </div>
-              <div className="space-y-2">
-                <label className="block text-sm font-medium text-zinc-700">تلگرام</label>
+
+              <div className="space-y-1.5 md:space-y-2">
+                <label className="block text-xs md:text-sm font-medium text-zinc-700">تلگرام</label>
                 <div className="relative">
-                  <Send className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400" size={20} />
+                  <Send className="absolute right-2.5 md:right-3 top-1/2 -translate-y-1/2 text-zinc-400 w-4 h-4 md:w-5 md:h-5" />
                   <input 
                     type="text" 
                     value={socials.telegram}
                     onChange={(e) => setSocials({...socials, telegram: e.target.value})}
                     placeholder="ID تلگرام" 
-                    className="w-full pr-10 pl-4 py-3 rounded-xl border border-zinc-200 focus:border-zinc-300 focus:ring-1 focus:ring-zinc-300 outline-none transition-all text-left dir-ltr" 
+                    className="w-full pr-8 md:pr-10 pl-3 md:pl-4 py-2.5 md:py-3 text-sm md:text-base rounded-lg md:rounded-xl border border-zinc-200 focus:border-zinc-300 focus:ring-1 focus:ring-zinc-300 outline-none transition-all text-left dir-ltr" 
                   />
                 </div>
               </div>
-              <div className="space-y-2">
-                <label className="block text-sm font-medium text-zinc-700">روبیکا</label>
+
+              <div className="space-y-1.5 md:space-y-2">
+                <label className="block text-xs md:text-sm font-medium text-zinc-700">روبیکا</label>
                 <div className="relative">
-                  <MessageCircle className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400" size={20} />
+                  <MessageCircle className="absolute right-2.5 md:right-3 top-1/2 -translate-y-1/2 text-zinc-400 w-4 h-4 md:w-5 md:h-5" />
                   <input 
                     type="text" 
                     value={socials.rubika}
                     onChange={(e) => setSocials({...socials, rubika: e.target.value})}
                     placeholder="ID یا شماره روبیکا" 
-                    className="w-full pr-10 pl-4 py-3 rounded-xl border border-zinc-200 focus:border-zinc-300 focus:ring-1 focus:ring-zinc-300 outline-none transition-all text-left dir-ltr" 
+                    className="w-full pr-8 md:pr-10 pl-3 md:pl-4 py-2.5 md:py-3 text-sm md:text-base rounded-lg md:rounded-xl border border-zinc-200 focus:border-zinc-300 focus:ring-1 focus:ring-zinc-300 outline-none transition-all text-left dir-ltr" 
                   />
                 </div>
               </div>
-              <div className="space-y-2">
-                <label className="block text-sm font-medium text-zinc-700">بله</label>
+
+              <div className="space-y-1.5 md:space-y-2">
+                <label className="block text-xs md:text-sm font-medium text-zinc-700">بله</label>
                 <div className="relative">
-                  <MessageCircle className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400" size={20} />
+                  <MessageCircle className="absolute right-2.5 md:right-3 top-1/2 -translate-y-1/2 text-zinc-400 w-4 h-4 md:w-5 md:h-5" />
                   <input 
                     type="text" 
                     value={socials.bale}
                     onChange={(e) => setSocials({...socials, bale: e.target.value})}
                     placeholder="ID یا شماره بله" 
-                    className="w-full pr-10 pl-4 py-3 rounded-xl border border-zinc-200 focus:border-zinc-300 focus:ring-1 focus:ring-zinc-300 outline-none transition-all text-left dir-ltr" 
+                    className="w-full pr-8 md:pr-10 pl-3 md:pl-4 py-2.5 md:py-3 text-sm md:text-base rounded-lg md:rounded-xl border border-zinc-200 focus:border-zinc-300 focus:ring-1 focus:ring-zinc-300 outline-none transition-all text-left dir-ltr" 
                   />
                 </div>
               </div>
-              <div className="space-y-2">
-                <label className="block text-sm font-medium text-zinc-700">وب‌سایت</label>
+
+              <div className="space-y-1.5 md:space-y-2">
+                <label className="block text-xs md:text-sm font-medium text-zinc-700">وب‌سایت</label>
                 <div className="relative">
-                  <Globe className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400" size={20} />
+                  <Globe className="absolute right-2.5 md:right-3 top-1/2 -translate-y-1/2 text-zinc-400 w-4 h-4 md:w-5 md:h-5" />
                   <input 
                     type="url" 
                     value={socials.website}
                     onChange={(e) => setSocials({...socials, website: e.target.value})}
                     placeholder="https://..." 
-                    className="w-full pr-10 pl-4 py-3 rounded-xl border border-zinc-200 focus:border-zinc-300 focus:ring-1 focus:ring-zinc-300 outline-none transition-all text-left dir-ltr" 
+                    className="w-full pr-8 md:pr-10 pl-3 md:pl-4 py-2.5 md:py-3 text-sm md:text-base rounded-lg md:rounded-xl border border-zinc-200 focus:border-zinc-300 focus:ring-1 focus:ring-zinc-300 outline-none transition-all text-left dir-ltr" 
                   />
                 </div>
               </div>
+
             </div>
           </div>
         )}
@@ -990,10 +1005,8 @@ export default function BusinessRegistrationPage() {
 </button>
             </button>
           )}
-
         </div>
       </div>
-
             <RegionFilterModal 
         isOpen={isRegionModalOpen} 
         onClose={() => setIsRegionModalOpen(false)} 
@@ -1003,7 +1016,6 @@ export default function BusinessRegistrationPage() {
         initialNeighborhoods={selectedNeighborhoods}
         maxNeighborhoods={4} 
       />
-
 
       {isMapModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-fade-in">
@@ -1015,12 +1027,10 @@ export default function BusinessRegistrationPage() {
                 <X size={20} />
               </button>
             </div>
-            
             <div className="flex-1 relative bg-zinc-100 w-full h-full z-0">
               {/* ارسال مختصات موقت به نقشه */}
               <MapPicker position={tempCoordinates} setPosition={setTempCoordinates} />
             </div>
-            
             <div className="p-4 bg-white border-t border-zinc-100 flex justify-between items-center gap-3 z-10 relative">
               <span className="text-sm text-zinc-500 hidden md:inline-block">
                 لطفا روی نقشه کلیک کنید تا نشانگر در محل دقیق کسب‌وکار شما قرار بگیرد.
@@ -1039,11 +1049,10 @@ export default function BusinessRegistrationPage() {
                   }} 
                   className="flex-1 md:flex-none px-6 py-2.5 rounded-xl bg-rose-600 text-white font-medium hover:bg-rose-700 transition-colors shadow-md shadow-rose-200 flex items-center justify-center gap-2"
                 >
-                  <CheckCircle2 size={20} /> تایید موقعیت
+                <CheckCircle2 size={20} /> تایید موقعیت
                 </button>
               </div>
             </div>
-
           </div>
         </div>
       )}
