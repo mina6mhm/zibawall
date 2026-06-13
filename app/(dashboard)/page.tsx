@@ -302,8 +302,9 @@ export default function DashboardHomePage() {
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             {isLoading ? (
+              // برای موبایل ارتفاع کمتر، برای دسکتاپ (md:) همان ارتفاع قبل
               [1, 2, 3, 4].map((n) => (
-                <div key={n} className="bg-zinc-100 rounded-[10px] h-[340px] animate-pulse"></div>
+                <div key={n} className="bg-zinc-100 rounded-[10px] h-[300px] sm:h-[340px] animate-pulse"></div>
               ))
             ) : error ? (
               <div className="col-span-full py-8 text-center text-red-500 font-medium">{error}</div>
@@ -321,12 +322,14 @@ export default function DashboardHomePage() {
                   : salon.rating ? String(salon.rating) : null; 
                   
                 return (
+                  // --- شروع تغییرات اصلی برای ظاهر کارت در موبایل ---
                   <div 
                     key={salon.id}
                     onClick={() => router.push(`/salon/${salon.id}`)}
                     className="cursor-pointer bg-white rounded-[10px] border border-zinc-200 overflow-hidden shadow-sm hover:shadow-md transition-shadow flex flex-col group relative"
                   >
-                    <div className="h-44 w-full bg-zinc-200 relative overflow-hidden">
+                    {/* ارتفاع تصویر کارت برای موبایل کم شده */}
+                    <div className="h-28 sm:h-40 w-full bg-zinc-200 relative overflow-hidden"> 
                       {salon.imageUrl ? (
                         <img src={salon.imageUrl} alt={salon.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                       ) : (
@@ -343,8 +346,10 @@ export default function DashboardHomePage() {
                       </button>
                     </div>
 
-                    <div className="p-4 flex flex-col flex-grow">
-                      <div className="flex justify-between items-start mb-2">
+                    {/* پدینگ داخل کارت در موبایل کم شده */}
+                    <div className="p-3 sm:p-4 flex flex-col flex-grow"> 
+                      {/* فاصله‌های داخلی کارت کمی فشرده‌تر شده‌اند */}
+                      <div className="flex justify-between items-start mb-1.5"> 
                         <h3 className="font-bold text-zinc-900 text-base">{salon.name}</h3>
                         
                         <div className="flex items-center gap-1.5 shrink-0">
@@ -361,7 +366,7 @@ export default function DashboardHomePage() {
                           )}
                         </div>
                       </div>
-                      <div className="flex items-center gap-1.5 text-zinc-500 mb-3">
+                      <div className="flex items-center gap-1.5 text-zinc-500 mb-2"> 
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                           <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
                           <circle cx="12" cy="10" r="3" />
@@ -370,7 +375,7 @@ export default function DashboardHomePage() {
                       </div>
 
                       {salonTags && salonTags.length > 0 && (
-                        <div className="flex flex-wrap gap-1.5 mb-4">
+                        <div className="flex flex-wrap gap-1.5 mb-3"> 
                           {salonTags.slice(0, 3).map((tag: string, idx: number) => (
                             <span key={idx} className="bg-zinc-100/80 text-zinc-600 text-[11px] px-2.5 py-1 rounded-md font-medium">
                               {tag}
@@ -384,12 +389,13 @@ export default function DashboardHomePage() {
                         </div>
                       )}
 
-                      <div className="border-t border-zinc-100 pt-3 flex items-center justify-between mt-auto">
+                      {/* دکمه تماس در موبایل کمی کوچک‌تر شده */}
+                      <div className="border-t border-zinc-100 pt-2.5 flex items-center justify-between mt-auto"> 
                         {(salon.phone || (salon.phones && salon.phones.length > 0)) && (
                           <a 
                             href={`tel:${salon.phone || salon.phones[0]}`}
                             onClick={(e) => e.stopPropagation()}
-                            className="bg-zinc-900 text-white text-sm font-bold px-6 py-2.5 rounded-[6px] hover:bg-black transition-colors shadow-sm inline-flex items-center justify-center"
+                            className="bg-zinc-900 text-white text-sm font-bold px-5 py-2 rounded-[6px] hover:bg-black transition-colors shadow-sm inline-flex items-center justify-center" 
                           >
                             تماس
                           </a>
@@ -397,6 +403,7 @@ export default function DashboardHomePage() {
                       </div>
                     </div>
                   </div>
+                  // --- پایان تغییرات اصلی برای ظاهر کارت در موبایل ---
                 );
               })
             ) : (
@@ -427,7 +434,6 @@ export default function DashboardHomePage() {
                   <RegionFilterModal 
         isOpen={isRegionModalOpen} 
         onClose={() => setIsRegionModalOpen(false)} 
-        // 👇 این سه خط رو اضافه کنید تا مقادیر فعلی به مودال پاس داده بشن
         initialProvince={selectedProvince}
         initialCity={selectedCity}
         initialNeighborhoods={selectedNeighborhoods}
