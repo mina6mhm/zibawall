@@ -391,7 +391,7 @@ export default function BusinessRegistrationPage() {
           { id: 5, title: 'اشتراک' } 
         ].map((item) => (
           
-          <div key={item.id} className="flex flex-col items-center gap-2 bg-[#ffffff] md:bg-transparent px-1 md:px-2 z-10" style={{ backgroundColor: 'var(--background, #fdfcfc)' }}> 
+          <div key={item.id} className="flex flex-col items-center gap-2 bg-white md:bg-transparent px-1 md:px-2 z-10" style={{ backgroundColor: 'var(--background, #ffffff)' }}> 
             <div className={`w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center font-bold text-xs md:text-sm transition-colors ${
               step >= item.id 
                 ? 'bg-rose-600 text-white shadow-sm' 

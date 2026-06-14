@@ -38,6 +38,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="flex h-screen bg-white text-zinc-900 dir-rtl font-sans selection:bg-zinc-200">
+      {/* دسکتاپ سایدبار */}
       <aside className="hidden md:flex flex-col w-64 bg-white border-l border-zinc-100 shadow-[0_0_40px_rgba(0,0,0,0.02)] z-20">
         <div className="p-8 pb-6">
           <h1 className="text-xl font-black tracking-tighter text-zinc-900">
@@ -64,16 +65,20 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </nav>
       </aside>
 
+      {/* محتوای اصلی */}
       <div className="flex-1 flex flex-col relative w-full overflow-hidden">
-        <main className="flex-1 overflow-y-auto px-4 md:px-8 pb-[80px] md:pb-8">
+        {/* در موبایل پدینگ پایین را بیشتر کردیم تا محتوا زیر منو نرود (110px) */}
+        <main className="flex-1 overflow-y-auto px-4 md:px-8 pb-[110px] md:pb-8">
           <div className="max-w-6xl mx-auto h-full">
             {children}
           </div>
         </main>
       </div>
 
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-zinc-100 pb-8">
-        <div className="flex items-center justify-around px-1 h-[68px]"> 
+      {/* نَوبار موبایل */}
+      {/* استفاده از افکت شیشه‌ای و safe-area-inset-bottom برای آیفون */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-t border-zinc-100 pb-[env(safe-area-inset-bottom,12px)]">
+        <div className="flex items-center justify-between px-2 h-[68px]"> 
           {navItems.map((item) => {
             const isActive = item.href === '/' ? pathname === '/' : pathname?.startsWith(item.href);
 
@@ -81,10 +86,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <Link 
                 key={item.name} 
                 href={item.href}
-                className="flex flex-col items-center justify-center w-[72px] h-full gap-1.5"
+                className="flex flex-1 flex-col items-center justify-center h-full gap-1.5 transition-transform active:scale-95"
               >
-                <item.icon className={`w-[24px] h-[24px] ${isActive ? 'text-black' : 'text-[#8A8F95]'}`} isActive={isActive} />
-                <span className={`text-[11px] tracking-tight ${isActive ? 'text-black font-bold' : 'text-[#8A8F95] font-medium'}`}>
+                <item.icon 
+                  className={`w-[24px] h-[24px] transition-colors duration-300 ${isActive ? 'text-black' : 'text-zinc-400'}`} 
+                  isActive={isActive} 
+                />
+                <span className={`text-[11px] tracking-tight transition-colors duration-300 ${isActive ? 'text-black font-bold' : 'text-zinc-500 font-medium'}`}>
                   {item.name}
                 </span>
               </Link>
