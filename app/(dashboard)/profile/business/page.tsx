@@ -21,6 +21,7 @@ import {
   Map,
   CheckCircle2,
   ChevronDown,
+  ChevronLeft,
   ChevronUp,
   X,
   ImagePlus,
@@ -405,67 +406,69 @@ export default function BusinessRegistrationPage() {
 
       {/* کانتینر سفیدرنگ فرم‌ها */}
       <div className="bg-white rounded-xl md:rounded-2xl border border-zinc-100 shadow-sm p-4 md:p-8">
+                
                 {/* ================= مرحله ۱: اطلاعات پایه ================= */}
         {step === 1 && (
-          <div className="space-y-6 md:space-y-8 animate-fade-in">
-            <section className="space-y-4 md:space-y-6">
-              <div className="flex items-center gap-2 border-b border-zinc-100 pb-2 md:pb-3">
-                <Store className="text-zinc-700 w-5 h-5 md:w-6 md:h-6" />
-                <h2 className="text-base md:text-lg font-semibold text-zinc-800">اطلاعات پایه سالن</h2>
+          <div className="space-y-2 md:space-y-8 animate-fade-in">
+            <section className="flex flex-col md:space-y-6">
+              <div className="flex items-center gap-2 border-b-2 border-zinc-50 md:border-zinc-100 pb-3 pt-2 md:pt-0">
+                <Store className="text-zinc-800 w-5 h-5 md:w-6 md:h-6" />
+                <h2 className="text-[16px] md:text-lg font-bold text-zinc-900">اطلاعات پایه سالن</h2>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+              
+              <div className="flex flex-col md:grid md:grid-cols-2 md:gap-6">
                 
-                <div className="space-y-1.5 md:space-y-2">
-                  <label className="block text-xs md:text-sm font-medium text-zinc-700">نام سالن زیبایی <span className="text-red-500">*</span></label>
+                <div className="py-3 md:py-0 border-b border-zinc-100 md:border-0 md:space-y-2">
+                  <label className="block text-[13px] md:text-sm font-medium text-zinc-700">نام سالن زیبایی <span className="text-red-500">*</span></label>
                   <input 
                     type="text" 
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder="مثال: سالن زیبایی گل‌ها" 
-                    className="w-full px-3 py-2.5 md:px-4 md:py-3 text-sm md:text-base rounded-lg md:rounded-xl border border-zinc-200 focus:border-zinc-300 focus:ring-1 focus:ring-zinc-300 outline-none transition-all" 
+                    className="w-full mt-1 md:mt-0 px-0 py-1 md:px-4 md:py-3 text-[15px] md:text-base md:rounded-xl bg-transparent md:bg-white border-0 md:border md:border-zinc-200 focus:outline-none focus:md:border-zinc-300 focus:md:ring-1 focus:md:ring-zinc-300 transition-all placeholder:text-zinc-300" 
                   />
                 </div>
                 
-                <div className="space-y-1.5 md:space-y-2">
-                  <label className="block text-xs md:text-sm font-medium text-zinc-700">ساعات کاری <span className="text-red-500">*</span></label>
-                  <div className="relative">
-                    <Clock className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 w-4 h-4 md:w-5 md:h-5" />
+                <div className="py-3 md:py-0 border-b border-zinc-100 md:border-0 md:space-y-2">
+                  <label className="block text-[13px] md:text-sm font-medium text-zinc-700">ساعات کاری <span className="text-red-500">*</span></label>
+                  <div className="relative mt-1 md:mt-0 flex items-center justify-between md:block">
                     <input 
                       type="text" 
                       value={workingHours}
                       onChange={(e) => setWorkingHours(e.target.value)}
                       placeholder="مثال: ۱۰ صبح تا ۸ شب" 
-                      className="w-full pr-9 pl-3 py-2.5 md:pr-10 md:pl-4 md:py-3 text-sm md:text-base rounded-lg md:rounded-xl border border-zinc-200 focus:border-zinc-300 focus:ring-1 focus:ring-zinc-300 outline-none transition-all" 
+                      className="w-full px-0 py-1 md:pr-10 md:pl-4 md:py-3 text-[15px] md:text-base md:rounded-xl bg-transparent md:bg-white border-0 md:border md:border-zinc-200 focus:outline-none focus:md:border-zinc-300 focus:md:ring-1 focus:md:ring-zinc-300 transition-all placeholder:text-zinc-300" 
                     />
+                    <Clock className="text-zinc-400 w-5 h-5 md:absolute md:right-3 md:top-1/2 md:-translate-y-1/2" />
                   </div>
                 </div>
 
-                <div className="space-y-1.5 md:space-y-2 md:col-span-2">
-                  <label className="block text-xs md:text-sm font-medium text-zinc-700">توضیحات و معرفی سالن <span className="text-red-500">*</span></label>
-                  <div className="relative">
-                    <FileText className="absolute right-3 top-3 md:top-4 text-zinc-400 w-4 h-4 md:w-5 md:h-5" />
+                <div className="py-3 md:py-0 border-b border-zinc-100 md:border-0 md:space-y-2 md:col-span-2">
+                  <label className="block text-[13px] md:text-sm font-medium text-zinc-700">توضیحات و معرفی سالن <span className="text-red-500">*</span></label>
+                  <div className="relative mt-1 md:mt-0">
+                    <FileText className="hidden md:block absolute right-3 top-3 md:top-4 text-zinc-400 w-4 h-4 md:w-5 md:h-5" />
                     <textarea 
                       rows={3} 
                       value={description}
                       onChange={(e) => setDescription(e.target.value)}
                       placeholder="توضیح مختصری درباره سابقه، خدمات ویژه و محیط سالن خود بنویسید..." 
-                      className="w-full pr-9 pl-3 py-2.5 md:pr-10 md:pl-4 md:py-3 text-sm md:text-base rounded-lg md:rounded-xl border border-zinc-200 focus:border-zinc-300 focus:ring-1 focus:ring-zinc-300 outline-none transition-all resize-none"
+                      className="w-full px-0 py-1 md:pr-10 md:pl-4 md:py-3 text-[15px] md:text-base md:rounded-xl bg-transparent md:bg-white border-0 md:border md:border-zinc-200 focus:outline-none focus:md:border-zinc-300 focus:md:ring-1 focus:md:ring-zinc-300 transition-all resize-none placeholder:text-zinc-300"
                     ></textarea>
                   </div>
                 </div>
 
-                <div className="space-y-2 md:space-y-3 md:col-span-2">
-                  <label className="block text-xs md:text-sm font-medium text-zinc-700">روزهای تعطیل در هفته</label>
-                  <div className="flex flex-wrap gap-1.5 md:gap-2">
+                <div className="py-4 md:py-0 border-b border-zinc-100 md:border-0 space-y-3 md:col-span-2">
+                  <label className="block text-[13px] md:text-sm font-medium text-zinc-700">روزهای تعطیل در هفته</label>
+                  <div className="flex flex-wrap gap-2">
                     {WEEK_DAYS.map(day => (
                       <button
                         key={day}
                         type="button"
                         onClick={() => toggleClosedDay(day)}
-                        className={`px-3 py-1.5 md:px-4 md:py-2 rounded-lg md:rounded-xl text-xs md:text-sm font-medium transition-colors ${
+                        className={`px-4 py-2 md:px-4 md:py-2 rounded-full md:rounded-xl text-[13px] md:text-sm font-medium transition-colors ${
                           closedDays.includes(day)
-                            ? 'bg-rose-50 text-rose-600 border border-rose-200'
-                            : 'bg-white border border-zinc-200 text-zinc-600 hover:bg-zinc-50'
+                            ? 'bg-rose-50 text-rose-600 md:border md:border-rose-200'
+                            : 'bg-zinc-50 md:bg-white md:border md:border-zinc-200 text-zinc-600 hover:bg-zinc-100 md:hover:bg-zinc-50'
                         }`}
                       >
                         {day}
@@ -474,142 +477,159 @@ export default function BusinessRegistrationPage() {
                   </div>
                 </div>
 
-                <div className="space-y-2 md:space-y-3 md:col-span-2 mt-1 md:mt-2">
-                  <label className="block text-xs md:text-sm font-medium text-zinc-700">شماره تماس‌های سالن <span className="text-red-500">*</span></label>
-                  <div className="space-y-2 md:space-y-3">
+                <div className="py-4 md:py-0 border-b border-zinc-100 md:border-0 space-y-3 md:col-span-2 mt-1 md:mt-2">
+                  <label className="block text-[13px] md:text-sm font-medium text-zinc-700">شماره تماس‌های سالن <span className="text-red-500">*</span></label>
+                  <div className="space-y-4 md:space-y-3 mt-1">
                     {phones.map((phone, index) => (
-                      <div key={index} className="flex gap-2">
-                        <div className="relative flex-1">
-                          <Phone className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 w-4 h-4 md:w-5 md:h-5" />
+                      <div key={index} className="flex gap-2 items-center">
+                        <div className="relative flex-1 flex items-center justify-between md:block">
                           <input 
                             type="tel" 
                             value={phone} 
                             onChange={(e) => handlePhoneChange(index, e.target.value)} 
                             placeholder={`شماره تماس ${index + 1}`} 
-                            className="w-full pr-9 pl-3 py-2.5 md:pr-10 md:pl-4 md:py-3 text-sm md:text-base rounded-lg md:rounded-xl border border-zinc-200 focus:border-zinc-300 focus:ring-1 focus:ring-zinc-300 outline-none transition-all text-left dir-ltr" 
+                            className="w-full px-0 py-1 md:pr-10 md:pl-4 md:py-3 text-[15px] md:text-base md:rounded-xl bg-transparent md:bg-white border-0 md:border md:border-zinc-200 focus:outline-none focus:md:border-zinc-300 focus:md:ring-1 focus:md:ring-zinc-300 transition-all text-left dir-ltr placeholder:text-zinc-300" 
                           />
+                          <Phone className="text-zinc-400 w-5 h-5 md:w-5 md:h-5 md:absolute md:right-3 md:top-1/2 md:-translate-y-1/2 order-first md:order-none ml-2 md:ml-0" />
                         </div>
                         {phones.length > 1 && (
-                          <button type="button" onClick={() => handleRemovePhone(index)} className="p-2.5 md:p-3 text-red-500 bg-red-50 hover:bg-red-100 rounded-lg md:rounded-xl transition-colors">
-                            <Trash2 className="w-4 h-4 md:w-5 md:h-5" />
+                          <button type="button" onClick={() => handleRemovePhone(index)} className="p-1 md:p-3 text-zinc-400 hover:text-red-500 md:bg-red-50 md:text-red-500 md:hover:bg-red-100 rounded-lg md:rounded-xl transition-colors">
+                            <Trash2 className="w-5 h-5" />
                           </button>
                         )}
                       </div>
                     ))}
                   </div>
-                  <button type="button" onClick={handleAddPhone} className="text-xs md:text-sm font-medium text-rose-600 flex items-center gap-1 md:gap-1.5 mt-1 md:mt-2 hover:text-rose-700 transition-colors">
+                  <button type="button" onClick={handleAddPhone} className="text-[13px] md:text-sm font-medium text-rose-600 flex items-center gap-1.5 mt-2 hover:text-rose-700 transition-colors">
                     <Plus className="w-4 h-4 md:w-5 md:h-5" /> افزودن شماره جدید
                   </button>
                 </div>
               </div>
             </section>
 
-            <section className="space-y-4 md:space-y-6 mt-6 md:mt-8">
-              <div className="flex items-center gap-2 border-b border-zinc-100 pb-2 md:pb-3">
-                <MapPin className="text-zinc-700 w-5 h-5 md:w-6 md:h-6" />
-                <h2 className="text-base md:text-lg font-semibold text-zinc-800">آدرس و موقعیت مکانی</h2>
+            <section className="flex flex-col md:space-y-6 mt-4 md:mt-8">
+              <div className="flex items-center gap-2 border-b-2 border-zinc-50 md:border-zinc-100 pb-3 pt-2 md:pt-0">
+                <MapPin className="text-zinc-800 w-5 h-5 md:w-6 md:h-6" />
+                <h2 className="text-[16px] md:text-lg font-bold text-zinc-900">آدرس و موقعیت مکانی</h2>
               </div>
               
-              <div className="space-y-2 md:space-y-3">
-                <label className="block text-xs md:text-sm font-medium text-zinc-700">استان و شهر <span className="text-red-500">*</span></label>
-                <button
-                  type="button"
-                  onClick={() => setIsRegionModalOpen(true)}
-                  className="w-full px-3 py-2.5 md:px-4 md:py-3 text-sm md:text-base rounded-lg md:rounded-xl border border-zinc-200 text-right flex justify-between items-center hover:border-zinc-300 focus:ring-1 focus:ring-zinc-300 outline-none transition-all bg-white"
-                >
-                  <span className={selectedProvince ? 'text-zinc-800 font-medium' : 'text-zinc-400'}>
-                    {selectedProvince && selectedCity ? `${selectedProvince} - ${selectedCity}` : 'انتخاب استان و شهر...'}
-                  </span>
-                  <ChevronDown className="text-zinc-400 w-4 h-4 md:w-5 md:h-5" />
-                </button>
-
-                {/* نمایش محله‌های انتخاب شده در صورت وجود */}
-                {selectedProvince === 'تهران' && selectedCity === 'تهران' && selectedNeighborhoods.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5 md:gap-2 mt-1.5 md:mt-2 p-2.5 md:p-3 bg-zinc-50 rounded-lg md:rounded-xl border border-zinc-100">
-                    <div className="w-full text-[10px] md:text-xs text-zinc-500 mb-0.5 md:mb-1">محله‌های انتخابی ({selectedNeighborhoods.length.toLocaleString('fa', { useGrouping: false })} از ۴)</div>
-                    {selectedNeighborhoods.map((nh) => (
-                      <span 
-                        key={nh} 
-                        className="flex items-center gap-1 md:gap-1.5 bg-rose-50 text-rose-700 px-2.5 py-1 md:px-3 md:py-1.5 rounded-full text-[10px] md:text-xs font-bold border border-rose-100"
-                      >
-                        {nh}
-                        <button 
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            removeNeighborhood(nh);
-                          }} 
-                          className="hover:bg-rose-200 text-rose-500 rounded-full p-0.5 transition-colors"
-                        >
-                          <X className="w-3 h-3 md:w-3.5 md:h-3.5" strokeWidth={2.5} />
-                        </button>
+              <div className="flex flex-col md:space-y-3">
+                <div className="py-4 md:py-0 border-b border-zinc-100 md:border-0 md:space-y-3">
+                  <label className="hidden md:block text-sm font-medium text-zinc-700">استان و شهر <span className="text-red-500">*</span></label>
+                  <button
+                    type="button"
+                    onClick={() => setIsRegionModalOpen(true)}
+                    className="w-full px-0 py-1 md:px-4 md:py-3 text-[15px] md:text-base md:rounded-xl bg-transparent md:bg-white border-0 md:border md:border-zinc-200 text-right flex justify-between items-center focus:outline-none focus:md:border-zinc-300 focus:md:ring-1 focus:md:ring-zinc-300 transition-all"
+                  >
+                    <div className="flex flex-col items-start gap-1 md:block">
+                      <span className="text-[13px] font-medium text-zinc-700 md:hidden">استان و شهر <span className="text-red-500">*</span></span>
+                      <span className={selectedProvince ? 'text-zinc-900 font-medium' : 'text-zinc-300 md:text-zinc-400'}>
+                        {selectedProvince && selectedCity ? `${selectedProvince} - ${selectedCity}` : 'انتخاب استان و شهر...'}
                       </span>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              <div className="space-y-1.5 md:space-y-2">
-                <label className="block text-xs md:text-sm font-medium text-zinc-700">آدرس دقیق <span className="text-red-500">*</span></label>
-                <textarea 
-                  rows={3} 
-                  value={address}
-                  onChange={(e) => setAddress(e.target.value)}
-                  placeholder="خیابان اصلی، کوچه، پلاک، طبقه..." 
-                  className="w-full px-3 py-2.5 md:px-4 md:py-3 text-sm md:text-base rounded-lg md:rounded-xl border border-zinc-200 focus:border-zinc-300 focus:ring-1 focus:ring-zinc-300 outline-none transition-all resize-none"
-                ></textarea>
-              </div>
-              
-              {/* بخش انتخاب و نمایش نقشه */}
-              {locationSelected ? (
-                <div className="w-full space-y-2 md:space-y-3 animate-fade-in mt-4 md:mt-6">
-                  {/* کادر مستطیلی نقشه */}
-                  <div className="w-full h-36 md:h-56 rounded-xl md:rounded-2xl border border-zinc-200 overflow-hidden relative shadow-sm pointer-events-none bg-zinc-100">
-                    <img 
-                      src={`https://static-maps.yandex.ru/1.x/?ll=${coordinates[1]},${coordinates[0]}&z=15&l=map&size=600,250&pt=${coordinates[1]},${coordinates[0]},pm2rdm&lang=fa_IR`} 
-                      alt="پیش‌نمایش نقشه" 
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-
-                  {/* وضعیت و ویرایش - زیر نقشه */}
-                  <div className="flex flex-row items-center justify-between px-1 pt-1">
-                    <div className="flex items-center gap-1.5 md:gap-2 text-green-600">
-                      <CheckCircle2 className="w-4 h-4 md:w-5 md:h-5" />
-                      <span className="text-xs md:text-sm font-medium text-zinc-800">موقعیت سالن ثبت شد</span>
                     </div>
-                    <button 
-                      type="button" 
+                    <ChevronLeft className="text-zinc-400 w-5 h-5 md:hidden" />
+                    <ChevronDown className="text-zinc-400 w-5 h-5 hidden md:block" />
+                  </button>
+
+                  {/* نمایش محله‌های انتخاب شده در صورت وجود */}
+                  {selectedProvince === 'تهران' && selectedCity === 'تهران' && selectedNeighborhoods.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mt-2 md:mt-2 md:p-3 md:bg-zinc-50 md:rounded-xl md:border md:border-zinc-100">
+                      <div className="w-full text-xs text-zinc-500 mb-1 hidden md:block">محله‌های انتخابی ({selectedNeighborhoods.length.toLocaleString('fa', { useGrouping: false })} از ۴)</div>
+                      {selectedNeighborhoods.map((nh) => (
+                        <span 
+                          key={nh} 
+                          className="flex items-center gap-1.5 bg-rose-50 text-rose-700 px-3 py-1.5 rounded-full text-[12px] md:text-xs font-bold md:border md:border-rose-100"
+                        >
+                          {nh}
+                          <button 
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              removeNeighborhood(nh);
+                            }} 
+                            className="hover:text-rose-900 text-rose-500 rounded-full transition-colors md:hover:bg-rose-200 md:p-0.5"
+                          >
+                            <X className="w-3.5 h-3.5 md:w-3.5 md:h-3.5" strokeWidth={2.5} />
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div className="py-4 md:py-0 border-b border-zinc-100 md:border-0 md:space-y-2 mt-0 md:mt-4">
+                  <label className="block text-[13px] md:text-sm font-medium text-zinc-700">آدرس دقیق <span className="text-red-500">*</span></label>
+                  <textarea 
+                    rows={2} 
+                    value={address}
+                    onChange={(e) => setAddress(e.target.value)}
+                    placeholder="خیابان اصلی، کوچه، پلاک، طبقه..." 
+                    className="w-full mt-1 md:mt-0 px-0 py-1 md:px-4 md:py-3 text-[15px] md:text-base md:rounded-xl bg-transparent md:bg-white border-0 md:border md:border-zinc-200 focus:outline-none focus:md:border-zinc-300 focus:md:ring-1 focus:md:ring-zinc-300 transition-all resize-none placeholder:text-zinc-300"
+                  ></textarea>
+                </div>
+                
+                {/* بخش انتخاب و نمایش نقشه */}
+                <div className="py-4 md:py-0 mt-0 md:mt-4">
+                  <label className="block text-[13px] md:text-sm font-medium text-zinc-700 mb-3 md:hidden">موقعیت روی نقشه <span className="text-red-500">*</span></label>
+                  
+                  {locationSelected ? (
+                    <div className="w-full space-y-3 animate-fade-in">
+                      {/* کادر مستطیلی نقشه */}
+                      <div className="w-full h-40 md:h-56 rounded-xl md:rounded-2xl border-0 md:border md:border-zinc-200 overflow-hidden relative shadow-sm pointer-events-none bg-zinc-100">
+                        <img 
+                          src={`https://static-maps.yandex.ru/1.x/?ll=${coordinates[1]},${coordinates[0]}&z=15&l=map&size=600,250&pt=${coordinates[1]},${coordinates[0]},pm2rdm&lang=fa_IR`} 
+                          alt="پیش‌نمایش نقشه" 
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+
+                      {/* وضعیت و ویرایش - زیر نقشه */}
+                      <div className="flex flex-row items-center justify-between px-1">
+                        <div className="flex items-center gap-1.5 md:gap-2 text-emerald-600">
+                          <CheckCircle2 className="w-4 h-4 md:w-5 md:h-5" />
+                          <span className="text-[13px] md:text-sm font-medium">موقعیت سالن ثبت شد</span>
+                        </div>
+                        <button 
+                          type="button" 
+                          onClick={() => {
+                            setTempCoordinates(coordinates);
+                            setIsMapModalOpen(true);
+                          }} 
+                          className="text-zinc-500 md:text-rose-600 text-[13px] md:text-sm font-medium hover:text-zinc-700 md:hover:bg-rose-50 px-0 md:px-3 py-1 md:py-1.5 rounded-lg transition-colors flex items-center gap-1"
+                        >
+                          <MapPin className="w-4 h-4 md:w-4 md:h-4" /> ویرایش موقعیت
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div 
                       onClick={() => {
                         setTempCoordinates(coordinates);
                         setIsMapModalOpen(true);
-                      }} 
-                      className="text-rose-600 text-[10px] md:text-sm font-medium hover:bg-rose-50 px-2 py-1 md:px-3 md:py-1.5 rounded-lg transition-colors flex items-center gap-1"
+                      }}
+                      className="bg-zinc-50 md:bg-zinc-50 border-0 md:border md:border-dashed md:border-zinc-300 rounded-xl md:rounded-2xl p-4 md:p-6 flex flex-col items-center justify-center text-center gap-2 md:gap-3 cursor-pointer md:cursor-default"
                     >
-                      <MapPin className="w-3.5 h-3.5 md:w-4 md:h-4" /> ویرایش موقعیت
-                    </button>
-                  </div>
+                      <div className="w-10 h-10 md:w-12 md:h-12 bg-white text-zinc-400 rounded-full flex items-center justify-center shadow-sm mb-1 border border-zinc-200">
+                        <Map className="w-5 h-5 md:w-7 md:h-7" />
+                      </div>
+                      <div>
+                        <p className="text-[13px] md:text-sm font-medium text-zinc-600 md:text-zinc-800">برای انتخاب موقعیت روی نقشه ضربه بزنید</p>
+                      </div>
+                      <button 
+                        type="button" 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setTempCoordinates(coordinates);
+                          setIsMapModalOpen(true);
+                        }} 
+                        className="hidden md:flex mt-1 md:mt-2 bg-white border border-zinc-200 shadow-sm px-4 py-2 md:px-5 md:py-2.5 rounded-lg md:rounded-xl text-zinc-700 text-xs md:text-sm font-medium hover:bg-zinc-100 items-center gap-1.5 md:gap-2"
+                      >
+                        <MapPin className="w-4 h-4 md:w-[18px] md:h-[18px] text-zinc-600" /> انتخاب از روی نقشه
+                      </button>
+                    </div>
+                  )}
                 </div>
-              ) : (
-                <div className="bg-zinc-50 border border-dashed border-zinc-300 rounded-xl md:rounded-2xl p-4 md:p-6 flex flex-col items-center justify-center text-center gap-2 md:gap-3 mt-3 md:mt-4">
-                  <div className="w-10 h-10 md:w-12 md:h-12 bg-white text-zinc-400 rounded-full flex items-center justify-center shadow-sm mb-1 border border-zinc-200">
-                    <Map className="w-5 h-5 md:w-7 md:h-7" />
-                  </div>
-                  <div>
-                    <p className="text-xs md:text-sm font-medium text-zinc-800">موقعیت سالن را روی نقشه مشخص کنید</p>
-                  </div>
-                  <button 
-                    type="button" 
-                    onClick={() => {
-                      setTempCoordinates(coordinates);
-                      setIsMapModalOpen(true);
-                    }} 
-                    className="mt-1 md:mt-2 bg-white border border-zinc-200 shadow-sm px-4 py-2 md:px-5 md:py-2.5 rounded-lg md:rounded-xl text-zinc-700 text-xs md:text-sm font-medium hover:bg-zinc-100 flex items-center gap-1.5 md:gap-2"
-                  >
-                    <MapPin className="w-4 h-4 md:w-[18px] md:h-[18px] text-zinc-600" /> انتخاب از روی نقشه
-                  </button>
-                </div>
-              )}
+              </div>
             </section>
           </div>
         )}
