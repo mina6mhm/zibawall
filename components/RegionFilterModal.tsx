@@ -3,7 +3,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { X, ChevronLeft, Check, Search } from "lucide-react"; // آیکون Search اضافه شد
+import { X, ChevronLeft, Check, Search } from "lucide-react"; 
 
 interface CityData {
   id: string;
@@ -56,10 +56,8 @@ export default function RegionFilterModal({
     initialNeighborhoods
   );
 
-  // اضافه شدن استیت برای مدیریت عبارت جستجو
   const [searchQuery, setSearchQuery] = useState("");
 
-  // واکشی اطلاعات شهرها و استان‌ها
   useEffect(() => {
     const fetchLocations = async () => {
       try {
@@ -104,11 +102,10 @@ export default function RegionFilterModal({
 
   const initialNeighborhoodsStr = JSON.stringify(initialNeighborhoods);
 
-  // آپدیت مودال در زمان باز شدن
   useEffect(() => {
     if (isOpen) {
       setSelectedNeighborhoods(JSON.parse(initialNeighborhoodsStr));
-      setSearchQuery(""); // ریست کردن جستجو هنگام باز شدن مدال
+      setSearchQuery(""); 
 
       if (initialProvince && initialCity && locations.length > 0) {
         const currentProvince = locations.find((p) => p.name === initialProvince);
@@ -140,7 +137,7 @@ export default function RegionFilterModal({
 
   const handleProvinceSelect = (province: LocationData) => {
     setActiveProvince(province);
-    setSearchQuery(""); // ریست کردن جستجو با تغییر مرحله
+    setSearchQuery(""); 
     setStep("city");
   };
 
@@ -154,7 +151,7 @@ export default function RegionFilterModal({
 
     if (cityDistricts && Object.keys(cityDistricts).length > 0) {
       setActiveCity({ ...city, districts: cityDistricts });
-      setSearchQuery(""); // ریست کردن جستجو با تغییر مرحله
+      setSearchQuery(""); 
       setStep("neighborhood");
       
       if (city.name === initialCity) {
@@ -210,7 +207,7 @@ export default function RegionFilterModal({
   };
 
   const handleBack = () => {
-    setSearchQuery(""); // ریست کردن جستجو هنگام بازگشت
+    setSearchQuery(""); 
     if (step === "neighborhood") {
       setStep("city");
       return;
@@ -233,21 +230,20 @@ export default function RegionFilterModal({
     }
 
     if (step === "province") {
-      // اعمال فیلتر جستجو روی استان‌ها
       const filteredProvinces = locations.filter(prov => 
         prov.name.includes(searchQuery)
       );
 
       return (
-        <ul className="p-4 space-y-2">
+        <ul className="flex flex-col px-5">
           {filteredProvinces.length > 0 ? (
             filteredProvinces.map((prov) => (
               <li
                 key={prov.id}
-                className="flex justify-between items-center p-3.5 bg-zinc-50 hover:bg-rose-50 rounded-xl cursor-pointer border border-transparent hover:border-rose-100 transition-colors"
+                className="flex justify-between items-center py-4 border-b border-zinc-100 last:border-0 cursor-pointer hover:bg-zinc-50 transition-colors"
                 onClick={() => handleProvinceSelect(prov)}
               >
-                <span className="text-zinc-800 font-medium">{prov.name}</span>
+                <span className="text-zinc-800 text-[15px]">{prov.name}</span>
                 <ChevronLeft className="w-5 h-5 text-zinc-400" />
               </li>
             ))
@@ -259,21 +255,20 @@ export default function RegionFilterModal({
     }
 
     if (step === "city" && activeProvince) {
-      // اعمال فیلتر جستجو روی شهرها
       const filteredCities = (activeProvince.cities || []).filter(city => 
         city.name.includes(searchQuery)
       );
 
       return (
-        <ul className="p-4 space-y-2">
+        <ul className="flex flex-col px-5">
           {filteredCities.length > 0 ? (
             filteredCities.map((city) => (
               <li
                 key={city.id}
-                className="flex justify-between items-center p-3.5 bg-zinc-50 hover:bg-rose-50 rounded-xl cursor-pointer border border-transparent hover:border-rose-100 transition-colors"
+                className="flex justify-between items-center py-4 border-b border-zinc-100 last:border-0 cursor-pointer hover:bg-zinc-50 transition-colors"
                 onClick={() => handleCitySelect(city)}
               >
-                <span className="text-zinc-800 font-medium">{city.name}</span>
+                <span className="text-zinc-800 text-[15px]">{city.name}</span>
                 <ChevronLeft className="w-5 h-5 text-zinc-400" />
               </li>
             ))
@@ -293,52 +288,45 @@ export default function RegionFilterModal({
         ? allNeighborhoods 
         : ["همه محله‌ها", ...allNeighborhoods];
 
-      // اعمال فیلتر جستجو روی محله‌ها
       const filteredNeighborhoods = displayNeighborhoods.filter(nh => 
         nh.includes(searchQuery)
       );
 
       return (
-        <div className="p-4">
+        <div className="flex flex-col px-5">
           {filteredNeighborhoods.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-              {filteredNeighborhoods.map((nh: string, index: number) => {
-                const isSelected = selectedNeighborhoods.includes(nh);
+            filteredNeighborhoods.map((nh: string, index: number) => {
+              const isSelected = selectedNeighborhoods.includes(nh);
 
-                return (
-                  <button
-                    type="button"
-                    key={`${nh}-${index}`}
-                    onClick={() => toggleNeighborhood(nh)}
-                    className={`flex w-full text-right items-center gap-3 p-3.5 md:p-3 rounded-xl cursor-pointer border transition-colors ${
+              return (
+                <button
+                  type="button"
+                  key={`${nh}-${index}`}
+                  onClick={() => toggleNeighborhood(nh)}
+                  className="flex w-full items-center justify-between py-4 border-b border-zinc-100 last:border-0 cursor-pointer hover:bg-zinc-50 transition-colors"
+                >
+                  <span
+                    className={`text-[15px] md:text-sm text-right transition-colors ${
                       isSelected
-                        ? "border-rose-500 bg-rose-50/50"
-                        : "border-zinc-200 hover:bg-zinc-50"
+                        ? "text-zinc-900 font-medium"
+                        : "text-zinc-700"
                     }`}
                   >
-                    <div
-                      className={`w-5 h-5 rounded border flex items-center justify-center shrink-0 transition-colors ${
-                        isSelected
-                          ? "bg-rose-500 border-rose-500"
-                          : "border-zinc-300"
-                      }`}
-                    >
-                      {isSelected && <Check className="w-3.5 h-3.5 text-white" />}
-                    </div>
+                    {nh}
+                  </span>
 
-                    <span
-                      className={`text-[15px] md:text-sm ${
-                        isSelected
-                          ? "text-rose-700 font-semibold"
-                          : "text-zinc-700"
-                      }`}
-                    >
-                      {nh}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
+                  <div
+                    className={`w-5 h-5 rounded-[4px] border flex items-center justify-center shrink-0 transition-colors ${
+                      isSelected
+                        ? "bg-rose-500 border-rose-500"
+                        : "border-zinc-300"
+                    }`}
+                  >
+                    {isSelected && <Check className="w-3.5 h-3.5 text-white" />}
+                  </div>
+                </button>
+              );
+            })
           ) : (
             <div className="text-center py-6 text-zinc-400 text-sm">محله‌ای یافت نشد.</div>
           )}
@@ -357,10 +345,8 @@ export default function RegionFilterModal({
     >
       <div
         onClick={(e) => e.stopPropagation()} 
-        // استایل‌ها برای داشتن حالت Bottom Sheet استاندارد در موبایل
         className="bg-white w-full h-[85vh] md:h-auto md:max-h-[85vh] md:max-w-lg rounded-t-[24px] md:rounded-2xl shadow-xl flex flex-col overflow-hidden animate-in slide-in-from-bottom-full md:zoom-in-95 duration-300"
       >
-        {/* خط تزئینی بالای Bottom sheet مخصوص موبایل */}
         <div className="w-full flex justify-center pt-3 pb-1 md:hidden bg-white">
           <div className="w-12 h-1.5 bg-zinc-200 rounded-full"></div>
         </div>
@@ -393,7 +379,6 @@ export default function RegionFilterModal({
           </button>
         </div>
 
-        {/* فیلد جستجو (Sticky) */}
         {!loading && (
           <div className="px-5 pb-4 border-b border-zinc-100 bg-white shrink-0">
             <div className="relative flex items-center">
@@ -406,7 +391,7 @@ export default function RegionFilterModal({
                   step === "province" ? "جستجوی استان..." : 
                   step === "city" ? "جستجوی شهر..." : "جستجوی محله..."
                 }
-                className="w-full bg-zinc-100 text-zinc-800 rounded-xl py-3.5 pr-11 pl-10 text-[15px] md:text-sm placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:bg-white border border-transparent focus:border-rose-500/50 transition-all"
+                className="w-full bg-white text-zinc-800 rounded-lg py-3.5 pr-11 pl-10 text-[15px] md:text-sm placeholder:text-zinc-400 focus:outline-none border border-zinc-300 focus:border-zinc-400 transition-all"
               />
               {searchQuery && (
                 <button 
