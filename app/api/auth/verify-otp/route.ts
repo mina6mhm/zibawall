@@ -9,58 +9,34 @@ export async function POST(req: Request) {
     const { mobile, code } = await req.json();
 
     if (!mobile || !code) {
-      return NextResponse.json(
-        { error: 'اطلاعات ناقص است' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'اطلاعات ناقص است' }, { status: 400 });
     }
 
     const user = await prisma.user.findUnique({
-      where: {
-        phone: mobile
-      }
+      where: { phone: mobile }
     });
 
     if (!user) {
-      return NextResponse.json(
-        { error: 'کاربر یافت نشد' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'کاربر یافت نشد' }, { status: 404 });
     }
 
     if (user.otpCode !== code) {
-      return NextResponse.json(
-        { error: 'کد وارد شده اشتباه است' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'کد وارد شده اشتباه است' }, { status: 400 });
     }
 
-    if (
-      user.otpExpiresAt &&
-      user.otpExpiresAt < new Date()
-    ) {
-      return NextResponse.json(
-        { error: 'کد منقضی شده است' },
-        { status: 400 }
-      );
+    if (user.otpExpiresAt && user.otpExpiresAt < new Date()) {
+      return NextResponse.json({ error: 'کد منقضی شده است' }, { status: 400 });
     }
 
     // پاک کردن OTP پس از مصرف
     await prisma.user.update({
-      where: {
-        phone: mobile
-      },
-      data: {
-        otpCode: null,
-        otpExpiresAt: null
-      }
+      where: { phone: mobile },
+      data: { otpCode: null, otpExpiresAt: null }
     });
 
     const secret = process.env.JWT_SECRET;
 
-    if (!secret) {
-      throw new Error('JWT_SECRET is not defined');
-    }
+    if (!secret) throw new Error('JWT_SECRET is not defined');
 
     const token = jwt.sign(
       {
@@ -69,12 +45,11 @@ export async function POST(req: Request) {
         role: user.role,
       },
       secret,
-      {
-        expiresIn: '30d'
-      }
+      { expiresIn: '30d' }
     );
 
-    const isNewUser = !user.username;
+    // اگر یوزرنیم نداشت یا نام و نام خانوادگی نداشت، کاربر جدید محسوب شود تا فرم تکمیل را ببیند
+    const isNewUser = !user.username || !user.name;
 
     const response = NextResponse.json({
       success: true,
@@ -84,6 +59,7 @@ export async function POST(req: Request) {
         phone: user.phone,
         role: user.role,
         username: user.username,
+        name: user.name, // اضافه شدن فیلد نام
       }
     });
 
@@ -101,10 +77,6 @@ export async function POST(req: Request) {
 
   } catch (error) {
     console.error('Verify OTP Error:', error);
-
-    return NextResponse.json(
-      { error: 'خطای سرور' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'خطای سرور' }, { status: 500 });
   }
 }

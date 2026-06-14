@@ -1,4 +1,3 @@
-//app/login/page.tsx
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -12,18 +11,12 @@ export default function LoginPage() {
 
   const [mobile, setMobile] = useState('');
   const [username, setUsername] = useState('');
+  const [name, setName] = useState(''); // استیت جدید برای نام و نام خانوادگی
 
   const [timeLeft, setTimeLeft] = useState(120);
   const [isTimerActive, setIsTimerActive] = useState(false);
 
-  const [otpValues, setOtpValues] = useState([
-    '',
-    '',
-    '',
-    '',
-    ''
-  ]);
-
+  const [otpValues, setOtpValues] = useState(['', '', '', '', '']);
   const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   const mobileRegex = /^09\d{9}$/;
@@ -46,14 +39,8 @@ export default function LoginPage() {
   }, [isTimerActive, timeLeft]);
 
   const formatTime = (seconds: number) => {
-    const m = Math.floor(seconds / 60)
-      .toString()
-      .padStart(2, '0');
-
-    const s = (seconds % 60)
-      .toString()
-      .padStart(2, '0');
-
+    const m = Math.floor(seconds / 60).toString().padStart(2, '0');
+    const s = (seconds % 60).toString().padStart(2, '0');
     return `${m}:${s}`;
   };
 
@@ -66,12 +53,8 @@ export default function LoginPage() {
     try {
       const res = await fetch('/api/auth/send-otp', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          mobile
-        })
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mobile })
       });
 
       const data = await res.json();
@@ -85,7 +68,6 @@ export default function LoginPage() {
       setTimeLeft(120);
       setIsTimerActive(true);
       setOtpValues(['', '', '', '', '']);
-
     } catch {
       alert('خطای ارتباط با سرور');
     }
@@ -102,13 +84,8 @@ export default function LoginPage() {
     try {
       const res = await fetch('/api/auth/verify-otp', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          mobile,
-          code
-        })
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mobile, code })
       });
 
       const data = await res.json();
@@ -118,85 +95,69 @@ export default function LoginPage() {
         return;
       }
 
+      // اگر کاربر جدید است یا نام کاربری ندارد، برود به مرحله تکمیل پروفایل
       if (data.isNewUser || !data.user?.username) {
         setStep('username');
       } else {
         router.push('/');
         router.refresh();
       }
-
     } catch {
       alert('خطای ارتباط با سرور');
     }
   };
 
-  const handleSetUsername = async () => {
-    const value = username.trim();
+  const handleCompleteProfile = async () => {
+    const userVal = username.trim();
+    const nameVal = name.trim();
 
-    if (!usernameRegex.test(value)) {
-      alert(
-        'نام کاربری باید بین ۳ تا ۲۰ کاراکتر و فقط شامل حروف انگلیسی، اعداد و _ باشد'
-      );
+    if (!nameVal) {
+      alert('لطفاً نام و نام خانوادگی خود را وارد کنید');
+      return;
+    }
+
+    if (!usernameRegex.test(userVal)) {
+      alert('نام کاربری باید بین ۳ تا ۲۰ کاراکتر و فقط شامل حروف انگلیسی، اعداد و _ باشد');
       return;
     }
 
     try {
-      const res = await fetch(
-        '/api/auth/update-username',
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            username: value
-          })
-        }
-      );
+      const res = await fetch('/api/auth/update-username', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          username: userVal,
+          name: nameVal // ارسال نام و نام خانوادگی
+        })
+      });
 
       const data = await res.json();
 
       if (!res.ok) {
-        alert(
-          data.error ||
-            'خطا در ثبت نام کاربری'
-        );
+        alert(data.error || 'خطا در ثبت اطلاعات');
         return;
       }
 
       router.push('/');
       router.refresh();
-
     } catch {
       alert('خطای ارتباط با سرور');
     }
   };
 
-  const handleOtpChange = (
-    index: number,
-    value: string
-  ) => {
+  const handleOtpChange = (index: number, value: string) => {
     if (!/^\d*$/.test(value)) return;
 
     const newOtpValues = [...otpValues];
-
-    newOtpValues[index] =
-      value.substring(value.length - 1);
-
+    newOtpValues[index] = value.substring(value.length - 1);
     setOtpValues(newOtpValues);
 
-    if (
-      value &&
-      index < otpValues.length - 1
-    ) {
+    if (value && index < otpValues.length - 1) {
       otpRefs.current[index + 1]?.focus();
     }
   };
 
-  const handleOtpKeyDown = (
-    index: number,
-    e: React.KeyboardEvent<HTMLInputElement>
-  ) => {
+  const handleOtpKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Backspace') {
       if (!otpValues[index] && index > 0) {
         otpRefs.current[index - 1]?.focus();
@@ -209,100 +170,54 @@ export default function LoginPage() {
   };
 
   return (
-    <div
-      className="min-h-[100dvh] bg-white flex flex-col items-center justify-center p-4"
-      dir="rtl"
-    >
+    <div className="min-h-[100dvh] bg-white flex flex-col items-center justify-center p-4" dir="rtl">
       <div className="w-full max-w-[400px] bg-white p-8 flex flex-col items-center border border-zinc-200 rounded-3xl shadow-sm">
-
         <div className="mb-10 flex items-center justify-center p-4 rounded-full">
-          <Image
-            src="/logo.png"
-            alt="لوگو"
-            width={80}
-            height={80}
-            className="object-contain"
-          />
+          <Image src="/logo.png" alt="لوگو" width={80} height={80} className="object-contain" />
         </div>
 
         {step === 'mobile' && (
           <div className="w-full flex flex-col items-center">
-
-            <h1 className="text-xl font-bold text-zinc-900 mb-8">
-              ثبت نام یا ورود
-            </h1>
-
+            <h1 className="text-xl font-bold text-zinc-900 mb-8">ثبت نام یا ورود</h1>
             <div className="w-full mb-8">
-              <label className="block text-sm text-zinc-600 mb-2 pr-2">
-                شماره موبایل
-              </label>
-
+              <label className="block text-sm text-zinc-600 mb-2 pr-2">شماره موبایل</label>
               <input
                 type="tel"
                 dir="ltr"
                 value={mobile}
                 placeholder="09123456789"
-                onChange={(e) =>
-                  setMobile(e.target.value)
-                }
+                onChange={(e) => setMobile(e.target.value)}
                 className="w-full bg-white text-zinc-900 border border-zinc-300 rounded-xl px-4 py-3 text-left focus:outline-none focus:border-zinc-900"
               />
             </div>
-
             <button
               onClick={handleRequestOTP}
               className="w-full bg-zinc-900 hover:bg-black text-white rounded-xl py-3 font-bold"
             >
               دریافت کد تایید
             </button>
-
           </div>
         )}
 
         {step === 'otp' && (
           <div className="w-full flex flex-col items-center">
-
-            <h1 className="text-xl font-bold text-zinc-900 mb-4">
-              احراز هویت شما
-            </h1>
-
+            <h1 className="text-xl font-bold text-zinc-900 mb-4">احراز هویت شما</h1>
             <p className="text-sm text-zinc-600 mb-6 text-center">
-              کد تایید به شماره
-              {' '}
-              <span
-                dir="ltr"
-                className="text-zinc-900"
-              >
-                {mobile}
-              </span>
-              {' '}
-              ارسال شد
+              کد تایید به شماره <span dir="ltr" className="text-zinc-900">{mobile}</span> ارسال شد
             </p>
 
-            <div
-              className="flex justify-center gap-3 mb-4 w-full"
-              dir="ltr"
-            >
+            <div className="flex justify-center gap-3 mb-4 w-full" dir="ltr">
               {otpValues.map((value, index) => (
                 <input
                   key={index}
-                  ref={(el) => {
-                    otpRefs.current[index] = el;
-                  }}
+                  ref={(el) => { otpRefs.current[index] = el; }}
                   type="text"
                   inputMode="numeric"
                   maxLength={1}
                   value={value}
                   disabled={timeLeft === 0}
-                  onChange={(e) =>
-                    handleOtpChange(
-                      index,
-                      e.target.value
-                    )
-                  }
-                  onKeyDown={(e) =>
-                    handleOtpKeyDown(index, e)
-                  }
+                  onChange={(e) => handleOtpChange(index, e.target.value)}
+                  onKeyDown={(e) => handleOtpKeyDown(index, e)}
                   className="w-12 h-12 text-center border border-zinc-300 rounded-xl"
                 />
               ))}
@@ -320,71 +235,57 @@ export default function LoginPage() {
 
             <div className="mb-6">
               {timeLeft > 0 ? (
-                <span>
-                  {formatTime(timeLeft)}
-                </span>
+                <span>{formatTime(timeLeft)}</span>
               ) : (
-                <button
-                  onClick={handleRequestOTP}
-                >
-                  ارسال مجدد کد
-                </button>
+                <button onClick={handleRequestOTP}>ارسال مجدد کد</button>
               )}
             </div>
 
             <button
               onClick={handleLoginWithOTP}
-              disabled={
-                timeLeft === 0 ||
-                otpValues.join('').length < 5
-              }
+              disabled={timeLeft === 0 || otpValues.join('').length < 5}
               className="w-full bg-zinc-900 text-white rounded-xl py-3 font-bold"
             >
               تایید
             </button>
-
           </div>
         )}
 
         {step === 'username' && (
           <div className="w-full flex flex-col items-center">
+            <h1 className="text-xl font-bold text-zinc-900 mb-2">تکمیل ثبت نام</h1>
+            <p className="text-sm text-zinc-600 mb-8 text-center">لطفاً اطلاعات زیر را تکمیل کنید</p>
 
-            <h1 className="text-xl font-bold text-zinc-900 mb-2">
-              تکمیل ثبت نام
-            </h1>
-
-            <p className="text-sm text-zinc-600 mb-8 text-center">
-              لطفاً یک نام کاربری انتخاب کنید
-            </p>
+            <div className="w-full mb-4">
+              <label className="block text-sm text-zinc-600 mb-2 pr-2">نام و نام خانوادگی</label>
+              <input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="w-full bg-white text-zinc-900 border border-zinc-300 rounded-xl px-4 py-3 focus:outline-none focus:border-zinc-900"
+              />
+            </div>
 
             <div className="w-full mb-8">
-
-              <label className="block text-sm text-zinc-600 mb-2 pr-2">
-                نام کاربری
-              </label>
-
+              <label className="block text-sm text-zinc-600 mb-2 pr-2">نام کاربری</label>
               <input
                 type="text"
                 dir="ltr"
                 value={username}
-                placeholder="mina_123"
-                onChange={(e) =>
-                  setUsername(e.target.value)
-                }
+                placeholder="example_1234"
+                onChange={(e) => setUsername(e.target.value)}
                 className="w-full bg-white text-zinc-900 border border-zinc-300 rounded-xl px-4 py-3 text-left focus:outline-none focus:border-zinc-900"
               />
             </div>
 
             <button
-              onClick={handleSetUsername}
+              onClick={handleCompleteProfile}
               className="w-full bg-zinc-900 text-white rounded-xl py-3 font-bold"
             >
               ثبت و ورود
             </button>
-
           </div>
         )}
-
       </div>
     </div>
   );

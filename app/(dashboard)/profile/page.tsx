@@ -1,50 +1,42 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { User, Mail, LogOut, Store, Sparkles, Eye, EyeOff, Edit, AtSign, Trash2 } from 'lucide-react';
+import { User, Phone, LogOut, Store, Sparkles, Eye, Edit, AtSign, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
 export default function ProfilePage() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<'info' | 'settings' | 'business'>('info');
-  const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   
-  const [userData, setUserData] = useState({ name: '', email: '', username: '' });
-  const [newPassword, setNewPassword] = useState('');
+  const [userData, setUserData] = useState({ name: '', phone: '', username: '' });
   const [salonData, setSalonData] = useState<any>(null);
 
   useEffect(() => {
     const fetchProfile = async () => {
-      const storedUser = localStorage.getItem('user');
-      if (storedUser) {
-        const parsedUser = JSON.parse(storedUser);
-        setUserData({ 
-          name: parsedUser.name || '', 
-          email: parsedUser.email || '',
-          username: parsedUser.username || ''
-        });
-        
-        try {
-          // دریافت اطلاعات بر اساس ایمیل از API
-          const res = await fetch(`/api/user/profile?email=${parsedUser.email}`);
-          if (res.ok) {
-            const data = await res.json();
-            setUserData({ 
-              name: data.name || '', 
-              email: data.email || '',
-              username: data.username || ''
-            });
-            setSalonData(data.salon);
-          }
-        } catch (error) {
-          console.error('خطا در دریافت اطلاعات:', error);
+      try {
+        // دریافت اطلاعات کاربر فقط با اتکا به کوکی httpOnly
+        const res = await fetch('/api/user/profile');
+        if (res.ok) {
+          const data = await res.json();
+          setUserData({ 
+            name: data.name || '', 
+            phone: data.phone || '',
+            username: data.username || ''
+          });
+          setSalonData(data.salon);
+        } else if (res.status === 401) {
+          // اگر توکن نامعتبر یا منقضی بود
+          router.push('/login');
         }
+      } catch (error) {
+        console.error('خطا در دریافت اطلاعات:', error);
       }
     };
+    
     fetchProfile();
-  }, []);
+  }, [router]);
 
   const handleSaveChanges = async () => {
     setIsLoading(true);
@@ -54,20 +46,15 @@ export default function ProfilePage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: userData.name,
-          email: userData.email,
           username: userData.username,
-          newPassword: newPassword ? newPassword : undefined
         })
       });
 
       if (res.ok) {
-        const data = await res.json();
-        localStorage.setItem('user', JSON.stringify(data.user || { ...userData }));
         alert('اطلاعات با موفقیت ذخیره شد!');
-        setNewPassword('');
       } else {
         const errorData = await res.json();
-        alert(errorData.error || 'خطا در ذخیره اطلاعات (شاید این ایمیل یا نام کاربری قبلا ثبت شده باشد)');
+        alert(errorData.error || 'خطا در ذخیره اطلاعات (شاید این نام کاربری قبلا ثبت شده باشد)');
       }
     } catch (error) {
       console.error(error);
@@ -108,13 +95,20 @@ export default function ProfilePage() {
     }
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     const isConfirmed = window.confirm('آیا مطمئن هستید که می‌خواهید از حساب خود خارج شوید؟');
     if (isConfirmed) {
       localStorage.removeItem('user');
-      localStorage.removeItem('token'); 
-      document.cookie = "token=; path=/; max-age=0"; 
-      window.location.href = '/login'; 
+      
+      try {
+        // درخواست به بک‌اند برای پاک‌کردن کوکی httpOnly
+        await fetch('/api/auth/logout', { method: 'POST' });
+      } catch (error) {
+        console.error('Logout failed:', error);
+      }
+      
+      router.push('/login'); 
+      router.refresh();
     }
   };
 
@@ -137,9 +131,9 @@ export default function ProfilePage() {
                   <AtSign className="w-3.5 h-3.5 md:w-4 md:h-4" /> {userData.username}
                 </span>
               )}
-              {userData.email && (
+              {userData.phone && (
                 <span className="text-zinc-500 text-[11px] md:text-sm dir-ltr flex items-center gap-1.5 bg-zinc-50 px-2 md:px-2.5 py-1 md:py-1.5 rounded-lg md:rounded-xl border border-zinc-100">
-                  <Mail className="w-3.5 h-3.5 md:w-4 md:h-4" /> {userData.email}
+                  <Phone className="w-3.5 h-3.5 md:w-4 md:h-4" /> {userData.phone}
                 </span>
               )}
             </div>
@@ -186,14 +180,14 @@ export default function ProfilePage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                 
                 <div>
-                  <label className="block text-xs md:text-sm font-medium mb-1.5 md:mb-2 text-zinc-700">ایمیل</label>
+                  <label className="block text-xs md:text-sm font-medium mb-1.5 md:mb-2 text-zinc-700">شماره موبایل</label>
                   <input 
-                    value={userData.email} 
+                    value={userData.phone} 
                     disabled 
-                    className="w-full border border-zinc-100 bg-zinc-50 rounded-xl md:rounded-2xl px-3 md:px-4 py-2.5 md:py-3 dir-ltr text-right text-xs md:text-sm text-zinc-400 cursor-not-allowed" 
-                    placeholder="example@email.com"
+                    className="w-full border border-zinc-100 bg-zinc-50 rounded-xl md:rounded-2xl px-3 md:px-4 py-2.5 md:py-3 dir-ltr text-left text-xs md:text-sm text-zinc-400 cursor-not-allowed" 
+                    placeholder="09123456789"
                   />
-                  <p className="text-[10px] md:text-xs text-zinc-400 mt-1 md:mt-1.5 pr-1">ایمیل حساب کاربری قابل تغییر نیست</p>
+                  <p className="text-[10px] md:text-xs text-zinc-400 mt-1 md:mt-1.5 pr-1">شماره موبایل حساب کاربری قابل تغییر نیست</p>
                 </div>
 
                 <div>
@@ -202,6 +196,7 @@ export default function ProfilePage() {
                     value={userData.name} 
                     onChange={(e) => setUserData({...userData, name: e.target.value})} 
                     className={inputBaseClasses}
+                    placeholder="نام خود را وارد کنید"
                   />
                 </div>
 
@@ -219,26 +214,6 @@ export default function ProfilePage() {
                     />
                   </div>
                   <p className="text-[10px] md:text-xs text-zinc-400 mt-1 md:mt-1.5 pr-1">فقط انگلیسی، اعداد و خط‌تیره (_)</p>
-                </div>
-                
-                <div>
-                  <label className="block text-xs md:text-sm font-medium mb-1.5 md:mb-2 text-zinc-700">رمز عبور جدید (اختیاری)</label>
-                  <div className="relative">
-                    <input 
-                      type={showPassword ? "text" : "password"} 
-                      value={newPassword} 
-                      onChange={(e) => setNewPassword(e.target.value)} 
-                      placeholder="برای تغییر رمز عبور وارد کنید" 
-                      className={`${inputBaseClasses} pr-9 md:pr-11 dir-ltr text-left`}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 md:right-4 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 focus:outline-none transition-colors"
-                    >
-                      {showPassword ? <EyeOff className="w-4 h-4 md:w-[18px] md:h-[18px]" /> : <Eye className="w-4 h-4 md:w-[18px] md:h-[18px]" />}
-                    </button>
-                  </div>
                 </div>
               </div>
               

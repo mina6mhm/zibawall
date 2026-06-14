@@ -1,4 +1,5 @@
 // app/api/auth/send-otp/route.ts
+
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
@@ -30,8 +31,10 @@ export async function POST(req: Request) {
       existingUser.otpExpiresAt > new Date()
     ) {
       const secondsLeft = Math.ceil(
-        (existingUser.otpExpiresAt.getTime() - Date.now()) /
-          1000
+        (
+          existingUser.otpExpiresAt.getTime() -
+          Date.now()
+        ) / 1000
       );
 
       return NextResponse.json(
@@ -67,9 +70,17 @@ export async function POST(req: Request) {
       }
     });
 
+    // در حالت تستی این لاگ بسیار مهم است تا بتوانید کد را بردارید
     console.log(`🔑 OTP for ${mobile}: ${otpCode}`);
 
-    const apiKey = process.env.FARAZ_SMS_API_KEY;
+    /* ==========================================
+       بخش ارسال پیامک موقتاً کامنت شده است
+       ==========================================
+    const apiKey =
+      process.env.FARAZ_SMS_API_KEY;
+
+    const lineNumber =
+      process.env.FARAZ_SMS_LINE_NUMBER;
 
     if (!apiKey) {
       throw new Error(
@@ -77,50 +88,90 @@ export async function POST(req: Request) {
       );
     }
 
-    try {
-  const smsRes = await fetch(
-    'https://api.iranpayamak.com/ws/v1/sms/pattern',
-    {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Api-Key': apiKey
-      },
-      body: JSON.stringify({
-        code: 'J88zq2Mhlt',
-        recipient: mobile,
-        attributes: {
-          code: otpCode
-        }
-      }),
-      signal: AbortSignal.timeout(15000)
+    if (!lineNumber) {
+      throw new Error(
+        'FARAZ_SMS_LINE_NUMBER is not configured'
+      );
     }
-  );
 
-  const smsText = await smsRes.text();
+    const requestBody = {
+      code: 'J88zq2Mhlt', // کد پترن تایید شده
+      recipient: mobile,
 
-  console.log('====================');
-  console.log('STATUS:', smsRes.status);
-  console.log('BODY:', smsText);
-  console.log('====================');
+      attributes: {
+        code: otpCode
+      },
 
-  if (!smsRes.ok) {
-    console.error('❌ SMS Provider Error');
-  }
+      line_number: lineNumber,
+      number_format: 'persian'
+    };
 
-} catch (smsError) {
-  console.error('⚠️ SMS Network Error:', smsError);
-}
+    console.log(
+      '📤 SMS REQUEST:',
+      JSON.stringify(requestBody)
+    );
+
+    let smsRes: Response;
+
+    try {
+      smsRes = await fetch(
+        'https://api.iranpayamak.com/ws/v1/sms/pattern',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Api-Key': apiKey
+          },
+          body: JSON.stringify(requestBody),
+          signal: AbortSignal.timeout(15000)
+        }
+      );
+    } catch (networkError) {
+      console.error(
+        '❌ SMS Network Error:',
+        networkError
+      );
+
+      return NextResponse.json(
+        {
+          error:
+            'ارتباط با سامانه پیامکی برقرار نشد'
+        },
+        {
+          status: 500
+        }
+      );
+    }
+
+    const smsText = await smsRes.text();
+
+    console.log('====================');
+    console.log('SMS STATUS:', smsRes.status);
+    console.log('SMS RESPONSE:', smsText);
+    console.log('====================');
+
+    if (!smsRes.ok) {
+      return NextResponse.json(
+        {
+          error: 'ارسال پیامک با خطا مواجه شد'
+        },
+        {
+          status: 500
+        }
+      );
+    }
+    ========================================== */
+
     return NextResponse.json(
       {
         success: true,
-        message: 'کد تایید ارسال شد'
+        // پیام موقت برای اینکه بدانید پیامک ارسال نشده اما عملیات موفق بوده
+        message: 'کد تایید در ترمینال لاگ شد (حالت تستی)'
       },
       {
         status: 200
       }
     );
-
   } catch (error) {
     console.error(
       '❌ Send OTP Error:',

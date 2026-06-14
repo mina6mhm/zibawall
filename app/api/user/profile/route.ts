@@ -1,62 +1,78 @@
 // app/api/user/profile/route.ts
 
 import { NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
-import bcrypt from 'bcryptjs';
+import { prisma } from '@/lib/prisma';
+import jwt from 'jsonwebtoken';
+import { cookies } from 'next/headers';
 
-const prisma = new PrismaClient();
-
-// دریافت اطلاعات کاربر و سالن او
-export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url);
-  const email = searchParams.get('email'); // تغییر به ایمیل
-
-  if (!email) return NextResponse.json({ error: 'ایمیل الزامی است' }, { status: 400 });
-
+// دریافت اطلاعات کاربر در صفحه پروفایل
+export async function GET(req: Request) {
   try {
+    const cookieStore = await cookies();
+    const token = cookieStore.get('token')?.value;
+
+    if (!token) {
+      return NextResponse.json({ error: 'عدم دسترسی' }, { status: 401 });
+    }
+
+    const decoded: any = jwt.verify(token, process.env.JWT_SECRET || 'fallback-secret-key');
+
     const user = await prisma.user.findUnique({
-      where: { email }, // جستجو بر اساس ایمیل
-      include: { salon: true } 
+      where: { id: decoded.userId },
+      include: { salon: true }
     });
 
-    if (!user) return NextResponse.json({ error: 'کاربر یافت نشد' }, { status: 404 });
+    if (!user) {
+      return NextResponse.json({ error: 'کاربر یافت نشد' }, { status: 404 });
+    }
 
-    const { passwordHash, ...safeUser } = user;
-    return NextResponse.json(safeUser);
+    return NextResponse.json({
+      id: user.id,
+      name: user.name,
+      phone: user.phone,
+      username: user.username,
+      salon: user.salon
+    });
   } catch (error) {
-    return NextResponse.json({ error: 'خطای سرور' }, { status: 500 });
+    return NextResponse.json({ error: 'توکن نامعتبر یا خطای سرور' }, { status: 401 });
   }
 }
 
-// آپدیت اطلاعات کاربر
-export async function PUT(request: Request) {
+// ویرایش اطلاعات در صفحه پروفایل
+export async function PUT(req: Request) {
   try {
-    const body = await request.json();
-    // حذف phone و استفاده از email به عنوان شناسه اصلی
-    const { email, name, newPassword, username } = body;
+    const cookieStore = await cookies();
+    const token = cookieStore.get('token')?.value;
 
-    if (!email) {
-      return NextResponse.json({ error: 'ایمیل برای شناسایی کاربر الزامی است' }, { status: 400 });
+    if (!token) {
+      return NextResponse.json({ error: 'عدم دسترسی' }, { status: 401 });
     }
 
-    let updateData: any = { name };
+    const decoded: any = jwt.verify(token, process.env.JWT_SECRET || 'fallback-secret-key');
 
-    if (username !== undefined) {
-      updateData.username = username;
-    }
+    const body = await req.json();
+    const { name, username } = body;
 
-    if (newPassword) {
-      updateData.passwordHash = await bcrypt.hash(newPassword, 10);
-    }
+    const updateData: any = {};
+    if (name !== undefined) updateData.name = name.trim();
+    if (username !== undefined) updateData.username = username.trim();
 
     const updatedUser = await prisma.user.update({
-      where: { email }, // آپدیت بر اساس ایمیل
+      where: { id: decoded.userId },
       data: updateData,
       include: { salon: true }
     });
 
-    const { passwordHash, ...safeUser } = updatedUser;
-    return NextResponse.json({ message: 'پروفایل آپدیت شد', user: safeUser });
+    return NextResponse.json({ 
+      message: 'پروفایل آپدیت شد', 
+      user: {
+        id: updatedUser.id,
+        name: updatedUser.name,
+        phone: updatedUser.phone,
+        username: updatedUser.username,
+        salon: updatedUser.salon
+      } 
+    });
     
   } catch (error: any) {
     if (error.code === 'P2002' && error.meta?.target?.includes('username')) {
@@ -66,7 +82,6 @@ export async function PUT(request: Request) {
       );
     }
     
-    console.error('Profile update error:', error);
     return NextResponse.json({ error: 'خطا در ذخیره اطلاعات' }, { status: 500 });
   }
 }
