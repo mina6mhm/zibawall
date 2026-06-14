@@ -70,13 +70,13 @@ export default function BookmarksPage() {
 
   return (
     <div className="flex flex-col min-h-screen bg-white pb-24">
-      <div className="sticky top-0 z-20 bg-white px-4 pt-5 pb-4 border-b border-zinc-100">
+      <div className="sticky top-0 z-20 bg-white px-4 pt-4 pb-3 md:pt-5 md:pb-4 border-b border-zinc-100">
         <div className="flex justify-between items-center w-full">
-          <h1 className="text-xl font-bold text-zinc-900">نشان‌شده‌ها</h1>
+          <h1 className="text-lg md:text-xl font-bold text-zinc-900">نشان‌شده‌ها</h1>
           <img 
             src="/logo.png" 
             alt="لوگو زیباوال" 
-            className="h-8 w-auto object-contain" 
+            className="h-7 md:h-8 w-auto object-contain" 
           />
         </div>
       </div>
@@ -186,15 +186,15 @@ export default function BookmarksPage() {
             })
           ) : (
             // پیام برای زمانی که لیست بوک‌مارک خالی است (مشابه صفحه اصلی)
-            <div className="col-span-full py-16 text-center flex flex-col items-center justify-center">
-              <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" className="text-zinc-200 mb-4">
+            <div className="col-span-full py-16 md:py-20 text-center flex flex-col items-center justify-center">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" className="w-12 h-12 md:w-16 md:h-16 text-zinc-300 mb-3 md:mb-4">
                 <path d="M6 4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v17.5l-6-4-6 4V4z" />
               </svg>
-              <h2 className="text-lg font-bold text-zinc-700 mb-2">لیست نشان‌شده‌ها خالی است</h2>
-              <p className="text-zinc-500 text-sm mb-6">شما هنوز هیچ سالنی را ذخیره نکرده‌اید.</p>
+              <h2 className="text-[15px] md:text-lg font-bold text-zinc-700 mb-1.5 md:mb-2">لیست نشان‌شده‌ها خالی است</h2>
+              <p className="text-[13px] md:text-sm text-zinc-500 mb-5 md:mb-6">شما هنوز هیچ سالنی را ذخیره نکرده‌اید.</p>
               <button 
                 onClick={() => router.push('/')}
-                className="bg-zinc-900 text-white px-6 py-2.5 rounded-full text-sm font-bold hover:bg-zinc-800 transition-colors"
+                className="bg-zinc-900 text-white px-6 py-3 md:py-2.5 rounded-full text-[13px] md:text-sm font-bold hover:bg-zinc-800 transition-colors active:scale-[0.98]"
               >
                 مشاهده سالن‌ها
               </button>
