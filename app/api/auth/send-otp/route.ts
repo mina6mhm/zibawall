@@ -1,5 +1,4 @@
 // app/api/auth/send-otp/route.ts
-
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
@@ -7,7 +6,6 @@ export async function POST(req: Request) {
   try {
     const { mobile } = await req.json();
 
-    // اعتبارسنجی شماره موبایل ایران
     const mobileRegex = /^09\d{9}$/;
 
     if (!mobileRegex.test(mobile)) {
@@ -27,7 +25,6 @@ export async function POST(req: Request) {
       }
     });
 
-    // جلوگیری از ارسال پشت سر هم
     if (
       existingUser?.otpExpiresAt &&
       existingUser.otpExpiresAt > new Date()
@@ -47,7 +44,6 @@ export async function POST(req: Request) {
       );
     }
 
-    // تولید OTP
     const otpCode = Math.floor(
       10000 + Math.random() * 90000
     ).toString();
@@ -71,9 +67,7 @@ export async function POST(req: Request) {
       }
     });
 
-    console.log(
-      `🔑 OTP for ${mobile}: ${otpCode}`
-    );
+    console.log(`🔑 OTP for ${mobile}: ${otpCode}`);
 
     const apiKey = process.env.FARAZ_SMS_API_KEY;
 
@@ -84,38 +78,34 @@ export async function POST(req: Request) {
     }
 
     try {
-      // استفاده از API جدید فراز اس‌ام‌اس (IPPanel)
       const smsRes = await fetch(
         'https://api2.ippanel.com/api/v1/sms/pattern/normal/send',
         {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'apikey': apiKey // هدر مخصوص فراز اس‌ام‌اس
+            apikey: apiKey
           },
           body: JSON.stringify({
-            code: 'J88zq2Mhlt', // کد پترن شما در تصویر
-            recipient: mobile,  // شماره موبایل کاربر
+            code: 'J88zq2Mhlt',
+            recipient: mobile,
             variable: {
-              code: otpCode     // متغیری که در پترن تعریف کردید
+              code: otpCode
             }
           }),
           signal: AbortSignal.timeout(15000)
         }
       );
 
-      const smsData = await smsRes.json();
+      const smsText = await smsRes.text();
 
-      console.log(
-        '📥 FarazSMS response:',
-        smsData
-      );
+      console.log('====================');
+      console.log('STATUS:', smsRes.status);
+      console.log('BODY:', smsText);
+      console.log('====================');
 
-      if (!smsRes.ok || smsData.status !== 'OK') {
-        console.error(
-          '❌ SMS Provider Error:',
-          smsData
-        );
+      if (!smsRes.ok) {
+        console.error('❌ SMS Provider Error');
       }
 
     } catch (smsError) {
