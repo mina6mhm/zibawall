@@ -219,8 +219,10 @@ export default function DashboardHomePage() {
     <>
       <div className="flex flex-col min-h-screen bg-white pb-24">
         {/* هدر */}
-        <div className="sticky top-0 z-20 bg-white px-4 pt-5 pb-3">
-          <div className="flex justify-between items-start mb-5 w-full">
+        {/* پدینگ بالا و پایین هدر در موبایل کمتر شد */}
+        <div className="sticky top-0 z-20 bg-white px-4 pt-3 md:pt-5 pb-2 md:pb-3">
+          {/* فاصله بین انتخاب شهر و سرچ‌بار در موبایل کمتر شد (از mb-5 به mb-3) */}
+          <div className="flex justify-between items-start mb-3 md:mb-5 w-full">
             
             <div className="flex flex-col gap-3 overflow-hidden w-full">
               <button 
@@ -276,13 +278,15 @@ export default function DashboardHomePage() {
         </div>
 
         {/* دسته‌بندی‌ها */}
-        <div className="px-4 mt-2">
+        {/* فاصله بالای دسته‌بندی‌ها در موبایل کم شد */}
+        <div className="px-4 mt-1 md:mt-2">
           <div className="flex overflow-x-auto gap-2 pb-2 hide-scrollbar">
             {CATEGORIES.map((category, index) => (
               <button 
                 key={index} 
                 onClick={() => setSelectedCategory(category)}
-                className={`whitespace-nowrap px-4 py-2 border rounded-full text-sm font-medium transition-colors ${
+                /* پدینگ دکمه‌ها و سایز فونت در موبایل کمی کوچک‌تر و جمع‌وجورتر شد */
+                className={`whitespace-nowrap px-3 py-1.5 md:px-4 md:py-2 border rounded-full text-[13px] md:text-sm font-medium transition-colors ${
                   selectedCategory === category 
                     ? 'bg-zinc-900 text-white border-zinc-900' 
                     : 'bg-white border-zinc-200 text-zinc-700 hover:bg-zinc-50'
@@ -295,8 +299,9 @@ export default function DashboardHomePage() {
         </div>
 
         {/* لیست سالن‌ها */}
-        <div className="px-4 mt-6">
-          <h2 className="text-lg font-bold text-zinc-900 mb-4">
+        {/* فاصله بین دسته‌بندی و لیست در موبایل کمتر شد (از mt-6 به mt-4) */}
+        <div className="px-4 mt-4 md:mt-6">
+          <h2 className="text-base md:text-lg font-bold text-zinc-900 mb-3 md:mb-4">
             {searchQuery ? `نتایج جستجو برای "${searchQuery}"` : (selectedCategory === 'همه' ? 'سالن‌های پیشنهادی' : `سالن‌های دارای ${selectedCategory}`)}
           </h2>
           

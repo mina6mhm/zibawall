@@ -67,8 +67,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
       {/* محتوای اصلی */}
       <div className="flex-1 flex flex-col relative w-full overflow-hidden">
-        {/* در موبایل پدینگ پایین را بیشتر کردیم تا محتوا زیر منو نرود (110px) */}
-        <main className="flex-1 overflow-y-auto px-4 md:px-8 pb-[110px] md:pb-8">
+        {/* در موبایل پدینگ پایین را بیشتر کردیم تا محتوا زیر منو نرود (130) */}
+        <main className="flex-1 overflow-y-auto px-4 md:px-8 pb-[135px] md:pb-8">
           <div className="max-w-6xl mx-auto h-full">
             {children}
           </div>
@@ -77,7 +77,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
       {/* نَوبار موبایل */}
       {/* استفاده از افکت شیشه‌ای و safe-area-inset-bottom برای آیفون */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-t border-zinc-100 pb-[env(safe-area-inset-bottom,12px)]">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-t border-zinc-100 pb-[env(safe-area-inset-bottom,24px)]">
         <div className="flex items-center justify-between px-2 h-[68px]"> 
           {navItems.map((item) => {
             const isActive = item.href === '/' ? pathname === '/' : pathname?.startsWith(item.href);
