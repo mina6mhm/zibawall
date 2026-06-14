@@ -958,14 +958,14 @@ export default function BusinessRegistrationPage() {
           </div>
         )}
 
-        {/* ================= مرحله ۵: انتخاب اشتراک (اضافه شد) ================= */}
+                {/* ================= مرحله ۵: انتخاب اشتراک (اضافه شد) ================= */}
         {step === 5 && (
-          <div className="space-y-6 animate-fade-in">
-            <div className="flex items-center gap-2 border-b border-zinc-100 pb-3">
-              <CreditCard className="text-zinc-700" size={24} />
-              <h2 className="text-lg font-semibold text-zinc-800">انتخاب پلن اشتراک</h2>
+          <div className="space-y-6 md:space-y-10 animate-fade-in">
+            <div className="flex items-center gap-1.5 md:gap-2 border-b border-zinc-100 pb-2 md:pb-3">
+              <CreditCard className="text-zinc-700 w-5 h-5 md:w-6 md:h-6" />
+              <h2 className="text-base md:text-lg font-semibold text-zinc-800">انتخاب پلن اشتراک</h2>
             </div>
-            <p className="text-sm text-zinc-500 -mt-2">
+            <p className="text-xs md:text-sm text-zinc-500 -mt-1 md:-mt-2">
               برای نمایش کسب‌وکار شما در پلتفرم، لطفاً یک پلن اشتراک انتخاب کنید.
             </p>
             
@@ -977,19 +977,27 @@ export default function BusinessRegistrationPage() {
         )}
 
         {/* دکمه‌ های ناوبری (پایین فرم) */}
-        <div className="mt-10 pt-6 border-t border-zinc-100 flex flex-col md:flex-row md:justify-between items-center gap-4 md:gap-0"> {/* تغییر یافته */}
+        <div className="mt-8 md:mt-10 pt-4 md:pt-6 border-t border-zinc-100 flex flex-row items-center justify-between gap-3 md:gap-4">
           
           {/* دکمه مرحله قبل */}
           {step > 1 && (
-            <button type="button" onClick={prevStep} className="w-full md:w-auto flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-medium text-zinc-600 hover:bg-zinc-100 transition border border-transparent">
-              <ArrowRight size={20} /> مرحله قبل
+            <button 
+              type="button" 
+              onClick={prevStep} 
+              className="flex-1 flex items-center justify-center gap-1.5 md:gap-2 px-3 py-2.5 md:px-6 md:py-3 rounded-lg md:rounded-xl font-medium text-zinc-600 hover:bg-zinc-100 transition border border-transparent text-xs md:text-sm"
+            >
+              <ArrowRight className="w-4 h-4 md:w-5 md:h-5" /> مرحله قبل
             </button>
           )}
 
           {/* دکمه مرحله بعد / ثبت و پرداخت */}
           {step < 5 ? ( 
-            <button type="button" onClick={nextStep} className="w-full md:w-auto flex items-center justify-center gap-2 bg-rose-600 text-white px-8 py-3 rounded-xl font-medium hover:bg-rose-700 transition shadow-lg shadow-rose-200">
-              مرحله بعد <ArrowLeft size={20} />
+            <button 
+              type="button" 
+              onClick={nextStep} 
+              className="flex-1 flex items-center justify-center gap-1.5 md:gap-2 bg-rose-600 text-white px-3 py-2.5 md:px-8 md:py-3 rounded-lg md:rounded-xl font-medium hover:bg-rose-700 transition shadow-lg shadow-rose-200 text-xs md:text-sm"
+            >
+              مرحله بعد <ArrowLeft className="w-4 h-4 md:w-5 md:h-5" />
             </button>
           ) : (
             // دکمه ثبت و پرداخت نهایی
@@ -997,10 +1005,10 @@ export default function BusinessRegistrationPage() {
               type="button" 
               onClick={handleSubmit} 
               disabled={isSubmitting}
-              className="w-full md:w-auto flex items-center justify-center gap-2 bg-rose-600 text-white px-8 py-3 rounded-xl font-medium hover:bg-rose-700 transition shadow-lg shadow-rose-200 disabled:opacity-70 disabled:cursor-not-allowed"
+              className="flex-1 flex items-center justify-center gap-1.5 md:gap-2 bg-rose-600 text-white px-3 py-2.5 md:px-8 md:py-3 rounded-lg md:rounded-xl font-medium hover:bg-rose-700 transition shadow-lg shadow-rose-200 disabled:opacity-70 disabled:cursor-not-allowed text-xs md:text-sm"
             >
               {isSubmitting ? (
-                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                <div className="w-4 h-4 md:w-5 md:h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
               ) : (
                 'ثبت و پرداخت' 
               )}
