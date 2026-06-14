@@ -95,7 +95,6 @@ export async function POST(req: Request) {
           },
           body: JSON.stringify({
             code: 'J88zq2Mhlt', // کد پترن شما در تصویر
-            sender: '3000505',  // خط خدماتی اشتراکی پیش‌فرض فراز اس‌ام‌اس برای ارسال پترن
             recipient: mobile,  // شماره موبایل کاربر
             variable: {
               code: otpCode     // متغیری که در پترن تعریف کردید
