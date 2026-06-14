@@ -78,43 +78,39 @@ export async function POST(req: Request) {
     }
 
     try {
-      const smsRes = await fetch(
-        'https://api2.ippanel.com/api/v1/sms/pattern/normal/send',
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            apikey: apiKey
-          },
-          body: JSON.stringify({
-            code: 'J88zq2Mhlt',
-            recipient: mobile,
-            variable: {
-              code: otpCode
-            }
-          }),
-          signal: AbortSignal.timeout(15000)
+  const smsRes = await fetch(
+    'https://api.iranpayamak.com/ws/v1/sms/pattern',
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Api-Key': apiKey
+      },
+      body: JSON.stringify({
+        code: 'J88zq2Mhlt',
+        recipient: mobile,
+        attributes: {
+          code: otpCode
         }
-      );
-
-      const smsText = await smsRes.text();
-
-      console.log('====================');
-      console.log('STATUS:', smsRes.status);
-      console.log('BODY:', smsText);
-      console.log('====================');
-
-      if (!smsRes.ok) {
-        console.error('❌ SMS Provider Error');
-      }
-
-    } catch (smsError) {
-      console.error(
-        '⚠️ SMS Network Error:',
-        smsError
-      );
+      }),
+      signal: AbortSignal.timeout(15000)
     }
+  );
 
+  const smsText = await smsRes.text();
+
+  console.log('====================');
+  console.log('STATUS:', smsRes.status);
+  console.log('BODY:', smsText);
+  console.log('====================');
+
+  if (!smsRes.ok) {
+    console.error('❌ SMS Provider Error');
+  }
+
+} catch (smsError) {
+  console.error('⚠️ SMS Network Error:', smsError);
+}
     return NextResponse.json(
       {
         success: true,
