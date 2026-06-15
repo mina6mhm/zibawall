@@ -1,4 +1,3 @@
-// middleware.ts
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
@@ -27,16 +26,15 @@ export function middleware(request: NextRequest) {
   return NextResponse.next();
 }
 
-// تنظیمات Matcher برای اینکه میدلور روی چه مسیرهایی اجرا شود
 export const config = {
   matcher: [
     /*
      * اعمال میدلور روی تمام مسیرها به جز:
-     * 1. مسیرهای API (شروع با /api)
-     * 2. فایل‌های استاتیک Next.js (شروع با /_next)
-     * 3. فایل‌های عمومی مثل لوگو و فونت‌ها (شروع با آدرس‌های خاص یا دارای اکستنشن)
-     * 4. favicon.ico
+     * 1. مسیرهای API
+     * 2. فایل‌های استاتیک Next.js
+     * 3. فایل مانیفست PWA (بسیار مهم)
+     * 4. تمامی عکس‌ها با فرمت‌های مختلف
      */
-    '/((?!api|_next/static|_next/image|favicon.ico|.*\\.png$).*)',
+    '/((?!api|_next/static|_next/image|favicon.ico|manifest.json|.*\\.(?:png|jpg|jpeg|svg|ico)$).*)',
   ],
 };
