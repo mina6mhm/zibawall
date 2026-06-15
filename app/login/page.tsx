@@ -170,29 +170,40 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-[100dvh] bg-white flex flex-col items-center justify-center p-4" dir="rtl">
-      <div className="w-full max-w-[400px] bg-white p-8 flex flex-col items-center border border-zinc-200 rounded-3xl shadow-sm">
-        <div className="mb-10 flex items-center justify-center p-4 rounded-full">
-          <Image src="/logo.png" alt="لوگو" width={80} height={80} className="object-contain" />
+    <div className="min-h-[100dvh] bg-white sm:bg-white flex flex-col items-center justify-center p-4 sm:p-6" dir="rtl">
+      <div className="w-full max-w-[400px] bg-white p-6 sm:p-8 flex flex-col items-center sm:border border-zinc-200 rounded-2xl sm:rounded-3xl sm:shadow-sm">
+        
+        <div className="mb-8 sm:mb-10 flex items-center justify-center p-2 rounded-full">
+          <Image 
+            src="/logo.png" 
+            alt="لوگو" 
+            width={80} 
+            height={80} 
+            className="object-contain w-16 h-16 sm:w-20 sm:h-20" 
+          />
         </div>
 
         {step === 'mobile' && (
-          <div className="w-full flex flex-col items-center">
-            <h1 className="text-xl font-bold text-zinc-900 mb-8">ثبت نام یا ورود</h1>
-            <div className="w-full mb-8">
-              <label className="block text-sm text-zinc-600 mb-2 pr-2">شماره موبایل</label>
+          <div className="w-full flex flex-col items-center animate-fade-in">
+            <h1 className="text-lg sm:text-xl font-bold text-zinc-900 mb-6 sm:mb-8">ثبت نام یا ورود</h1>
+            
+            <div className="w-full mb-6 sm:mb-8">
+              <label className="block text-xs sm:text-sm font-medium text-zinc-600 mb-1.5 sm:mb-2 pr-1 sm:pr-2">
+                شماره موبایل
+              </label>
               <input
                 type="tel"
                 dir="ltr"
                 value={mobile}
                 placeholder="09123456789"
                 onChange={(e) => setMobile(e.target.value)}
-                className="w-full bg-white text-zinc-900 border border-zinc-300 rounded-xl px-4 py-3 text-left focus:outline-none focus:border-zinc-900"
+                className="w-full bg-white text-zinc-900 border border-zinc-300 rounded-xl px-3 py-2.5 sm:px-4 sm:py-3 text-sm sm:text-base text-left focus:outline-none focus:border-zinc-900 focus:ring-1 focus:ring-zinc-900 transition-all"
               />
             </div>
+            
             <button
               onClick={handleRequestOTP}
-              className="w-full bg-zinc-900 hover:bg-black text-white rounded-xl py-3 font-bold"
+              className="w-full bg-zinc-900 hover:bg-black text-white rounded-xl py-2.5 sm:py-3 text-sm sm:text-base font-bold transition-colors"
             >
               دریافت کد تایید
             </button>
@@ -200,13 +211,13 @@ export default function LoginPage() {
         )}
 
         {step === 'otp' && (
-          <div className="w-full flex flex-col items-center">
-            <h1 className="text-xl font-bold text-zinc-900 mb-4">احراز هویت شما</h1>
-            <p className="text-sm text-zinc-600 mb-6 text-center">
-              کد تایید به شماره <span dir="ltr" className="text-zinc-900">{mobile}</span> ارسال شد
+          <div className="w-full flex flex-col items-center animate-fade-in">
+            <h1 className="text-lg sm:text-xl font-bold text-zinc-900 mb-2 sm:mb-4">احراز هویت شما</h1>
+            <p className="text-xs sm:text-sm text-zinc-600 mb-6 sm:mb-8 text-center leading-relaxed">
+              کد تایید به شماره <span dir="ltr" className="text-zinc-900 font-medium">{mobile}</span> ارسال شد
             </p>
 
-            <div className="flex justify-center gap-3 mb-4 w-full" dir="ltr">
+            <div className="flex justify-center gap-2 sm:gap-3 mb-6 w-full" dir="ltr">
               {otpValues.map((value, index) => (
                 <input
                   key={index}
@@ -218,7 +229,7 @@ export default function LoginPage() {
                   disabled={timeLeft === 0}
                   onChange={(e) => handleOtpChange(index, e.target.value)}
                   onKeyDown={(e) => handleOtpKeyDown(index, e)}
-                  className="w-12 h-12 text-center border border-zinc-300 rounded-xl"
+                  className="w-11 h-11 sm:w-12 sm:h-12 md:w-14 md:h-14 text-lg sm:text-xl font-medium text-center border border-zinc-300 rounded-xl focus:border-zinc-900 focus:ring-1 focus:ring-zinc-900 outline-none transition-all disabled:opacity-50 disabled:bg-zinc-50"
                 />
               ))}
             </div>
@@ -228,23 +239,30 @@ export default function LoginPage() {
                 setStep('mobile');
                 setIsTimerActive(false);
               }}
-              className="text-sm mb-8"
+              className="text-xs sm:text-sm text-zinc-500 hover:text-zinc-800 mb-6 sm:mb-8 transition-colors font-medium"
             >
               ویرایش شماره موبایل
             </button>
 
-            <div className="mb-6">
+            <div className="mb-6 sm:mb-8">
               {timeLeft > 0 ? (
-                <span>{formatTime(timeLeft)}</span>
+                <span className="text-xs sm:text-sm font-medium text-zinc-500 flex items-center gap-1">
+                  ارسال مجدد کد تا <span className="text-zinc-800" dir="ltr">{formatTime(timeLeft)}</span>
+                </span>
               ) : (
-                <button onClick={handleRequestOTP}>ارسال مجدد کد</button>
+                <button 
+                  onClick={handleRequestOTP}
+                  className="text-xs sm:text-sm font-bold text-zinc-900 hover:text-zinc-700 transition-colors"
+                >
+                  ارسال مجدد کد
+                </button>
               )}
             </div>
 
             <button
               onClick={handleLoginWithOTP}
               disabled={timeLeft === 0 || otpValues.join('').length < 5}
-              className="w-full bg-zinc-900 text-white rounded-xl py-3 font-bold"
+              className="w-full bg-zinc-900 hover:bg-black text-white rounded-xl py-2.5 sm:py-3 text-sm sm:text-base font-bold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               تایید
             </button>
@@ -252,35 +270,39 @@ export default function LoginPage() {
         )}
 
         {step === 'username' && (
-          <div className="w-full flex flex-col items-center">
-            <h1 className="text-xl font-bold text-zinc-900 mb-2">تکمیل ثبت نام</h1>
-            <p className="text-sm text-zinc-600 mb-8 text-center">لطفاً اطلاعات زیر را تکمیل کنید</p>
+          <div className="w-full flex flex-col items-center animate-fade-in">
+            <h1 className="text-lg sm:text-xl font-bold text-zinc-900 mb-2">تکمیل ثبت نام</h1>
+            <p className="text-xs sm:text-sm text-zinc-500 mb-6 sm:mb-8 text-center">لطفاً اطلاعات زیر را تکمیل کنید</p>
 
-            <div className="w-full mb-4">
-              <label className="block text-sm text-zinc-600 mb-2 pr-2">نام و نام خانوادگی</label>
+            <div className="w-full mb-4 sm:mb-5">
+              <label className="block text-xs sm:text-sm font-medium text-zinc-600 mb-1.5 sm:mb-2 pr-1 sm:pr-2">
+                نام و نام خانوادگی
+              </label>
               <input
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="w-full bg-white text-zinc-900 border border-zinc-300 rounded-xl px-4 py-3 focus:outline-none focus:border-zinc-900"
+                className="w-full bg-white text-zinc-900 border border-zinc-300 rounded-xl px-3 py-2.5 sm:px-4 sm:py-3 text-sm sm:text-base focus:outline-none focus:border-zinc-900 focus:ring-1 focus:ring-zinc-900 transition-all"
               />
             </div>
 
-            <div className="w-full mb-8">
-              <label className="block text-sm text-zinc-600 mb-2 pr-2">نام کاربری</label>
+            <div className="w-full mb-8 sm:mb-10">
+              <label className="block text-xs sm:text-sm font-medium text-zinc-600 mb-1.5 sm:mb-2 pr-1 sm:pr-2">
+                نام کاربری
+              </label>
               <input
                 type="text"
                 dir="ltr"
                 value={username}
                 placeholder="example_1234"
                 onChange={(e) => setUsername(e.target.value)}
-                className="w-full bg-white text-zinc-900 border border-zinc-300 rounded-xl px-4 py-3 text-left focus:outline-none focus:border-zinc-900"
+                className="w-full bg-white text-zinc-900 border border-zinc-300 rounded-xl px-3 py-2.5 sm:px-4 sm:py-3 text-sm sm:text-base text-left focus:outline-none focus:border-zinc-900 focus:ring-1 focus:ring-zinc-900 transition-all"
               />
             </div>
 
             <button
               onClick={handleCompleteProfile}
-              className="w-full bg-zinc-900 text-white rounded-xl py-3 font-bold"
+              className="w-full bg-zinc-900 hover:bg-black text-white rounded-xl py-2.5 sm:py-3 text-sm sm:text-base font-bold transition-colors"
             >
               ثبت و ورود
             </button>

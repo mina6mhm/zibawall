@@ -404,7 +404,7 @@ export default function BusinessRegistrationPage() {
       </div>
 
       {/* کانتینر سفیدرنگ فرم‌ها */}
-      <div className="bg-white rounded-xl md:rounded-2xl border border-zinc-100 shadow-sm p-4 md:p-8">
+        
                 {/* ================= مرحله ۱: اطلاعات پایه ================= */}
         {step === 1 && (
           <div className="space-y-6 md:space-y-8 animate-fade-in">
@@ -1013,7 +1013,6 @@ export default function BusinessRegistrationPage() {
               )}
             </button>
           )}
-        </div>
       </div>
             <RegionFilterModal 
         isOpen={isRegionModalOpen} 
