@@ -401,10 +401,7 @@ export default function BusinessRegistrationPage() {
             </div>
           </div>
         ))}
-      </div>
-
-      {/* کانتینر سفیدرنگ فرم‌ها */}
-        
+      </div>        
                 {/* ================= مرحله ۱: اطلاعات پایه ================= */}
         {step === 1 && (
           <div className="space-y-6 md:space-y-8 animate-fade-in">
