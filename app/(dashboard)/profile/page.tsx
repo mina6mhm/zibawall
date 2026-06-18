@@ -110,36 +110,27 @@ export default function ProfilePage() {
   };
 
   const hasBusiness = !!salonData;
-  const inputBaseClasses =
-    "w-full border border-zinc-200 bg-zinc-50/50 rounded-xl md:rounded-2xl px-3 md:px-4 py-2.5 md:py-3 text-sm md:text-base focus:bg-white focus:border-zinc-400 focus:ring-4 focus:ring-zinc-100 outline-none transition-all";
+  const inputBaseClasses = "w-full border border-zinc-200 bg-zinc-50/50 rounded-xl md:rounded-2xl px-4 py-3 text-[15px] md:text-base focus:bg-white focus:border-zinc-400 focus:ring-4 focus:ring-zinc-100 outline-none transition-all";
 
   return (
     <div className="flex flex-col min-h-screen bg-white pb-24">
-      
-      {/* HEADER */}
-      <div className="bg-white border-b border-zinc-100 px-4 py-4 md:py-10">
-        <div className="max-w-4xl mx-auto flex flex-col md:flex-row items-center gap-3 md:gap-5">
-          
-          <div className="w-16 h-16 md:w-24 md:h-24 bg-zinc-50 rounded-full flex items-center justify-center text-zinc-400 border border-zinc-100">
-            <User className="w-8 h-8 md:w-10 md:h-10" strokeWidth={1.5} />
+      {/* --- هدر پروفایل --- */}
+      <div className="bg-white border-b border-zinc-100 px-4 py-6 md:py-10">
+        <div className="max-w-4xl mx-auto flex flex-col md:flex-row items-center gap-4 md:gap-5">
+          <div className="w-20 h-20 md:w-24 md:h-24 bg-zinc-50 rounded-full flex items-center justify-center text-zinc-400 border border-zinc-100 shrink-0">
+            <User className="w-10 h-10 md:w-10 md:h-10" strokeWidth={1.5} />
           </div>
-
           <div className="text-center md:text-right flex-1">
-            <h1 className="text-lg md:text-2xl font-bold text-zinc-900 mb-2">
-              {userData.name || 'کاربر عزیز'}
-            </h1>
-
+            <h1 className="text-xl md:text-2xl font-bold text-zinc-900 mb-2.5 md:mb-3">{userData.name || 'کاربر عزیز'}</h1>
             <div className="flex flex-wrap items-center gap-2 justify-center md:justify-start">
-              
               {userData.username && (
-                <span className="text-rose-600 text-xs md:text-sm font-medium dir-ltr flex items-center gap-1 bg-rose-50 px-2 py-1 rounded-lg">
-                  <AtSign className="w-3.5 h-3.5" /> {userData.username}
+                <span className="text-rose-600 text-[13px] md:text-sm font-medium dir-ltr inline-flex items-center gap-1.5 bg-rose-50 px-2.5 py-1.5 rounded-lg md:rounded-xl border border-rose-100/50">
+                  <AtSign className="w-4 h-4" /> {userData.username}
                 </span>
               )}
-
               {userData.phone && (
-                <span className="text-zinc-600 text-xs md:text-sm dir-ltr flex items-center gap-1 bg-zinc-50 px-2 py-1 rounded-lg">
-                  <Phone className="w-3.5 h-3.5" /> {userData.phone}
+                <span className="text-zinc-600 text-[13px] md:text-sm dir-ltr flex items-center gap-1.5 bg-zinc-50 px-2.5 py-1.5 rounded-lg md:rounded-xl border border-zinc-100">
+                  <Phone className="w-4 h-4" /> {userData.phone}
                 </span>
               )}
             </div>
@@ -147,165 +138,172 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      {/* BODY */}
       <div className="max-w-4xl mx-auto w-full md:px-4 md:mt-10 flex flex-col md:flex-row md:gap-8">
-
-        {/* TABS */}
-        <div className="w-full md:w-64">
-          <div className="flex flex-row md:flex-col border-b md:border-none md:p-1 md:bg-zinc-100/60 md:rounded-2xl">
-
-            <button
-              onClick={() => setActiveTab('info')}
-              className={`flex-1 md:flex-none flex items-center justify-center md:justify-start gap-2 py-3 md:px-4 md:py-3 text-sm md:text-base font-medium ${
-                activeTab === 'info'
-                  ? 'text-zinc-900 md:bg-white'
-                  : 'text-zinc-500'
+        
+        {/* --- منوی تب‌ها --- */}
+        <div className="w-full md:w-64 shrink-0">
+          {/* ظاهر تب‌ها در دسکتاپ (کارت کناری) و موبایل (تب‌های زیرخط‌دار نیتیو) */}
+          <div className="flex flex-row md:flex-col border-b border-zinc-100 md:border-none w-full md:p-1.5 md:gap-1.5 md:bg-zinc-100/70 md:rounded-2xl">
+            <button 
+              onClick={() => setActiveTab('info')} 
+              className={`flex-1 md:flex-none flex items-center justify-center md:justify-start gap-2 py-4 md:px-4 md:py-3 md:rounded-xl transition-all text-[15px] md:text-base font-medium relative ${
+                activeTab === 'info' 
+                  ? 'text-zinc-900 md:bg-white md:shadow-sm' 
+                  : 'text-zinc-500 hover:text-zinc-800 md:hover:bg-zinc-200/50'
               }`}
             >
-              <User className="w-4 h-4 md:w-5 md:h-5" />
-              اطلاعات
+              <User className="w-5 h-5 shrink-0" /> اطلاعات کاربری
+              {/* خط زیرین فقط برای موبایل */}
+              {activeTab === 'info' && (
+                <span className="absolute bottom-0 left-0 w-full h-[2px] bg-zinc-900 md:hidden"></span>
+              )}
             </button>
-
-            <button
-              onClick={() => setActiveTab('business')}
-              className={`flex-1 md:flex-none flex items-center justify-center md:justify-start gap-2 py-3 md:px-4 md:py-3 text-sm md:text-base font-medium ${
-                activeTab === 'business'
-                  ? 'text-zinc-900 md:bg-white'
-                  : 'text-zinc-500'
+            
+            <button 
+              onClick={() => setActiveTab('business')} 
+              className={`flex-1 md:flex-none flex items-center justify-center md:justify-start gap-2 py-4 md:px-4 md:py-3 md:rounded-xl transition-all text-[15px] md:text-base font-medium relative ${
+                activeTab === 'business' 
+                  ? 'text-zinc-900 md:bg-white md:shadow-sm' 
+                  : 'text-zinc-500 hover:text-zinc-800 md:hover:bg-zinc-200/50'
               }`}
             >
-              <Store className="w-4 h-4 md:w-5 md:h-5" />
-              کسب‌وکار
+              <Store className="w-5 h-5 shrink-0" /> {hasBusiness ? 'کسب‌وکار من' : 'ثبت کسب‌وکار'}
+              {activeTab === 'business' && (
+                <span className="absolute bottom-0 left-0 w-full h-[2px] bg-zinc-900 md:hidden"></span>
+              )}
             </button>
-
           </div>
         </div>
 
-        {/* CONTENT */}
-        <div className="flex-1 md:rounded-3xl p-4 md:p-8 md:border md:border-zinc-100 md:shadow-sm">
-
-          {/* INFO TAB */}
+        {/* --- محتوا --- */}
+        <div className="flex-1 bg-white md:rounded-3xl p-5 md:p-8 md:border md:border-zinc-100/80 md:shadow-sm">
+          
+          {/* تب اطلاعات */}
           {activeTab === 'info' && (
-            <div className="space-y-5 md:space-y-8">
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
-
+            <div className="space-y-6 md:space-y-8 animate-in fade-in duration-300">
+              <h2 className="hidden md:block text-xl font-bold text-zinc-800 mb-4">اطلاعات شخصی</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5 md:gap-6">
+                
                 <div>
-                  <label className="text-xs md:text-sm mb-1 block">شماره موبایل</label>
-                  <input
-                    value={userData.phone}
-                    disabled
-                    className="w-full bg-zinc-50 text-xs md:text-base px-3 py-2.5 rounded-xl text-zinc-400"
+                  <label className="block text-[13px] md:text-sm font-medium mb-2 text-zinc-700 pr-1">شماره موبایل</label>
+                  <input 
+                    value={userData.phone} 
+                    disabled 
+                    className="w-full border border-zinc-100 bg-zinc-50/80 rounded-xl md:rounded-2xl px-4 py-3 dir-ltr text-left text-[15px] text-zinc-400 cursor-not-allowed" 
+                    placeholder="09123456789"
                   />
+                  <p className="text-[11px] md:text-xs text-zinc-400 mt-2 pr-1">شماره موبایل حساب کاربری قابل تغییر نیست</p>
                 </div>
 
                 <div>
-                  <label className="text-xs md:text-sm mb-1 block">نام</label>
-                  <input
-                    value={userData.name}
-                    onChange={(e) => setUserData({ ...userData, name: e.target.value })}
+                  <label className="block text-[13px] md:text-sm font-medium mb-2 text-zinc-700 pr-1">نام و نام خانوادگی</label>
+                  <input 
+                    value={userData.name} 
+                    onChange={(e) => setUserData({...userData, name: e.target.value})} 
                     className={inputBaseClasses}
+                    placeholder="نام خود را وارد کنید"
                   />
                 </div>
 
                 <div>
-                  <label className="text-xs md:text-sm mb-1 block">نام کاربری</label>
-                  <input
-                    value={userData.username}
-                    onChange={(e) =>
-                      setUserData({
-                        ...userData,
-                        username: e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '')
-                      })
-                    }
-                    className={inputBaseClasses}
-                  />
+                  <label className="block text-[13px] md:text-sm font-medium mb-2 text-zinc-700 pr-1">نام کاربری</label>
+                  <div className="relative">
+                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400">
+                      <AtSign className="w-[18px] h-[18px]" />
+                    </span>
+                    <input 
+                      value={userData.username} 
+                      onChange={(e) => setUserData({...userData, username: e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '')})} 
+                      placeholder="username"
+                      className={`${inputBaseClasses} pl-11 dir-ltr text-left`}
+                    />
+                  </div>
+                  <p className="text-[11px] md:text-xs text-zinc-400 mt-2 pr-1">فقط انگلیسی، اعداد و خط‌تیره (_)</p>
                 </div>
-
               </div>
-
-              <div className="flex flex-col md:flex-row gap-3 pt-6">
-
-                <button
-                  onClick={handleSaveChanges}
-                  disabled={isLoading}
-                  className="bg-zinc-900 text-white w-full md:w-auto px-4 md:px-6 py-3 rounded-xl text-sm md:text-base"
+              
+              {/* --- دکمه‌های فرم --- */}
+              <div className="pt-8 md:pt-6 border-t border-zinc-100 flex flex-col md:flex-row items-center justify-between gap-3 mt-4">
+                <button 
+                  onClick={handleSaveChanges} 
+                  disabled={isLoading} 
+                  className="bg-zinc-900 text-white px-6 md:px-8 py-3.5 rounded-xl md:rounded-2xl w-full md:w-auto hover:bg-black transition-all active:scale-[0.98] text-[15px] md:text-base font-medium order-1 md:order-2"
                 >
-                  ذخیره
+                  {isLoading ? 'در حال ذخیره...' : 'ذخیره تغییرات'}
                 </button>
 
-                <button
+                <button 
                   onClick={handleLogout}
-                  className="text-rose-600 bg-rose-50 w-full md:w-auto px-4 md:px-6 py-3 rounded-xl text-sm md:text-base"
+                  className="text-rose-600 bg-rose-50/50 md:bg-transparent hover:bg-rose-50 px-6 py-3.5 rounded-xl md:rounded-2xl w-full md:w-auto transition-all flex items-center justify-center gap-2 text-[15px] md:text-base font-medium order-2 md:order-1"
                 >
-                  خروج
+                  <LogOut className="w-5 h-5" /> خروج از حساب
                 </button>
-
               </div>
             </div>
           )}
 
-          {/* BUSINESS TAB */}
+          {/* تب کسب و کار */}
           {activeTab === 'business' && (
-            <div className="space-y-5">
-
+            <div className="animate-in fade-in duration-300">
               {hasBusiness ? (
-                <div className="space-y-4">
-
-                  <div className="p-4 bg-zinc-50 rounded-2xl flex items-center gap-3">
-                    <Store className="w-6 h-6 text-rose-500" />
-                    <div>
-                      <div className="font-bold text-sm md:text-base">{salonData.name}</div>
-                      <div className="text-xs md:text-sm text-zinc-500">
-                        {salonData.province}، {salonData.city}
-                      </div>
+                <div className="space-y-6">
+                  <h2 className="hidden md:block text-xl font-bold text-zinc-800">مدیریت کسب‌وکار من</h2>
+                  
+                  <div className="bg-zinc-50 border border-zinc-100/80 rounded-2xl p-4 md:p-5 flex flex-row items-center gap-4">
+                    <div className="w-14 h-14 md:w-16 md:h-16 bg-white rounded-xl flex items-center justify-center border border-zinc-100 shrink-0 shadow-sm">
+                      <Store className="w-7 h-7 md:w-8 md:h-8 text-rose-500" strokeWidth={1.5} />
+                    </div>
+                    <div className="flex-1 text-right">
+                      <h3 className="text-lg md:text-xl font-bold text-zinc-900 mb-1">{salonData.name}</h3> 
+                      <p className="text-[13px] md:text-sm text-zinc-500">
+                         {salonData.province}، {salonData.city}
+                      </p>
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 gap-3">
-
-                    <Link
-                      href={`/salon/${salonData.id || salonData._id}`}
-                      className="bg-zinc-900 text-white py-3 rounded-xl text-sm md:text-base text-center"
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-2">
+                    <Link 
+                      href={`/salon/${salonData.id || salonData._id}`} 
+                      className="flex justify-center items-center gap-2 bg-zinc-900 text-white px-4 py-3.5 rounded-xl md:rounded-2xl hover:bg-black transition-all font-medium active:scale-[0.98] text-[15px] md:text-base"
                     >
-                      مشاهده
+                      <Eye className="w-5 h-5 shrink-0" /> مشاهده سالن
                     </Link>
 
-                    <Link
-                      href="/profile/business/edit"
-                      className="border py-3 rounded-xl text-sm md:text-base text-center"
+                    <Link 
+                      href="/profile/business/edit" 
+                      className="flex justify-center items-center gap-2 bg-white border border-zinc-200 text-zinc-700 px-4 py-3.5 rounded-xl md:rounded-2xl hover:bg-zinc-50 transition-all font-medium active:scale-[0.98] text-[15px] md:text-base"
                     >
-                      ویرایش
+                      <Edit className="w-5 h-5 shrink-0" /> ویرایش اطلاعات
                     </Link>
 
-                    <button
+                    <button 
                       onClick={handleDeleteBusiness}
-                      className="bg-rose-50 text-rose-600 py-3 rounded-xl text-sm md:text-base"
+                      disabled={isLoading}
+                      className="flex justify-center items-center gap-2 bg-rose-50/80 text-rose-600 border border-rose-100 px-4 py-3.5 rounded-xl md:rounded-2xl hover:bg-rose-100 transition-all font-medium active:scale-[0.98] text-[15px] md:text-base"
                     >
-                      حذف
+                      <Trash2 className="w-5 h-5 shrink-0" /> {isLoading ? 'کمی صبر...' : 'حذف کسب‌وکار'}
                     </button>
-
                   </div>
-
                 </div>
               ) : (
-                <div className="text-center py-10">
-                  <Store className="w-14 h-14 text-rose-500 mx-auto mb-3" />
-                  <p className="text-sm md:text-base text-zinc-500 mb-4">
-                    هنوز کسب‌وکار ثبت نکردی
+                <div className="text-center py-12 md:py-16">
+                  <div className="w-20 h-20 md:w-24 md:h-24 bg-rose-50 rounded-full flex items-center justify-center mx-auto mb-5 md:mb-6 border border-rose-100/50">
+                    <Store className="w-10 h-10 text-rose-500" strokeWidth={1.5} />
+                  </div>
+                  <h2 className="text-xl md:text-2xl font-bold mb-3 text-zinc-800">مدیر سالن زیبایی هستید؟</h2>
+                  <p className="text-[14px] md:text-[15px] text-zinc-500 mb-8 max-w-md mx-auto leading-relaxed">
+                    کسب‌وکار خود را به صورت کاملاً رایگان ثبت کنید تا هزاران مشتری جدید از سراسر کشور شما را پیدا کنند.
                   </p>
-                  <Link
-                    href="/profile/business"
-                    className="bg-rose-500 text-white px-5 py-3 rounded-xl text-sm md:text-base"
+                  <Link 
+                    href="/profile/business" 
+                    className="bg-rose-500 text-white w-full md:w-auto px-8 py-3.5 rounded-xl md:rounded-2xl flex justify-center items-center gap-2 hover:bg-rose-600 transition-all active:scale-[0.98] text-[15px] md:text-base font-medium"
                   >
-                    ثبت کسب‌وکار
+                    <Sparkles className="w-5 h-5" /> شروع ثبت‌نام کسب‌وکار
                   </Link>
                 </div>
               )}
-
             </div>
           )}
-
         </div>
       </div>
     </div>
