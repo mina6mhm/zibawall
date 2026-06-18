@@ -1041,7 +1041,7 @@ export default function BusinessRegistrationPage() {
                 لطفا روی نقشه کلیک کنید تا نشانگر در محل دقیق کسب‌وکار شما قرار بگیرد.
               </span>
               <div className="flex gap-3 w-full md:w-auto">
-                <button onClick={() => setIsMapModalOpen(false)} className="flex-1 md:flex-none px-4 py-2 rounded-xl text-xs text-zinc-600 font-medium hover:bg-zinc-100 transition-colors">
+                <button onClick={() => setIsMapModalOpen(false)} className="flex-1 md:flex-none px-4 py-2 rounded-[8px] text-xs text-zinc-600 font-medium hover:bg-zinc-100 transition-colors">
                   انصراف
                 </button>
                 <button 
@@ -1052,7 +1052,7 @@ export default function BusinessRegistrationPage() {
                     setIsMapModalOpen(false);
                     console.log('مختصات انتخاب شده:', tempCoordinates); 
                   }} 
-                  className="flex-1 md:flex-none px-4 py-2 rounded-xl text-xs bg-rose-600 text-white font-medium hover:bg-rose-700 transition-colors shadow-md shadow-rose-200 flex items-center justify-center gap-2"
+                  className="flex-1 md:flex-none px-4 py-2 rounded-[8px] text-xs bg-rose-600 text-white font-medium hover:bg-rose-700 transition-colors shadow-md shadow-rose-200 flex items-center justify-center gap-2"
                 >
                 <CheckCircle2 size={20} /> تایید موقعیت
                 </button>

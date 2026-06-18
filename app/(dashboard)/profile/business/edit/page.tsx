@@ -992,7 +992,7 @@ export default function BusinessEditPage() {
             <div className="p-4 bg-white border-t border-zinc-100 flex justify-between items-center gap-3 z-10">
               <span className="text-sm text-zinc-500 hidden md:inline-block">لطفا نقشه را جابجا کنید تا نشانگر روی لوکیشن شما قرار بگیرد.</span>
               <div className="flex gap-3 w-full md:w-auto">
-                <button onClick={() => setIsMapModalOpen(false)} className="flex-1 md:flex-none px-4 py-2 rounded-xl text-xs text-zinc-600 font-medium hover:bg-zinc-100 transition-colors">
+                <button onClick={() => setIsMapModalOpen(false)} className="flex-1 md:flex-none px-4 py-2 rounded-[8px] text-xs text-zinc-600 font-medium hover:bg-zinc-100 transition-colors">
                   انصراف
                 </button>
                 <button 
@@ -1001,7 +1001,7 @@ export default function BusinessEditPage() {
                     setLocationSelected(true);
                     setIsMapModalOpen(false);
                   }} 
-                  className="flex-1 md:flex-none px-4 py-2 rounded-xl text-xs bg-rose-600 text-white font-medium hover:bg-rose-700 transition-colors flex items-center justify-center gap-2"
+                  className="flex-1 md:flex-none px-4 py-2 rounded-[8px] text-xs bg-rose-600 text-white font-medium hover:bg-rose-700 transition-colors flex items-center justify-center gap-2"
                 >
                   <CheckCircle2 size={20} /> تایید موقعیت
                 </button>
