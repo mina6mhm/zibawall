@@ -73,9 +73,6 @@ export async function POST(req: Request) {
     // در حالت تستی این لاگ بسیار مهم است تا بتوانید کد را بردارید
     console.log(`🔑 OTP for ${mobile}: ${otpCode}`);
 
-    /* ==========================================
-       بخش ارسال پیامک موقتاً کامنت شده است
-       ==========================================
     const apiKey =
       process.env.FARAZ_SMS_API_KEY;
 
@@ -160,13 +157,11 @@ export async function POST(req: Request) {
         }
       );
     }
-    ========================================== */
 
     return NextResponse.json(
       {
         success: true,
-        // پیام موقت برای اینکه بدانید پیامک ارسال نشده اما عملیات موفق بوده
-        message: 'کد تایید در ترمینال لاگ شد (حالت تستی)'
+        message: 'کد تایید ارسال شد'
       },
       {
         status: 200
