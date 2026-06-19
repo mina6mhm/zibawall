@@ -863,37 +863,40 @@ export default function BusinessRegistrationPage() {
               </div>
               
               {!coverImage ? (
-                <label className="cursor-pointer bg-zinc-50 border-2 border-dashed border-zinc-300 rounded-xl md:rounded-2xl p-5 md:p-8 flex flex-col items-center justify-center text-center gap-2 md:gap-3 hover:bg-zinc-100 transition-colors">
-                  <div className="w-10 h-10 md:w-14 md:h-14 bg-white text-rose-600 rounded-full flex items-center justify-center shadow-sm mb-1 md:mb-2 border border-zinc-200">
-                    <ImageIcon className="w-5 h-5 md:w-7 md:h-7" />
-                  </div>
-                  <h3 className="text-sm md:text-base font-medium text-zinc-800">برای آپلود کاور اصلی کلیک کنید</h3>
-                  <p className="text-xs md:text-sm text-zinc-500">فرمت‌های مجاز: JPG, PNG, WEBP</p>
-                  <input 
-                    type="file" 
-                    accept="image/*" 
-                    className="hidden" 
-                    onChange={handleCoverUpload} 
-                  />
-                </label>
-              ) : (
-                <div className="relative group rounded-lg md:rounded-xl overflow-hidden aspect-video border border-zinc-200 shadow-sm max-w-lg">
-                  <img 
-                    src={URL.createObjectURL(coverImage)} 
-                    alt="کاور اصلی" 
-                    className="w-full h-full object-cover"
-                  />
-                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                    <button
-  type="button"
-  onClick={removeCoverImage}
-  className="absolute top-2 left-2 z-10 w-9 h-9 rounded-full bg-red-500 text-white flex items-center justify-center shadow-lg"
->
-  <Trash2 className="w-4 h-4" />
-</button>
-                  </div>
-                </div>
-              )}
+  <label className="cursor-pointer bg-zinc-50 border-2 border-dashed border-zinc-300 rounded-xl md:rounded-2xl p-5 md:p-8 flex flex-col items-center justify-center text-center gap-2 md:gap-3 hover:bg-zinc-100 transition-colors">
+    <div className="w-10 h-10 md:w-14 md:h-14 bg-white text-rose-600 rounded-full flex items-center justify-center shadow-sm mb-1 md:mb-2 border border-zinc-200">
+      <ImageIcon className="w-5 h-5 md:w-7 md:h-7" />
+    </div>
+    <h3 className="text-sm md:text-base font-medium text-zinc-800">
+      برای آپلود کاور اصلی کلیک کنید
+    </h3>
+    <p className="text-xs md:text-sm text-zinc-500">
+      فرمت‌های مجاز: JPG, PNG, WEBP
+    </p>
+    <input
+      type="file"
+      accept="image/*"
+      className="hidden"
+      onChange={handleCoverUpload}
+    />
+  </label>
+) : (
+  <div className="relative rounded-lg md:rounded-xl overflow-hidden aspect-video border border-zinc-200 shadow-sm max-w-lg">
+    <img
+      src={URL.createObjectURL(coverImage)}
+      alt="کاور اصلی"
+      className="w-full h-full object-cover"
+    />
+
+    <button
+      type="button"
+      onClick={removeCoverImage}
+      className="absolute top-2 left-2 z-10 w-9 h-9 rounded-full bg-red-500 text-white flex items-center justify-center shadow-lg hover:bg-red-600 transition-colors"
+    >
+      <Trash2 className="w-4 h-4" />
+    </button>
+  </div>
+)}
             </div>
 
             {/* بخش دوم: نمونه کارها */}
@@ -929,27 +932,29 @@ export default function BusinessRegistrationPage() {
               </p>
               
               {portfolios.length > 0 && (
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 md:gap-4 mt-4 md:mt-6">
-                  {portfolios.map((file, index) => (
-                    <div key={index} className="relative group rounded-lg md:rounded-xl overflow-hidden aspect-square border border-zinc-200 shadow-sm">
-                      <img 
-                        src={URL.createObjectURL(file)} 
-                        alt={`نمونه کار ${index + 1}`} 
-                        className="w-full h-full object-cover"
-                      />
-                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                        <button
-  type="button"
-  onClick={() => removePortfolio(index)}
-  className="absolute top-2 left-2 z-10 w-8 h-8 rounded-full bg-red-500 text-white flex items-center justify-center shadow-md"
->
-  <Trash2 className="w-4 h-4" />
-</button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
+  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 md:gap-4 mt-4 md:mt-6">
+    {portfolios.map((file, index) => (
+      <div
+        key={index}
+        className="relative rounded-lg md:rounded-xl overflow-hidden aspect-square border border-zinc-200 shadow-sm"
+      >
+        <img
+          src={URL.createObjectURL(file)}
+          alt={`نمونه کار ${index + 1}`}
+          className="w-full h-full object-cover"
+        />
+
+        <button
+          type="button"
+          onClick={() => removePortfolio(index)}
+          className="absolute top-2 left-2 z-10 w-8 h-8 rounded-full bg-red-500 text-white flex items-center justify-center shadow-md hover:bg-red-600 transition-colors"
+        >
+          <Trash2 className="w-4 h-4" />
+        </button>
+      </div>
+    ))}
+  </div>
+)}
             </div>
           </div>
         )}
