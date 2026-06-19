@@ -847,7 +847,7 @@ export default function BusinessRegistrationPage() {
           </div>
         )}
 
-                {/* ================= مرحله ۴: تصاویر و نمونه کارها ================= */}
+       {/* ================= مرحله ۴: تصاویر و نمونه کارها ================= */}
         {step === 4 && (
           <div className="space-y-6 md:space-y-10 animate-fade-in">
             <div className="flex items-center gap-1.5 md:gap-2 border-b border-zinc-100 pb-2 md:pb-3">
@@ -884,13 +884,13 @@ export default function BusinessRegistrationPage() {
                     className="w-full h-full object-cover"
                   />
                   <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                    <button 
-                      type="button"
-                      onClick={removeCoverImage}
-                      className="bg-white/90 p-2 md:p-3 rounded-full text-red-600 hover:bg-red-50 transition-colors flex items-center gap-1.5 md:gap-2"
-                    >
-                      <Trash2 className="w-4 h-4 md:w-5 md:h-5" /> <span className="text-sm md:text-base font-medium">حذف کاور</span>
-                    </button>
+                    <button
+  type="button"
+  onClick={removeCoverImage}
+  className="absolute top-2 left-2 z-10 w-9 h-9 rounded-full bg-red-500 text-white flex items-center justify-center shadow-lg"
+>
+  <Trash2 className="w-4 h-4" />
+</button>
                   </div>
                 </div>
               )}
@@ -938,13 +938,13 @@ export default function BusinessRegistrationPage() {
                         className="w-full h-full object-cover"
                       />
                       <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                        <button 
-                          type="button"
-                          onClick={() => removePortfolio(index)}
-                          className="bg-white/90 p-1.5 md:p-2 rounded-full text-red-600 hover:bg-red-50 transition-colors"
-                        >
-                          <Trash2 className="w-4 h-4 md:w-[18px] md:h-[18px]" />
-                        </button>
+                        <button
+  type="button"
+  onClick={() => removePortfolio(index)}
+  className="absolute top-2 left-2 z-10 w-8 h-8 rounded-full bg-red-500 text-white flex items-center justify-center shadow-md"
+>
+  <Trash2 className="w-4 h-4" />
+</button>
                       </div>
                     </div>
                   ))}
