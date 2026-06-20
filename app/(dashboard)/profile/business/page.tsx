@@ -881,35 +881,35 @@ export default function BusinessRegistrationPage() {
     />
   </label>
 ) : (
-  <div className="relative rounded-lg md:rounded-xl overflow-hidden aspect-video border border-zinc-200 shadow-sm max-w-lg">
-    <img
-      src={URL.createObjectURL(coverImage)}
-      alt="کاور اصلی"
-      className="w-full h-full object-cover"
-    />
-
+  <div className="space-y-2 max-w-lg">
+    <div className="rounded-lg md:rounded-xl overflow-hidden aspect-video border border-zinc-200 shadow-sm">
+      <img
+        src={URL.createObjectURL(coverImage)}
+        alt="کاور اصلی"
+        className="w-full h-full object-cover"
+      />
+    </div>
     <button
       type="button"
       onClick={removeCoverImage}
       style={{
-        position: 'absolute',
-        top: '8px',
-        left: '8px',
-        zIndex: 50,
-        width: '40px',
-        height: '40px',
-        borderRadius: '9999px',
+        width: '100%',
         backgroundColor: '#ef4444',
         color: '#ffffff',
+        padding: '10px',
+        borderRadius: '10px',
+        border: 'none',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        border: 'none',
-        boxShadow: '0 4px 10px rgba(0,0,0,0.3)',
+        gap: '8px',
+        fontWeight: 600,
+        fontSize: '14px',
         cursor: 'pointer',
       }}
     >
-      <Trash2 className="w-5 h-5" />
+      <Trash2 className="w-4 h-4" />
+      حذف عکس کاور
     </button>
   </div>
 )}
@@ -950,38 +950,35 @@ export default function BusinessRegistrationPage() {
               {portfolios.length > 0 && (
   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 md:gap-4 mt-4 md:mt-6">
     {portfolios.map((file, index) => (
-      <div
-        key={index}
-        className="relative rounded-lg md:rounded-xl overflow-hidden aspect-square border border-zinc-200 shadow-sm"
-      >
-        <img
-          src={URL.createObjectURL(file)}
-          alt={`نمونه کار ${index + 1}`}
-          className="w-full h-full object-cover"
-        />
-
+      <div key={index} className="space-y-1.5">
+        <div className="rounded-lg md:rounded-xl overflow-hidden aspect-square border border-zinc-200 shadow-sm">
+          <img
+            src={URL.createObjectURL(file)}
+            alt={`نمونه کار ${index + 1}`}
+            className="w-full h-full object-cover"
+          />
+        </div>
         <button
           type="button"
           onClick={() => removePortfolio(index)}
           style={{
-            position: 'absolute',
-            top: '6px',
-            left: '6px',
-            zIndex: 50,
-            width: '36px',
-            height: '36px',
-            borderRadius: '9999px',
+            width: '100%',
             backgroundColor: '#ef4444',
             color: '#ffffff',
+            padding: '6px',
+            borderRadius: '8px',
+            border: 'none',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            border: 'none',
-            boxShadow: '0 4px 10px rgba(0,0,0,0.3)',
+            gap: '4px',
+            fontSize: '12px',
+            fontWeight: 600,
             cursor: 'pointer',
           }}
         >
-          <Trash2 className="w-4 h-4" />
+          <Trash2 className="w-3.5 h-3.5" />
+          حذف
         </button>
       </div>
     ))}
