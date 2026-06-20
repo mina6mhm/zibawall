@@ -891,9 +891,25 @@ export default function BusinessRegistrationPage() {
     <button
       type="button"
       onClick={removeCoverImage}
-      className="absolute top-2 left-2 z-10 w-9 h-9 rounded-full bg-red-500 text-white flex items-center justify-center shadow-lg hover:bg-red-600 transition-colors"
+      style={{
+        position: 'absolute',
+        top: '8px',
+        left: '8px',
+        zIndex: 50,
+        width: '40px',
+        height: '40px',
+        borderRadius: '9999px',
+        backgroundColor: '#ef4444',
+        color: '#ffffff',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        border: 'none',
+        boxShadow: '0 4px 10px rgba(0,0,0,0.3)',
+        cursor: 'pointer',
+      }}
     >
-      <Trash2 className="w-4 h-4" />
+      <Trash2 className="w-5 h-5" />
     </button>
   </div>
 )}
@@ -947,7 +963,23 @@ export default function BusinessRegistrationPage() {
         <button
           type="button"
           onClick={() => removePortfolio(index)}
-          className="absolute top-2 left-2 z-10 w-8 h-8 rounded-full bg-red-500 text-white flex items-center justify-center shadow-md hover:bg-red-600 transition-colors"
+          style={{
+            position: 'absolute',
+            top: '6px',
+            left: '6px',
+            zIndex: 50,
+            width: '36px',
+            height: '36px',
+            borderRadius: '9999px',
+            backgroundColor: '#ef4444',
+            color: '#ffffff',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            border: 'none',
+            boxShadow: '0 4px 10px rgba(0,0,0,0.3)',
+            cursor: 'pointer',
+          }}
         >
           <Trash2 className="w-4 h-4" />
         </button>
