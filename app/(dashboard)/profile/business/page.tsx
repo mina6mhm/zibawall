@@ -881,37 +881,34 @@ export default function BusinessRegistrationPage() {
     />
   </label>
 ) : (
-  <div className="space-y-2 max-w-lg">
-    <div className="rounded-lg md:rounded-xl overflow-hidden aspect-video border border-zinc-200 shadow-sm">
-      <img
-        src={URL.createObjectURL(coverImage)}
-        alt="کاور اصلی"
-        className="w-full h-full object-cover"
-      />
-    </div>
-    <button
-      type="button"
-      onClick={removeCoverImage}
-      style={{
-        width: '100%',
-        backgroundColor: '#ef4444',
-        color: '#ffffff',
-        padding: '10px',
-        borderRadius: '10px',
-        border: 'none',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: '8px',
-        fontWeight: 600,
-        fontSize: '14px',
-        cursor: 'pointer',
-      }}
-    >
-      <Trash2 className="w-4 h-4" />
-      حذف عکس کاور
-    </button>
+  <div className="relative max-w-lg">
+
+  <div className="rounded-lg md:rounded-xl overflow-hidden aspect-video border border-zinc-200 shadow-sm">
+    <img
+      src={URL.createObjectURL(coverImage)}
+      alt="کاور اصلی"
+      className="w-full h-full object-cover"
+    />
   </div>
+
+  <button
+    type="button"
+    onClick={removeCoverImage}
+    className="
+      absolute top-3 left-3
+      w-10 h-10
+      rounded-full
+      bg-red-500
+      text-white
+      flex items-center justify-center
+      shadow-lg
+      active:scale-95
+      transition
+    "
+  >
+    <Trash2 size={20} />
+  </button>
+</div>
 )}
             </div>
 
@@ -950,7 +947,8 @@ export default function BusinessRegistrationPage() {
               {portfolios.length > 0 && (
   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 md:gap-4 mt-4 md:mt-6">
     {portfolios.map((file, index) => (
-      <div key={index} className="space-y-1.5">
+      <div key={index} className="relative">
+        
         <div className="rounded-lg md:rounded-xl overflow-hidden aspect-square border border-zinc-200 shadow-sm">
           <img
             src={URL.createObjectURL(file)}
@@ -958,28 +956,26 @@ export default function BusinessRegistrationPage() {
             className="w-full h-full object-cover"
           />
         </div>
+
+        {/* دکمه حذف شناور */}
         <button
           type="button"
           onClick={() => removePortfolio(index)}
-          style={{
-            width: '100%',
-            backgroundColor: '#ef4444',
-            color: '#ffffff',
-            padding: '6px',
-            borderRadius: '8px',
-            border: 'none',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '4px',
-            fontSize: '12px',
-            fontWeight: 600,
-            cursor: 'pointer',
-          }}
+          className="
+            absolute top-2 left-2
+            w-8 h-8
+            rounded-full
+            bg-red-500
+            text-white
+            flex items-center justify-center
+            shadow-lg
+            active:scale-95
+            transition
+          "
         >
-          <Trash2 className="w-3.5 h-3.5" />
-          حذف
+          <Trash2 size={16} />
         </button>
+
       </div>
     ))}
   </div>
