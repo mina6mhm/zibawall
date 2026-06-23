@@ -115,13 +115,13 @@ export default function ProfilePage() {
   return (
     <div className="flex flex-col min-h-screen bg-white pb-24">
       {/* --- هدر پروفایل --- */}
-      <div className="bg-white border-b border-zinc-100 px-4 py-6 md:py-10">
+      <div className="bg-white border-b border-zinc-100 px-4 py-4 md:py-10">
         <div className="max-w-4xl mx-auto flex flex-col md:flex-row items-center gap-4 md:gap-5">
-          <div className="w-20 h-20 md:w-24 md:h-24 bg-zinc-50 rounded-full flex items-center justify-center text-zinc-400 border border-zinc-100 shrink-0">
-            <User className="w-10 h-10 md:w-10 md:h-10" strokeWidth={1.5} />
+          <div className="w-16 h-16 md:w-24 md:h-24 bg-zinc-50 rounded-full flex items-center justify-center text-zinc-400 border border-zinc-100 shrink-0">
+            <User className="w-8 h-8 md:w-10 md:h-10" strokeWidth={1.5} />
           </div>
           <div className="text-center md:text-right flex-1">
-            <h1 className="text-xl md:text-2xl font-bold text-zinc-900 mb-2.5 md:mb-3">{userData.name || 'کاربر عزیز'}</h1>
+            <h1 className="text-lg md:text-2xl font-bold text-zinc-900 mb-2.5 md:mb-3">{userData.name || 'کاربر عزیز'}</h1>
             <div className="flex flex-wrap items-center gap-2 justify-center md:justify-start">
               {userData.username && (
                 <span className="text-rose-600 text-[13px] md:text-sm font-medium dir-ltr inline-flex items-center gap-1.5 bg-rose-50 px-2.5 py-1.5 rounded-lg md:rounded-xl border border-rose-100/50">
@@ -129,7 +129,7 @@ export default function ProfilePage() {
                 </span>
               )}
               {userData.phone && (
-                <span className="text-zinc-600 text-[13px] md:text-sm dir-ltr flex items-center gap-1.5 bg-zinc-50 px-2.5 py-1.5 rounded-lg md:rounded-xl border border-zinc-100">
+                <span className="text-zinc-600 text-[13px] md:text-sm dir-ltr flex items-center gap-1.5 bg-zinc-50 px-2 py-1 rounded-lg md:rounded-xl border border-zinc-100">
                   <Phone className="w-4 h-4" /> {userData.phone}
                 </span>
               )}
@@ -146,13 +146,13 @@ export default function ProfilePage() {
           <div className="flex flex-row md:flex-col border-b border-zinc-100 md:border-none w-full md:p-1.5 md:gap-1.5 md:bg-zinc-100/70 md:rounded-2xl">
             <button 
               onClick={() => setActiveTab('info')} 
-              className={`flex-1 md:flex-none flex items-center justify-center md:justify-start gap-2 py-4 md:px-4 md:py-3 md:rounded-xl transition-all text-[15px] md:text-base font-medium relative ${
+              className={`flex-1 md:flex-none flex items-center justify-center md:justify-start gap-1.5 py-3 md:px-4 md:py-3 md:rounded-xl transition-all text-[14px] md:text-base font-medium relative ${
                 activeTab === 'info' 
                   ? 'text-zinc-900 md:bg-white md:shadow-sm' 
                   : 'text-zinc-500 hover:text-zinc-800 md:hover:bg-zinc-200/50'
               }`}
             >
-              <User className="w-5 h-5 shrink-0" /> اطلاعات کاربری
+              <User className="w-4 h-4 shrink-0" /> اطلاعات کاربری
               {/* خط زیرین فقط برای موبایل */}
               {activeTab === 'info' && (
                 <span className="absolute bottom-0 left-0 w-full h-[2px] bg-zinc-900 md:hidden"></span>
@@ -167,7 +167,7 @@ export default function ProfilePage() {
                   : 'text-zinc-500 hover:text-zinc-800 md:hover:bg-zinc-200/50'
               }`}
             >
-              <Store className="w-5 h-5 shrink-0" /> {hasBusiness ? 'کسب‌وکار من' : 'ثبت کسب‌وکار'}
+              <Store className="w-4 h-4 shrink-0" /> {hasBusiness ? 'کسب‌وکار من' : 'ثبت کسب‌وکار'}
               {activeTab === 'business' && (
                 <span className="absolute bottom-0 left-0 w-full h-[2px] bg-zinc-900 md:hidden"></span>
               )}
@@ -176,20 +176,20 @@ export default function ProfilePage() {
         </div>
 
         {/* --- محتوا --- */}
-        <div className="flex-1 bg-white md:rounded-3xl p-5 md:p-8 md:border md:border-zinc-100/80 md:shadow-sm">
+        <div className="flex-1 bg-white md:rounded-3xl p-4 md:p-8 md:border md:border-zinc-100/80 md:shadow-sm">
           
           {/* تب اطلاعات */}
           {activeTab === 'info' && (
-            <div className="space-y-6 md:space-y-8 animate-in fade-in duration-300">
+            <div className="space-y-5 md:space-y-8 animate-in fade-in duration-300">
               <h2 className="hidden md:block text-xl font-bold text-zinc-800 mb-4">اطلاعات شخصی</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5 md:gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                 
                 <div>
                   <label className="block text-[13px] md:text-sm font-medium mb-2 text-zinc-700 pr-1">شماره موبایل</label>
                   <input 
                     value={userData.phone} 
                     disabled 
-                    className="w-full border border-zinc-100 bg-zinc-50/80 rounded-xl md:rounded-2xl px-4 py-3 dir-ltr text-left text-[15px] text-zinc-400 cursor-not-allowed" 
+                    className="w-full border border-zinc-100 bg-zinc-50/80 rounded-xl md:rounded-2xl px-3.5 py-2.5 dir-ltr text-left text-[14px] text-zinc-400 cursor-not-allowed" 
                     placeholder="09123456789"
                   />
                   <p className="text-[11px] md:text-xs text-zinc-400 mt-2 pr-1">شماره موبایل حساب کاربری قابل تغییر نیست</p>
@@ -227,7 +227,7 @@ export default function ProfilePage() {
                 <button 
                   onClick={handleSaveChanges} 
                   disabled={isLoading} 
-                  className="bg-zinc-900 text-white px-6 md:px-8 py-3.5 rounded-xl md:rounded-2xl w-full md:w-auto hover:bg-black transition-all active:scale-[0.98] text-[15px] md:text-base font-medium order-1 md:order-2"
+                  className="bg-zinc-900 text-white px-5 md:px-8 py-3 rounded-xl md:rounded-2xl w-full md:w-auto hover:bg-black transition-all active:scale-[0.98] text-[15px] md:text-base font-medium order-1 md:order-2"
                 >
                   {isLoading ? 'در حال ذخیره...' : 'ذخیره تغییرات'}
                 </button>
@@ -249,12 +249,12 @@ export default function ProfilePage() {
                 <div className="space-y-6">
                   <h2 className="hidden md:block text-xl font-bold text-zinc-800">مدیریت کسب‌وکار من</h2>
                   
-                  <div className="bg-zinc-50 border border-zinc-100/80 rounded-2xl p-4 md:p-5 flex flex-row items-center gap-4">
-                    <div className="w-14 h-14 md:w-16 md:h-16 bg-white rounded-xl flex items-center justify-center border border-zinc-100 shrink-0 shadow-sm">
-                      <Store className="w-7 h-7 md:w-8 md:h-8 text-rose-500" strokeWidth={1.5} />
+                  <div className="bg-zinc-50 border border-zinc-100/80 rounded-2xl p-3.5 md:p-5 flex flex-row items-center gap-3">
+                    <div className="w-12 h-12 md:w-16 md:h-16 bg-white rounded-xl flex items-center justify-center border border-zinc-100 shrink-0 shadow-sm">
+                      <Store className="w-6 h-6 md:w-8 md:h-8 text-rose-500" strokeWidth={1.5} />
                     </div>
                     <div className="flex-1 text-right">
-                      <h3 className="text-lg md:text-xl font-bold text-zinc-900 mb-1">{salonData.name}</h3> 
+                      <h3 className="text-base md:text-xl font-bold text-zinc-900 mb-1">{salonData.name}</h3> 
                       <p className="text-[13px] md:text-sm text-zinc-500">
                          {salonData.province}، {salonData.city}
                       </p>
@@ -271,7 +271,7 @@ export default function ProfilePage() {
 
                     <Link 
                       href="/profile/business/edit" 
-                      className="flex justify-center items-center gap-2 bg-white border border-zinc-200 text-zinc-700 px-4 py-3.5 rounded-xl md:rounded-2xl hover:bg-zinc-50 transition-all font-medium active:scale-[0.98] text-[15px] md:text-base"
+                      className="flex justify-center items-center gap-2 bg-white border border-zinc-200 text-zinc-700 px-4 py-3 rounded-xl md:rounded-2xl hover:bg-zinc-50 transition-all font-medium active:scale-[0.98] text-[14px] md:text-base"
                     >
                       <Edit className="w-5 h-5 shrink-0" /> ویرایش اطلاعات
                     </Link>
@@ -279,18 +279,18 @@ export default function ProfilePage() {
                     <button 
                       onClick={handleDeleteBusiness}
                       disabled={isLoading}
-                      className="flex justify-center items-center gap-2 bg-rose-50/80 text-rose-600 border border-rose-100 px-4 py-3.5 rounded-xl md:rounded-2xl hover:bg-rose-100 transition-all font-medium active:scale-[0.98] text-[15px] md:text-base"
+                      className="flex justify-center items-center gap-2 bg-rose-50/80 text-rose-600 border border-rose-100 px-4 py-3 rounded-xl md:rounded-2xl hover:bg-rose-100 transition-all font-medium active:scale-[0.98] text-[14px] md:text-base"
                     >
                       <Trash2 className="w-5 h-5 shrink-0" /> {isLoading ? 'کمی صبر...' : 'حذف کسب‌وکار'}
                     </button>
                   </div>
                 </div>
               ) : (
-                <div className="text-center py-12 md:py-16">
-                  <div className="w-20 h-20 md:w-24 md:h-24 bg-rose-50 rounded-full flex items-center justify-center mx-auto mb-5 md:mb-6 border border-rose-100/50">
-                    <Store className="w-10 h-10 text-rose-500" strokeWidth={1.5} />
+                <div className="text-center py-10 md:py-16">
+                  <div className="w-16 h-16 md:w-24 md:h-24 bg-rose-50 rounded-full flex items-center justify-center mx-auto mb-5 md:mb-6 border border-rose-100/50">
+                    <Store className="w-8 h-8 text-rose-500" strokeWidth={1.5} />
                   </div>
-                  <h2 className="text-xl md:text-2xl font-bold mb-3 text-zinc-800">مدیر سالن زیبایی هستید؟</h2>
+                  <h2 className="text-lg md:text-2xl font-bold mb-3 text-zinc-800">مدیر سالن زیبایی هستید؟</h2>
                   <p className="text-[14px] md:text-[15px] text-zinc-500 mb-8 max-w-md mx-auto leading-relaxed">
                     کسب‌وکار خود را به صورت کاملاً رایگان ثبت کنید تا هزاران مشتری جدید از سراسر کشور شما را پیدا کنند.
                   </p>
