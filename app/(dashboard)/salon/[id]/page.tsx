@@ -260,29 +260,102 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
       </div>
 
       {salon.socials && (
-        <div className="flex justify-center flex-wrap gap-3 mb-2 px-1">
-          {salon.socials.website && (
-            <a href={salon.socials.website.startsWith('http') ? salon.socials.website : `https://${salon.socials.website}`} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center w-10 h-10 bg-zinc-50 rounded-full hover:bg-white hover:shadow-md transition border border-transparent hover:border-zinc-200">
-              <img src="/web.png" alt="وب‌سایت" className="w-5 h-5 object-contain" />
-            </a>
-          )}
-          {salon.socials.instagram && (
-            <a href={`https://instagram.com/${salon.socials.instagram.replace('@', '')}`} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center w-10 h-10 bg-zinc-50 rounded-full hover:bg-white hover:shadow-md transition border border-transparent hover:border-zinc-200">
-              <img src="/instagram.png" alt="اینستاگرام" className="w-5 h-5 object-contain" />
-            </a>
-          )}
-          {salon.socials.whatsapp && (
-            <a href={`https://wa.me/${salon.socials.whatsapp}`} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center w-10 h-10 bg-zinc-50 rounded-full hover:bg-white hover:shadow-md transition border border-transparent hover:border-zinc-200">
-              <img src="/whatsapp.png" alt="واتس‌اپ" className="w-5 h-5 object-contain" />
-            </a>
-          )}
-          {salon.socials.telegram && (
-            <a href={`https://t.me/${salon.socials.telegram.replace('@', '')}`} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center w-10 h-10 bg-zinc-50 rounded-full hover:bg-white hover:shadow-md transition border border-transparent hover:border-zinc-200">
-              <img src="/telegram.png" alt="تلگرام" className="w-5 h-5 object-contain" />
-            </a>
-          )}
-        </div>
-      )}
+  <div className="flex justify-center flex-wrap gap-2.5 mb-2 px-2">
+
+    {salon.socials.website && (
+      <a
+        href={salon.socials.website.startsWith('http')
+          ? salon.socials.website
+          : `https://${salon.socials.website}`}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="flex items-center justify-center w-11 h-11 rounded-full bg-zinc-900 border border-zinc-800 shadow-sm hover:scale-105 hover:bg-zinc-800 transition-all"
+      >
+        <img
+          src="/web.png"
+          alt="وب‌سایت"
+          className="w-5.5 h-5.5 object-contain"
+        />
+      </a>
+    )}
+
+    {salon.socials.instagram && (
+      <a
+        href={`https://instagram.com/${salon.socials.instagram.replace('@', '')}`}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="flex items-center justify-center w-11 h-11 rounded-full bg-zinc-900 border border-zinc-800 shadow-sm hover:scale-105 hover:bg-zinc-800 transition-all"
+      >
+        <img
+          src="/instagram.png"
+          alt="اینستاگرام"
+          className="w-5.5 h-5.5 object-contain"
+        />
+      </a>
+    )}
+
+    {salon.socials.whatsapp && (
+      <a
+        href={`https://wa.me/${salon.socials.whatsapp}`}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="flex items-center justify-center w-11 h-11 rounded-full bg-zinc-900 border border-zinc-800 shadow-sm hover:scale-105 hover:bg-zinc-800 transition-all"
+      >
+        <img
+          src="/whatsapp.png"
+          alt="واتساپ"
+          className="w-5.5 h-5.5 object-contain"
+        />
+      </a>
+    )}
+
+    {salon.socials.telegram && (
+      <a
+        href={`https://t.me/${salon.socials.telegram.replace('@', '')}`}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="flex items-center justify-center w-11 h-11 rounded-full bg-zinc-900 border border-zinc-800 shadow-sm hover:scale-105 hover:bg-zinc-800 transition-all"
+      >
+        <img
+          src="/telegram.png"
+          alt="تلگرام"
+          className="w-5.5 h-5.5 object-contain"
+        />
+      </a>
+    )}
+
+    {salon.socials.rubika && (
+      <a
+        href={salon.socials.rubika}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="flex items-center justify-center w-11 h-11 rounded-full bg-zinc-900 border border-zinc-800 shadow-sm hover:scale-105 hover:bg-zinc-800 transition-all"
+      >
+        <img
+          src="/rubika.png"
+          alt="روبیکا"
+          className="w-5.5 h-5.5 object-contain"
+        />
+      </a>
+    )}
+
+    {salon.socials.bale && (
+      <a
+        href={salon.socials.bale}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="flex items-center justify-center w-11 h-11 rounded-full bg-zinc-900 border border-zinc-800 shadow-sm hover:scale-105 hover:bg-zinc-800 transition-all"
+      >
+        <img
+          src="/bale.png"
+          alt="بله"
+          className="w-5.5 h-5.5 object-contain"
+        />
+      </a>
+    )}
+
+  </div>
+)}
 
       {/* دکمه تماس در دسکتاپ */}
       <div className="hidden lg:flex mt-6">
