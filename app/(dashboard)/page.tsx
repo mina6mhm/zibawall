@@ -331,7 +331,7 @@ export default function DashboardHomePage() {
                   <div 
                     key={salon.id}
                     onClick={() => router.push(`/salon/${salon.id}`)}
-                    className="cursor-pointer bg-white rounded-[10px] border border-zinc-200 overflow-hidden shadow-sm hover:shadow-md transition-shadow flex flex-col group relative"
+                    className="cursor-pointer bg-white rounded-[10px] border border-zinc-200 overflow-hidden shadow-[0_1px_4px_rgba(0,0,0,0.06)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.1)] transition-shadow flex flex-col group relative"
                   >
                     {/* ارتفاع تصویر کارت برای موبایل کم شده */}
                     <div className="h-28 sm:h-40 w-full bg-zinc-200 relative overflow-hidden"> 

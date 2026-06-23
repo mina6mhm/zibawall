@@ -427,7 +427,7 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
 
       {/* محتوای اصلی */}
       {/* پدینگ پایین (pb-28) برای جلوگیری از رفتن محتوا زیر دکمه شناور موبایل است */}
-      <div className="max-w-5xl mx-auto pb-28 sm:pb-24 px-3 sm:px-6 mt-4 sm:mt-8">
+      <div className="max-w-5xl mx-auto pb-40 sm:pb-24 px-3 sm:px-6 mt-4 sm:mt-8">
         
         <div className="flex justify-between items-center mb-4 sm:mb-8 px-1">
           <button onClick={() => router.back()} className="flex items-center text-sm sm:text-base text-zinc-600 font-medium">
@@ -597,20 +597,13 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
 
       {/* دکمه شناور تماس برای موبایل (Sticky Bottom Bar) */}
       {salon.phones && salon.phones.length > 0 && (
-        <div className="fixed bottom-0 left-0 right-0 px-3 pt-3 pb-[90px] bg-white border-t border-zinc-200 shadow-[0_-4px_10px_rgba(0,0,0,0.05)] z-[60] lg:hidden flex gap-3">
-          <a href={`tel:${salon.phones[0]}`} className="flex-1 bg-zinc-900 text-white font-medium py-3 rounded-xl text-sm flex items-center justify-center gap-2 active:bg-black">
-            <Phone className="w-4 h-4" />
-            تماس با سالن
-          </a>
-          <button 
-            onClick={() => setShowRoutingModal(true)} 
-            className="flex-1 bg-zinc-100 text-zinc-900 font-medium py-3 rounded-xl text-sm flex items-center justify-center gap-2 active:bg-zinc-200"
-          >
-            <MapPin className="w-4 h-4" />
-            مسیریابی
-          </button>
-        </div>
-      )}
+  <div className="fixed bottom-0 left-0 right-0 px-3 pt-3 pb-6 bg-white border-t border-zinc-200 shadow-[0_-4px_10px_rgba(0,0,0,0.05)] z-[60] lg:hidden">
+    <a href={`tel:${salon.phones[0]}`} className="flex w-full bg-zinc-900 text-white font-medium py-3 rounded-xl text-sm items-center justify-center gap-2 active:bg-black">
+      <Phone className="w-4 h-4" />
+      تماس با سالن
+    </a>
+  </div>
+)}
     </>
   );
 }
