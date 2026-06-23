@@ -260,7 +260,7 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
       </div>
 
       {salon.socials && (
-  <div className="flex justify-center flex-wrap gap-2.5 mb-2 px-2">
+  <div className="flex justify-center flex-wrap gap-3 mb-2 px-2">
 
     {salon.socials.website && (
       <a
@@ -269,12 +269,12 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
           : `https://${salon.socials.website}`}
         target="_blank"
         rel="noopener noreferrer"
-        className="flex items-center justify-center w-11 h-11 rounded-full bg-zinc-900 border border-zinc-800 shadow-sm hover:scale-105 hover:bg-zinc-800 transition-all"
+        className="flex items-center justify-center w-10 h-10 rounded-full transition-all hover:bg-zinc-100"
       >
         <img
           src="/web.png"
           alt="وب‌سایت"
-          className="w-5.5 h-5.5 object-contain"
+          className="w-5 h-5 object-contain grayscale opacity-60"
         />
       </a>
     )}
@@ -284,12 +284,12 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
         href={`https://instagram.com/${salon.socials.instagram.replace('@', '')}`}
         target="_blank"
         rel="noopener noreferrer"
-        className="flex items-center justify-center w-11 h-11 rounded-full bg-zinc-900 border border-zinc-800 shadow-sm hover:scale-105 hover:bg-zinc-800 transition-all"
+        className="flex items-center justify-center w-10 h-10 rounded-full transition-all hover:bg-zinc-100"
       >
         <img
           src="/instagram.png"
           alt="اینستاگرام"
-          className="w-5.5 h-5.5 object-contain"
+          className="w-5 h-5 object-contain grayscale opacity-60"
         />
       </a>
     )}
@@ -299,12 +299,12 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
         href={`https://wa.me/${salon.socials.whatsapp}`}
         target="_blank"
         rel="noopener noreferrer"
-        className="flex items-center justify-center w-11 h-11 rounded-full bg-zinc-900 border border-zinc-800 shadow-sm hover:scale-105 hover:bg-zinc-800 transition-all"
+        className="flex items-center justify-center w-10 h-10 rounded-full transition-all hover:bg-zinc-100"
       >
         <img
           src="/whatsapp.png"
           alt="واتساپ"
-          className="w-5.5 h-5.5 object-contain"
+          className="w-5 h-5 object-contain grayscale opacity-60"
         />
       </a>
     )}
@@ -314,12 +314,12 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
         href={`https://t.me/${salon.socials.telegram.replace('@', '')}`}
         target="_blank"
         rel="noopener noreferrer"
-        className="flex items-center justify-center w-11 h-11 rounded-full bg-zinc-900 border border-zinc-800 shadow-sm hover:scale-105 hover:bg-zinc-800 transition-all"
+        className="flex items-center justify-center w-10 h-10 rounded-full transition-all hover:bg-zinc-100"
       >
         <img
           src="/telegram.png"
           alt="تلگرام"
-          className="w-5.5 h-5.5 object-contain"
+          className="w-5 h-5 object-contain grayscale opacity-60"
         />
       </a>
     )}
@@ -329,12 +329,12 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
         href={salon.socials.rubika}
         target="_blank"
         rel="noopener noreferrer"
-        className="flex items-center justify-center w-11 h-11 rounded-full bg-zinc-900 border border-zinc-800 shadow-sm hover:scale-105 hover:bg-zinc-800 transition-all"
+        className="flex items-center justify-center w-10 h-10 rounded-full transition-all hover:bg-zinc-100"
       >
         <img
           src="/rubika.png"
           alt="روبیکا"
-          className="w-5.5 h-5.5 object-contain"
+          className="w-5 h-5 object-contain grayscale opacity-60"
         />
       </a>
     )}
@@ -344,12 +344,12 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
         href={salon.socials.bale}
         target="_blank"
         rel="noopener noreferrer"
-        className="flex items-center justify-center w-11 h-11 rounded-full bg-zinc-900 border border-zinc-800 shadow-sm hover:scale-105 hover:bg-zinc-800 transition-all"
+        className="flex items-center justify-center w-10 h-10 rounded-full transition-all hover:bg-zinc-100"
       >
         <img
           src="/bale.png"
           alt="بله"
-          className="w-5.5 h-5.5 object-contain"
+          className="w-5 h-5 object-contain grayscale opacity-60"
         />
       </a>
     )}
