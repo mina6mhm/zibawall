@@ -199,7 +199,7 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
   };
 
   const salonInfoCard = (
-    <div className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-sm border border-zinc-200">
+    <div className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-zinc-200">
       <div className="flex justify-between items-start mb-4 gap-3">
         <h1 className="text-xl sm:text-2xl font-bold text-zinc-900 leading-snug">{salon.name}</h1>
         <div className="flex flex-col items-end gap-1 flex-shrink-0">
@@ -243,7 +243,7 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
 
       <div 
         onClick={() => setShowRoutingModal(true)}
-        className="relative w-full h-32 sm:h-48 bg-zinc-100 rounded-xl mb-6 overflow-hidden cursor-pointer group border border-zinc-200 shadow-sm"
+        className="relative w-full h-32 sm:h-48 bg-zinc-100 rounded-xl mb-6 overflow-hidden cursor-pointer group border border-zinc-200"
       >
         {salon.coordinates && salon.coordinates.length === 2 ? (
           <img 
@@ -269,7 +269,7 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
           : `https://${salon.socials.website}`}
         target="_blank"
         rel="noopener noreferrer"
-        className="flex items-center justify-center w-10 h-10 rounded-full transition-all hover:bg-zinc-100"
+        className="flex items-center justify-center w-10 h-10 rounded-full transition-all hover:bg-zinc-100 active:scale-95"
       >
         <img
           src="/web.png"
@@ -284,7 +284,7 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
         href={`https://instagram.com/${salon.socials.instagram.replace('@', '')}`}
         target="_blank"
         rel="noopener noreferrer"
-        className="flex items-center justify-center w-10 h-10 rounded-full transition-all hover:bg-zinc-100"
+        className="flex items-center justify-center w-10 h-10 rounded-full transition-all hover:bg-zinc-100 active:scale-95"
       >
         <img
           src="/instagram.png"
@@ -299,7 +299,7 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
         href={`https://wa.me/${salon.socials.whatsapp}`}
         target="_blank"
         rel="noopener noreferrer"
-        className="flex items-center justify-center w-10 h-10 rounded-full transition-all hover:bg-zinc-100"
+        className="flex items-center justify-center w-10 h-10 rounded-full transition-all hover:bg-zinc-100 active:scale-95"
       >
         <img
           src="/whatsapp.png"
@@ -314,7 +314,7 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
         href={`https://t.me/${salon.socials.telegram.replace('@', '')}`}
         target="_blank"
         rel="noopener noreferrer"
-        className="flex items-center justify-center w-10 h-10 rounded-full transition-all hover:bg-zinc-100"
+        className="flex items-center justify-center w-10 h-10 rounded-full transition-all hover:bg-zinc-100 active:scale-95"
       >
         <img
           src="/telegram.png"
@@ -325,34 +325,34 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
     )}
 
     {salon.socials.rubika && (
-      <a
-        href={salon.socials.rubika}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="flex items-center justify-center w-10 h-10 rounded-full transition-all hover:bg-zinc-100"
-      >
-        <img
-          src="/rubika.png"
-          alt="روبیکا"
-          className="w-5 h-5 object-contain grayscale opacity-60"
-        />
-      </a>
-    )}
+  <a
+    href={`https://rubika.ir/${salon.socials.rubika.replace('@', '')}`}
+    target="_blank"
+    rel="noopener noreferrer"
+    className="flex items-center justify-center w-10 h-10 rounded-full transition-all hover:bg-zinc-100 active:scale-95"
+  >
+    <img
+      src="/rubika.png"
+      alt="روبیکا"
+      className="w-5 h-5 object-contain grayscale opacity-60"
+    />
+  </a>
+)}
 
-    {salon.socials.bale && (
-      <a
-        href={salon.socials.bale}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="flex items-center justify-center w-10 h-10 rounded-full transition-all hover:bg-zinc-100"
-      >
-        <img
-          src="/bale.png"
-          alt="بله"
-          className="w-5 h-5 object-contain grayscale opacity-60"
-        />
-      </a>
-    )}
+{salon.socials.bale && (
+  <a
+    href={`https://ble.ir/${salon.socials.bale.replace('@', '')}`}
+    target="_blank"
+    rel="noopener noreferrer"
+    className="flex items-center justify-center w-10 h-10 rounded-full transition-all hover:bg-zinc-100 active:scale-95"
+  >
+    <img
+      src="/bale.png"
+      alt="بله"
+      className="w-5 h-5 object-contain grayscale opacity-60"
+    />
+  </a>
+)}
 
   </div>
 )}
@@ -443,7 +443,7 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
           <div className="lg:col-span-2 space-y-5 sm:space-y-8">
             <div className="space-y-3 sm:space-y-4">
               <div 
-                className="w-full h-64 sm:h-80 bg-zinc-200 rounded-xl sm:rounded-2xl overflow-hidden relative cursor-pointer"
+                className="w-full h-64 sm:h-80 bg-zinc-200 rounded-xl sm:rounded-2xl relative cursor-pointer"
                 onClick={() => setSelectedImage(salon.imageUrl)}
               >
                 {salon.imageUrl ? (
@@ -475,14 +475,14 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
               {salonInfoCard}
             </div>
 
-            <section className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-sm border border-zinc-200">
+            <section className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-zinc-200">
               <h2 className="text-lg sm:text-xl font-bold text-zinc-900 mb-3">درباره سالن</h2>
               <p className="text-zinc-600 text-[13px] sm:text-sm leading-relaxed text-justify">
                 {salon.description || "توضیحاتی ثبت نشده است."}
               </p>
             </section>
 
-            <section className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-sm border border-zinc-200">
+            <section className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-zinc-200">
               <h2 className="text-lg sm:text-xl font-bold text-zinc-900 mb-4">خدمات ما</h2>
               <div className="space-y-3">
                 {Object.keys(groupedServices).length > 0 ? (
@@ -518,7 +518,7 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
               </div>
             </section>
 
-            <section className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-sm border border-zinc-200">
+            <section className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-zinc-200">
               <div className="flex items-center justify-between mb-5">
                 <h2 className="text-lg sm:text-xl font-bold text-zinc-900">نظرات</h2>
                 <span className="text-xs font-medium text-zinc-500 bg-zinc-100 px-2.5 py-1 rounded-md">{textReviews.length} نظر</span>
