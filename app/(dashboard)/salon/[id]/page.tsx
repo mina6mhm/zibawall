@@ -37,18 +37,21 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
   };
 
   useEffect(() => {
-    const storedUser = localStorage.getItem("user");
-    if (storedUser) {
-      try {
-        const parsedUser = JSON.parse(storedUser);
-        setLoggedInUserName(parsedUser.username || parsedUser.name || "کاربر مهمان");
-      } catch (error) {
+  const fetchUser = async () => {
+    try {
+      const res = await fetch('/api/auth/me');
+      if (res.ok) {
+        const user = await res.json();
+        setLoggedInUserName(user.username || "کاربر مهمان");
+      } else {
         setLoggedInUserName("کاربر مهمان");
       }
-    } else {
+    } catch {
       setLoggedInUserName("کاربر مهمان");
     }
-  }, []);
+  };
+  fetchUser();
+}, []);
 
   useEffect(() => {
     if (!loggedInUserName) return;
@@ -347,7 +350,7 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
     className="flex items-center justify-center w-10 h-10 rounded-full transition-all hover:bg-zinc-100 active:scale-95"
   >
     <img
-      src="/bale.png"
+      src="/Bale.png"
       alt="بله"
       className="w-5 h-5 object-contain grayscale opacity-60"
     />
@@ -443,7 +446,7 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
           <div className="lg:col-span-2 space-y-5 sm:space-y-8">
             <div className="space-y-3 sm:space-y-4">
               <div 
-                className="w-full h-64 sm:h-80 bg-zinc-200 rounded-xl sm:rounded-2xl relative cursor-pointer"
+                className="w-full h-64 sm:h-80 bg-zinc-200 rounded-xl sm:rounded-2xl overflow-hidden relative cursor-pointer"
                 onClick={() => setSelectedImage(salon.imageUrl)}
               >
                 {salon.imageUrl ? (
@@ -594,7 +597,7 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
 
       {/* دکمه شناور تماس برای موبایل (Sticky Bottom Bar) */}
       {salon.phones && salon.phones.length > 0 && (
-        <div className="fixed bottom-0 left-0 right-0 p-3 bg-white border-t border-zinc-200 shadow-[0_-4px_10px_rgba(0,0,0,0.05)] z-40 lg:hidden flex gap-3">
+        <div className="fixed bottom-0 left-0 right-0 px-3 pt-3 pb-[90px] bg-white border-t border-zinc-200 shadow-[0_-4px_10px_rgba(0,0,0,0.05)] z-[60] lg:hidden flex gap-3">
           <a href={`tel:${salon.phones[0]}`} className="flex-1 bg-zinc-900 text-white font-medium py-3 rounded-xl text-sm flex items-center justify-center gap-2 active:bg-black">
             <Phone className="w-4 h-4" />
             تماس با سالن

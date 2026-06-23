@@ -94,20 +94,18 @@ export default function ProfilePage() {
   };
 
   const handleLogout = async () => {
-    const isConfirmed = window.confirm('آیا مطمئن هستید که می‌خواهید از حساب خود خارج شوید؟');
-    if (isConfirmed) {
-      localStorage.removeItem('user');
-      
-      try {
-        await fetch('/api/auth/logout', { method: 'POST' });
-      } catch (error) {
-        console.error('Logout failed:', error);
-      }
-      
-      router.push('/login'); 
-      router.refresh();
+  const isConfirmed = window.confirm('آیا مطمئن هستید که می‌خواهید از حساب خود خارج شوید؟');
+  if (isConfirmed) {
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' });
+    } catch (error) {
+      console.error('Logout failed:', error);
     }
-  };
+    
+    router.push('/login'); 
+    router.refresh();
+  }
+};
 
   const hasBusiness = !!salonData;
   const inputBaseClasses = "w-full border border-zinc-200 bg-zinc-50/50 rounded-xl md:rounded-2xl px-4 py-3 text-[15px] md:text-base focus:bg-white focus:border-zinc-400 focus:ring-4 focus:ring-zinc-100 outline-none transition-all";
