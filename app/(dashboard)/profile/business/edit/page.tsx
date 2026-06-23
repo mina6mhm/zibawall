@@ -130,14 +130,13 @@ export default function BusinessEditPage() {
   useEffect(() => {
     const fetchSalonData = async () => {
       try {
-        const storedUser = localStorage.getItem('user');
-        if (!storedUser) {
-          router.push('/login');
-          return;
-        }
-        
-        const user = JSON.parse(storedUser);
-        const res = await fetch(`/api/salon?userPhone=${user.phone}`);
+        const meRes = await fetch('/api/auth/me');
+if (!meRes.ok) {
+  router.push('/login');
+  return;
+}
+const user = await meRes.json();
+const res = await fetch(`/api/salon?userPhone=${user.phone}`);
         if (res.ok) {
           const data = await res.json();
           const salon = data.salon || data;
@@ -330,14 +329,13 @@ export default function BusinessEditPage() {
     
     try {
       setIsSubmitting(true);
-      const storedUser = localStorage.getItem('user');
-      if (!storedUser) {
-        alert('لطفا ابتدا وارد حساب کاربری خود شوید.');
-        router.push('/login');
-        return;
-      }
-      
-      const user = JSON.parse(storedUser);
+      const meRes = await fetch('/api/auth/me');
+if (!meRes.ok) {
+  alert('لطفا ابتدا وارد حساب کاربری خود شوید.');
+  router.push('/login');
+  return;
+}
+const user = await meRes.json();
       let newCoverUrl = '';
       let newPortfolioUrls: string[] = [];
 

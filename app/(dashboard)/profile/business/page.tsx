@@ -251,13 +251,14 @@ export default function BusinessRegistrationPage() {
 
     try {
       setIsSubmitting(true);
-      const storedUser = localStorage.getItem('user');
-      if (!storedUser) {
-        alert('لطفا ابتدا وارد حساب کاربری خود شوید.');
-        router.push('/login');
-        return;
-      }
-      const user = JSON.parse(storedUser);
+      
+      const meRes = await fetch('/api/auth/me');
+if (!meRes.ok) {
+  alert('لطفا ابتدا وارد حساب کاربری خود شوید.');
+  router.push('/login');
+  return;
+}
+const user = await meRes.json();
 
       // --- ۱. آپلود عکس کاور ---
       const coverFormData = new FormData();
