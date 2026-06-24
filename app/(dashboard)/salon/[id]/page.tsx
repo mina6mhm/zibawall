@@ -597,7 +597,7 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
 
       {/* دکمه شناور تماس برای موبایل (Sticky Bottom Bar) */}
       {salon.phones && salon.phones.length > 0 && (
-  <div className="fixed bottom-0 left-0 right-0 px-3 pt-3 pb-6 bg-white border-t border-zinc-200 shadow-[0_-4px_10px_rgba(0,0,0,0.05)] z-[60] lg:hidden">
+  <div className="fixed bottom-0 left-0 right-0 px-3 pt-3 pb-safe bg-zinc-900 z-[60] lg:hidden" style={{ paddingBottom: 'max(24px, env(safe-area-inset-bottom))' }}>
     <a href={`tel:${salon.phones[0]}`} className="flex w-full bg-zinc-900 text-white font-medium py-3 rounded-xl text-sm items-center justify-center gap-2 active:bg-black">
       <Phone className="w-4 h-4" />
       تماس با سالن
