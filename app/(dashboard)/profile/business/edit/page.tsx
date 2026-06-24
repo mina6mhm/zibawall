@@ -444,7 +444,7 @@ const user = await meRes.json();
           { id: 4, title: 'تصاویر' }
         ].map((item) => (
           <div key={item.id} className="flex flex-col items-center gap-2 bg-white px-2">
-            <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm transition-colors ${
+            <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm transition-colors ${
               step >= item.id ? 'bg-rose-600 text-white' : 'bg-zinc-100 text-zinc-500 border border-zinc-200'
             }`}>
               {step > item.id ? <CheckCircle2 size={20} /> : item.id.toLocaleString('fa-IR')}
@@ -871,7 +871,7 @@ const user = await meRes.json();
     <button 
       type="button"
       onClick={removeCoverImage}
-      className="absolute top-3 left-3 w-10 h-10 rounded-full bg-red-500 text-white flex items-center justify-center shadow-lg active:scale-95 transition"
+      className="absolute top-3 left-3 w-10 h-10 rounded-full text-rose-600 flex items-center justify-center shadow-lg active:scale-95 transition"
     >
       <Trash2 size={20} />
     </button>
@@ -912,7 +912,7 @@ const user = await meRes.json();
     <button 
       type="button" 
       onClick={() => removeExistingPortfolio(index)} 
-      className="absolute top-2 left-2 w-8 h-8 rounded-full bg-red-500 text-white flex items-center justify-center shadow-lg active:scale-95 transition"
+      className="absolute top-2 left-2 w-8 h-8 rounded-full text-rose-600 flex items-center justify-center shadow-lg active:scale-95 transition"
     >
       <Trash2 size={16} />
     </button>
@@ -926,7 +926,7 @@ const user = await meRes.json();
     <button 
       type="button" 
       onClick={() => removePortfolio(index)} 
-      className="absolute top-2 left-2 w-8 h-8 rounded-full bg-red-500 text-white flex items-center justify-center shadow-lg active:scale-95 transition z-20"
+      className="absolute top-2 left-2 w-8 h-8 rounded-full text-rose-600 flex items-center justify-center shadow-lg active:scale-95 transition z-20"
     >
       <Trash2 size={16} />
     </button>
