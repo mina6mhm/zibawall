@@ -860,23 +860,23 @@ const user = await meRes.json();
                   />
                 </label>
               ) : (
-                <div className="relative group rounded-lg md:rounded-xl overflow-hidden aspect-video border border-zinc-200 shadow-sm max-w-lg">
-                  <img 
-                    src={coverImage ? URL.createObjectURL(coverImage) : existingCover!} 
-                    alt="کاور اصلی" 
-                    className="w-full h-full object-cover"
-                  />
-                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                    <button 
-                      type="button"
-                      onClick={removeCoverImage}
-                      className="bg-white/90 p-2 md:p-3 rounded-full text-red-600 hover:bg-red-50 transition-colors flex items-center gap-1.5 md:gap-2"
-                    >
-                      <Trash2 className="w-4 h-4 md:w-5 md:h-5" /> <span className="font-medium text-xs md:text-sm">تغییر کاور</span>
-                    </button>
-                  </div>
-                </div>
-              )}
+  <div className="relative max-w-lg">
+    <div className="rounded-lg md:rounded-xl overflow-hidden aspect-video border border-zinc-200 shadow-sm">
+      <img 
+        src={coverImage ? URL.createObjectURL(coverImage) : existingCover!} 
+        alt="کاور اصلی" 
+        className="w-full h-full object-cover"
+      />
+    </div>
+    <button 
+      type="button"
+      onClick={removeCoverImage}
+      className="absolute top-3 left-3 w-10 h-10 rounded-full bg-red-500 text-white flex items-center justify-center shadow-lg active:scale-95 transition"
+    >
+      <Trash2 size={20} />
+    </button>
+  </div>
+)}
             </div>
 
             {/* بخش دوم: نمونه کارها */}
@@ -907,27 +907,31 @@ const user = await meRes.json();
               {totalPortfoliosCount > 0 && (
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 md:gap-4 mt-4 md:mt-6">
                   {existingPortfolios.map((url, index) => (
-                    <div key={`existing-${index}`} className="relative group rounded-lg md:rounded-xl overflow-hidden aspect-square border border-zinc-200 shadow-sm">
-                      <img src={url} alt="نمونه کار قبلی" className="w-full h-full object-cover" />
-                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                        <button type="button" onClick={() => removeExistingPortfolio(index)} className="bg-white/90 p-1.5 md:p-2 rounded-full text-red-600 hover:bg-red-50">
-                          <Trash2 className="w-4 h-4 md:w-[18px] md:h-[18px]" />
-                        </button>
-                      </div>
-                    </div>
-                  ))}
+  <div key={`existing-${index}`} className="relative rounded-lg md:rounded-xl overflow-hidden aspect-square border border-zinc-200 shadow-sm">
+    <img src={url} alt="نمونه کار قبلی" className="w-full h-full object-cover" />
+    <button 
+      type="button" 
+      onClick={() => removeExistingPortfolio(index)} 
+      className="absolute top-2 left-2 w-8 h-8 rounded-full bg-red-500 text-white flex items-center justify-center shadow-lg active:scale-95 transition"
+    >
+      <Trash2 size={16} />
+    </button>
+  </div>
+))}
 
                   {portfolios.map((file, index) => (
-                    <div key={`new-${index}`} className="relative group rounded-lg md:rounded-xl overflow-hidden aspect-square border border-emerald-200 shadow-sm">
-                      <div className="absolute top-1.5 right-1.5 md:top-2 md:right-2 bg-emerald-500 text-white text-[9px] md:text-[10px] px-1.5 py-0.5 md:px-2 md:py-0.5 rounded-full z-10">جدید</div>
-                      <img src={URL.createObjectURL(file)} alt="نمونه کار جدید" className="w-full h-full object-cover" />
-                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center z-20">
-                        <button type="button" onClick={() => removePortfolio(index)} className="bg-white/90 p-1.5 md:p-2 rounded-full text-red-600 hover:bg-red-50">
-                          <Trash2 className="w-4 h-4 md:w-[18px] md:h-[18px]" />
-                        </button>
-                      </div>
-                    </div>
-                  ))}
+  <div key={`new-${index}`} className="relative rounded-lg md:rounded-xl overflow-hidden aspect-square border border-emerald-200 shadow-sm">
+    <div className="absolute top-1.5 right-1.5 bg-emerald-500 text-white text-[9px] px-1.5 py-0.5 rounded-full z-10">جدید</div>
+    <img src={URL.createObjectURL(file)} alt="نمونه کار جدید" className="w-full h-full object-cover" />
+    <button 
+      type="button" 
+      onClick={() => removePortfolio(index)} 
+      className="absolute top-2 left-2 w-8 h-8 rounded-full bg-red-500 text-white flex items-center justify-center shadow-lg active:scale-95 transition z-20"
+    >
+      <Trash2 size={16} />
+    </button>
+  </div>
+))}
                 </div>
               )}
             </div>
