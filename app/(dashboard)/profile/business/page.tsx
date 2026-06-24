@@ -395,7 +395,7 @@ const user = await meRes.json();
           <div key={item.id} className="flex flex-col items-center gap-2 bg-white md:bg-transparent px-1 md:px-2 z-10" style={{ backgroundColor: 'var(--background, #ffffff)' }}> 
             <div className={`w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center font-bold text-xs md:text-sm transition-colors ${
               step >= item.id 
-                ? 'bg-rose-600 text-white shadow-sm' 
+                ? 'bg-rose-600 text-white' 
                 : 'bg-zinc-100 text-zinc-500 border border-zinc-200'
             }`}>
               {step > item.id ? <CheckCircle2 className="w-4 h-4 md:w-5 md:h-5" /> : item.id.toLocaleString('fa-IR')}

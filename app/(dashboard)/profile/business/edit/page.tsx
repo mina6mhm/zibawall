@@ -445,7 +445,7 @@ const user = await meRes.json();
         ].map((item) => (
           <div key={item.id} className="flex flex-col items-center gap-2 bg-white px-2">
             <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm transition-colors ${
-              step >= item.id ? 'bg-rose-600 text-white shadow-md shadow-rose-200' : 'bg-zinc-100 text-zinc-500 border border-zinc-200'
+              step >= item.id ? 'bg-rose-600 text-white' : 'bg-zinc-100 text-zinc-500 border border-zinc-200'
             }`}>
               {step > item.id ? <CheckCircle2 size={20} /> : item.id.toLocaleString('fa-IR')}
             </div>
