@@ -35,6 +35,7 @@ const navItems = [
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const isSalonPage = pathname?.startsWith('/salon/');
 
   return (
     <div className="flex h-screen bg-white text-zinc-900 dir-rtl font-sans selection:bg-zinc-200">
@@ -48,7 +49,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <nav className="flex-1 px-4 space-y-0.5 mt-2 overflow-y-auto">
           {navItems.map((item) => {
             const isActive = item.href === '/' ? pathname === '/' : pathname?.startsWith(item.href);
-
             return (
               <Link 
                 key={item.name} 
@@ -67,7 +67,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
       {/* محتوای اصلی */}
       <div className="flex-1 flex flex-col relative w-full overflow-hidden">
-        {/* در موبایل پدینگ پایین را بیشتر کردیم تا محتوا زیر منو نرود (130) */}
         <main className="flex-1 overflow-y-auto px-4 md:px-8 pb-[135px] md:pb-8">
           <div className="max-w-6xl mx-auto h-full">
             {children}
@@ -75,31 +74,31 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </main>
       </div>
 
-      {/* نَوبار موبایل */}
-      {/* استفاده از افکت شیشه‌ای و safe-area-inset-bottom برای آیفون */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-t border-zinc-100 pb-6 pt-1">
-  <div className="flex items-center justify-between px-2 h-[64px]">
-          {navItems.map((item) => {
-            const isActive = item.href === '/' ? pathname === '/' : pathname?.startsWith(item.href);
-
-            return (
-              <Link 
-                key={item.name} 
-                href={item.href}
-                className="flex flex-1 flex-col items-center justify-center h-full gap-1.5 transition-transform active:scale-95"
-              >
-                <item.icon 
-                  className={`w-[24px] h-[24px] transition-colors duration-300 ${isActive ? 'text-black' : 'text-zinc-400'}`} 
-                  isActive={isActive} 
-                />
-                <span className={`text-[11px] tracking-tight transition-colors duration-300 ${isActive ? 'text-black font-bold' : 'text-zinc-500 font-medium'}`}>
-                  {item.name}
-                </span>
-              </Link>
-            );
-          })}
-        </div>
-      </nav>
+      {/* نَوبار موبایل - در صفحه سالن نمایش داده نمیشه */}
+      {!isSalonPage && (
+        <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-t border-zinc-100 pb-6 pt-1">
+          <div className="flex items-center justify-between px-2 h-[64px]">
+            {navItems.map((item) => {
+              const isActive = item.href === '/' ? pathname === '/' : pathname?.startsWith(item.href);
+              return (
+                <Link 
+                  key={item.name} 
+                  href={item.href}
+                  className="flex flex-1 flex-col items-center justify-center h-full gap-1.5 transition-transform active:scale-95"
+                >
+                  <item.icon 
+                    className={`w-[24px] h-[24px] transition-colors duration-300 ${isActive ? 'text-black' : 'text-zinc-400'}`} 
+                    isActive={isActive} 
+                  />
+                  <span className={`text-[11px] tracking-tight transition-colors duration-300 ${isActive ? 'text-black font-bold' : 'text-zinc-500 font-medium'}`}>
+                    {item.name}
+                  </span>
+                </Link>
+              );
+            })}
+          </div>
+        </nav>
+      )}
     </div>
   );
 }
