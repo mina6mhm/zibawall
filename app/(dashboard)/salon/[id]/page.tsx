@@ -427,7 +427,7 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
 
       {/* محتوای اصلی */}
       {/* پدینگ پایین (pb-28) برای جلوگیری از رفتن محتوا زیر دکمه شناور موبایل است */}
-      <div className="max-w-5xl mx-auto pb-40 sm:pb-24 px-3 sm:px-6 mt-4 sm:mt-8">
+      <div className="max-w-5xl mx-auto pb-36 sm:pb-24 px-3 sm:px-6 mt-4 sm:mt-8">
         
         <div className="flex justify-between items-center mb-4 sm:mb-8 px-1">
           <button onClick={() => router.back()} className="flex items-center text-sm sm:text-base text-zinc-600 font-medium">
@@ -597,10 +597,10 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
 
       {/* دکمه شناور تماس برای موبایل (Sticky Bottom Bar) */}
       {salon.phones && salon.phones.length > 0 && (
-  <div className="fixed bottom-6 left-4 right-4 z-[60] lg:hidden">
+  <div className="fixed bottom-10 left-4 right-4 z-[60] lg:hidden">
     <a 
       href={`tel:${salon.phones[0]}`} 
-      className="flex w-full bg-zinc-900 text-white font-medium py-4 rounded-2xl text-sm items-center justify-center gap-2 shadow-lg shadow-zinc-400/30 active:scale-95 transition-transform"
+      className="flex w-full bg-zinc-900 text-white font-medium py-4 rounded-xl text-sm items-center justify-center gap-2 shadow-lg shadow-zinc-400/30 active:scale-95 transition-transform"
     >
       <Phone className="w-4 h-4" />
       تماس با سالن
