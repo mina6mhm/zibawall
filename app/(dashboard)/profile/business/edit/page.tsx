@@ -871,13 +871,13 @@ const user = await meRes.json();
     <button 
       type="button"
       onClick={removeCoverImage}
-      className="absolute top-3 left-3 w-10 h-10 rounded-full text-rose-600 flex items-center justify-center shadow-lg active:scale-95 transition"
+      className="absolute top-3 left-3 w-10 h-10 rounded-full bg-white text-zinc-800 flex items-center justify-center shadow-lg active:scale-95 transition"
     >
       <Trash2 size={20} />
     </button>
   </div>
 )}
-            </div>
+   </div>
 
             {/* بخش دوم: نمونه کارها */}
             <div className="space-y-3 md:space-y-4 pt-4 border-t border-zinc-100">
@@ -926,7 +926,7 @@ const user = await meRes.json();
     <button 
       type="button" 
       onClick={() => removePortfolio(index)} 
-      className="absolute top-2 left-2 w-8 h-8 rounded-full text-rose-600 flex items-center justify-center shadow-lg active:scale-95 transition z-20"
+      className="absolute top-2 left-2 w-8 h-8 rounded-full bg-white text-zinc-800 flex items-center justify-center shadow-lg active:scale-95 transition z-20"
     >
       <Trash2 size={16} />
     </button>
