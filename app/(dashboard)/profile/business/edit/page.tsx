@@ -912,7 +912,7 @@ const user = await meRes.json();
     <button 
       type="button" 
       onClick={() => removeExistingPortfolio(index)} 
-      className="absolute top-2 left-2 w-8 h-8 rounded-full text-rose-600 flex items-center justify-center shadow-lg active:scale-95 transition"
+      className="absolute top-2 left-2 w-8 h-8 rounded-full bg-white text-zinc-800 flex items-center justify-center shadow-lg active:scale-95 transition"
     >
       <Trash2 size={16} />
     </button>
