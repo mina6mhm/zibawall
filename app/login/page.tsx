@@ -11,7 +11,7 @@ export default function LoginPage() {
 
   const [mobile, setMobile] = useState('');
   const [username, setUsername] = useState('');
-  const [name, setName] = useState(''); // استیت جدید برای نام و نام خانوادگی
+  const [name, setName] = useState('');
 
   const [timeLeft, setTimeLeft] = useState(120);
   const [isTimerActive, setIsTimerActive] = useState(false);
@@ -37,6 +37,45 @@ export default function LoginPage() {
       if (interval) clearInterval(interval);
     };
   }, [isTimerActive, timeLeft]);
+
+  useEffect(() => {
+    if (step !== 'otp') return;
+
+    const controller = new AbortController();
+
+    if ('OTPCredential' in window) {
+      navigator.credentials
+        .get({
+          otp: { transport: ['sms'] },
+          signal: controller.signal,
+        } as CredentialRequestOptions)
+        .then((otp: any) => {
+          if (otp?.code) {
+            const digits = otp.code.slice(0, 5).split('');
+            setOtpValues(digits);
+          }
+        })
+        .catch(() => {});
+    }
+
+    const handlePaste = (e: ClipboardEvent) => {
+      const pasted = e.clipboardData?.getData('text') ?? '';
+      const digits = pasted.replace(/\D/g, '').slice(0, 5).split('');
+      if (digits.length > 0) {
+        const filled = [...digits, '', '', '', ''].slice(0, 5);
+        setOtpValues(filled);
+        const lastIndex = Math.min(digits.length, 4);
+        setTimeout(() => otpRefs.current[lastIndex]?.focus(), 0);
+      }
+    };
+
+    window.addEventListener('paste', handlePaste);
+
+    return () => {
+      controller.abort();
+      window.removeEventListener('paste', handlePaste);
+    };
+  }, [step]);
 
   const formatTime = (seconds: number) => {
     const m = Math.floor(seconds / 60).toString().padStart(2, '0');
@@ -95,7 +134,6 @@ export default function LoginPage() {
         return;
       }
 
-      // اگر کاربر جدید است یا نام کاربری ندارد، برود به مرحله تکمیل پروفایل
       if (data.isNewUser || !data.user?.username) {
         setStep('username');
       } else {
@@ -127,7 +165,7 @@ export default function LoginPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           username: userVal,
-          name: nameVal // ارسال نام و نام خانوادگی
+          name: nameVal
         })
       });
 
