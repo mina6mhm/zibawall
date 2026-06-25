@@ -865,7 +865,7 @@ const user = await meRes.json();
               
               {!coverImage ? (
   <label className="cursor-pointer bg-zinc-50 border-2 border-dashed border-zinc-300 rounded-xl md:rounded-2xl p-5 md:p-8 flex flex-col items-center justify-center text-center gap-2 md:gap-3 hover:bg-zinc-100 transition-colors">
-    <div className="w-10 h-10 md:w-14 md:h-14 bg-white text-rose-600 rounded-full flex items-center justify-center shadow-sm mb-1 md:mb-2 border border-zinc-200">
+    <div className="w-10 h-10 md:w-14 md:h-14 bg-white text-zinc-800 rounded-full flex items-center justify-center shadow-sm mb-1 md:mb-2 border border-zinc-200">
       <ImageIcon className="w-5 h-5 md:w-7 md:h-7" />
     </div>
     <h3 className="text-sm md:text-base font-medium text-zinc-800">
@@ -927,7 +927,7 @@ const user = await meRes.json();
               
               {portfolios.length < maxPortfolios && (
                 <label className="cursor-pointer bg-zinc-50 border-2 border-dashed border-zinc-300 rounded-xl md:rounded-2xl p-5 md:p-8 flex flex-col items-center justify-center text-center gap-2 md:gap-3 hover:bg-zinc-100 transition-colors">
-                  <div className="w-10 h-10 md:w-14 md:h-14 bg-white text-rose-600 rounded-full flex items-center justify-center shadow-sm mb-1 md:mb-2 border border-zinc-200">
+                  <div className="w-10 h-10 md:w-14 md:h-14 bg-white text-zinc-800 rounded-full flex items-center justify-center shadow-sm mb-1 md:mb-2 border border-zinc-200">
                     <UploadCloud className="w-5 h-5 md:w-7 md:h-7" />
                   </div>
                   <h3 className="text-sm md:text-base font-medium text-zinc-800">برای آپلود نمونه کارها کلیک کنید</h3>

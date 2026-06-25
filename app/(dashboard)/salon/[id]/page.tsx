@@ -262,97 +262,105 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
         )}
       </div>
 
+
+
       {salon.socials && (
   <div className="flex justify-center flex-wrap gap-3 mb-2 px-2">
 
-    {salon.socials.website && (
-      <a
-        href={salon.socials.website.startsWith('http')
-          ? salon.socials.website
-          : `https://${salon.socials.website}`}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="flex items-center justify-center w-10 h-10 rounded-full transition-all hover:bg-zinc-100 active:scale-95"
-      >
-        <img
-          src="/web.png"
-          alt="وب‌سایت"
-          className="w-5 h-5 object-contain grayscale opacity-60"
-        />
-      </a>
-    )}
-
-    {salon.socials.instagram && (
-      <a
-        href={`https://instagram.com/${salon.socials.instagram.replace('@', '')}`}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="flex items-center justify-center w-10 h-10 rounded-full transition-all hover:bg-zinc-100 active:scale-95"
-      >
-        <img
-          src="/instagram.png"
-          alt="اینستاگرام"
-          className="w-5 h-5 object-contain grayscale opacity-60"
-        />
-      </a>
-    )}
-
-    {salon.socials.whatsapp && (
-      <a
-        href={`https://wa.me/${salon.socials.whatsapp}`}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="flex items-center justify-center w-10 h-10 rounded-full transition-all hover:bg-zinc-100 active:scale-95"
-      >
-        <img
-          src="/whatsapp.png"
-          alt="واتساپ"
-          className="w-5 h-5 object-contain grayscale opacity-60"
-        />
-      </a>
-    )}
-
-    {salon.socials.telegram && (
-      <a
-        href={`https://t.me/${salon.socials.telegram.replace('@', '')}`}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="flex items-center justify-center w-10 h-10 rounded-full transition-all hover:bg-zinc-100 active:scale-95"
-      >
-        <img
-          src="/telegram.png"
-          alt="تلگرام"
-          className="w-5 h-5 object-contain grayscale opacity-60"
-        />
-      </a>
-    )}
-
-    {salon.socials.rubika && (
+    {/* وب‌سایت */}
+{salon.socials.website && (
   <a
-    href={`https://rubika.ir/${salon.socials.rubika.replace('@', '')}`}
+    href={salon.socials.website.startsWith('http')
+      ? salon.socials.website
+      : `https://${salon.socials.website}`}
     target="_blank"
     rel="noopener noreferrer"
-    className="flex items-center justify-center w-10 h-10 rounded-full transition-all hover:bg-zinc-100 active:scale-95"
+    className="flex items-center justify-center w-10 h-10 rounded-full transition-all active:scale-90 touch-manipulation"
   >
     <img
-      src="/rubika.png"
-      alt="روبیکا"
-      className="w-5 h-5 object-contain grayscale opacity-60"
+      src="/web.png"
+      alt="وب‌سایت"
+      className="w-5 h-5 object-contain" // حذف grayscale و opacity
     />
   </a>
 )}
 
+{/* اینستاگرام */}
+{salon.socials.instagram && (
+  <a
+    href={`https://instagram.com/${salon.socials.instagram.replace('@', '')}`}
+    target="_blank"
+    rel="noopener noreferrer"
+    className="flex items-center justify-center w-10 h-10 rounded-full transition-all active:scale-90 touch-manipulation"
+  >
+    <img
+      src="/instagram.png"
+      alt="اینستاگرام"
+      className="w-5 h-5 object-contain"
+    />
+  </a>
+)}
+
+{/* واتساپ */}
+{salon.socials.whatsapp && (
+  <a
+    href={`https://wa.me/${salon.socials.whatsapp}`}
+    target="_blank"
+    rel="noopener noreferrer"
+    className="flex items-center justify-center w-10 h-10 rounded-full transition-all active:scale-90 touch-manipulation"
+  >
+    <img
+      src="/whatsapp.png"
+      alt="واتساپ"
+      className="w-5 h-5 object-contain"
+    />
+  </a>
+)}
+
+{/* تلگرام */}
+{salon.socials.telegram && (
+  <a
+    href={`https://t.me/${salon.socials.telegram.replace('@', '')}`}
+    target="_blank"
+    rel="noopener noreferrer"
+    className="flex items-center justify-center w-10 h-10 rounded-full transition-all active:scale-90 touch-manipulation"
+  >
+    <img
+      src="/telegram.png"
+      alt="تلگرام"
+      className="w-5 h-5 object-contain"
+    />
+  </a>
+)}
+
+{/* روبیکا */}
+{salon.socials.rubika && (
+  <a
+    href={`https://rubika.ir/${salon.socials.rubika.replace('@', '')}`}
+    target="_blank"
+    rel="noopener noreferrer"
+    className="flex items-center justify-center w-10 h-10 rounded-full transition-all active:scale-90 touch-manipulation"
+  >
+    <img
+      src="/rubika.png"
+      alt="روبیکا"
+      className="w-5 h-5 object-contain"
+    />
+  </a>
+)}
+
+{/* بله */}
 {salon.socials.bale && (
   <a
     href={`https://ble.ir/${salon.socials.bale.replace('@', '')}`}
     target="_blank"
     rel="noopener noreferrer"
-    className="flex items-center justify-center w-10 h-10 rounded-full transition-all hover:bg-zinc-100 active:scale-95"
+    className="flex items-center justify-center w-10 h-10 rounded-full transition-all active:scale-90 touch-manipulation"
   >
     <img
       src="/Bale.png"
       alt="بله"
-      className="w-5 h-5 object-contain grayscale opacity-60"
+      className="w-5 h-5 object-contain"
     />
   </a>
 )}
