@@ -1,6 +1,6 @@
-//app/api/upload/route.ts
 import { NextResponse } from 'next/server';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
+import sharp from 'sharp';
 
 const s3 = new S3Client({
   region: 'default',
@@ -14,6 +14,40 @@ const s3 = new S3Client({
 
 const MAX_FILE_SIZE_MB = 50;
 const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
+
+// فرمت‌هایی که نیاز به تبدیل دارن
+const NEEDS_CONVERSION = ['image/heic', 'image/heif', 'image/tiff', 'image/bmp'];
+
+async function processImage(buffer: Buffer, mimeType: string): Promise<{ buffer: Buffer; ext: string; contentType: string }> {
+  const needsConversion = NEEDS_CONVERSION.includes(mimeType) || mimeType === '';
+  
+  if (needsConversion) {
+    // HEIC و فرمت‌های ناشناس → تبدیل به JPEG
+    const converted = await sharp(buffer)
+      .rotate() // اصلاح orientation آیفون
+      .jpeg({ quality: 85 })
+      .toBuffer();
+    return { buffer: converted, ext: 'jpg', contentType: 'image/jpeg' };
+  }
+
+  // JPEG/PNG/WEBP — فقط اگه بزرگه فشرده کن
+  const metadata = await sharp(buffer).metadata();
+  const { width = 0, height = 0 } = metadata;
+  const MAX_DIM = 2048;
+
+  if (width > MAX_DIM || height > MAX_DIM) {
+    const resized = await sharp(buffer)
+      .rotate() // اصلاح orientation
+      .resize(MAX_DIM, MAX_DIM, { fit: 'inside', withoutEnlargement: true })
+      .jpeg({ quality: 85 })
+      .toBuffer();
+    return { buffer: resized, ext: 'jpg', contentType: 'image/jpeg' };
+  }
+
+  // فایل کوچک و فرمت معمولی — بدون تغییر
+  const originalExt = mimeType === 'image/png' ? 'png' : mimeType === 'image/webp' ? 'webp' : 'jpg';
+  return { buffer, ext: originalExt, contentType: mimeType || 'image/jpeg' };
+}
 
 export async function POST(req: Request) {
   try {
@@ -34,14 +68,8 @@ export async function POST(req: Request) {
         );
       }
 
-      const bytes = await file.arrayBuffer();
-      const buffer = Buffer.from(bytes);
-
-      const originalExt = file.name.split('.').pop()?.toLowerCase() || 'jpg';
-      const ext = file.type === 'image/jpeg' ? 'jpg'
-                : file.type === 'image/png'  ? 'png'
-                : file.type === 'image/webp' ? 'webp'
-                : originalExt;
+      const rawBuffer = Buffer.from(await file.arrayBuffer());
+      const { buffer, ext, contentType } = await processImage(rawBuffer, file.type);
 
       const filename = `img-${Date.now()}-${Math.round(Math.random() * 1e9)}.${ext}`;
 
@@ -50,7 +78,7 @@ export async function POST(req: Request) {
           Bucket: process.env.S3_BUCKET_NAME,
           Key: filename,
           Body: buffer,
-          ContentType: file.type || 'image/jpeg',
+          ContentType: contentType,
           ACL: 'public-read',
         })
       );
@@ -62,7 +90,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ urls: uploadedUrls }, { status: 200 });
 
   } catch (error: any) {
-    console.error('S3 Upload Error:', error?.message, error?.$metadata);
+    console.error('Upload Error:', error?.message);
     return NextResponse.json(
       { error: error?.message || 'خطای سرور در آپلود فایل' },
       { status: 500 }
