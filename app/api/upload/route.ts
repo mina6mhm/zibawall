@@ -1,6 +1,8 @@
+//app/api/upload/route.ts
 import { NextResponse } from 'next/server';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import sharp from 'sharp';
+import heicConvert from 'heic-convert';
 
 const s3 = new S3Client({
   region: 'default',
@@ -15,40 +17,49 @@ const s3 = new S3Client({
 const MAX_FILE_SIZE_MB = 50;
 const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
 
-// فرمت‌هایی که نیاز به تبدیل دارن
-const NEEDS_CONVERSION = ['image/heic', 'image/heif', 'image/tiff', 'image/bmp'];
-
-async function processImage(buffer: Buffer, mimeType: string, fileName: string): Promise<{ buffer: Buffer; ext: string; contentType: string }> {
+async function processImage(
+  buffer: Buffer,
+  mimeType: string,
+  fileName: string
+): Promise<{ buffer: Buffer; ext: string; contentType: string }> {
   const lowerName = fileName.toLowerCase();
-  const isHeic = NEEDS_CONVERSION.includes(mimeType) 
-    || mimeType === '' 
-    || lowerName.endsWith('.heic') 
-    || lowerName.endsWith('.heif');
-  
+  const isHeic =
+    mimeType === 'image/heic' ||
+    mimeType === 'image/heif' ||
+    lowerName.endsWith('.heic') ||
+    lowerName.endsWith('.heif');
+
   if (isHeic) {
-    const converted = await sharp(buffer)
+    // تبدیل HEIC به JPEG با heic-convert
+    const jpegBuffer = await heicConvert({
+      buffer: buffer,
+      format: 'JPEG',
+      quality: 0.85,
+    });
+    // اصلاح orientation با sharp
+    const finalBuffer = await sharp(Buffer.from(jpegBuffer))
       .rotate()
       .jpeg({ quality: 85 })
       .toBuffer();
-    return { buffer: converted, ext: 'jpg', contentType: 'image/jpeg' };
+    return { buffer: finalBuffer, ext: 'jpg', contentType: 'image/jpeg' };
   }
 
-  // JPEG/PNG/WEBP — فقط اگه بزرگه فشرده کن
+  // برای بقیه فرمت‌ها — resize اگه بزرگ بود
   const metadata = await sharp(buffer).metadata();
   const { width = 0, height = 0 } = metadata;
   const MAX_DIM = 2048;
 
   if (width > MAX_DIM || height > MAX_DIM) {
     const resized = await sharp(buffer)
-      .rotate() // اصلاح orientation
+      .rotate()
       .resize(MAX_DIM, MAX_DIM, { fit: 'inside', withoutEnlargement: true })
       .jpeg({ quality: 85 })
       .toBuffer();
     return { buffer: resized, ext: 'jpg', contentType: 'image/jpeg' };
   }
 
-  // فایل کوچک و فرمت معمولی — بدون تغییر
-  const originalExt = mimeType === 'image/png' ? 'png' : mimeType === 'image/webp' ? 'webp' : 'jpg';
+  const originalExt =
+    mimeType === 'image/png' ? 'png' : mimeType === 'image/webp' ? 'webp' : 'jpg';
   return { buffer, ext: originalExt, contentType: mimeType || 'image/jpeg' };
 }
 
