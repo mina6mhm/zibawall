@@ -270,6 +270,7 @@ export default function LoginPage() {
                   type="text"
                   inputMode="numeric"
                   maxLength={1}
+                  autoComplete="one-time-code"
                   value={value}
                   disabled={timeLeft === 0}
                   onChange={(e) => handleOtpChange(index, e.target.value)}
@@ -342,7 +343,7 @@ export default function LoginPage() {
                 value={username}
                 placeholder="example_1234"
                 onChange={(e) => setUsername(e.target.value)}
-                className="w-full bg-white text-zinc-900 border border-zinc-300 rounded-xl px-3 py-2.5 sm:px-4 sm:py-3 text-sm sm:text-base text-left focus:outline-none focus:border-zinc-900 focus:ring-1 focus:ring-zinc-900 transition-all"
+                className="w-full bg-white text-zinc-900 border border-zinc-300 rounded-xl px=3 py-2.5 sm:px-4 sm:py-3 text-sm sm:text-base text-left focus:outline-none focus:border-zinc-900 focus:ring-1 focus:ring-zinc-900 transition-all"
               />
             </div>
 
