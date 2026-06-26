@@ -58,22 +58,8 @@ export default function LoginPage() {
         .catch(() => {});
     }
 
-    const handlePaste = (e: ClipboardEvent) => {
-      const pasted = e.clipboardData?.getData('text') ?? '';
-      const digits = pasted.replace(/\D/g, '').slice(0, 5).split('');
-      if (digits.length > 0) {
-        const filled = [...digits, '', '', '', ''].slice(0, 5);
-        setOtpValues(filled);
-        const lastIndex = Math.min(digits.length, 4);
-        setTimeout(() => otpRefs.current[lastIndex]?.focus(), 0);
-      }
-    };
-
-    window.addEventListener('paste', handlePaste);
-
     return () => {
       controller.abort();
-      window.removeEventListener('paste', handlePaste);
     };
   }, [step]);
 
@@ -207,6 +193,18 @@ export default function LoginPage() {
     }
   };
 
+  const handleOtpPaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
+    e.preventDefault();
+    const pasted = e.clipboardData?.getData('text') ?? '';
+    const digits = pasted.replace(/\D/g, '').slice(0, 5).split('');
+    if (digits.length > 0) {
+      const filled = [...digits, '', '', '', ''].slice(0, 5);
+      setOtpValues(filled);
+      const lastIndex = Math.min(digits.length, 4);
+      setTimeout(() => otpRefs.current[lastIndex]?.focus(), 0);
+    }
+  };
+
   return (
     <div className="min-h-[100dvh] bg-white sm:bg-white flex flex-col items-center justify-center p-4 sm:p-6" dir="rtl">
       <div className="w-full max-w-[400px] bg-white p-6 sm:p-8 flex flex-col items-center sm:border border-zinc-200 rounded-2xl sm:rounded-3xl sm:shadow-sm">
@@ -267,6 +265,7 @@ export default function LoginPage() {
                   disabled={timeLeft === 0}
                   onChange={(e) => handleOtpChange(index, e.target.value)}
                   onKeyDown={(e) => handleOtpKeyDown(index, e)}
+                  onPaste={handleOtpPaste}
                   className="w-11 h-11 sm:w-12 sm:h-12 md:w-14 md:h-14 text-lg sm:text-xl font-medium text-center border border-zinc-300 rounded-xl focus:border-zinc-900 focus:ring-1 focus:ring-zinc-900 outline-none transition-all disabled:opacity-50 disabled:bg-zinc-50"
                 />
               ))}
