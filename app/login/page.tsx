@@ -266,17 +266,20 @@ export default function LoginPage() {
               کد تایید به شماره <span dir="ltr" className="text-zinc-900 font-medium">{mobile}</span> ارسال شد
             </p>
 
-            <div className="flex justify-center gap-2 sm:gap-3 mb-6 w-full" dir="ltr">
+            <div className="relative flex justify-center gap-2 sm:gap-3 mb-6 w-full" dir="ltr">
               <input
                 ref={hiddenInputRef}
                 type="text"
                 inputMode="numeric"
                 autoComplete="one-time-code"
                 maxLength={5}
-                value=""
-                onChange={(e) => handleHiddenInput(e.target.value)}
+                defaultValue=""
+                onChange={(e) => {
+                  handleHiddenInput(e.target.value);
+                  e.target.value = '';
+                }}
                 onPaste={handleOtpPaste}
-                style={{ position: 'absolute', opacity: 0, pointerEvents: 'none', width: 1, height: 1 }}
+                style={{ position: 'absolute', opacity: 0.01, width: 1, height: 1, top: 0, left: 0 }}
               />
               {otpValues.map((value, index) => (
                 <input
