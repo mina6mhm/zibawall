@@ -18,6 +18,7 @@ export default function LoginPage() {
 
   const [otpValues, setOtpValues] = useState(['', '', '', '', '']);
   const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
+  const hiddenInputRef = useRef<HTMLInputElement>(null);
 
   const mobileRegex = /^09\d{9}$/;
   const usernameRegex = /^[a-zA-Z0-9_]{3,20}$/;
@@ -40,6 +41,8 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (step !== 'otp') return;
+
+    setTimeout(() => hiddenInputRef.current?.focus(), 100);
 
     const controller = new AbortController();
 
@@ -169,6 +172,16 @@ export default function LoginPage() {
     }
   };
 
+  const handleHiddenInput = (value: string) => {
+    const digits = value.replace(/\D/g, '').slice(0, 5).split('');
+    if (digits.length > 0) {
+      const filled = [...digits, '', '', '', ''].slice(0, 5);
+      setOtpValues(filled);
+      const lastIndex = Math.min(digits.length - 1, 4);
+      setTimeout(() => otpRefs.current[lastIndex]?.focus(), 0);
+    }
+  };
+
   const handleOtpChange = (index: number, value: string) => {
     if (!/^\d?$/.test(value)) return;
 
@@ -255,13 +268,15 @@ export default function LoginPage() {
 
             <div className="flex justify-center gap-2 sm:gap-3 mb-6 w-full" dir="ltr">
               <input
+                ref={hiddenInputRef}
                 type="text"
                 inputMode="numeric"
-                aria-hidden="true"
-                tabIndex={-1}
-                readOnly
+                autoComplete="one-time-code"
+                maxLength={5}
+                value=""
+                onChange={(e) => handleHiddenInput(e.target.value)}
                 onPaste={handleOtpPaste}
-                style={{ position: 'absolute', opacity: 0, pointerEvents: 'none', width: 0, height: 0 }}
+                style={{ position: 'absolute', opacity: 0, pointerEvents: 'none', width: 1, height: 1 }}
               />
               {otpValues.map((value, index) => (
                 <input
@@ -343,7 +358,7 @@ export default function LoginPage() {
                 value={username}
                 placeholder="example_1234"
                 onChange={(e) => setUsername(e.target.value)}
-                className="w-full bg-white text-zinc-900 border border-zinc-300 rounded-xl px=3 py-2.5 sm:px-4 sm:py-3 text-sm sm:text-base text-left focus:outline-none focus:border-zinc-900 focus:ring-1 focus:ring-zinc-900 transition-all"
+                className="w-full bg-white text-zinc-900 border border-zinc-300 rounded-xl px-3 py-2.5 sm:px-4 sm:py-3 text-sm sm:text-base text-left focus:outline-none focus:border-zinc-900 focus:ring-1 focus:ring-zinc-900 transition-all"
               />
             </div>
 
