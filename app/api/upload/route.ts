@@ -5,12 +5,15 @@ import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 const s3 = new S3Client({
   region: 'default',
   endpoint: process.env.S3_ENDPOINT,
-  forcePathStyle: true, // اضافه کردن این خط برای سرویس‌های مثل آروان ضروری است
+  forcePathStyle: true,
   credentials: {
     accessKeyId: process.env.S3_ACCESS_KEY as string,
     secretAccessKey: process.env.S3_SECRET_KEY as string,
   },
 });
+
+const MAX_FILE_SIZE_MB = 50;
+const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
 
 export async function POST(req: Request) {
   try {
@@ -24,10 +27,22 @@ export async function POST(req: Request) {
     const uploadedUrls: string[] = [];
 
     for (const file of files) {
+      if (file.size > MAX_FILE_SIZE_BYTES) {
+        return NextResponse.json(
+          { error: `حجم فایل "${file.name}" بیش از ${MAX_FILE_SIZE_MB} مگابایت است` },
+          { status: 413 }
+        );
+      }
+
       const bytes = await file.arrayBuffer();
       const buffer = Buffer.from(bytes);
 
-      const ext = file.name.split('.').pop();
+      const originalExt = file.name.split('.').pop()?.toLowerCase() || 'jpg';
+      const ext = file.type === 'image/jpeg' ? 'jpg'
+                : file.type === 'image/png'  ? 'png'
+                : file.type === 'image/webp' ? 'webp'
+                : originalExt;
+
       const filename = `img-${Date.now()}-${Math.round(Math.random() * 1e9)}.${ext}`;
 
       await s3.send(
@@ -35,13 +50,11 @@ export async function POST(req: Request) {
           Bucket: process.env.S3_BUCKET_NAME,
           Key: filename,
           Body: buffer,
-          ContentType: file.type,
-          ACL: 'public-read', // اگر باکت شما کاملا عمومی نیست، این مورد نیاز است تا عکس‌ها در فرانت‌اند لود شوند
+          ContentType: file.type || 'image/jpeg',
+          ACL: 'public-read',
         })
       );
 
-      // اصلاح نحوه ساخت لینک عمومی (فرمت استاندارد آروان کلاد)
-      // خروجی به شکل: https://salon-app.s3.ir-thr-at1.arvanstorage.ir/filename.jpg
       const publicUrl = `https://${process.env.S3_BUCKET_NAME}.s3.ir-thr-at1.arvanstorage.ir/${filename}`;
       uploadedUrls.push(publicUrl);
     }
@@ -49,17 +62,10 @@ export async function POST(req: Request) {
     return NextResponse.json({ urls: uploadedUrls }, { status: 200 });
 
   } catch (error: any) {
-  console.error('S3 Upload Error');
-  console.error(error);
-  console.error(error?.name);
-  console.error(error?.message);
-  console.error(error?.$metadata);
-
-  return NextResponse.json(
-    {
-      error: error?.message || 'خطای سرور در آپلود فایل'
-    },
-    { status: 500 }
-  );
-}
+    console.error('S3 Upload Error:', error?.message, error?.$metadata);
+    return NextResponse.json(
+      { error: error?.message || 'خطای سرور در آپلود فایل' },
+      { status: 500 }
+    );
+  }
 }
