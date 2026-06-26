@@ -48,9 +48,18 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ urls: uploadedUrls }, { status: 200 });
 
-  } catch (error) {
-    // برای اینکه دقیقا بدانید ارور S3 چیست، این لاگ را در ترمینال چک کنید
-    console.error('S3 Upload Error:', error); 
-    return NextResponse.json({ error: 'خطای سرور در آپلود فایل' }, { status: 500 });
-  }
+  } catch (error: any) {
+  console.error('S3 Upload Error');
+  console.error(error);
+  console.error(error?.name);
+  console.error(error?.message);
+  console.error(error?.$metadata);
+
+  return NextResponse.json(
+    {
+      error: error?.message || 'خطای سرور در آپلود فایل'
+    },
+    { status: 500 }
+  );
+}
 }
