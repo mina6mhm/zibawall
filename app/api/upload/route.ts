@@ -18,13 +18,16 @@ const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
 // فرمت‌هایی که نیاز به تبدیل دارن
 const NEEDS_CONVERSION = ['image/heic', 'image/heif', 'image/tiff', 'image/bmp'];
 
-async function processImage(buffer: Buffer, mimeType: string): Promise<{ buffer: Buffer; ext: string; contentType: string }> {
-  const needsConversion = NEEDS_CONVERSION.includes(mimeType) || mimeType === '';
+async function processImage(buffer: Buffer, mimeType: string, fileName: string): Promise<{ buffer: Buffer; ext: string; contentType: string }> {
+  const lowerName = fileName.toLowerCase();
+  const isHeic = NEEDS_CONVERSION.includes(mimeType) 
+    || mimeType === '' 
+    || lowerName.endsWith('.heic') 
+    || lowerName.endsWith('.heif');
   
-  if (needsConversion) {
-    // HEIC و فرمت‌های ناشناس → تبدیل به JPEG
+  if (isHeic) {
     const converted = await sharp(buffer)
-      .rotate() // اصلاح orientation آیفون
+      .rotate()
       .jpeg({ quality: 85 })
       .toBuffer();
     return { buffer: converted, ext: 'jpg', contentType: 'image/jpeg' };
@@ -69,7 +72,7 @@ export async function POST(req: Request) {
       }
 
       const rawBuffer = Buffer.from(await file.arrayBuffer());
-      const { buffer, ext, contentType } = await processImage(rawBuffer, file.type);
+      const { buffer, ext, contentType } = await processImage(rawBuffer, file.type, file.name);
 
       const filename = `img-${Date.now()}-${Math.round(Math.random() * 1e9)}.${ext}`;
 
