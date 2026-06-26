@@ -416,11 +416,11 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
             </div>
             
             <div className="flex flex-col gap-2.5">
-              <a href={`https://neshan.org/maps/routing?orig=&dest=${salon.coordinates[0]},${salon.coordinates[1]}`} target="_blank" rel="noopener noreferrer" className="flex items-center justify-between p-3.5 rounded-xl border border-zinc-200 bg-zinc-50 active:bg-zinc-100">
+              <a href={`https://neshan.org/maps/routing?dest_lat=${salon.coordinates[0]}&dest_lng=${salon.coordinates[1]}`} target="_blank" rel="noopener noreferrer" className="flex items-center justify-between p-3.5 rounded-xl border border-zinc-200 bg-zinc-50 active:bg-zinc-100">
                 <span className="font-bold text-sm text-zinc-800">نشان (Neshan)</span>
                 <img src="/neshan.png" alt="نشان" className="w-6 h-6 object-contain" />
               </a>
-              <a href={`https://balad.ir/route?dest=${salon.coordinates[0]},${salon.coordinates[1]}`} target="_blank" rel="noopener noreferrer" className="flex items-center justify-between p-3.5 rounded-xl border border-zinc-200 bg-zinc-50 active:bg-zinc-100">
+              <a href={`https://balad.ir/?lat=${salon.coordinates[0]}&lng=${salon.coordinates[1]}&title=${encodeURIComponent(salon.name)}`} target="_blank" rel="noopener noreferrer" className="flex items-center justify-between p-3.5 rounded-xl border border-zinc-200 bg-zinc-50 active:bg-zinc-100">
                 <span className="font-bold text-sm text-zinc-800">بلد (Balad)</span>
                 <img src="/balad.png" alt="بلد" className="w-6 h-6 object-contain" />
               </a>
