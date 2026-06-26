@@ -172,6 +172,17 @@ export default function LoginPage() {
   const handleOtpChange = (index: number, value: string) => {
     if (!/^\d*$/.test(value)) return;
 
+    if (value.length > 1) {
+      const digits = value.replace(/\D/g, '').slice(0, 5).split('');
+      if (digits.length > 0) {
+        const filled = [...digits, '', '', '', ''].slice(0, 5);
+        setOtpValues(filled);
+        const lastIndex = Math.min(digits.length, 4);
+        setTimeout(() => otpRefs.current[lastIndex]?.focus(), 0);
+      }
+      return;
+    }
+
     const newOtpValues = [...otpValues];
     newOtpValues[index] = value.substring(value.length - 1);
     setOtpValues(newOtpValues);
@@ -260,7 +271,7 @@ export default function LoginPage() {
                   ref={(el) => { otpRefs.current[index] = el; }}
                   type="text"
                   inputMode="numeric"
-                  maxLength={1}
+                  maxLength={5}
                   value={value}
                   disabled={timeLeft === 0}
                   onChange={(e) => handleOtpChange(index, e.target.value)}
