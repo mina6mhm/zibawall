@@ -170,21 +170,10 @@ export default function LoginPage() {
   };
 
   const handleOtpChange = (index: number, value: string) => {
-    if (!/^\d*$/.test(value)) return;
-
-    if (value.length > 1) {
-      const digits = value.replace(/\D/g, '').slice(0, 5).split('');
-      if (digits.length > 0) {
-        const filled = [...digits, '', '', '', ''].slice(0, 5);
-        setOtpValues(filled);
-        const lastIndex = Math.min(digits.length, 4);
-        setTimeout(() => otpRefs.current[lastIndex]?.focus(), 0);
-      }
-      return;
-    }
+    if (!/^\d?$/.test(value)) return;
 
     const newOtpValues = [...otpValues];
-    newOtpValues[index] = value.substring(value.length - 1);
+    newOtpValues[index] = value;
     setOtpValues(newOtpValues);
 
     if (value && index < otpValues.length - 1) {
@@ -265,13 +254,22 @@ export default function LoginPage() {
             </p>
 
             <div className="flex justify-center gap-2 sm:gap-3 mb-6 w-full" dir="ltr">
+              <input
+                type="text"
+                inputMode="numeric"
+                aria-hidden="true"
+                tabIndex={-1}
+                readOnly
+                onPaste={handleOtpPaste}
+                style={{ position: 'absolute', opacity: 0, pointerEvents: 'none', width: 0, height: 0 }}
+              />
               {otpValues.map((value, index) => (
                 <input
                   key={index}
                   ref={(el) => { otpRefs.current[index] = el; }}
                   type="text"
                   inputMode="numeric"
-                  maxLength={5}
+                  maxLength={1}
                   value={value}
                   disabled={timeLeft === 0}
                   onChange={(e) => handleOtpChange(index, e.target.value)}
