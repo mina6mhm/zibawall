@@ -30,19 +30,17 @@ async function processImage(
     lowerName.endsWith('.heif');
 
   if (isHeic) {
-    // تبدیل HEIC به JPEG با heic-convert
-    const jpegBuffer = await heicConvert({
-      buffer: buffer,
-      format: 'JPEG',
-      quality: 0.85,
-    });
-    // اصلاح orientation با sharp
-    const finalBuffer = await sharp(Buffer.from(jpegBuffer))
-      .rotate()
-      .jpeg({ quality: 85 })
-      .toBuffer();
-    return { buffer: finalBuffer, ext: 'jpg', contentType: 'image/jpeg' };
-  }
+  const jpegBuffer = await heicConvert({
+    buffer: new Uint8Array(buffer),  // ← تغییر اینجاست
+    format: 'JPEG',
+    quality: 0.85,
+  });
+  const finalBuffer = await sharp(Buffer.from(jpegBuffer))
+    .rotate()
+    .jpeg({ quality: 85 })
+    .toBuffer();
+  return { buffer: finalBuffer, ext: 'jpg', contentType: 'image/jpeg' };
+}
 
   // برای بقیه فرمت‌ها — resize اگه بزرگ بود
   const metadata = await sharp(buffer).metadata();
