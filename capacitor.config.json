@@ -1,0 +1,9 @@
+{
+  "appId": "com.zibawall.app",
+  "appName": "ZibaWall",
+  "webDir": "out",
+  "server": {
+    "url": "https://zibawall.ir",
+    "cleartext": false
+  }
+}
