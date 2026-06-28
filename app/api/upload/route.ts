@@ -2,7 +2,8 @@
 import { NextResponse } from 'next/server';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import sharp from 'sharp';
-import heicConvert from 'heic-convert';
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const heicConvert = require('heic-convert');
 
 const s3 = new S3Client({
   region: 'default',
@@ -16,6 +17,8 @@ const s3 = new S3Client({
 
 const MAX_FILE_SIZE_MB = 50;
 const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
+const MAX_DIM = 2048;
+const QUALITY = 85;
 
 async function processImage(
   buffer: Buffer,
@@ -23,42 +26,46 @@ async function processImage(
   fileName: string
 ): Promise<{ buffer: Buffer; ext: string; contentType: string }> {
   const lowerName = fileName.toLowerCase();
+
   const isHeic =
     mimeType === 'image/heic' ||
     mimeType === 'image/heif' ||
     lowerName.endsWith('.heic') ||
     lowerName.endsWith('.heif');
 
-  if (isHeic) {
-  const jpegBuffer = await heicConvert({
-    buffer: new Uint8Array(buffer),  // ← تغییر اینجاست
-    format: 'JPEG',
-    quality: 0.85,
-  });
-  const finalBuffer = await sharp(Buffer.from(jpegBuffer))
-    .rotate()
-    .jpeg({ quality: 85 })
-    .toBuffer();
-  return { buffer: finalBuffer, ext: 'jpg', contentType: 'image/jpeg' };
-}
+  try {
+    let workingBuffer: Buffer;
 
-  // برای بقیه فرمت‌ها — resize اگه بزرگ بود
-  const metadata = await sharp(buffer).metadata();
-  const { width = 0, height = 0 } = metadata;
-  const MAX_DIM = 2048;
+    if (isHeic) {
+      // تبدیل HEIC/HEIF به JPEG
+      const converted = await heicConvert({
+        buffer: new Uint8Array(buffer),
+        format: 'JPEG',
+        quality: 1, // کیفیت کامل - sharp بعداً فشرده می‌کنه
+      });
+      workingBuffer = Buffer.from(converted);
+    } else {
+      workingBuffer = buffer;
+    }
 
-  if (width > MAX_DIM || height > MAX_DIM) {
-    const resized = await sharp(buffer)
-      .rotate()
-      .resize(MAX_DIM, MAX_DIM, { fit: 'inside', withoutEnlargement: true })
-      .jpeg({ quality: 85 })
+    // پردازش با sharp — همیشه resize و optimize می‌کنه
+    const finalBuffer = await sharp(workingBuffer, { failOn: 'none' }) // failOn: none = تلرانس بالا
+      .rotate() // اصلاح orientation خودکار
+      .resize(MAX_DIM, MAX_DIM, {
+        fit: 'inside',
+        withoutEnlargement: true, // عکس‌های کوچک رو بزرگ نمی‌کنه
+      })
+      .jpeg({ quality: QUALITY, mozjpeg: true })
       .toBuffer();
-    return { buffer: resized, ext: 'jpg', contentType: 'image/jpeg' };
-  }
 
-  const originalExt =
-    mimeType === 'image/png' ? 'png' : mimeType === 'image/webp' ? 'webp' : 'jpg';
-  return { buffer, ext: originalExt, contentType: mimeType || 'image/jpeg' };
+    return { buffer: finalBuffer, ext: 'jpg', contentType: 'image/jpeg' };
+
+  } catch (err: any) {
+    // اگه پردازش fail شد، فایل اصلی رو بفرست (fallback)
+    console.error('Image processing failed, using original:', err?.message);
+    const ext = lowerName.split('.').pop() || 'jpg';
+    return { buffer, ext, contentType: mimeType || 'application/octet-stream' };
+  }
 }
 
 export async function POST(req: Request) {
