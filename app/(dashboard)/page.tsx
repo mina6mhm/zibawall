@@ -426,7 +426,7 @@ export default function DashboardHomePage() {
                     setSelectedCity('تهران'); 
                     setSelectedNeighborhoods([]); 
                   }}
-                  className="mt-4 text-rose-600 font-medium text-sm hover:text-rose-700"
+                  className="mt-4 text-[#824c71] font-medium text-sm hover:text-[#824c71]/80"
                 >
                   پاک کردن فیلترها
                 </button>

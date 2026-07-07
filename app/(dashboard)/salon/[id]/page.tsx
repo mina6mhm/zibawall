@@ -111,7 +111,7 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
     return (
       <div className="flex flex-col items-center justify-center h-[60vh] px-4 text-center">
         <h2 className="text-xl sm:text-2xl font-bold text-zinc-800 mb-4">سالن پیدا نشد!</h2>
-        <button onClick={() => router.push("/")} className="text-rose-600 hover:text-rose-700 font-medium">
+        <button onClick={() => router.push("/")} className="text-[#824c71] hover:text-[#6e3f60] font-medium">
           بازگشت به صفحه اصلی
         </button>
       </div>
@@ -216,7 +216,7 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
 
       <div className="space-y-3 sm:space-y-4 text-zinc-600 text-[13px] sm:text-sm mb-6">
         <div className="flex items-start">
-          <MapPin className="w-4 h-4 sm:w-5 sm:h-5 ml-2 mt-0.5 text-rose-500 flex-shrink-0" />
+          <MapPin className="w-4 h-4 sm:w-5 sm:h-5 ml-2 mt-0.5 text-[#824c71] flex-shrink-0" />
           <p className="leading-relaxed">{salon.address}</p>
         </div>
         
@@ -371,7 +371,7 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
       {/* دکمه تماس در دسکتاپ */}
       <div className="hidden lg:flex mt-6">
         {salon.phones && salon.phones.length > 0 && (
-            <a href={`tel:${salon.phones[0]}`} className="w-full bg-zinc-900 hover:bg-black text-white font-medium py-3 rounded-xl shadow-md text-center transition flex items-center justify-center">
+            <a href={`tel:${salon.phones[0]}`} className="w-full bg-[#824c71] hover:bg-[#6e3f60] text-white font-medium py-3 rounded-xl shadow-md text-center transition flex items-center justify-center">
               تماس با سالن
             </a>
         )}
@@ -563,9 +563,9 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
                       rows={3} placeholder="تجربه خود را بنویسید..."
                   ></textarea>
                   
-                  {reviewError && <p className="text-rose-500 text-xs font-medium mb-3">{reviewError}</p>}
+                  {reviewError && <p className="text-[#824c71] text-xs font-medium mb-3">{reviewError}</p>}
 
-                  <button onClick={handleReviewSubmit} className="w-full sm:w-auto bg-zinc-900 text-white px-5 py-2.5 rounded-lg text-sm font-medium active:bg-black">
+                  <button onClick={handleReviewSubmit} className="inline-flex items-center justify-center bg-[#824c71] hover:bg-[#6e3f60] text-white px-4 py-1.5 rounded-lg text-xs font-medium transition-colors">
                       {hasAlreadyReviewed ? "ثبت نظر" : "ثبت"}
                   </button>
               </div>
@@ -608,7 +608,7 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
   <div className="fixed bottom-8 left-5 right-5 z-[60] lg:hidden">
     <a 
       href={`tel:${salon.phones[0]}`} 
-      className="flex w-full bg-zinc-900 text-white font-medium py-4 rounded-xl text-sm items-center justify-center gap-2 shadow-lg shadow-zinc-400/30 active:scale-95 transition-transform"
+      className="flex w-full bg-[#824c71] hover:bg-[#6e3f60] text-white font-medium py-4 rounded-xl text-sm items-center justify-center gap-2 shadow-lg shadow-[#e3c9dc]/40 active:scale-95 transition-transform"
     >
       <Phone className="w-4 h-4" />
       تماس با سالن
