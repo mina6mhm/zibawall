@@ -288,7 +288,7 @@ export default function DashboardHomePage() {
                 /* پدینگ دکمه‌ها و سایز فونت در موبایل کمی کوچک‌تر و جمع‌وجورتر شد */
                 className={`whitespace-nowrap px-3 py-1.5 md:px-4 md:py-2 border rounded-full text-[13px] md:text-sm font-medium transition-colors ${
                   selectedCategory === category 
-                    ? 'bg-[#4a2545] text-white border-zinc-900' 
+                    ? 'bg-[#824c71] text-white border-zinc-900' 
                     : 'bg-white border-zinc-200 text-zinc-700 hover:bg-zinc-50'
                 }`}
               >
@@ -344,7 +344,7 @@ export default function DashboardHomePage() {
                       <button 
                         onClick={(e) => handleBookmarkClick(salon.id, e)}
                         className={`absolute top-3 right-3 w-8 h-8 bg-white/90 backdrop-blur rounded-full flex items-center justify-center transition-colors shadow-sm z-10 ${
-                          isCurrentSalonBookmarked(salon.id) ? 'text-[#4a2545]' : 'text-zinc-700'
+                          isCurrentSalonBookmarked(salon.id) ? 'text-[#824c71]' : 'text-zinc-700'
                         }`}
                       >
                         <BookmarkIcon isActive={isCurrentSalonBookmarked(salon.id)} className="w-[18px] h-[18px]" />
@@ -400,7 +400,7 @@ export default function DashboardHomePage() {
                           <a 
                             href={`tel:${salon.phone || salon.phones[0]}`}
                             onClick={(e) => e.stopPropagation()}
-                            className="bg-[#4a2545] text-white text-sm font-bold px-5 py-2 rounded-[6px] hover:bg-black transition-colors shadow-sm inline-flex items-center justify-center" 
+                            className="bg-[#824c71] text-white text-sm font-bold px-5 py-2 rounded-[6px] hover:bg-black transition-colors shadow-sm inline-flex items-center justify-center" 
                           >
                             تماس
                           </a>
