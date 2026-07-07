@@ -140,7 +140,6 @@ export default function ProfilePage() {
         
         {/* --- منوی تب‌ها --- */}
         <div className="w-full md:w-64 shrink-0">
-          {/* ظاهر تب‌ها در دسکتاپ (کارت کناری) و موبایل (تب‌های زیرخط‌دار نیتیو) */}
           <div className="flex flex-row md:flex-col border-b border-zinc-100 md:border-none w-full md:p-1.5 md:gap-1.5 md:bg-[#e3c9dc]/20 md:rounded-2xl">
             <button 
               onClick={() => setActiveTab('info')} 
@@ -151,7 +150,6 @@ export default function ProfilePage() {
               }`}
             >
               <User className="w-4 h-4 shrink-0" /> اطلاعات کاربری
-              {/* خط زیرین فقط برای موبایل */}
               {activeTab === 'info' && (
                 <span className="absolute bottom-0 left-0 w-full h-[2px] bg-[#824c71] md:hidden"></span>
               )}
@@ -220,7 +218,6 @@ export default function ProfilePage() {
                 </div>
               </div>
               
-              {/* --- دکمه‌های فرم --- */}
               <div className="pt-8 md:pt-6 border-t border-zinc-100 flex flex-row items-center justify-between gap-3 mt-4">
                 <button 
                   onClick={handleLogout}
@@ -259,27 +256,31 @@ export default function ProfilePage() {
                     </div>
                   </div>
 
+                  {/* --- سه دکمه: مشاهده / ویرایش / حذف --- */}
                   <div className="grid grid-cols-3 gap-2 md:gap-3 pt-2 items-stretch">
                     <Link 
                       href={`/salon/${salonData.id || salonData._id}`} 
-                      className="flex flex-col md:flex-row justify-center items-center gap-1 md:gap-2 bg-[#824c71] text-white rounded-xl md:rounded-2xl hover:bg-[#6d3f5e] transition-all font-medium active:scale-[0.98] text-[12px] md:text-base text-center h-[64px] md:h-[52px] p-0 md:px-4"
+                      className="flex flex-col md:flex-row justify-center items-center gap-1.5 md:gap-2 bg-[#824c71] text-white rounded-xl md:rounded-2xl hover:bg-[#6d3f5e] transition-all font-medium active:scale-[0.98] h-[72px] md:h-[52px] px-1 md:px-4"
                     >
-                      <Eye className="w-5 h-5 shrink-0" /> مشاهده
+                      <Eye className="w-5 h-5 shrink-0" />
+                      <span className="text-[12px] md:text-base leading-none">مشاهده</span>
                     </Link>
 
                     <Link 
                       href="/profile/business/edit" 
-                      className="flex flex-col md:flex-row justify-center items-center gap-1 md:gap-2 bg-white border border-zinc-200 text-zinc-700 rounded-xl md:rounded-2xl hover:bg-zinc-50 transition-all font-medium active:scale-[0.98] text-[12px] md:text-base text-center h-[64px] md:h-[52px] p-0 md:px-4"
+                      className="flex flex-col md:flex-row justify-center items-center gap-1.5 md:gap-2 bg-white border border-zinc-200 text-zinc-700 rounded-xl md:rounded-2xl hover:bg-zinc-50 transition-all font-medium active:scale-[0.98] h-[72px] md:h-[52px] px-1 md:px-4"
                     >
-                      <Edit className="w-5 h-5 shrink-0" /> ویرایش
+                      <Edit className="w-5 h-5 shrink-0" />
+                      <span className="text-[12px] md:text-base leading-none">ویرایش</span>
                     </Link>
 
                     <button 
                       onClick={handleDeleteBusiness}
                       disabled={isLoading}
-                      className="flex flex-col md:flex-row justify-center items-center gap-1 md:gap-2 bg-[#e3c9dc]/20 text-[#824c71] border border-[#d3aec8]/70 rounded-xl md:rounded-2xl hover:bg-[#e3c9dc]/45 transition-all font-medium active:scale-[0.98] text-[12px] md:text-base text-center h-[64px] md:h-[52px] p-0 md:px-4"
+                      className="flex flex-col md:flex-row justify-center items-center gap-1.5 md:gap-2 bg-[#e3c9dc]/20 text-[#824c71] border border-[#d3aec8]/70 rounded-xl md:rounded-2xl hover:bg-[#e3c9dc]/45 transition-all font-medium active:scale-[0.98] h-[72px] md:h-[52px] px-1 md:px-4"
                     >
-                      <Trash2 className="w-5 h-5 shrink-0" /> {isLoading ? 'صبر...' : 'حذف'}
+                      <Trash2 className="w-5 h-5 shrink-0" />
+                      <span className="text-[12px] md:text-base leading-none">{isLoading ? 'صبر...' : 'حذف'}</span>
                     </button>
                   </div>
                 </div>
