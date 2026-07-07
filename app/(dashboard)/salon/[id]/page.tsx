@@ -443,7 +443,7 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
             بازگشت
           </button>
           <button onClick={toggleBookmark} className="p-2 rounded-full active:bg-zinc-100">
-            <svg viewBox="0 0 24 24" className={`w-6 h-6 ${isBookmarked ? "text-zinc-900" : "text-zinc-500"}`} fill={isBookmarked ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+            <svg viewBox="0 0 24 24" className={`w-6 h-6 ${isBookmarked ? "text-[#824c71]" : "text-zinc-500"}`} fill={isBookmarked ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M6 4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v17.5l-6-4-6 4V4z" />
             </svg>
           </button>

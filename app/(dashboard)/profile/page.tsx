@@ -260,7 +260,7 @@ export default function ProfilePage() {
 <div className="grid grid-cols-3 gap-2 md:gap-3 pt-2 items-stretch">
   <Link 
     href={`/salon/${salonData.id || salonData._id}`} 
-    className="flex flex-row justify-center items-center gap-1.5 md:gap-2 bg-[#824c71] text-white rounded-xl md:rounded-2xl hover:bg-[#6d3f5e] transition-all font-medium active:scale-[0.98] h-[52px] px-1 md:px-4"
+    className="flex flex-row justify-center items-center gap-1.5 md:gap-2 bg-[#824c71] text-white rounded-xl md:rounded-2xl hover:bg-[#6d3f5e] transition-all font-medium active:scale-[0.98] h-[44px] px-1 md:px-4"
   >
     <Eye className="w-5 h-5 shrink-0" />
     <span className="text-[12px] md:text-base leading-none whitespace-nowrap">مشاهده</span>
@@ -268,7 +268,7 @@ export default function ProfilePage() {
 
   <Link 
     href="/profile/business/edit" 
-    className="flex flex-row justify-center items-center gap-1.5 md:gap-2 bg-white border border-zinc-200 text-zinc-700 rounded-xl md:rounded-2xl hover:bg-zinc-50 transition-all font-medium active:scale-[0.98] h-[52px] px-1 md:px-4"
+    className="flex flex-row justify-center items-center gap-1.5 md:gap-2 bg-white border border-zinc-200 text-zinc-700 rounded-xl md:rounded-2xl hover:bg-zinc-50 transition-all font-medium active:scale-[0.98] h-[44px] px-1 md:px-4"
   >
     <Edit className="w-5 h-5 shrink-0" />
     <span className="text-[12px] md:text-base leading-none whitespace-nowrap">ویرایش</span>
@@ -277,7 +277,7 @@ export default function ProfilePage() {
   <button 
     onClick={handleDeleteBusiness}
     disabled={isLoading}
-    className="flex flex-row justify-center items-center gap-1.5 md:gap-2 bg-[#e3c9dc]/20 text-[#824c71] border border-[#d3aec8]/70 rounded-xl md:rounded-2xl hover:bg-[#e3c9dc]/45 transition-all font-medium active:scale-[0.98] h-[52px] px-1 md:px-4"
+    className="flex flex-row justify-center items-center gap-1.5 md:gap-2 bg-[#e3c9dc]/20 text-[#824c71] border border-[#d3aec8]/70 rounded-xl md:rounded-2xl hover:bg-[#e3c9dc]/45 transition-all font-medium active:scale-[0.98] h-[44px] px-1 md:px-4"
   >
     <Trash2 className="w-5 h-5 shrink-0" />
     <span className="text-[12px] md:text-base leading-none whitespace-nowrap">{isLoading ? 'صبر...' : 'حذف'}</span>
