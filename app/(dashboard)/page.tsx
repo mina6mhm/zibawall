@@ -247,7 +247,7 @@ export default function DashboardHomePage() {
                   {selectedNeighborhoods.map((nh) => (
                     <span 
                       key={nh} 
-                      className="flex items-center gap-1.5 bg-[#e3c9dc] text-[#824c71] px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap border border-[#d3aec8]"
+                      className="flex items-center gap-1.5 bg-[#e3c9dc]/20 text-[#824c71] px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap border border-[#d3aec8]"
                     >
                       {nh}
                       <button 
@@ -255,7 +255,7 @@ export default function DashboardHomePage() {
                           e.stopPropagation();
                           removeNeighborhood(nh);
                         }} 
-                        className="hover:bg-rose-200 text-rose-500 rounded-full p-0.5 transition-colors flex items-center justify-center"
+                        className="hover:bg-rose-200 text-[#824c71] rounded-full p-0.5 transition-colors flex items-center justify-center"
                       >
                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                           <path d="M18 6 6 18"/><path d="m6 6 12 12"/>
