@@ -467,7 +467,7 @@ const user = await meRes.json();
   if (isLoadingData) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh]">
-        <Loader2 className="w-12 h-12 text-rose-600 animate-spin mb-4" />
+        <Loader2 className="w-12 h-12 text-[#824c71] animate-spin mb-4" />
         <p className="text-zinc-600 font-medium">در حال دریافت اطلاعات کسب‌وکار...</p>
       </div>
     );
@@ -502,11 +502,11 @@ const user = await meRes.json();
         ].map((item) => (
           <div key={item.id} className="flex flex-col items-center gap-2 bg-white px-2">
             <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm transition-colors ${
-              step >= item.id ? 'bg-rose-600 text-white' : 'bg-zinc-100 text-zinc-500 border border-zinc-200'
+              step >= item.id ? 'bg-[#824c71] text-white' : 'bg-zinc-100 text-zinc-500 border border-zinc-200'
             }`}>
               {step > item.id ? <CheckCircle2 size={20} /> : item.id.toLocaleString('fa-IR')}
             </div>
-            <span className={`text-xs md:text-sm font-medium ${step >= item.id ? 'text-rose-600' : 'text-zinc-400'}`}>
+            <span className={`text-xs md:text-sm font-medium ${step >= item.id ? 'text-[#824c71]' : 'text-zinc-400'}`}>
               {item.title}
             </span>
           </div>
@@ -572,7 +572,7 @@ const user = await meRes.json();
                         onClick={() => toggleClosedDay(day)}
                         className={`px-3 py-1.5 md:px-4 md:py-2 rounded-lg md:rounded-xl text-xs md:text-sm font-medium transition-colors ${
                           closedDays.includes(day)
-                            ? 'bg-rose-50 text-rose-600 border border-rose-200'
+                            ? 'bg-[#e3c9dc]/20 text-[#824c71] border border-[#824c71]/30'
                             : 'bg-white border border-zinc-200 text-zinc-600 hover:bg-zinc-50'
                         }`}
                       >
@@ -605,7 +605,7 @@ const user = await meRes.json();
                       </div>
                     ))}
                   </div>
-                  <button type="button" onClick={handleAddPhone} className="text-xs md:text-sm font-medium text-rose-600 flex items-center gap-1 md:gap-1.5 mt-1 md:mt-2 hover:text-rose-700 transition-colors">
+                  <button type="button" onClick={handleAddPhone} className="text-xs md:text-sm font-medium text-[#824c71] flex items-center gap-1 md:gap-1.5 mt-1 md:mt-2 hover:text-[#6e3f60] transition-colors">
                     <Plus className="w-4 h-4 md:w-5 md:h-5" /> افزودن شماره جدید
                   </button>
                 </div>
@@ -637,7 +637,7 @@ const user = await meRes.json();
                     {selectedNeighborhoods.map((nh) => (
                       <span 
                         key={nh} 
-                        className="flex items-center gap-1 md:gap-1.5 bg-rose-50 text-rose-700 px-2.5 py-1 md:px-3 md:py-1.5 rounded-full text-[10px] md:text-xs font-bold border border-rose-100"
+                        className="flex items-center gap-1 md:gap-1.5 bg-[#e3c9dc]/20 text-[#824c71] px-2.5 py-1 md:px-3 md:py-1.5 rounded-full text-[10px] md:text-xs font-bold border border-[#e3c9dc]"
                       >
                         {nh}
                         <button 
@@ -646,7 +646,7 @@ const user = await meRes.json();
                             e.stopPropagation();
                             removeNeighborhood(nh);
                           }} 
-                          className="hover:bg-rose-200 text-rose-500 rounded-full p-0.5 transition-colors"
+                          className="hover:bg-[#e3c9dc]/40 text-[#824c71] rounded-full p-0.5 transition-colors"
                         >
                           <X className="w-3 h-3 md:w-3.5 md:h-3.5" strokeWidth={2.5} />
                         </button>
@@ -687,7 +687,7 @@ const user = await meRes.json();
                         setTempCoordinates(coordinates);
                         setIsMapModalOpen(true);
                       }} 
-                      className="text-rose-600 text-[10px] md:text-sm font-medium hover:bg-rose-50 px-2 py-1 md:px-3 md:py-1.5 rounded-lg transition-colors flex items-center gap-1"
+                      className="text-[#824c71] text-[10px] md:text-sm font-medium hover:bg-[#e3c9dc]/20 px-2 py-1 md:px-3 md:py-1.5 rounded-lg transition-colors flex items-center gap-1"
                     >
                       <MapPin className="w-3.5 h-3.5 md:w-4 md:h-4" /> ویرایش موقعیت
                     </button>
@@ -725,7 +725,7 @@ const user = await meRes.json();
                 <CheckCircle2 className="text-zinc-700 w-5 h-5 md:w-6 md:h-6" />
                 <h2 className="text-base md:text-lg font-semibold text-zinc-800">خدمات قابل ارائه</h2>
               </div>
-              <span className="text-[10px] md:text-xs text-rose-600 bg-rose-50 px-2 py-0.5 md:px-3 md:py-1 rounded-full font-medium">
+              <span className="text-[10px] md:text-xs text-[#824c71] bg-[#e3c9dc]/20 px-2 py-0.5 md:px-3 md:py-1 rounded-full font-medium">
                 {selectedTags.length.toLocaleString('fa-IR')} خدمت انتخاب شده
               </span>
             </div>
@@ -751,7 +751,7 @@ const user = await meRes.json();
                       <div className="flex items-center gap-2 md:gap-3">
                         <span className="text-sm md:text-base font-medium text-zinc-800">{category}</span>
                         {selectedCount > 0 && (
-                          <span className="text-[10px] md:text-xs bg-rose-50 text-rose-600 px-1.5 py-0.5 md:px-2 md:py-0.5 rounded-full font-medium">
+                          <span className="text-[10px] md:text-xs bg-[#e3c9dc]/20 text-[#824c71] px-1.5 py-0.5 md:px-2 md:py-0.5 rounded-full font-medium">
                             {selectedCount.toLocaleString('fa-IR')} مورد
                           </span>
                         )}
@@ -778,7 +778,7 @@ const user = await meRes.json();
                                   onClick={() => toggleTag(service)} 
                                   className={`px-3 py-1.5 md:px-4 md:py-2 rounded-lg md:rounded-xl text-xs md:text-sm font-medium transition-all ${
                                     isSelected
-                                      ? 'bg-rose-50 border border-rose-200 text-rose-600'
+                                      ? 'bg-[#e3c9dc]/20 border border-[#824c71]/30 text-[#824c71]'
                                       : 'bg-white border border-zinc-200 text-zinc-600 hover:border-zinc-300 hover:bg-zinc-50'
                                   }`}
                                 >
@@ -904,7 +904,7 @@ const user = await meRes.json();
               
               {!coverImage && !existingCover ? (
                 <label className="cursor-pointer bg-zinc-50 border-2 border-dashed border-zinc-300 rounded-xl md:rounded-2xl p-6 md:p-8 flex flex-col items-center justify-center text-center gap-2 md:gap-3 hover:bg-zinc-100 transition-colors">
-                  <div className="w-12 h-12 md:w-14 md:h-14 bg-white text-rose-600 rounded-full flex items-center justify-center shadow-sm mb-1 md:mb-2 border border-zinc-200">
+                  <div className="w-12 h-12 md:w-14 md:h-14 bg-white text-[#824c71] rounded-full flex items-center justify-center shadow-sm mb-1 md:mb-2 border border-zinc-200">
                     <ImageIcon className="w-6 h-6 md:w-8 md:h-8" />
                   </div>
                   <h3 className="font-medium text-zinc-800 text-sm md:text-base">برای آپلود کاور اصلی کلیک کنید</h3>
@@ -947,7 +947,7 @@ const user = await meRes.json();
               
               {totalPortfoliosCount < maxPortfolios && (
                 <label className="cursor-pointer bg-zinc-50 border-2 border-dashed border-zinc-300 rounded-xl md:rounded-2xl p-6 md:p-8 flex flex-col items-center justify-center text-center gap-2 md:gap-3 hover:bg-zinc-100 transition-colors">
-                  <div className="w-12 h-12 md:w-14 md:h-14 bg-white text-rose-600 rounded-full flex items-center justify-center shadow-sm mb-1 md:mb-2 border border-zinc-200">
+                  <div className="w-12 h-12 md:w-14 md:h-14 bg-white text-[#824c71] rounded-full flex items-center justify-center shadow-sm mb-1 md:mb-2 border border-zinc-200">
                     <UploadCloud className="w-6 h-6 md:w-8 md:h-8" />
                   </div>
                   <h3 className="font-medium text-zinc-800 text-sm md:text-base">برای آپلود نمونه کار جدید کلیک کنید</h3>
@@ -1004,7 +1004,7 @@ const user = await meRes.json();
           ) : <div></div>}
 
           {step < 4 ? (
-            <button type="button" onClick={nextStep} className="flex items-center gap-1.5 md:gap-2 bg-rose-600 text-white px-5 py-2.5 md:px-8 md:py-3 rounded-lg md:rounded-xl font-medium text-sm md:text-base hover:bg-rose-700 transition">
+            <button type="button" onClick={nextStep} className="flex items-center gap-1.5 md:gap-2 bg-[#824c71] text-white px-5 py-2.5 md:px-8 md:py-3 rounded-lg md:rounded-xl font-medium text-sm md:text-base hover:bg-[#6e3f60] transition">
               مرحله بعد <ArrowLeft className="w-4 h-4 md:w-5 md:h-5" />
             </button>
           ) : (
@@ -1012,7 +1012,7 @@ const user = await meRes.json();
               type="button" 
               onClick={handleSubmit} 
               disabled={isSubmitting}
-              className="flex items-center gap-1.5 md:gap-2 bg-rose-600 text-white px-5 py-2.5 md:px-8 md:py-3 rounded-lg md:rounded-xl font-medium text-sm md:text-base hover:bg-rose-700 transition disabled:opacity-70 disabled:cursor-not-allowed"
+              className="flex items-center gap-1.5 md:gap-2 bg-[#824c71] text-white px-5 py-2.5 md:px-8 md:py-3 rounded-lg md:rounded-xl font-medium text-sm md:text-base hover:bg-[#6e3f60] transition disabled:opacity-70 disabled:cursor-not-allowed"
             >
               {isSubmitting ? <Loader2 className="w-4 h-4 md:w-5 md:h-5 animate-spin" /> : <Save className="w-4 h-4 md:w-5 md:h-5" />}
               {isSubmitting ? 'در حال بروزرسانی...' : 'ویرایش و ذخیره'}
@@ -1060,7 +1060,7 @@ const user = await meRes.json();
                     setLocationSelected(true);
                     setIsMapModalOpen(false);
                   }} 
-                  className="flex-1 md:flex-none px-4 py-2 rounded-[8px] text-xs bg-rose-600 text-white font-medium hover:bg-rose-700 transition-colors flex items-center justify-center gap-2"
+                  className="flex-1 md:flex-none px-4 py-2 rounded-[8px] text-xs bg-[#824c71] text-white font-medium hover:bg-[#6e3f60] transition-colors flex items-center justify-center gap-2"
                 >
                   <CheckCircle2 size={20} /> تایید موقعیت
                 </button>
