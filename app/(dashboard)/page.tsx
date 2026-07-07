@@ -247,7 +247,7 @@ export default function DashboardHomePage() {
                   {selectedNeighborhoods.map((nh) => (
                     <span 
                       key={nh} 
-                      className="flex items-center gap-1.5 bg-rose-50 text-rose-700 px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap border border-rose-100"
+                      className="flex items-center gap-1.5 bg-[#e3c9dc] text-[#824c71] px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap border border-[#d3aec8]"
                     >
                       {nh}
                       <button 
