@@ -54,7 +54,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 key={item.name} 
                 href={item.href}
                 className={`flex items-center gap-3 px-3 py-3 rounded-lg transition-colors duration-200 text-[13px] ${
-                  isActive ? 'bg-zinc-50 text-[#4a2545] font-semibold' : 'text-zinc-500 hover:text-[#4a2545]'
+                  isActive ? 'bg-zinc-50 text-[#824c71] font-semibold' : 'text-zinc-500 hover:text-[#824c71]'
                 }`}
               >
                 <item.icon className="w-[20px] h-[20px]" isActive={isActive} />
@@ -87,10 +87,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   className="flex flex-1 flex-col items-center justify-center h-full gap-1.5 transition-transform active:scale-95"
                 >
                   <item.icon 
-                    className={`w-[24px] h-[24px] transition-colors duration-300 ${isActive ? 'text-[#4a2545]' : 'text-zinc-400'}`} 
+                    className={`w-[24px] h-[24px] transition-colors duration-300 ${isActive ? 'text-[#824c71]' : 'text-zinc-400'}`} 
                     isActive={isActive} 
                   />
-                  <span className={`text-[11px] tracking-tight transition-colors duration-300 ${isActive ? 'text-[#4a2545] font-bold' : 'text-zinc-500 font-medium'}`}>
+                  <span className={`text-[11px] tracking-tight transition-colors duration-300 ${isActive ? 'text-[#824c71] font-bold' : 'text-zinc-500 font-medium'}`}>
                     {item.name}
                   </span>
                 </Link>

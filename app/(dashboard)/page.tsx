@@ -288,7 +288,7 @@ export default function DashboardHomePage() {
                 /* پدینگ دکمه‌ها و سایز فونت در موبایل کمی کوچک‌تر و جمع‌وجورتر شد */
                 className={`whitespace-nowrap px-3 py-1.5 md:px-4 md:py-2 border rounded-full text-[13px] md:text-sm font-medium transition-colors ${
                   selectedCategory === category 
-                    ? 'bg-[#824c71] text-white border-zinc-900' 
+                    ? 'bg-[#824c71] text-white' 
                     : 'bg-white border-zinc-200 text-zinc-700 hover:bg-zinc-50'
                 }`}
               >
