@@ -308,7 +308,7 @@ export default function RegionFilterModal({
                   <span
                     className={`text-[15px] md:text-sm text-right transition-colors ${
                       isSelected
-                        ? "text-zinc-900 font-medium"
+                        ? "text-[#824c71] font-medium"
                         : "text-zinc-700"
                     }`}
                   >
@@ -318,7 +318,7 @@ export default function RegionFilterModal({
                   <div
                     className={`w-5 h-5 rounded-[4px] border flex items-center justify-center shrink-0 transition-colors ${
                       isSelected
-                        ? "bg-rose-500 border-rose-500"
+                        ? "bg-[#824c71] border-[#824c71]"
                         : "border-zinc-300"
                     }`}
                   >
@@ -415,7 +415,7 @@ export default function RegionFilterModal({
               type="button"
               onClick={handleConfirmSelection}
               disabled={selectedNeighborhoods.length === 0}
-              className="w-full bg-rose-600 hover:bg-rose-700 text-white py-4 md:py-3.5 rounded-xl text-[15px] md:text-base font-bold transition-colors flex justify-center items-center gap-2 disabled:bg-rose-300 disabled:cursor-not-allowed"
+              className="w-full bg-[#824c71] hover:bg-[#6f415f] text-white py-4 md:py-3.5 rounded-xl text-[15px] md:text-base font-bold transition-colors flex justify-center items-center gap-2 disabled:bg-[#e3c9dc] disabled:cursor-not-allowed"
             >
               <span>تایید انتخاب</span>
               {selectedNeighborhoods.length > 0 && !selectedNeighborhoods.includes('همه محله‌ها') && (

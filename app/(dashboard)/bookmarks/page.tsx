@@ -118,7 +118,7 @@ export default function BookmarksPage() {
                     {/* دکمه حذف بوک‌مارک با استایل مشابه دکمه بوک‌مارک صفحه اصلی */}
                     <button 
                       onClick={(e) => handleRemoveBookmark(salon.id, e)}
-                      className={`absolute top-3 right-3 w-8 h-8 bg-white/90 backdrop-blur rounded-full flex items-center justify-center transition-colors shadow-sm z-10 text-black hover:text-zinc-700`} // استایل دکمه حذف
+                      className={`absolute top-3 right-3 w-8 h-8 bg-white/90 backdrop-blur rounded-full flex items-center justify-center transition-colors shadow-sm z-10 text-[#824c71] hover:text-zinc-700`} // استایل دکمه حذف
                       title="حذف از نشان‌شده‌ها"
                     >
                       <BookmarkIcon isActive={true} className="w-[18px] h-[18px]" />
@@ -173,7 +173,7 @@ export default function BookmarksPage() {
                         <a 
                           href={`tel:${salon.phone || salon.phones[0]}`}
                           onClick={(e) => e.stopPropagation()}
-                          className="bg-zinc-900 text-white text-sm font-bold px-5 py-2 rounded-[6px] hover:bg-black transition-colors shadow-sm inline-flex items-center justify-center" 
+                          className="bg-[#824c71] text-white text-sm font-bold px-5 py-2 rounded-[6px] hover:bg-[#824c71]/80 transition-colors shadow-sm inline-flex items-center justify-center" 
                         >
                           تماس
                         </a>
@@ -194,7 +194,7 @@ export default function BookmarksPage() {
               <p className="text-[13px] md:text-sm text-zinc-500 mb-5 md:mb-6">شما هنوز هیچ سالنی را ذخیره نکرده‌اید.</p>
               <button 
                 onClick={() => router.push('/')}
-                className="bg-zinc-900 text-white px-6 py-3 md:py-2.5 rounded-full text-[13px] md:text-sm font-bold hover:bg-zinc-800 transition-colors active:scale-[0.98]"
+                className="bg-[#824c71] text-white px-6 py-3 md:py-2.5 rounded-full text-[13px] md:text-sm font-bold hover:bg-[#824c71]/80 transition-colors active:scale-[0.98]"
               >
                 مشاهده سالن‌ها
               </button>
