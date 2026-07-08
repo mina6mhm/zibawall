@@ -229,25 +229,6 @@ export default function LoginPage() {
     }
   };
 
-  // چسباندن کد از کلیپ‌بورد با تپ روی دکمه (برای موبایل، چون paste event روی input های تک‌کاراکتری قابل‌اعتماد نیست)
-  const handlePasteButtonClick = async () => {
-    try {
-      const text = await navigator.clipboard.readText();
-      const englishText = toEnglishDigits(text);
-      const digits = englishText.replace(/\D/g, '').slice(0, 5).split('');
-      if (digits.length > 0) {
-        const filled = [...digits, '', '', '', ''].slice(0, 5);
-        setOtpValues(filled);
-        const lastIndex = Math.min(digits.length, 4);
-        setTimeout(() => otpRefs.current[Math.min(lastIndex, 4)]?.focus(), 0);
-      } else {
-        alert('کد معتبری در کلیپ‌بورد پیدا نشد');
-      }
-    } catch {
-      alert('اجازه‌ی دسترسی به کلیپ‌بورد داده نشد. لطفاً کد را دستی وارد کنید');
-    }
-  };
-
   return (
     <div className="min-h-[100dvh] bg-white sm:bg-white flex flex-col items-center justify-center p-4 sm:p-6" dir="rtl">
       <div className="w-full max-w-[400px] bg-white p-6 sm:p-8 flex flex-col items-center sm:border border-zinc-200 rounded-2xl sm:rounded-3xl sm:shadow-sm">
@@ -276,13 +257,13 @@ export default function LoginPage() {
                 value={mobile}
                 placeholder="09123456789"
                 onChange={(e) => setMobile(toEnglishDigits(e.target.value))}
-                className="w-full bg-white text-zinc-900 border border-zinc-300 rounded-xl px-3 py-2.5 sm:px-4 sm:py-3 text-sm sm:text-base text-left focus:outline-none focus:border-zinc-900 focus:ring-1 focus:ring-zinc-900 transition-all"
+                className="w-full bg-white text-zinc-900 border border-zinc-300 rounded-xl px-3 py-2.5 sm:px-4 sm:py-3 text-sm sm:text-base text-left focus:outline-none focus:border-[#824c71] focus:ring-1 focus:ring-[#824c71] transition-all"
               />
             </div>
             
             <button
               onClick={handleRequestOTP}
-              className="w-full bg-zinc-900 hover:bg-black text-white rounded-xl py-2.5 sm:py-3 text-sm sm:text-base font-bold transition-colors"
+              className="w-full bg-[#824c71] hover:bg-[#6d3f5e] text-white rounded-xl py-2.5 sm:py-3 text-sm sm:text-base font-bold transition-colors"
             >
               دریافت کد تایید
             </button>
@@ -324,18 +305,10 @@ export default function LoginPage() {
                   onChange={(e) => handleOtpChange(index, e.target.value)}
                   onKeyDown={(e) => handleOtpKeyDown(index, e)}
                   onPaste={handleOtpPaste}
-                  className="w-11 h-11 sm:w-12 sm:h-12 md:w-14 md:h-14 text-lg sm:text-xl font-medium text-center border border-zinc-300 rounded-xl focus:border-zinc-900 focus:ring-1 focus:ring-zinc-900 outline-none transition-all disabled:opacity-50 disabled:bg-zinc-50"
+                  className="w-11 h-11 sm:w-12 sm:h-12 md:w-14 md:h-14 text-lg sm:text-xl font-medium text-center border border-zinc-300 rounded-xl focus:border-[#824c71] focus:ring-1 focus:ring-[#824c71] outline-none transition-all disabled:opacity-50 disabled:bg-zinc-50"
                 />
               ))}
             </div>
-
-            <button
-              type="button"
-              onClick={handlePasteButtonClick}
-              className="text-xs sm:text-sm text-zinc-500 hover:text-zinc-800 mb-6 sm:mb-8 transition-colors font-medium underline"
-            >
-              چسباندن کد از کلیپ‌بورد
-            </button>
 
             <button
               onClick={() => {
@@ -355,7 +328,7 @@ export default function LoginPage() {
               ) : (
                 <button 
                   onClick={handleRequestOTP}
-                  className="text-xs sm:text-sm font-bold text-zinc-900 hover:text-zinc-700 transition-colors"
+                  className="text-xs sm:text-sm font-bold text-[#824c71] hover:text-[#6d3f5e] transition-colors"
                 >
                   ارسال مجدد کد
                 </button>
@@ -365,7 +338,7 @@ export default function LoginPage() {
             <button
               onClick={handleLoginWithOTP}
               disabled={timeLeft === 0 || otpValues.join('').length < 5}
-              className="w-full bg-zinc-900 hover:bg-black text-white rounded-xl py-2.5 sm:py-3 text-sm sm:text-base font-bold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full bg-[#824c71] hover:bg-[#6d3f5e] text-white rounded-xl py-2.5 sm:py-3 text-sm sm:text-base font-bold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               تایید
             </button>
@@ -385,7 +358,7 @@ export default function LoginPage() {
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="w-full bg-white text-zinc-900 border border-zinc-300 rounded-xl px-3 py-2.5 sm:px-4 sm:py-3 text-sm sm:text-base focus:outline-none focus:border-zinc-900 focus:ring-1 focus:ring-zinc-900 transition-all"
+                className="w-full bg-white text-zinc-900 border border-zinc-300 rounded-xl px-3 py-2.5 sm:px-4 sm:py-3 text-sm sm:text-base focus:outline-none focus:border-[#824c71] focus:ring-1 focus:ring-[#824c71] transition-all"
               />
             </div>
 
@@ -399,13 +372,13 @@ export default function LoginPage() {
                 value={username}
                 placeholder="example_1234"
                 onChange={(e) => setUsername(e.target.value)}
-                className="w-full bg-white text-zinc-900 border border-zinc-300 rounded-xl px-3 py-2.5 sm:px-4 sm:py-3 text-sm sm:text-base text-left focus:outline-none focus:border-zinc-900 focus:ring-1 focus:ring-zinc-900 transition-all"
+                className="w-full bg-white text-zinc-900 border border-zinc-300 rounded-xl px-3 py-2.5 sm:px-4 sm:py-3 text-sm sm:text-base text-left focus:outline-none focus:border-[#824c71] focus:ring-1 focus:ring-[#824c71] transition-all"
               />
             </div>
 
             <button
               onClick={handleCompleteProfile}
-              className="w-full bg-zinc-900 hover:bg-black text-white rounded-xl py-2.5 sm:py-3 text-sm sm:text-base font-bold transition-colors"
+              className="w-full bg-[#824c71] hover:bg-[#6d3f5e] text-white rounded-xl py-2.5 sm:py-3 text-sm sm:text-base font-bold transition-colors"
             >
               ثبت و ورود
             </button>

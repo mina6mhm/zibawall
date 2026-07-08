@@ -42,7 +42,7 @@ export default function IosInstallPrompt() {
         
         {/* لوگو */}
 <div className="flex justify-center mb-4">
-  <div className="w-16 h-16 flex items-center justify-center bg-zinc-50 rounded-full shadow-sm border border-zinc-100 overflow-hidden">
+  <div className="w-16 h-16 flex items-center justify-center bg-[#e3c9dc]/40 rounded-full shadow-sm border border-[#e3c9dc] overflow-hidden">
     <Image 
       src="/PWA.png" 
       alt="Logo" 
@@ -57,24 +57,24 @@ export default function IosInstallPrompt() {
         </h3>
 
         {/* باکس توضیحات */}
-        <div className="border border-dashed border-gray-300 rounded-xl p-5 mb-6 space-y-6 text-sm text-gray-700 leading-relaxed">
+        <div className="border border-dashed border-[#824c71]/40 rounded-xl p-5 mb-6 space-y-6 text-sm text-gray-700 leading-relaxed">
           
           <div className="flex items-start gap-3">
-            <span className="font-bold shrink-0">۱-</span>
+            <span className="font-bold shrink-0 text-[#824c71]">۱-</span>
             <p className="leading-7">
               در نوار پایین گوشی، دکمهٔ 
-              <span className="inline-flex items-center justify-center w-7 h-7 bg-gray-100 rounded-md mx-1 align-middle">
-                <Share className="w-4 h-4 text-blue-500" />
+              <span className="inline-flex items-center justify-center w-7 h-7 bg-[#e3c9dc]/40 rounded-md mx-1 align-middle">
+                <Share className="w-4 h-4 text-[#824c71]" />
               </span> 
               را انتخاب کنید.
             </p>
           </div>
 
           <div className="flex items-start gap-3">
-            <span className="font-bold shrink-0">۲-</span>
+            <span className="font-bold shrink-0 text-[#824c71]">۲-</span>
             <p className="leading-7">
               منوی باز شده را به بالا اسکرول کنید و دکمهٔ 
-              <span className="inline-flex items-center gap-1 bg-gray-100 px-2 py-1 rounded-md mx-1 font-medium whitespace-nowrap align-middle">
+              <span className="inline-flex items-center gap-1 bg-[#e3c9dc]/40 px-2 py-1 rounded-md mx-1 font-medium text-[#824c71] whitespace-nowrap align-middle">
                 Add to Home Screen <PlusSquare className="w-4 h-4 inline" />
               </span> 
               را انتخاب کنید.
@@ -82,10 +82,10 @@ export default function IosInstallPrompt() {
           </div>
 
           <div className="flex items-start gap-3">
-            <span className="font-bold shrink-0">۳-</span>
+            <span className="font-bold shrink-0 text-[#824c71]">۳-</span>
             <p className="leading-7">
               در بالای صفحه، دکمهٔ 
-              <span className="inline-flex items-center justify-center bg-gray-100 px-3 py-1 rounded-md mx-1 font-medium align-middle">
+              <span className="inline-flex items-center justify-center bg-[#e3c9dc]/40 px-3 py-1 rounded-md mx-1 font-medium text-[#824c71] align-middle">
                 Add
               </span> 
               را انتخاب کنید.
@@ -97,7 +97,7 @@ export default function IosInstallPrompt() {
         {/* دکمه تایید */}
         <button
           onClick={handleDismiss}
-          className="w-full py-3 rounded-xl border-2 border-zinc-900 text-zinc-900 font-bold text-base hover:bg-zinc-100 transition-colors"
+          className="w-full py-3 rounded-xl border-2 border-[#824c71] text-[#824c71] font-bold text-base hover:bg-[#e3c9dc]/30 transition-colors"
         >
           متوجه شدم
         </button>
