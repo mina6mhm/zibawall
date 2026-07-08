@@ -13,13 +13,13 @@ const shabnam = localFont({
 
 // اضافه کردن تنظیمات PWA و اپل
 export const metadata: Metadata = {
-  title: 'zibawall',
+  title: 'zibaWall',
   description: 'description',
   manifest: '/manifest.json', // مسیر مانیفست
   appleWebApp: {
     capable: true, // این خط باعث می‌شود تمام‌صفحه و بدون نوار آدرس باز شود
     statusBarStyle: 'default',
-    title: 'zibawall',
+    title: 'zibaWall',
   },
   icons: {
     apple: '/PWA.png', // آیکونی که روی صفحه گوشی قرار می‌گیرد

@@ -222,7 +222,7 @@ export default function DashboardHomePage() {
         {/* پدینگ بالا و پایین هدر در موبایل کمتر شد */}
         <div className="sticky top-0 z-20 bg-white px-4 pt-3 md:pt-5 pb-2 md:pb-3">
           {/* فاصله بین انتخاب شهر و سرچ‌بار در موبایل کمتر شد (از mb-5 به mb-3) */}
-          <div className="flex justify-between items-start mb-3 md:mb-5 w-full">
+          <div className="flex items-start mb-3 md:mb-5 w-full">
             
             <div className="flex flex-col gap-3 overflow-hidden w-full">
               <button 

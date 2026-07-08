@@ -415,7 +415,7 @@ export default function RegionFilterModal({
               type="button"
               onClick={handleConfirmSelection}
               disabled={selectedNeighborhoods.length === 0}
-              className="w-full bg-[#824c71] hover:bg-[#6f415f] text-white py-4 md:py-3.5 rounded-xl text-[15px] md:text-base font-bold transition-colors flex justify-center items-center gap-2 disabled:bg-[#e3c9dc] disabled:cursor-not-allowed"
+              className="w-full bg-[#824c71] hover:bg-[#824c71]/80 text-white py-4 md:py-3.5 rounded-xl text-[15px] md:text-base font-bold transition-colors flex justify-center items-center gap-2 disabled:bg-[#e3c9dc] disabled:cursor-not-allowed"
             >
               <span>تایید انتخاب</span>
               {selectedNeighborhoods.length > 0 && !selectedNeighborhoods.includes('همه محله‌ها') && (
