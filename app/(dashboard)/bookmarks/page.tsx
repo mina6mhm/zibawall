@@ -73,11 +73,6 @@ export default function BookmarksPage() {
       <div className="sticky top-0 z-20 bg-white px-4 pt-4 pb-3 md:pt-5 md:pb-4 border-b border-zinc-100">
         <div className="flex justify-between items-center w-full">
           <h1 className="text-lg md:text-xl font-bold text-zinc-900">نشان‌شده‌ها</h1>
-          <img 
-            src="/logo.png" 
-            alt="لوگو زیباوال" 
-            className="h-7 md:h-8 w-auto object-contain" 
-          />
         </div>
       </div>
 

@@ -266,12 +266,6 @@ export default function DashboardHomePage() {
                 </div>
               )}
             </div>
-
-            <img 
-              src="/logo.png" 
-              alt="لوگو" 
-              className="h-8 w-auto object-contain shrink-0 mr-2" 
-            />
           </div>
 
           <SearchBar searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
