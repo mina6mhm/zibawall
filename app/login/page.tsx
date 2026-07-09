@@ -235,7 +235,7 @@ export default function LoginPage() {
         
         <div className="mb-8 sm:mb-10 flex items-center justify-center p-2 rounded-full">
           <Image 
-            src="/logo.png" 
+            src="/logoo.png" 
             alt="لوگو" 
             width={80} 
             height={80} 
