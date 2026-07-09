@@ -22,7 +22,7 @@ export const metadata: Metadata = {
     title: 'zibaWall',
   },
   icons: {
-    apple: '/PWA.png', // آیکونی که روی صفحه گوشی قرار می‌گیرد
+    apple: '/APP.png', // آیکونی که روی صفحه گوشی قرار می‌گیرد
   },
 };
 
