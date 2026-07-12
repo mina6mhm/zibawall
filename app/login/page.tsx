@@ -81,17 +81,25 @@ export default function LoginPage() {
   };
 
   const handleRequestOTP = async () => {
-    if (!mobileRegex.test(mobile)) {
-      alert('شماره موبایل معتبر وارد کنید');
-      return;
-    }
+  // اگه بدون صفر وارد شد، صفر اضافه کن
+  let normalizedMobile = mobile.trim();
+  if (normalizedMobile.startsWith('9') && normalizedMobile.length === 10) {
+    normalizedMobile = '0' + normalizedMobile;
+  }
+  
+  if (!mobileRegex.test(normalizedMobile)) {
+    alert('شماره موبایل معتبر وارد کنید');
+    return;
+  }
 
-    try {
-      const res = await fetch('/api/auth/send-otp', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ mobile })
-      });
+  setMobile(normalizedMobile); // آپدیت state با شماره normalize شده
+  
+  try {
+    const res = await fetch('/api/auth/send-otp', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mobile: normalizedMobile })
+    });
 
       const data = await res.json();
 
@@ -239,7 +247,7 @@ export default function LoginPage() {
             alt="لوگو" 
             width={80} 
             height={80} 
-            className="object-contain w-16 h-16 sm:w-20 sm:h-20" 
+            className="object-contain w-16 h-16 sm:w-20 sm:h-20"
           />
         </div>
 

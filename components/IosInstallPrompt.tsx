@@ -45,7 +45,7 @@ export default function IosInstallPrompt() {
   <div className="w-16 h-16 flex items-center justify-center bg-[#e3c9dc]/40 rounded-full shadow-sm border border-[#e3c9dc] overflow-hidden">
     <Image 
       src="/APP.png" 
-      alt="PWA" 
+      alt="logo" 
       width={64} 
       height={64} 
       className="object-cover w-full h-full"

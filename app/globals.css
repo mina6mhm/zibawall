@@ -12,3 +12,13 @@
   display: none; /* برای کروم، سافاری و اپرا */
 }
 
+/* Safe area برای iOS و اندروید */
+:root {
+  --safe-area-top: env(safe-area-inset-top);
+  --safe-area-bottom: env(safe-area-inset-bottom);
+}
+
+body {
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+}
