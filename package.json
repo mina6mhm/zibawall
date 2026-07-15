@@ -33,6 +33,7 @@
     "sharp": "^0.35.2"
   },
   "devDependencies": {
+    "@capacitor/assets": "^3.0.5",
     "@tailwindcss/postcss": "^4",
     "@tailwindcss/typography": "^0.5.19",
     "@types/heic-convert": "^2.1.1",
