@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { CATEGORY_MAPPING } from "@/lib/data";
 import { 
   ArrowRight, Star, MapPin, Clock, Phone,
-  CheckCircle2, CalendarOff, X, MessageCircle, ChevronDown, ChevronUp, Map
+  CheckCircle2, CalendarOff, X, MessageCircle, ChevronDown, ChevronUp, Map, Trash2
 } from "lucide-react";
 import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
 
@@ -27,6 +27,10 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
   const [expandedCategories, setExpandedCategories] = useState<string[]>([]);
   const [showRoutingModal, setShowRoutingModal] = useState(false);
   const [loggedInUserName, setLoggedInUserName] = useState<string>("");
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
 
   const toggleCategory = (category: string) => {
     setExpandedCategories(prev => 
@@ -43,6 +47,7 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
       if (res.ok) {
         const user = await res.json();
         setLoggedInUserName(user.username || "کاربر مهمان");
+        setIsAdmin(user.role === 'ADMIN');
       } else {
         setLoggedInUserName("کاربر مهمان");
       }
@@ -97,6 +102,28 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
 
     fetchSalonData();
   }, [resolvedParams.id, loggedInUserName]);
+
+  const handleDeleteSalon = async () => {
+    if (!salon) return;
+    setIsDeleting(true);
+    setDeleteError("");
+    try {
+      const response = await fetch(`/api/salon?id=${salon.id}`, {
+        method: 'DELETE',
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'خطا در حذف کسب‌وکار');
+      }
+
+      router.push('/');
+    } catch (error: any) {
+      setDeleteError(error.message || 'مشکلی پیش آمد. لطفاً دوباره تلاش کنید.');
+      setIsDeleting(false);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -213,6 +240,16 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
           <span className="text-[11px] sm:text-xs text-zinc-500 font-medium">({totalVotes} رای)</span>
         </div>
       </div>
+
+      {isAdmin && (
+        <button
+          onClick={() => setShowDeleteModal(true)}
+          className="w-full flex items-center justify-center gap-2 mb-4 py-2.5 rounded-xl border border-red-200 bg-red-50 text-red-600 text-sm font-medium hover:bg-red-100 transition-colors"
+        >
+          <Trash2 className="w-4 h-4" />
+          حذف این کسب‌وکار (ادمین)
+        </button>
+      )}
 
       <div className="space-y-3 sm:space-y-4 text-zinc-600 text-[13px] sm:text-sm mb-6">
         <div className="flex items-start">
@@ -428,6 +465,39 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
                 <span className="font-bold text-sm text-zinc-800">گوگل مپ (Google Maps)</span>
                 <img src="/google-maps.png" alt="گوگل مپ" className="w-6 h-6 object-contain" />
               </a>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* مودال تأیید حذف (فقط ادمین) */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={() => !isDeleting && setShowDeleteModal(false)}>
+          <div className="bg-white w-full max-w-sm rounded-2xl p-5" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-base font-bold text-zinc-900 mb-2">حذف کسب‌وکار</h3>
+            <p className="text-sm text-zinc-600 mb-4 leading-relaxed">
+              آیا مطمئنید می‌خواهید «{salon.name}» را برای همیشه حذف کنید؟ این عملیات غیرقابل بازگشت است.
+            </p>
+
+            {deleteError && (
+              <p className="text-red-600 text-xs font-medium mb-3">{deleteError}</p>
+            )}
+
+            <div className="flex gap-2.5">
+              <button
+                onClick={() => setShowDeleteModal(false)}
+                disabled={isDeleting}
+                className="flex-1 py-2.5 rounded-xl border border-zinc-200 text-zinc-700 text-sm font-medium disabled:opacity-50"
+              >
+                انصراف
+              </button>
+              <button
+                onClick={handleDeleteSalon}
+                disabled={isDeleting}
+                className="flex-1 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white text-sm font-medium disabled:opacity-50"
+              >
+                {isDeleting ? "در حال حذف..." : "بله، حذف شود"}
+              </button>
             </div>
           </div>
         </div>

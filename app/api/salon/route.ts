@@ -1,6 +1,8 @@
 //app/api/salon/route.ts
 import { NextResponse } from 'next/server';
 import { checkSubscriptions } from '@/lib/checkSubscriptions';
+import { cookies } from 'next/headers';
+import jwt from 'jsonwebtoken';
 
 import { prisma } from '@/lib/prisma';
 
@@ -170,6 +172,26 @@ if (
 
 export async function DELETE(req: Request) {
   try {
+    // --- بررسی ادمین بودن ---
+    const cookieStore = await cookies();
+    const token = cookieStore.get('token')?.value;
+
+    if (!token) {
+      return NextResponse.json({ error: 'ابتدا وارد حساب کاربری شوید' }, { status: 401 });
+    }
+
+    let decoded: any;
+    try {
+      decoded = jwt.verify(token, process.env.JWT_SECRET!);
+    } catch {
+      return NextResponse.json({ error: 'توکن نامعتبر است' }, { status: 401 });
+    }
+
+    if (decoded.role !== 'ADMIN') {
+      return NextResponse.json({ error: 'شما دسترسی ادمین ندارید' }, { status: 403 });
+    }
+    // --- پایان بررسی ---
+
     const { searchParams } = new URL(req.url);
     const id = searchParams.get('id');
 
