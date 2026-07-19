@@ -172,7 +172,7 @@ if (
 
 export async function DELETE(req: Request) {
   try {
-    // --- بررسی ادمین بودن ---
+    // --- بررسی احراز هویت ---
     const cookieStore = await cookies();
     const token = cookieStore.get('token')?.value;
 
@@ -186,11 +186,6 @@ export async function DELETE(req: Request) {
     } catch {
       return NextResponse.json({ error: 'توکن نامعتبر است' }, { status: 401 });
     }
-
-    if (decoded.role !== 'ADMIN') {
-      return NextResponse.json({ error: 'شما دسترسی ادمین ندارید' }, { status: 403 });
-    }
-    // --- پایان بررسی ---
 
     const { searchParams } = new URL(req.url);
     const id = searchParams.get('id');
@@ -212,6 +207,18 @@ export async function DELETE(req: Request) {
         { status: 404 }
       );
     }
+
+    // --- بررسی دسترسی: یا ادمین، یا خودِ صاحب سالن ---
+    const isAdmin = decoded.role === 'ADMIN';
+    const isOwner = decoded.userId === salon.userId;
+
+    if (!isAdmin && !isOwner) {
+      return NextResponse.json(
+        { error: 'شما اجازه حذف این کسب‌وکار را ندارید' },
+        { status: 403 }
+      );
+    }
+    // --- پایان بررسی ---
 
     // تغییر این بخش: استفاده از delete به جای update
     await prisma.salon.delete({
