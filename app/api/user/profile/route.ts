@@ -31,6 +31,7 @@ export async function GET(req: Request) {
       name: user.name,
       phone: user.phone,
       username: user.username,
+      role: user.role,     // 👈 این خط اضافه شد
       salon: user.salon
     });
   } catch (error) {
@@ -70,6 +71,7 @@ export async function PUT(req: Request) {
         name: updatedUser.name,
         phone: updatedUser.phone,
         username: updatedUser.username,
+        role: updatedUser.role,   // 👈 این خط هم اضافه شد (برای یکدستی)
         salon: updatedUser.salon
       } 
     });
