@@ -2,7 +2,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Send, Clock, CheckCircle2, MessageCircle } from 'lucide-react';
+import { Send, Clock, CheckCircle2, MessageCircle, User } from 'lucide-react';
 
 type SupportStatus = 'PENDING' | 'IN_PROGRESS' | 'ANSWERED' | 'CLOSED';
 
@@ -97,14 +97,14 @@ export default function SupportPanel() {
           onChange={(e) => setNewMessage(e.target.value.slice(0, 2000))}
           placeholder="سوال یا مشکلتون رو اینجا بنویسید..."
           rows={3}
-          className="w-full bg-white border border-zinc-200 rounded-xl px-4 py-3 text-[14px] md:text-base resize-none focus:border-[#d3aec8] focus:ring-2 focus:ring-[#e3c9dc]/40 outline-none transition-all"
+          className="w-full bg-white border border-zinc-200 rounded-xl px-4 py-3 text-[14px] md:text-base resize-none focus:border-[#824c71] focus:ring-2 focus:ring-[#824c71]/15 outline-none transition-all"
         />
         <div className="flex items-center justify-between mt-3">
           <span className="text-[11px] text-zinc-400">{newMessage.length}/۲۰۰۰</span>
           <button
             onClick={handleSend}
             disabled={isLoading || !newMessage.trim()}
-            className="bg-[#824c71] text-white px-5 py-2.5 rounded-xl hover:bg-[#6d3f5e] transition-all active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2 text-[14px] font-medium"
+            className="bg-[#824c71] text-white px-5 py-2.5 rounded-xl shadow-sm shadow-[#824c71]/30 hover:bg-[#6d3f5e] hover:shadow-md hover:shadow-[#824c71]/40 transition-all active:scale-[0.98] disabled:opacity-40 disabled:shadow-none disabled:cursor-not-allowed flex items-center gap-2 text-[14px] font-semibold"
           >
             <Send className="w-4 h-4" />
             {isLoading ? 'در حال ارسال...' : 'ارسال پیام'}
@@ -137,8 +137,13 @@ export default function SupportPanel() {
             </div>
 
             {/* پیام کاربر */}
-            <div className="bg-[#e3c9dc] text-white rounded-xl rounded-tr-sm px-4 py-3 text-[14px] leading-relaxed max-w-[90%] mr-auto">
-              {msg.message}
+            <div className="flex items-start gap-2 max-w-[90%] mr-auto flex-row-reverse">
+              <div className="bg-[#e3c9dc]/25 border border-[#e3c9dc]/60 rounded-xl rounded-tr-sm px-4 py-3 text-[14px] leading-relaxed text-zinc-700">
+                <div className="flex items-center gap-1.5 text-[#824c71] text-[11px] font-medium mb-1.5">
+                  <User className="w-3.5 h-3.5" /> پیام شما
+                </div>
+                {msg.message}
+              </div>
             </div>
 
             {/* پاسخ ادمین */}
