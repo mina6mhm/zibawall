@@ -137,7 +137,7 @@ export default function SupportPanel() {
             </div>
 
             {/* پیام کاربر */}
-            <div className="bg-[#824c71] text-white rounded-xl rounded-tr-sm px-4 py-3 text-[14px] leading-relaxed max-w-[90%] mr-auto">
+            <div className="bg-[#e3c9dc] text-white rounded-xl rounded-tr-sm px-4 py-3 text-[14px] leading-relaxed max-w-[90%] mr-auto">
               {msg.message}
             </div>
 
