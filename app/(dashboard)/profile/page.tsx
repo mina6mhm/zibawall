@@ -1,14 +1,16 @@
-//app/(dashboard)/profile
+// app/(dashboard)/profile/page.tsx
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { User, Phone, LogOut, Store, Sparkles, Eye, Edit, AtSign, Trash2 } from 'lucide-react';
+import { User, Phone, LogOut, Store, Sparkles, Eye, Edit, AtSign, Trash2, MessageCircle } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import SupportPanel from '@/components/support/SupportPanel';
+import SupportBell from '@/components/support/SupportBell';
 
 export default function ProfilePage() {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<'info' | 'settings' | 'business'>('info');
+  const [activeTab, setActiveTab] = useState<'info' | 'settings' | 'business' | 'support'>('info');
   const [isLoading, setIsLoading] = useState(false);
   
   const [userData, setUserData] = useState({ name: '', phone: '', username: '' });
@@ -95,18 +97,18 @@ export default function ProfilePage() {
   };
 
   const handleLogout = async () => {
-  const isConfirmed = window.confirm('آیا مطمئن هستید که می‌خواهید از حساب خود خارج شوید؟');
-  if (isConfirmed) {
-    try {
-      await fetch('/api/auth/logout', { method: 'POST' });
-    } catch (error) {
-      console.error('Logout failed:', error);
+    const isConfirmed = window.confirm('آیا مطمئن هستید که می‌خواهید از حساب خود خارج شوید؟');
+    if (isConfirmed) {
+      try {
+        await fetch('/api/auth/logout', { method: 'POST' });
+      } catch (error) {
+        console.error('Logout failed:', error);
+      }
+      
+      router.push('/login'); 
+      router.refresh();
     }
-    
-    router.push('/login'); 
-    router.refresh();
-  }
-};
+  };
 
   const hasBusiness = !!salonData;
   const inputBaseClasses = "w-full border border-zinc-200 bg-zinc-50/50 rounded-xl md:rounded-2xl px-4 py-3 text-[15px] md:text-base focus:bg-white focus:border-[#d3aec8] focus:ring-2 focus:ring-[#e3c9dc]/40 outline-none transition-all";
@@ -134,6 +136,9 @@ export default function ProfilePage() {
               )}
             </div>
           </div>
+
+          {/* --- زنگوله اعلان پشتیبانی --- */}
+          <SupportBell onClick={() => setActiveTab('support')} />
         </div>
       </div>
 
@@ -166,6 +171,20 @@ export default function ProfilePage() {
             >
               <Store className="w-4 h-4 shrink-0" /> {hasBusiness ? 'کسب‌وکار من' : 'ثبت کسب‌وکار'}
               {activeTab === 'business' && (
+                <span className="absolute bottom-0 left-0 w-full h-[2px] bg-[#824c71] md:hidden"></span>
+              )}
+            </button>
+
+            <button 
+              onClick={() => setActiveTab('support')} 
+              className={`flex-1 md:flex-none flex items-center justify-center md:justify-start gap-2 py-4 md:px-4 md:py-3 md:rounded-xl transition-all text-[15px] md:text-base font-medium relative ${
+                activeTab === 'support' 
+                  ? 'text-[#824c71] md:bg-white md:shadow-sm' 
+                  : 'text-zinc-500 hover:text-[#824c71] md:hover:bg-[#e3c9dc]/20'
+              }`}
+            >
+              <MessageCircle className="w-4 h-4 shrink-0" /> پشتیبانی
+              {activeTab === 'support' && (
                 <span className="absolute bottom-0 left-0 w-full h-[2px] bg-[#824c71] md:hidden"></span>
               )}
             </button>
@@ -258,32 +277,32 @@ export default function ProfilePage() {
                   </div>
 
                   {/* --- سه دکمه: مشاهده / ویرایش / حذف --- */}
-<div className="grid grid-cols-3 gap-2 md:gap-3 pt-2 items-stretch">
-  <Link 
-    href={`/salon/${salonData.id || salonData._id}`} 
-    className="flex flex-row justify-center items-center gap-1.5 md:gap-2 bg-[#824c71] text-white rounded-xl md:rounded-2xl hover:bg-[#6d3f5e] transition-all font-medium active:scale-[0.98] h-[44px] px-1 md:px-4"
-  >
-    <Eye className="w-5 h-5 shrink-0" />
-    <span className="text-[12px] md:text-base leading-none whitespace-nowrap">مشاهده</span>
-  </Link>
+                  <div className="grid grid-cols-3 gap-2 md:gap-3 pt-2 items-stretch">
+                    <Link 
+                      href={`/salon/${salonData.id || salonData._id}`} 
+                      className="flex flex-row justify-center items-center gap-1.5 md:gap-2 bg-[#824c71] text-white rounded-xl md:rounded-2xl hover:bg-[#6d3f5e] transition-all font-medium active:scale-[0.98] h-[44px] px-1 md:px-4"
+                    >
+                      <Eye className="w-5 h-5 shrink-0" />
+                      <span className="text-[12px] md:text-base leading-none whitespace-nowrap">مشاهده</span>
+                    </Link>
 
-  <Link 
-    href="/profile/business/edit" 
-    className="flex flex-row justify-center items-center gap-1.5 md:gap-2 bg-white border border-zinc-200 text-zinc-700 rounded-xl md:rounded-2xl hover:bg-zinc-50 transition-all font-medium active:scale-[0.98] h-[44px] px-1 md:px-4"
-  >
-    <Edit className="w-5 h-5 shrink-0" />
-    <span className="text-[12px] md:text-base leading-none whitespace-nowrap">ویرایش</span>
-  </Link>
+                    <Link 
+                      href="/profile/business/edit" 
+                      className="flex flex-row justify-center items-center gap-1.5 md:gap-2 bg-white border border-zinc-200 text-zinc-700 rounded-xl md:rounded-2xl hover:bg-zinc-50 transition-all font-medium active:scale-[0.98] h-[44px] px-1 md:px-4"
+                    >
+                      <Edit className="w-5 h-5 shrink-0" />
+                      <span className="text-[12px] md:text-base leading-none whitespace-nowrap">ویرایش</span>
+                    </Link>
 
-  <button 
-    onClick={handleDeleteBusiness}
-    disabled={isLoading}
-    className="flex flex-row justify-center items-center gap-1.5 md:gap-2 bg-[#e3c9dc]/20 text-[#824c71] border border-[#d3aec8]/70 rounded-xl md:rounded-2xl hover:bg-[#e3c9dc]/45 transition-all font-medium active:scale-[0.98] h-[44px] px-1 md:px-4"
-  >
-    <Trash2 className="w-5 h-5 shrink-0" />
-    <span className="text-[12px] md:text-base leading-none whitespace-nowrap">{isLoading ? 'صبر...' : 'حذف'}</span>
-  </button>
-</div>
+                    <button 
+                      onClick={handleDeleteBusiness}
+                      disabled={isLoading}
+                      className="flex flex-row justify-center items-center gap-1.5 md:gap-2 bg-[#e3c9dc]/20 text-[#824c71] border border-[#d3aec8]/70 rounded-xl md:rounded-2xl hover:bg-[#e3c9dc]/45 transition-all font-medium active:scale-[0.98] h-[44px] px-1 md:px-4"
+                    >
+                      <Trash2 className="w-5 h-5 shrink-0" />
+                      <span className="text-[12px] md:text-base leading-none whitespace-nowrap">{isLoading ? 'صبر...' : 'حذف'}</span>
+                    </button>
+                  </div>
                 </div>
               ) : (
                 <div className="text-center py-10 md:py-16">
@@ -304,6 +323,9 @@ export default function ProfilePage() {
               )}
             </div>
           )}
+
+          {/* تب پشتیبانی */}
+          {activeTab === 'support' && <SupportPanel />}
         </div>
       </div>
     </div>
