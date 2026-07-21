@@ -2,9 +2,10 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { Bell } from 'lucide-react';
 
-export default function SupportBell({ onClick }: { onClick: () => void }) {
+export default function SupportBell({ href = '/profile/support' }: { href?: string }) {
   const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => {
@@ -21,14 +22,14 @@ export default function SupportBell({ onClick }: { onClick: () => void }) {
     };
 
     fetchUnread();
-    const interval = setInterval(fetchUnread, 30000); // هر ۳۰ ثانیه
+    const interval = setInterval(fetchUnread, 30000);
     return () => clearInterval(interval);
   }, []);
 
   return (
-    <button
-      onClick={onClick}
-      className="relative w-10 h-10 flex items-center justify-center rounded-full bg-[#e3c9dc]/20 text-[#824c71] hover:bg-[#e3c9dc]/40 transition-all shrink-0"
+    <Link
+      href={href}
+      className="relative w-10 h-10 flex items-center justify-center rounded-full bg-zinc-100 text-[#824c71] hover:bg-zinc-200 transition-all shrink-0"
       aria-label="پیام‌های پشتیبانی"
     >
       <Bell className="w-5 h-5" strokeWidth={1.5} />
@@ -37,6 +38,6 @@ export default function SupportBell({ onClick }: { onClick: () => void }) {
           {unreadCount > 9 ? '۹+' : unreadCount}
         </span>
       )}
-    </button>
+    </Link>
   );
 }

@@ -2,14 +2,13 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { User, Phone, LogOut, Store, Sparkles, Eye, Edit, AtSign, Trash2, MessageCircle, ShieldCheck } from 'lucide-react';
+import { User, Phone, LogOut, Store, Sparkles, Eye, Edit, AtSign, Trash2, MessageCircle, ShieldCheck, ChevronLeft } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import SupportPanel from '@/components/support/SupportPanel';
 
 export default function ProfilePage() {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<'info' | 'business' | 'support'>('info');
+  const [activeTab, setActiveTab] = useState<'info' | 'business'>('info');
   const [isLoading, setIsLoading] = useState(false);
   const [userData, setUserData] = useState({ name: '', phone: '', username: '', role: '' });
   const [salonData, setSalonData] = useState<any>(null);
@@ -89,7 +88,6 @@ export default function ProfilePage() {
   const tabs = [
     { key: 'info', label: 'اطلاعات', icon: User },
     { key: 'business', label: salonData ? 'کسب‌وکار' : 'ثبت کسب‌وکار', icon: Store },
-    { key: 'support', label: 'پشتیبانی', icon: MessageCircle },
   ] as const;
 
   return (
@@ -135,6 +133,18 @@ export default function ProfilePage() {
               پنل مدیریت پشتیبانی
             </Link>
           )}
+
+          {/* لینک پشتیبانی — حالا یک صفحه‌ی جدا، مثل واتساپ */}
+          <Link
+            href="/profile/support"
+            className="mt-3 flex items-center justify-between gap-2 bg-white border border-zinc-100 px-4 py-3 rounded-xl text-sm font-medium text-zinc-700 hover:bg-zinc-50 transition-colors"
+          >
+            <span className="flex items-center gap-2">
+              <MessageCircle className="w-4 h-4 text-[#824c71]" />
+              پشتیبانی
+            </span>
+            <ChevronLeft className="w-4 h-4 text-zinc-400" />
+          </Link>
         </div>
       </div>
 
@@ -247,7 +257,7 @@ export default function ProfilePage() {
                   <Store className="w-8 h-8 text-[#824c71]" strokeWidth={1.5} />
                 </div>
                 <h2 className="text-base font-bold mb-2 text-zinc-800">مدیر سالن زیبایی هستید؟</h2>
-                <p className="text-sm text-[#824c71] mb-6 leading-relaxed">کسب‌وکار خود را رایگان ثبت کنید</p>
+                <p className="text-sm text-zinc-500 mb-6 leading-relaxed">کسب‌وکار خود را رایگان ثبت کنید</p>
                 <Link
                   href="/profile/business"
                   className="bg-[#824c71] text-white px-6 py-2.5 rounded-xl inline-flex items-center gap-2 text-sm font-medium hover:bg-[#6d3f5e] transition-colors"
@@ -258,9 +268,6 @@ export default function ProfilePage() {
             )}
           </div>
         )}
-
-        {/* تب پشتیبانی */}
-        {activeTab === 'support' && <SupportPanel />}
       </div>
     </div>
   );
