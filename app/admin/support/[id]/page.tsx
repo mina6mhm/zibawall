@@ -1,10 +1,10 @@
-// app/(dashboard)/admin/support/[id]/page.tsx
+// app/admin/support/[id]/page.tsx
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ChevronRight, CheckCircle2, User, Send } from 'lucide-react';
+import { ChevronRight, CheckCircle2, User, Send, Trash2 } from 'lucide-react';
 
 type SupportStatus = 'PENDING' | 'IN_PROGRESS' | 'ANSWERED' | 'CLOSED';
 type Sender = 'USER' | 'ADMIN';
@@ -32,6 +32,7 @@ export default function AdminSupportDetailPage() {
   const [newMessage, setNewMessage] = useState('');
   const [isFetching, setIsFetching] = useState(true);
   const [isSending, setIsSending] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [accessDenied, setAccessDenied] = useState(false);
   const [notFound, setNotFound] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -136,6 +137,25 @@ export default function AdminSupportDetailPage() {
     }
   };
 
+  const handleDelete = async () => {
+    if (!window.confirm('آیا از حذف کامل این مکالمه مطمئن هستید؟ این عمل غیرقابل بازگشت است.')) return;
+    setIsDeleting(true);
+    try {
+      const res = await fetch(`/api/support/${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        router.push('/admin/support');
+      } else {
+        const err = await res.json();
+        alert(err.error || 'خطا در حذف مکالمه');
+      }
+    } catch (error) {
+      console.error(error);
+      alert('خطای شبکه در ارتباط با سرور');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   if (accessDenied) {
     return (
       <div className="flex flex-col items-center justify-center h-[60vh] text-center px-4">
@@ -159,6 +179,14 @@ export default function AdminSupportDetailPage() {
           <h1 className="text-sm font-bold text-zinc-900 truncate">{userInfo.name || 'کاربر'}</h1>
           <p className="text-[11px] text-zinc-400" dir="ltr">{userInfo.phone}</p>
         </div>
+        <button
+          onClick={handleDelete}
+          disabled={isDeleting}
+          className="w-8 h-8 flex items-center justify-center rounded-full text-zinc-400 hover:bg-red-50 hover:text-red-500 transition-colors shrink-0 disabled:opacity-40"
+          aria-label="حذف مکالمه"
+        >
+          <Trash2 className="w-4 h-4" />
+        </button>
         <span className={`text-[11px] px-2.5 py-1 rounded-lg font-medium shrink-0 ${statusMap[status].className}`}>
           {statusMap[status].label}
         </span>
@@ -206,9 +234,10 @@ export default function AdminSupportDetailPage() {
         )}
         <div ref={bottomRef} />
       </div>
-{/* باکس ارسال پاسخ */}
-{!isFetching && !notFound && (
-  <div className="fixed bottom-16 left-0 right-0 bg-white border-t border-zinc-100 px-4 py-3 z-50">
+
+      {/* باکس ارسال پاسخ */}
+      {!isFetching && !notFound && (
+        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-zinc-100 px-4 py-3 z-50">
           <div className="max-w-2xl mx-auto flex items-center gap-2">
             {status !== 'CLOSED' && (
               <button

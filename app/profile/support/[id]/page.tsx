@@ -1,10 +1,10 @@
-// app/(dashboard)/profile/support/[id]/page.tsx
+// app/profile/support/[id]/page.tsx
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ChevronRight, CheckCircle2, User, Send } from 'lucide-react';
+import { ChevronRight, CheckCircle2, User, Send, Trash2 } from 'lucide-react';
 
 type SupportStatus = 'PENDING' | 'IN_PROGRESS' | 'ANSWERED' | 'CLOSED';
 type Sender = 'USER' | 'ADMIN';
@@ -31,6 +31,7 @@ export default function SupportDetailPage() {
   const [newMessage, setNewMessage] = useState('');
   const [isFetching, setIsFetching] = useState(true);
   const [isSending, setIsSending] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [notFound, setNotFound] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -118,6 +119,25 @@ export default function SupportDetailPage() {
     }
   };
 
+  const handleDelete = async () => {
+    if (!window.confirm('آیا از حذف کامل این مکالمه مطمئن هستید؟ این عمل غیرقابل بازگشت است.')) return;
+    setIsDeleting(true);
+    try {
+      const res = await fetch(`/api/support/${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        router.push('/profile/support');
+      } else {
+        const err = await res.json();
+        alert(err.error || 'خطا در حذف مکالمه');
+      }
+    } catch (error) {
+      console.error(error);
+      alert('خطای شبکه در ارتباط با سرور');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   return (
     <div className="flex flex-col min-h-screen bg-white">
 
@@ -129,8 +149,16 @@ export default function SupportDetailPage() {
         >
           <ChevronRight className="w-5 h-5 text-zinc-600" />
         </Link>
-        <h1 className="text-base font-bold text-zinc-900">پشتیبانی</h1>
-        <span className={`mr-auto text-[11px] px-2.5 py-1 rounded-lg font-medium ${statusMap[status].className}`}>
+        <h1 className="text-base font-bold text-zinc-900 flex-1">پشتیبانی</h1>
+        <button
+          onClick={handleDelete}
+          disabled={isDeleting}
+          className="w-8 h-8 flex items-center justify-center rounded-full text-zinc-400 hover:bg-red-50 hover:text-red-500 transition-colors shrink-0 disabled:opacity-40"
+          aria-label="حذف مکالمه"
+        >
+          <Trash2 className="w-4 h-4" />
+        </button>
+        <span className={`text-[11px] px-2.5 py-1 rounded-lg font-medium shrink-0 ${statusMap[status].className}`}>
           {statusMap[status].label}
         </span>
       </div>
@@ -174,9 +202,10 @@ export default function SupportDetailPage() {
         )}
         <div ref={bottomRef} />
       </div>
-{/* باکس ارسال پیام جدید */}
-{!isFetching && !notFound && (
-  <div className="fixed bottom-16 left-0 right-0 bg-white border-t border-zinc-100 px-4 py-3 z-50">
+
+      {/* باکس ارسال پیام جدید */}
+      {!isFetching && !notFound && (
+        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-zinc-100 px-4 py-3 z-50">
           <div className="max-w-lg mx-auto flex items-center gap-2">
             <input
               value={newMessage}

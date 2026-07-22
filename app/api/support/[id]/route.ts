@@ -119,3 +119,44 @@ export async function PATCH(
     return NextResponse.json({ error: 'خطای سرور' }, { status: 500 });
   }
 }
+
+// DELETE: حذف کامل مکالمه (توسط صاحب تیکت یا ادمین)
+export async function DELETE(
+  req: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+    const decoded = await getAuth();
+    if (!decoded) {
+      return NextResponse.json({ error: 'ابتدا وارد حساب کاربری شوید' }, { status: 401 });
+    }
+
+    const ticket = await prisma.supportMessage.findUnique({ where: { id } });
+    if (!ticket) {
+      return NextResponse.json({ error: 'مکالمه یافت نشد' }, { status: 404 });
+    }
+
+    const isOwner = ticket.userId === decoded.userId;
+
+    if (!isOwner) {
+      const me = await prisma.user.findUnique({
+        where: { id: decoded.userId },
+        select: { role: true },
+      });
+      if (me?.role !== 'ADMIN') {
+        return NextResponse.json({ error: 'دسترسی غیرمجاز' }, { status: 403 });
+      }
+    }
+
+    // اول پاسخ‌ها حذف می‌شن (برای احتیاط، حتی اگه cascade در schema ست شده باشه)
+    await prisma.supportReply.deleteMany({ where: { ticketId: id } });
+    await prisma.supportMessage.delete({ where: { id } });
+
+    return NextResponse.json({ success: true }, { status: 200 });
+
+  } catch (error) {
+    console.error('Error deleting ticket:', error);
+    return NextResponse.json({ error: 'خطای سرور در حذف مکالمه' }, { status: 500 });
+  }
+}
