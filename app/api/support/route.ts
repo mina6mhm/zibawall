@@ -94,47 +94,63 @@ export async function GET(req: Request) {
   try {
     const cookieStore = await cookies();
     const token = cookieStore.get('token')?.value;
- 
+
     if (!token) {
       return NextResponse.json({ error: 'ابتدا وارد حساب کاربری شوید' }, { status: 401 });
     }
- 
+
     let decoded: any;
     try {
       decoded = jwt.verify(token, process.env.JWT_SECRET!);
     } catch {
       return NextResponse.json({ error: 'توکن نامعتبر است' }, { status: 401 });
     }
- 
+
     const adminUser = await prisma.user.findUnique({
       where: { id: decoded.userId },
       select: { role: true }
     });
- 
+
     if (adminUser?.role !== 'ADMIN') {
       return NextResponse.json({ error: 'شما دسترسی ادمین ندارید' }, { status: 403 });
     }
- 
+
     const { searchParams } = new URL(req.url);
-    const statusFilter = searchParams.get('status'); // اختیاری: فیلتر بر اساس وضعیت
- 
-    const messages = await prisma.supportMessage.findMany({
+    const statusFilter = searchParams.get('status');
+
+    const tickets = await prisma.supportMessage.findMany({
       where: statusFilter ? { status: statusFilter as any } : undefined,
-      orderBy: { createdAt: 'desc' },
+      orderBy: { updatedAt: 'desc' },
       include: {
-        user: {
-          select: { name: true, phone: true, username: true }
-        }
+        user: { select: { name: true, phone: true, username: true } },
+        replies: { orderBy: { createdAt: 'desc' }, take: 1 },
       }
     });
- 
+
+    const messages = tickets.map((t) => {
+      const lastReply = t.replies[0];
+      const lastMessage = lastReply ? lastReply.message : (t.adminReply || t.message);
+      const lastSender = lastReply ? lastReply.sender : (t.adminReply ? 'ADMIN' : 'USER');
+      return {
+        id: t.id,
+        message: t.message,
+        status: t.status,
+        createdAt: t.createdAt,
+        phone: t.phone,
+        name: t.name,
+        hadSalon: t.hadSalon,
+        salonName: t.salonName,
+        user: t.user,
+        seenByAdmin: t.seenByAdmin,
+        lastMessage,
+        lastSender,
+      };
+    });
+
     return NextResponse.json({ messages }, { status: 200 });
- 
+
   } catch (error) {
     console.error('Error fetching support messages:', error);
-    return NextResponse.json(
-      { error: 'خطای سرور در دریافت پیام‌ها' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'خطای سرور در دریافت پیام‌ها' }, { status: 500 });
   }
 }

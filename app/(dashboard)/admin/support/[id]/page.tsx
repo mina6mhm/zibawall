@@ -1,25 +1,19 @@
 // app/(dashboard)/admin/support/[id]/page.tsx
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ChevronRight, Send, CheckCircle2, Clock } from 'lucide-react';
+import { ChevronRight, CheckCircle2, User, Send } from 'lucide-react';
 
 type SupportStatus = 'PENDING' | 'IN_PROGRESS' | 'ANSWERED' | 'CLOSED';
+type Sender = 'USER' | 'ADMIN';
 
-interface SupportMessage {
+interface ThreadItem {
   id: string;
+  sender: Sender;
   message: string;
-  status: SupportStatus;
-  adminReply: string | null;
-  repliedAt: string | null;
   createdAt: string;
-  phone: string | null;
-  name: string | null;
-  hadSalon: boolean;
-  salonName: string | null;
-  user: { name: string | null; phone: string | null; username: string | null };
 }
 
 const statusMap: Record<SupportStatus, { label: string; className: string }> = {
@@ -32,47 +26,91 @@ const statusMap: Record<SupportStatus, { label: string; className: string }> = {
 export default function AdminSupportDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
-  const [msg, setMsg] = useState<SupportMessage | null>(null);
-  const [replyText, setReplyText] = useState('');
+  const [userInfo, setUserInfo] = useState<{ name: string | null; phone: string | null; salonName: string | null }>({ name: null, phone: null, salonName: null });
+  const [status, setStatus] = useState<SupportStatus>('PENDING');
+  const [thread, setThread] = useState<ThreadItem[]>([]);
+  const [newMessage, setNewMessage] = useState('');
   const [isFetching, setIsFetching] = useState(true);
   const [isSending, setIsSending] = useState(false);
   const [accessDenied, setAccessDenied] = useState(false);
+  const [notFound, setNotFound] = useState(false);
+  const bottomRef = useRef<HTMLDivElement>(null);
 
-  const fetchMessage = async () => {
+  const buildThread = (ticket: any): ThreadItem[] => {
+    const items: ThreadItem[] = [
+      { id: `${ticket.id}-first`, sender: 'USER', message: ticket.message, createdAt: ticket.createdAt },
+    ];
+    if (ticket.adminReply && ticket.replies.length === 0) {
+      items.push({
+        id: `${ticket.id}-legacy`,
+        sender: 'ADMIN',
+        message: ticket.adminReply,
+        createdAt: ticket.repliedAt || ticket.createdAt,
+      });
+    }
+    ticket.replies.forEach((r: any) => {
+      items.push({ id: r.id, sender: r.sender, message: r.message, createdAt: r.createdAt });
+    });
+    return items;
+  };
+
+  const fetchThread = async () => {
     try {
-      const res = await fetch('/api/support');
+      const res = await fetch(`/api/support/${id}`);
       if (res.status === 403) {
         setAccessDenied(true);
         return;
       }
+      if (res.status === 404) {
+        setNotFound(true);
+        return;
+      }
       if (res.ok) {
         const data = await res.json();
-        const found = data.messages.find((m: SupportMessage) => m.id === id);
-        setMsg(found || null);
+        setStatus(data.ticket.status);
+        setUserInfo({
+          name: data.ticket.user?.name || data.ticket.name,
+          phone: data.ticket.phone || data.ticket.user?.phone,
+          salonName: data.ticket.hadSalon ? data.ticket.salonName : null,
+        });
+        setThread(buildThread(data.ticket));
+        if (!data.ticket.seenByAdmin) {
+          fetch(`/api/support/${id}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ seenByAdmin: true }),
+          });
+        }
       }
     } catch (error) {
-      console.error('خطا در دریافت پیام:', error);
+      console.error('خطا در دریافت مکالمه:', error);
     } finally {
       setIsFetching(false);
     }
   };
 
   useEffect(() => {
-    fetchMessage();
+    fetchThread();
   }, [id]);
 
-  const handleReply = async () => {
-    if (!replyText.trim()) return;
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [thread]);
+
+  const handleSend = async () => {
+    const trimmed = newMessage.trim();
+    if (!trimmed) return;
+
     setIsSending(true);
     try {
-      const res = await fetch(`/api/support/${id}`, {
-        method: 'PATCH',
+      const res = await fetch(`/api/support/${id}/reply`, {
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ reply: replyText.trim(), status: 'ANSWERED' }),
+        body: JSON.stringify({ message: trimmed }),
       });
       if (res.ok) {
-        setReplyText('');
-        fetchMessage();
+        setNewMessage('');
+        fetchThread();
       } else {
         const err = await res.json();
         alert(err.error || 'خطا در ارسال پاسخ');
@@ -82,6 +120,19 @@ export default function AdminSupportDetailPage() {
       alert('خطای شبکه در ارتباط با سرور');
     } finally {
       setIsSending(false);
+    }
+  };
+
+  const handleClose = async () => {
+    try {
+      const res = await fetch(`/api/support/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'CLOSED' }),
+      });
+      if (res.ok) fetchThread();
+    } catch (error) {
+      console.error(error);
     }
   };
 
@@ -105,75 +156,87 @@ export default function AdminSupportDetailPage() {
           <ChevronRight className="w-5 h-5 text-zinc-600" />
         </Link>
         <div className="min-w-0 flex-1">
-          <h1 className="text-sm font-bold text-zinc-900 truncate">
-            {msg?.user?.name || msg?.name || 'کاربر'}
-          </h1>
-          <p className="text-[11px] text-zinc-400" dir="ltr">{msg?.phone || msg?.user?.phone}</p>
+          <h1 className="text-sm font-bold text-zinc-900 truncate">{userInfo.name || 'کاربر'}</h1>
+          <p className="text-[11px] text-zinc-400" dir="ltr">{userInfo.phone}</p>
         </div>
-        {msg && (
-          <span className={`text-[11px] px-2.5 py-1 rounded-lg font-medium shrink-0 ${statusMap[msg.status].className}`}>
-            {statusMap[msg.status].label}
-          </span>
-        )}
+        <span className={`text-[11px] px-2.5 py-1 rounded-lg font-medium shrink-0 ${statusMap[status].className}`}>
+          {statusMap[status].label}
+        </span>
       </div>
 
-      <div className="max-w-2xl mx-auto w-full px-4 py-5 flex-1 space-y-4">
+      {userInfo.salonName && (
+        <div className="max-w-2xl mx-auto w-full px-4 pt-3">
+          <p className="text-xs text-[#824c71] bg-[#e3c9dc]/15 inline-block px-2.5 py-1 rounded-lg">
+            سالن: {userInfo.salonName}
+          </p>
+        </div>
+      )}
+
+      {/* پیام‌ها */}
+      <div className="max-w-2xl mx-auto w-full px-4 py-5 space-y-3 flex-1 pb-28">
         {isFetching && <p className="text-center text-zinc-400 text-sm py-14">در حال بارگذاری...</p>}
+        {notFound && <p className="text-center text-zinc-400 text-sm py-14">این مکالمه یافت نشد.</p>}
 
-        {!isFetching && !msg && (
-          <p className="text-center text-zinc-400 text-sm py-14">این پیام یافت نشد.</p>
-        )}
-
-        {msg && (
-          <>
-            {msg.hadSalon && msg.salonName && (
-              <p className="text-xs text-[#824c71] bg-[#e3c9dc]/15 inline-block px-2.5 py-1 rounded-lg">
-                سالن: {msg.salonName}
-              </p>
-            )}
-
-            <div className="bg-zinc-50 rounded-xl p-4 text-sm text-zinc-700 leading-relaxed">
-              {msg.message}
-              <div className="text-[10px] text-zinc-400 mt-2">
-                {new Date(msg.createdAt).toLocaleDateString('fa-IR')}
-              </div>
-            </div>
-
-            {msg.adminReply && (
-              <div className="bg-[#e3c9dc]/25 border border-[#e3c9dc]/60 rounded-xl p-4 text-sm text-zinc-700 leading-relaxed">
-                <div className="flex items-center gap-1.5 text-[#824c71] text-[11px] font-medium mb-1.5">
-                  <CheckCircle2 className="w-3.5 h-3.5" /> پاسخ قبلی
+        {thread.map((item) =>
+          item.sender === 'USER' ? (
+            <div key={item.id} className="flex items-start gap-2 max-w-[85%] mr-auto flex-row-reverse">
+              <div className="bg-zinc-50 border border-zinc-200 rounded-xl rounded-tr-sm px-4 py-3 text-[14px] leading-relaxed text-zinc-700">
+                <div className="flex items-center gap-1.5 text-zinc-500 text-[11px] font-medium mb-1.5">
+                  <User className="w-3.5 h-3.5" /> پیام کاربر
                 </div>
-                {msg.adminReply}
-                {msg.repliedAt && (
-                  <div className="flex items-center gap-1 text-zinc-400 text-[10px] mt-2">
-                    <Clock className="w-3 h-3" />
-                    {new Date(msg.repliedAt).toLocaleDateString('fa-IR')}
-                  </div>
-                )}
+                {item.message}
+                <div className="text-[10px] text-zinc-400 mt-1.5">
+                  {new Date(item.createdAt).toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit' })}
+                </div>
               </div>
-            )}
-
-            <div className="pt-2">
-              <textarea
-                value={replyText}
-                onChange={(e) => setReplyText(e.target.value)}
-                rows={5}
-                placeholder="پاسخ خود را بنویسید..."
-                className="w-full border border-zinc-200 rounded-xl px-4 py-3 text-sm resize-none focus:border-[#824c71] focus:ring-2 focus:ring-[#824c71]/15 outline-none"
-              />
-              <button
-                onClick={handleReply}
-                disabled={isSending || !replyText.trim()}
-                className="mt-3 bg-[#824c71] text-white px-5 py-2.5 rounded-xl shadow-sm shadow-[#824c71]/30 hover:bg-[#6d3f5e] hover:shadow-md hover:shadow-[#824c71]/40 transition-all active:scale-[0.98] disabled:opacity-40 disabled:shadow-none flex items-center gap-2 text-sm font-semibold"
-              >
-                <Send className="w-4 h-4" />
-                {isSending ? 'در حال ارسال...' : 'ارسال پاسخ'}
-              </button>
             </div>
-          </>
+          ) : (
+            <div key={item.id} className="flex items-start gap-2 max-w-[85%]">
+              <div className="bg-[#e3c9dc]/25 border border-[#e3c9dc]/60 rounded-xl rounded-tl-sm px-4 py-3 text-[14px] leading-relaxed text-zinc-700">
+                <div className="flex items-center gap-1.5 text-[#824c71] text-[11px] font-medium mb-1.5">
+                  <CheckCircle2 className="w-3.5 h-3.5" /> پاسخ شما
+                </div>
+                {item.message}
+                <div className="text-[10px] text-zinc-400 mt-1.5">
+                  {new Date(item.createdAt).toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit' })}
+                </div>
+              </div>
+            </div>
+          )
         )}
+        <div ref={bottomRef} />
       </div>
+
+      {/* باکس ارسال پاسخ */}
+      {!isFetching && !notFound && (
+        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-zinc-100 px-4 py-3">
+          <div className="max-w-2xl mx-auto flex items-center gap-2">
+            {status !== 'CLOSED' && (
+              <button
+                onClick={handleClose}
+                className="text-[11px] text-zinc-400 hover:text-zinc-600 px-2 shrink-0 underline"
+              >
+                بستن مکالمه
+              </button>
+            )}
+            <input
+              value={newMessage}
+              onChange={(e) => setNewMessage(e.target.value.slice(0, 2000))}
+              onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+              placeholder="پاسخ خود را بنویسید..."
+              className="flex-1 border border-zinc-200 rounded-xl px-4 py-2.5 text-sm focus:border-[#824c71] focus:ring-2 focus:ring-[#824c71]/15 outline-none transition-all"
+            />
+            <button
+              onClick={handleSend}
+              disabled={isSending || !newMessage.trim()}
+              className="w-11 h-11 flex items-center justify-center bg-[#824c71] text-white rounded-xl shadow-sm shadow-[#824c71]/30 hover:bg-[#6d3f5e] transition-all active:scale-95 disabled:opacity-40 disabled:shadow-none shrink-0"
+              aria-label="ارسال"
+            >
+              <Send className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -4,17 +4,18 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ChevronRight, MessageCircle, Plus, Clock } from 'lucide-react';
+import { ChevronRight, MessageCircle, Plus } from 'lucide-react';
 
 type SupportStatus = 'PENDING' | 'IN_PROGRESS' | 'ANSWERED' | 'CLOSED';
+type Sender = 'USER' | 'ADMIN';
 
 interface SupportMessage {
   id: string;
-  message: string;
   status: SupportStatus;
-  adminReply: string | null;
   seenByUser: boolean;
   createdAt: string;
+  lastMessage: string;
+  lastSender: Sender;
 }
 
 const statusMap: Record<SupportStatus, { label: string; className: string }> = {
@@ -83,7 +84,8 @@ export default function SupportListPage() {
 
         <div className="divide-y divide-zinc-100">
           {messages.map((msg) => {
-            const unread = !!msg.adminReply && !msg.seenByUser;
+            // خونده‌نشده یعنی: آخرین پیام از طرف ادمین بوده و کاربر هنوز ندیدتش
+            const unread = !msg.seenByUser && msg.lastSender === 'ADMIN';
             return (
               <Link
                 key={msg.id}
@@ -103,7 +105,7 @@ export default function SupportListPage() {
                     </span>
                   </div>
                   <p className={`text-sm mt-1 truncate ${unread ? 'font-bold text-zinc-900' : 'text-zinc-500'}`}>
-                    {msg.adminReply ? msg.adminReply : msg.message}
+                    {msg.lastSender === 'ADMIN' ? '' : 'شما: '}{msg.lastMessage}
                   </p>
                 </div>
                 {unread && (

@@ -26,6 +26,11 @@ enum SupportStatus {
   CLOSED
 }
 
+enum SenderRole {
+  USER
+  ADMIN
+}
+
 model Salon {
   id                    String      @id @default(uuid())
   name                  String
@@ -36,33 +41,30 @@ model Salon {
   address               String
   lat                   Float?
   lng                   Float?
-  phones                String[]    // آرایه ای از شماره تلفن ها
+  phones                String[]
   workingHours          String
-  closedDays            String[]    // آرایه ای از روزهای تعطیل
-  
+  closedDays            String[]
+
   rating                Float       @default(0)
   reviewsCount          Int         @default(0)
-  
-  tags                  Json        @default("[]")
-  imageUrl              String      // تصویر اصلی کارت
-  description           String
-  portfolios            String[]    // تصاویر گالری
 
-  // فیلدهای جدید برای سیستم اشتراک
+  tags                  Json        @default("[]")
+  imageUrl              String
+  description           String
+  portfolios            String[]
+
   status                SalonStatus @default(PENDING_PAYMENT)
   planId                String?
   subscriptionExpiresAt DateTime?
   reminderSentAt        DateTime?
-  
-  // ارتباط با کاربر (صاحب سالن)
+
   userId                String      @unique
   user                  User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  // روابط دیتابیسی
-  socials               Social?     // ارتباط یک به یک با شبکه‌های اجتماعی
-  reviews               Review[]    // ارتباط یک به چند با نظرات
-  payments              Payment[]   // ارتباط یک به چند با جدول پرداخت
-  
+
+  socials               Social?
+  reviews               Review[]
+  payments              Payment[]
+
   createdAt             DateTime    @default(now())
   updatedAt             DateTime    @updatedAt
 
@@ -70,7 +72,6 @@ model Salon {
   @@index([status, subscriptionExpiresAt])
 }
 
-// جدول شبکه های اجتماعی (Socials)
 model Social {
   id        String  @id @default(uuid())
   website   String?
@@ -80,22 +81,19 @@ model Social {
   rubika    String?
   bale      String?
 
-  // ارتباط با سالن (هر سالن یک ردیف شبکه اجتماعی دارد)
   salonId   String  @unique
   salon     Salon   @relation(fields: [salonId], references: [id], onDelete: Cascade)
 }
 
-// جدول نظرات (Review)
 model Review {
   id        String   @id @default(uuid())
-  name      String   // اسم کاربر
-  rating    Float    // امتیاز
-  comment   String?  // متن نظر (اختیاری)
-  
-  // ارتباط با سالن (هر نظر متعلق به یک سالن است)
+  name      String
+  rating    Float
+  comment   String?
+
   salonId   String
   salon     Salon    @relation(fields: [salonId], references: [id], onDelete: Cascade)
-  
+
   createdAt DateTime @default(now())
 }
 
@@ -113,10 +111,8 @@ model User {
   otpCode       String?
   otpExpiresAt  DateTime?
 
-  // ارتباط با سالن (هر کاربر می‌تواند یک سالن داشته باشد)
   salon         Salon?
 
-  // ارتباط با پیام‌های پشتیبانی
   supportMessages SupportMessage[]
 
   createdAt     DateTime @default(now())
@@ -128,14 +124,13 @@ model User {
 
 model Payment {
   id        String        @id @default(uuid())
-  amount    Int           // مبلغ به تومان
+  amount    Int
   status    PaymentStatus @default(PENDING)
-  planId    String        
-  
-  authority String?       @unique // برای درگاه زرین‌پال
-  refId     String?       // شماره پیگیری پس از پرداخت موفق
+  planId    String
 
-  // ارتباط با سالن
+  authority String?       @unique
+  refId     String?
+
   salonId   String
   salon     Salon         @relation(fields: [salonId], references: [id], onDelete: Cascade)
 
@@ -143,29 +138,46 @@ model Payment {
   updatedAt DateTime      @updatedAt
 }
 
-// جدول پیام‌های پشتیبانی
 model SupportMessage {
-  id         String        @id @default(uuid())
-  message    String
-  status     SupportStatus @default(PENDING)
+  id          String        @id @default(uuid())
+  message     String
+  status      SupportStatus @default(PENDING)
 
-  userId     String
-  user       User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  phone      String?
-  name       String?
-  hadSalon   Boolean    @default(false)
-  salonId    String?
-  salonName  String?
+  phone       String?
+  name        String?
+  hadSalon    Boolean       @default(false)
+  salonId     String?
+  salonName   String?
 
-  adminReply String?
-  repliedAt  DateTime?
-  seenByUser Boolean       @default(true)   // 👈 جدید: وقتی ادمین جواب میده false میشه
+  adminReply  String?
+  repliedAt   DateTime?
 
-  createdAt  DateTime      @default(now())
-  updatedAt  DateTime      @updatedAt
+  seenByUser  Boolean       @default(true)
+  seenByAdmin Boolean       @default(true)
+
+  replies     SupportReply[]
+
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
 
   @@index([status])
   @@index([userId])
-  @@index([userId, seenByUser])            // 👈 برای کوئری سریع زنگوله
+  @@index([userId, seenByUser])
+  @@index([seenByAdmin])
+}
+
+model SupportReply {
+  id        String     @id @default(uuid())
+  message   String
+  sender    SenderRole
+
+  ticketId  String
+  ticket    SupportMessage @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime   @default(now())
+
+  @@index([ticketId])
 }

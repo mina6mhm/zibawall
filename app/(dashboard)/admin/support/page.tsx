@@ -6,16 +6,19 @@ import Link from 'next/link';
 import { MessageCircle, Filter } from 'lucide-react';
 
 type SupportStatus = 'PENDING' | 'IN_PROGRESS' | 'ANSWERED' | 'CLOSED';
+type Sender = 'USER' | 'ADMIN';
 
 interface SupportMessage {
   id: string;
-  message: string;
   status: SupportStatus;
   createdAt: string;
   phone: string | null;
   name: string | null;
   hadSalon: boolean;
   salonName: string | null;
+  seenByAdmin: boolean;
+  lastMessage: string;
+  lastSender: Sender;
   user: { name: string | null; phone: string | null; username: string | null };
 }
 
@@ -95,7 +98,8 @@ export default function AdminSupportPage() {
 
       <div className="divide-y divide-zinc-100 border border-zinc-100 rounded-2xl overflow-hidden">
         {messages.map((msg) => {
-          const unread = msg.status === 'PENDING' || msg.status === 'IN_PROGRESS';
+          // خونده‌نشده یعنی: آخرین پیام از طرف کاربر بوده و ادمین هنوز ندیدتش
+          const unread = !msg.seenByAdmin && msg.lastSender === 'USER';
           return (
             <Link
               key={msg.id}
@@ -107,20 +111,28 @@ export default function AdminSupportPage() {
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between gap-2 mb-1">
-                  <span className="font-bold text-zinc-800 text-sm truncate">
+                  <span className={`font-bold text-sm truncate ${unread ? 'text-zinc-900' : 'text-zinc-800'}`}>
                     {msg.user?.name || msg.name || 'کاربر'}
                   </span>
                   <span className={`text-[10px] px-2 py-0.5 rounded-md font-medium shrink-0 ${statusMap[msg.status].className}`}>
                     {statusMap[msg.status].label}
                   </span>
                 </div>
-                <p className="text-zinc-500 text-xs truncate">{msg.message}</p>
+                <p className={`text-xs truncate ${unread ? 'font-semibold text-zinc-800' : 'text-zinc-500'}`}>
+                  {msg.lastSender === 'ADMIN' ? 'شما: ' : ''}{msg.lastMessage}
+                </p>
                 <div className="flex items-center gap-2 mt-1">
                   <span className="text-[10px] text-zinc-400" dir="ltr">{msg.phone || msg.user?.phone}</span>
                   <span className="text-[10px] text-zinc-300">•</span>
                   <span className="text-[10px] text-zinc-400">
                     {new Date(msg.createdAt).toLocaleDateString('fa-IR')}
                   </span>
+                  {msg.hadSalon && msg.salonName && (
+                    <>
+                      <span className="text-[10px] text-zinc-300">•</span>
+                      <span className="text-[10px] text-[#824c71]">{msg.salonName}</span>
+                    </>
+                  )}
                 </div>
               </div>
               {unread && <span className="w-2.5 h-2.5 rounded-full bg-[#824c71] mt-1.5 shrink-0" />}

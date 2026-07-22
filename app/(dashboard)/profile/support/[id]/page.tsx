@@ -1,20 +1,18 @@
 // app/(dashboard)/profile/support/[id]/page.tsx
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ChevronRight, CheckCircle2, Clock, User } from 'lucide-react';
+import { ChevronRight, CheckCircle2, User, Send } from 'lucide-react';
 
 type SupportStatus = 'PENDING' | 'IN_PROGRESS' | 'ANSWERED' | 'CLOSED';
+type Sender = 'USER' | 'ADMIN';
 
-interface SupportMessage {
+interface ThreadItem {
   id: string;
+  sender: Sender;
   message: string;
-  status: SupportStatus;
-  adminReply: string | null;
-  repliedAt: string | null;
-  seenByUser: boolean;
   createdAt: string;
 }
 
@@ -28,41 +26,97 @@ const statusMap: Record<SupportStatus, { label: string; className: string }> = {
 export default function SupportDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
-  const [msg, setMsg] = useState<SupportMessage | null>(null);
+  const [status, setStatus] = useState<SupportStatus>('PENDING');
+  const [thread, setThread] = useState<ThreadItem[]>([]);
+  const [newMessage, setNewMessage] = useState('');
   const [isFetching, setIsFetching] = useState(true);
+  const [isSending, setIsSending] = useState(false);
   const [notFound, setNotFound] = useState(false);
+  const bottomRef = useRef<HTMLDivElement>(null);
+
+  const buildThread = (ticket: any): ThreadItem[] => {
+    const items: ThreadItem[] = [
+      { id: `${ticket.id}-first`, sender: 'USER', message: ticket.message, createdAt: ticket.createdAt },
+    ];
+    // پاسخ قدیمی (برای مکالمات قبل از این تغییر)
+    if (ticket.adminReply && ticket.replies.length === 0) {
+      items.push({
+        id: `${ticket.id}-legacy`,
+        sender: 'ADMIN',
+        message: ticket.adminReply,
+        createdAt: ticket.repliedAt || ticket.createdAt,
+      });
+    }
+    ticket.replies.forEach((r: any) => {
+      items.push({ id: r.id, sender: r.sender, message: r.message, createdAt: r.createdAt });
+    });
+    return items;
+  };
+
+  const fetchThread = async () => {
+    try {
+      const res = await fetch(`/api/support/${id}`);
+      if (res.status === 401) {
+        router.push('/login');
+        return;
+      }
+      if (res.status === 404 || res.status === 403) {
+        setNotFound(true);
+        return;
+      }
+      if (res.ok) {
+        const data = await res.json();
+        setStatus(data.ticket.status);
+        setThread(buildThread(data.ticket));
+        // علامت‌گذاری دیده‌شدن
+        if (!data.ticket.seenByUser) {
+          fetch(`/api/support/${id}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ seen: true }),
+          });
+        }
+      }
+    } catch (error) {
+      console.error('خطا در دریافت مکالمه:', error);
+    } finally {
+      setIsFetching(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchOne = async () => {
-      try {
-        const res = await fetch('/api/support/mine');
-        if (res.ok) {
-          const data = await res.json();
-          const found = data.messages.find((m: SupportMessage) => m.id === id);
-          if (!found) {
-            setNotFound(true);
-          } else {
-            setMsg(found);
-            // علامت‌گذاری به عنوان دیده‌شده
-            if (found.adminReply && !found.seenByUser) {
-              fetch(`/api/support/${id}`, {
-                method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ seen: true }),
-              });
-            }
-          }
-        } else if (res.status === 401) {
-          router.push('/login');
-        }
-      } catch (error) {
-        console.error('خطا در دریافت پیام:', error);
-      } finally {
-        setIsFetching(false);
+    fetchThread();
+  }, [id]);
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [thread]);
+
+  const handleSend = async () => {
+    const trimmed = newMessage.trim();
+    if (!trimmed) return;
+
+    setIsSending(true);
+    try {
+      const res = await fetch(`/api/support/${id}/reply`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: trimmed }),
+      });
+      if (res.ok) {
+        setNewMessage('');
+        fetchThread();
+      } else {
+        const err = await res.json();
+        alert(err.error || 'خطا در ارسال پیام');
       }
-    };
-    fetchOne();
-  }, [id, router]);
+    } catch (error) {
+      console.error(error);
+      alert('خطای شبکه در ارتباط با سرور');
+    } finally {
+      setIsSending(false);
+    }
+  };
 
   return (
     <div className="flex flex-col min-h-screen bg-white">
@@ -75,61 +129,74 @@ export default function SupportDetailPage() {
         >
           <ChevronRight className="w-5 h-5 text-zinc-600" />
         </Link>
-        <h1 className="text-base font-bold text-zinc-900">جزئیات پیام</h1>
-        {msg && (
-          <span className={`mr-auto text-[11px] px-2.5 py-1 rounded-lg font-medium ${statusMap[msg.status].className}`}>
-            {statusMap[msg.status].label}
-          </span>
-        )}
+        <h1 className="text-base font-bold text-zinc-900">پشتیبانی</h1>
+        <span className={`mr-auto text-[11px] px-2.5 py-1 rounded-lg font-medium ${statusMap[status].className}`}>
+          {statusMap[status].label}
+        </span>
       </div>
 
-      <div className="max-w-lg mx-auto w-full px-4 py-5 space-y-3 flex-1">
+      {/* پیام‌ها */}
+      <div className="max-w-lg mx-auto w-full px-4 py-5 space-y-3 flex-1 pb-28">
         {isFetching && (
           <p className="text-center text-zinc-400 text-sm py-14">در حال بارگذاری...</p>
         )}
 
         {notFound && (
-          <p className="text-center text-zinc-400 text-sm py-14">این پیام یافت نشد.</p>
+          <p className="text-center text-zinc-400 text-sm py-14">این مکالمه یافت نشد.</p>
         )}
 
-        {msg && (
-          <>
-            <span className="block text-[11px] text-zinc-400 text-center">
-              {new Date(msg.createdAt).toLocaleDateString('fa-IR')}
-            </span>
-
-            {/* پیام کاربر */}
-            <div className="flex items-start gap-2 max-w-[90%] mr-auto flex-row-reverse">
+        {thread.map((item) =>
+          item.sender === 'USER' ? (
+            <div key={item.id} className="flex items-start gap-2 max-w-[85%] mr-auto flex-row-reverse">
               <div className="bg-[#e3c9dc]/25 border border-[#e3c9dc]/60 rounded-xl rounded-tr-sm px-4 py-3 text-[14px] leading-relaxed text-zinc-700">
                 <div className="flex items-center gap-1.5 text-[#824c71] text-[11px] font-medium mb-1.5">
                   <User className="w-3.5 h-3.5" /> پیام شما
                 </div>
-                {msg.message}
-              </div>
-            </div>
-
-            {/* پاسخ ادمین */}
-            {msg.adminReply ? (
-              <div className="flex items-start gap-2 max-w-[90%]">
-                <div className="bg-[#e3c9dc]/25 border border-[#e3c9dc]/60 rounded-xl rounded-tl-sm px-4 py-3 text-[14px] leading-relaxed text-zinc-700">
-                  <div className="flex items-center gap-1.5 text-[#824c71] text-[11px] font-medium mb-1.5">
-                    <CheckCircle2 className="w-3.5 h-3.5" /> پاسخ پشتیبانی
-                  </div>
-                  {msg.adminReply}
-                  {msg.repliedAt && (
-                    <div className="flex items-center gap-1 text-zinc-400 text-[10px] mt-2">
-                      <Clock className="w-3 h-3" />
-                      {new Date(msg.repliedAt).toLocaleDateString('fa-IR')}
-                    </div>
-                  )}
+                {item.message}
+                <div className="text-[10px] text-zinc-400 mt-1.5">
+                  {new Date(item.createdAt).toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit' })}
                 </div>
               </div>
-            ) : (
-              <p className="text-center text-zinc-400 text-xs py-4">هنوز پاسخی داده نشده است</p>
-            )}
-          </>
+            </div>
+          ) : (
+            <div key={item.id} className="flex items-start gap-2 max-w-[85%]">
+              <div className="bg-[#e3c9dc]/25 border border-[#e3c9dc]/60 rounded-xl rounded-tl-sm px-4 py-3 text-[14px] leading-relaxed text-zinc-700">
+                <div className="flex items-center gap-1.5 text-[#824c71] text-[11px] font-medium mb-1.5">
+                  <CheckCircle2 className="w-3.5 h-3.5" /> پاسخ پشتیبانی
+                </div>
+                {item.message}
+                <div className="text-[10px] text-zinc-400 mt-1.5">
+                  {new Date(item.createdAt).toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit' })}
+                </div>
+              </div>
+            </div>
+          )
         )}
+        <div ref={bottomRef} />
       </div>
+
+      {/* باکس ارسال پیام جدید */}
+      {!isFetching && !notFound && (
+        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-zinc-100 px-4 py-3">
+          <div className="max-w-lg mx-auto flex items-center gap-2">
+            <input
+              value={newMessage}
+              onChange={(e) => setNewMessage(e.target.value.slice(0, 2000))}
+              onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+              placeholder="پیام خود را بنویسید..."
+              className="flex-1 border border-zinc-200 rounded-xl px-4 py-2.5 text-sm focus:border-[#824c71] focus:ring-2 focus:ring-[#824c71]/15 outline-none transition-all"
+            />
+            <button
+              onClick={handleSend}
+              disabled={isSending || !newMessage.trim()}
+              className="w-11 h-11 flex items-center justify-center bg-[#824c71] text-white rounded-xl shadow-sm shadow-[#824c71]/30 hover:bg-[#6d3f5e] transition-all active:scale-95 disabled:opacity-40 disabled:shadow-none shrink-0"
+              aria-label="ارسال"
+            >
+              <Send className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -23,13 +23,32 @@ export async function GET() {
       return NextResponse.json({ error: 'توکن نامعتبر است' }, { status: 401 });
     }
 
-    const messages = await prisma.supportMessage.findMany({
+    const tickets = await prisma.supportMessage.findMany({
       where: { userId: decoded.userId },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { updatedAt: 'desc' },
+      include: {
+        replies: { orderBy: { createdAt: 'desc' }, take: 1 },
+      },
+    });
+
+    const messages = tickets.map((t) => {
+      const lastReply = t.replies[0];
+      const lastMessage = lastReply ? lastReply.message : (t.adminReply || t.message);
+      const lastSender = lastReply ? lastReply.sender : (t.adminReply ? 'ADMIN' : 'USER');
+      return {
+        id: t.id,
+        message: t.message,
+        status: t.status,
+        adminReply: t.adminReply,
+        seenByUser: t.seenByUser,
+        createdAt: t.createdAt,
+        lastMessage,
+        lastSender,
+      };
     });
 
     const unreadCount = messages.filter(
-      (m) => m.adminReply && !m.seenByUser
+      (m) => !m.seenByUser && m.lastSender === 'ADMIN'
     ).length;
 
     return NextResponse.json({ messages, unreadCount }, { status: 200 });
