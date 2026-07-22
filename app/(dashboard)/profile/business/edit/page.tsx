@@ -4,128 +4,22 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import dynamic from 'next/dynamic';
-import { 
-  Store, 
-  MapPin, 
-  Clock, 
-  Save,
-  ArrowRight,
-  ArrowLeft,
-  Phone,
-  MessageCircle,
-  Send,
-  Globe,
-  Plus,
-  Trash2,
-  Map,
-  CheckCircle2,
-  ChevronDown,
-  ChevronUp,
-  X,
-  ImagePlus,
-  UploadCloud,
-  FileText,
-  Loader2,
-  ImageIcon
-} from 'lucide-react';
+import { ArrowRight, ArrowLeft, CheckCircle2, Save, Loader2 } from 'lucide-react';
+
 import RegionFilterModal from '@/components/RegionFilterModal';
-
-// بارگذاری داینامیک کامپوننت نقشه برای جلوگیری از خطای SSR
-const MapPicker = dynamic(() => import('@/components/MapPicker'), { ssr: false });
-
-const SERVICE_DETAILS = {
-  'خدمات مو': [
-    'کوتاهی ژورنالی', 'رنگ، لایت و مش', 'بالیاژ و آمبره', 'کراتینه و احیا مو', 
-    'پروتئین‌تراپی و بوتاکس مو', 'شینیون و استایل مو', 'اکستنشن مو', 'بافت مو', 'براشینگ'
-  ],
-  'خدمات ناخن': [
-    'کاشت ناخن (پودر/ژل)', 'ترمیم ناخن', 'ژلیش (لاک ژل)', 'لمینت ناخن', 
-    'مانیکور', 'پدیکور و کفسابی', 'طراحی و دیزاین ناخن', 'ریموو ناخن'
-  ],
-  'خدمات ابرو و مژه': [
-    'اصلاح و قرینه‌سازی ابرو', 'میکروبلیدینگ و فیبروز ابرو', 'تاتو و هاشور ابرو', 
-    'اکستنشن مژه (کلاسیک/والیوم/مگاوالیوم)', 'کاشت مژه موقت', 'لیفت و لمینت مژه', 'لیفت ابرو'
-  ],
-  'خدمات پوست و زیبایی': [
-    'فیشیال و پاکسازی تخصصی', 'میکرودرم و میکرونیدلینگ', 'مزوتراپی پوست', 
-    'پلاژن تراپی', 'درمان لک و جوش', 'ماساژ صورت'
-  ],
-  'خدمات آرایش و میکاپ': [
-    'میکاپ محفلی (VIP/ویژه)', 'گریم تخصصی و کانتورینگ', 'آرایش دائم (خط چشم، شیدینگ لب)', 
-    'خودآرایی'
-  ],
-  'پکیج‌های عروس': [
-    'پکیج کامل عروس (VIP)', 'پکیج عقد و نامزدی', 'پکیج فرمالیته', 
-    'میکاپ و شینیون عروس', 'مشاوره تخصصی عروس'
-  ],
-  'موزدایی و بدن': [
-    'اپیلاسیون کل بدن', 'اپیلاسیون گیاهی / پیشرفته', 'لیزر موهای زائد', 
-    'وکس صورت', 'بند و ابرو (اصلاح صورت)'
-  ],
-  'خدمات ماساژ و اسپا': [
-    'ماساژ ریلکسی', 'ماساژ درمانی', 'ماساژ سنگ داغ', 'اسپا و حمام مغربی'
-  ]
-};
-
-const WEEK_DAYS = ['شنبه', 'یکشنبه', 'دوشنبه', 'سه‌شنبه', 'چهارشنبه', 'پنج‌شنبه', 'جمعه'];
-
-const compressImage = (file: File): Promise<File> => {
-  const SIZE_THRESHOLD = 2 * 1024 * 1024;
-  const MAX_DIMENSION = 2048;
-  const QUALITY = 0.85;
-  if (file.size <= SIZE_THRESHOLD) return Promise.resolve(file);
-  return new Promise((resolve) => {
-    const img = new Image();
-    const url = URL.createObjectURL(file);
-    img.onload = () => {
-      let { width, height } = img;
-      if (width > MAX_DIMENSION || height > MAX_DIMENSION) {
-        if (width >= height) {
-          height = Math.round((height * MAX_DIMENSION) / width);
-          width = MAX_DIMENSION;
-        } else {
-          width = Math.round((width * MAX_DIMENSION) / height);
-          height = MAX_DIMENSION;
-        }
-      }
-      const canvas = document.createElement('canvas');
-      canvas.width = width;
-      canvas.height = height;
-      canvas.getContext('2d')!.drawImage(img, 0, 0, width, height);
-      URL.revokeObjectURL(url);
-      canvas.toBlob(
-        (blob) => {
-          if (!blob) { resolve(file); return; }
-          const result = blob.size < file.size
-            ? new File([blob], file.name.replace(/\.[^.]+$/, '.jpg'), { type: 'image/jpeg' })
-            : file;
-          resolve(result);
-        },
-        'image/jpeg',
-        QUALITY
-      );
-    };
-    img.onerror = () => { URL.revokeObjectURL(url); resolve(file); };
-    img.src = url;
-  });
-};
-
-const MAX_UPLOAD_SIZE = 50 * 1024 * 1024;
-
-const validateAndCompress = async (file: File): Promise<File | null> => {
-  if (file.size > MAX_UPLOAD_SIZE) {
-    alert(`فایل "${file.name}" بیش از ۵۰ مگابایت است و قابل آپلود نیست.`);
-    return null;
-  }
-  return await compressImage(file);
-};
+import { SERVICE_DETAILS } from '@/components/business-form/constants';
+import { validateAndCompress } from '@/components/business-form/imageUtils';
+import Step1BasicInfo from '@/components/business-form/Step1BasicInfo';
+import Step2Services from '@/components/business-form/Step2Services';
+import Step3Socials, { type Socials } from '@/components/business-form/Step3Socials';
+import Step4Images from '@/components/business-form/Step4Images';
+import MapPickerModal from '@/components/business-form/MapPickerModal';
 
 export default function BusinessEditPage() {
   const router = useRouter();
   const [userPlan, setUserPlan] = useState<'normal' | 'advanced'>('normal');
   const [maxPortfolios, setMaxPortfolios] = useState<number>(10);
-  // استیت‌های مربوط به مراحل و رابط کاربری
+
   const [step, setStep] = useState(1);
   const [isLoadingData, setIsLoadingData] = useState(true);
   const [locationSelected, setLocationSelected] = useState<boolean>(false);
@@ -134,32 +28,30 @@ export default function BusinessEditPage() {
   const [isRegionModalOpen, setIsRegionModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // === استیت‌های فرم اصلی ===
   const [name, setName] = useState('');
   const [workingHours, setWorkingHours] = useState('');
   const [description, setDescription] = useState('');
   const [address, setAddress] = useState('');
   const [phones, setPhones] = useState<string[]>(['']);
   const [closedDays, setClosedDays] = useState<string[]>([]);
-  
+
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [newTagInputs, setNewTagInputs] = useState<Record<string, string>>({});
   const [customServices, setCustomServices] = useState<Record<string, string[]>>({});
-  
+
   const [selectedProvince, setSelectedProvince] = useState<string>('');
   const [selectedCity, setSelectedCity] = useState<string>('');
   const [selectedNeighborhoods, setSelectedNeighborhoods] = useState<string[]>([]);
   const [coordinates, setCoordinates] = useState<[number, number] | null>(null);
   const [tempCoordinates, setTempCoordinates] = useState<[number, number] | null>(null);
-  
-  // === استیت‌های تصاویر ===
+
   const [coverImage, setCoverImage] = useState<File | null>(null);
   const [existingCover, setExistingCover] = useState<string | null>(null);
-  
+
   const [portfolios, setPortfolios] = useState<File[]>([]);
   const [existingPortfolios, setExistingPortfolios] = useState<string[]>([]);
-  
-  const [socials, setSocials] = useState({
+
+  const [socials, setSocials] = useState<Socials>({
     instagram: '', whatsapp: '', telegram: '', rubika: '', bale: '', website: ''
   });
 
@@ -174,20 +66,19 @@ export default function BusinessEditPage() {
     if (/(عروس|فرمالیته|نامزدی|عقد)/.test(lowerTag)) return 'پکیج‌های عروس';
     if (/(لیزر|اپیلاسیون|وکس|بند|موزدایی)/.test(lowerTag)) return 'موزدایی و بدن';
     if (/(ماساژ|اسپا)/.test(lowerTag)) return 'خدمات ماساژ و اسپا';
-    return 'سایر خدمات'; // اگر هیچ کلمه‌ای تطابق نداشت
+    return 'سایر خدمات';
   };
 
-  // دریافت اطلاعات اولیه سالن
   useEffect(() => {
     const fetchSalonData = async () => {
       try {
         const meRes = await fetch('/api/auth/me');
-if (!meRes.ok) {
-  router.push('/login');
-  return;
-}
-const user = await meRes.json();
-const res = await fetch(`/api/salon?userPhone=${user.phone}`);
+        if (!meRes.ok) {
+          router.push('/login');
+          return;
+        }
+        const user = await meRes.json();
+        const res = await fetch(`/api/salon?userPhone=${user.phone}`);
         if (res.ok) {
           const data = await res.json();
           const salon = data.salon || data;
@@ -199,22 +90,19 @@ const res = await fetch(`/api/salon?userPhone=${user.phone}`);
             setAddress(salon.address || '');
             setPhones(salon.phones && salon.phones.length > 0 ? salon.phones : ['']);
             setClosedDays(salon.closedDays || []);
-            
-            // شناسایی تگ‌های کاستوم و قراردادن در دسته‌بندی صحیح
-             if (salon.tags && salon.tags.length > 0) {
-              // پشتیبانی از هر دو حالت (آرایه رشته‌های قدیمی و آرایه آبجکت‌های جدید)
+
+            if (salon.tags && salon.tags.length > 0) {
               const extractedNames = salon.tags.map((t: any) => typeof t === 'string' ? t : t.name);
               setSelectedTags(extractedNames);
-              
+
               const allDefaultTags = Object.values(SERVICE_DETAILS).flat();
               const loadedCustomsMap: Record<string, string[]> = {};
               const categoriesToExpand = new Set<string>();
 
               salon.tags.forEach((tagItem: any) => {
                 const tagName = typeof tagItem === 'string' ? tagItem : tagItem.name;
-                // اگر از قبل آبجکت باشد دسته‌بندی‌اش مشخص است، در غیر این صورت حدس می‌زنیم
                 const tagCategory = typeof tagItem === 'string' ? guessCategory(tagItem) : tagItem.category;
-                
+
                 if (!allDefaultTags.includes(tagName)) {
                   if (!loadedCustomsMap[tagCategory]) loadedCustomsMap[tagCategory] = [];
                   if (!loadedCustomsMap[tagCategory].includes(tagName)) {
@@ -242,7 +130,7 @@ const res = await fetch(`/api/salon?userPhone=${user.phone}`);
             if (salon.coordinates) {
               setCoordinates(salon.coordinates);
             }
-            if ((salon.province && salon.city) || salon.coordinates) { 
+            if ((salon.province && salon.city) || salon.coordinates) {
               setLocationSelected(true);
             }
             if (salon.socials) {
@@ -277,7 +165,6 @@ const res = await fetch(`/api/salon?userPhone=${user.phone}`);
     fetchSalonData();
   }, [router]);
 
-  // هندلرهای شماره تماس
   const handleAddPhone = () => setPhones([...phones, '']);
   const handleRemovePhone = (index: number) => {
     if (phones.length > 1) setPhones(phones.filter((_, i) => i !== index));
@@ -288,11 +175,10 @@ const res = await fetch(`/api/salon?userPhone=${user.phone}`);
     setPhones(newPhones);
   };
 
-  // افزودن خدمت اختصاصی
   const handleAddCustomTag = (category: string) => {
     const tag = newTagInputs[category]?.trim();
     if (!tag) return;
-    
+
     if (!selectedTags.includes(tag)) {
       setSelectedTags(prev => [...prev, tag]);
       setCustomServices(prev => ({
@@ -303,7 +189,6 @@ const res = await fetch(`/api/salon?userPhone=${user.phone}`);
     setNewTagInputs(prev => ({ ...prev, [category]: '' }));
   };
 
-  // حذف کامل خدمت اختصاصی (هم از تگ‌های انتخاب شده و هم از لیست کاستوم‌ها)
   const handleRemoveCustomTag = (category: string, tagToRemove: string) => {
     setCustomServices(prev => ({
       ...prev,
@@ -328,34 +213,33 @@ const res = await fetch(`/api/salon?userPhone=${user.phone}`);
     setSelectedNeighborhoods((prev) => prev.filter((nh) => nh !== nhToRemove));
   };
 
-  // هندلرهای تصاویر
   const handleCoverUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-  if (e.target.files && e.target.files[0]) {
-    const file = await validateAndCompress(e.target.files[0]);
-    if (file) {
-      setCoverImage(file);
-      setExistingCover(null);
+    if (e.target.files && e.target.files[0]) {
+      const file = await validateAndCompress(e.target.files[0]);
+      if (file) {
+        setCoverImage(file);
+        setExistingCover(null);
+      }
     }
-  }
-};
+  };
 
   const removeCoverImage = () => {
     setCoverImage(null);
-    setExistingCover(null); 
+    setExistingCover(null);
   };
 
   const handlePortfoliosUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-  if (e.target.files) {
-    const filesArray = Array.from(e.target.files);
-    const currentTotal = existingPortfolios.length + portfolios.length;
-    const availableSlots = maxPortfolios - currentTotal;
-    const sliced = filesArray.slice(0, availableSlots);
-    const compressed = (
-      await Promise.all(sliced.map(f => validateAndCompress(f)))
-    ).filter(Boolean) as File[];
-    if (compressed.length > 0) setPortfolios(prev => [...prev, ...compressed]);
-  }
-};
+    if (e.target.files) {
+      const filesArray = Array.from(e.target.files);
+      const currentTotal = existingPortfolios.length + portfolios.length;
+      const availableSlots = maxPortfolios - currentTotal;
+      const sliced = filesArray.slice(0, availableSlots);
+      const compressed = (
+        await Promise.all(sliced.map(f => validateAndCompress(f)))
+      ).filter(Boolean) as File[];
+      if (compressed.length > 0) setPortfolios(prev => [...prev, ...compressed]);
+    }
+  };
 
   const removePortfolio = (index: number) => {
     setPortfolios(prev => prev.filter((_, i) => i !== index));
@@ -374,6 +258,17 @@ const res = await fetch(`/api/salon?userPhone=${user.phone}`);
     setSelectedNeighborhoods(neighborhoods);
   };
 
+  const openMapModal = () => {
+    setTempCoordinates(coordinates || [35.6997, 51.3380]);
+    setIsMapModalOpen(true);
+  };
+
+  const confirmMapPosition = () => {
+    if (tempCoordinates) setCoordinates(tempCoordinates);
+    setLocationSelected(true);
+    setIsMapModalOpen(false);
+  };
+
   const handleSubmit = async () => {
     if (!name || !selectedProvince || !selectedCity || !address || !workingHours) {
       alert('لطفاً تمام فیلدهای ستاره‌دار در مرحله اول را پر کنید.');
@@ -383,16 +278,16 @@ const res = await fetch(`/api/salon?userPhone=${user.phone}`);
       alert('لطفا یک عکس به عنوان کاور اصلی انتخاب کنید.');
       return;
     }
-    
+
     try {
       setIsSubmitting(true);
       const meRes = await fetch('/api/auth/me');
-if (!meRes.ok) {
-  alert('لطفا ابتدا وارد حساب کاربری خود شوید.');
-  router.push('/login');
-  return;
-}
-const user = await meRes.json();
+      if (!meRes.ok) {
+        alert('لطفا ابتدا وارد حساب کاربری خود شوید.');
+        router.push('/login');
+        return;
+      }
+      const user = await meRes.json();
       let newCoverUrl = '';
       let newPortfolioUrls: string[] = [];
 
@@ -402,7 +297,7 @@ const user = await meRes.json();
         const coverRes = await fetch('/api/upload', { method: 'POST', body: coverFormData });
         if (!coverRes.ok) throw new Error('خطا در آپلود عکس کاور');
         const coverData = await coverRes.json();
-        newCoverUrl = coverData.urls[0]; 
+        newCoverUrl = coverData.urls[0];
       }
 
       if (portfolios.length > 0) {
@@ -411,29 +306,26 @@ const user = await meRes.json();
         const portfolioRes = await fetch('/api/upload', { method: 'POST', body: portfolioFormData });
         if (!portfolioRes.ok) throw new Error('خطا در آپلود نمونه‌کارها');
         const portfolioData = await portfolioRes.json();
-        newPortfolioUrls = portfolioData.urls; 
+        newPortfolioUrls = portfolioData.urls;
       }
 
       const finalCoverUrl = newCoverUrl || existingCover || '';
       const finalPortfolios = [...existingPortfolios, ...newPortfolioUrls];
 
       const formattedTags = selectedTags.map(tagName => {
-        // جستجو در خدمات پیش‌فرض
         for (const [cat, services] of Object.entries(SERVICE_DETAILS)) {
-          if (services.includes(tagName)) {
+          if ((services as readonly string[]).includes(tagName)) {
             return { name: tagName, category: cat };
           }
         }
-        // جستجو در خدمات کاستوم اضافه‌شده
         for (const [cat, customTags] of Object.entries(customServices)) {
           if (customTags.includes(tagName)) {
             return { name: tagName, category: cat };
           }
         }
-        // در صورتی که پیدا نشد
         return { name: tagName, category: 'سایر خدمات' };
       });
-      
+
       const payload = {
         userPhone: user.phone,
         name, workingHours, description, address, phones, closedDays,
@@ -473,15 +365,12 @@ const user = await meRes.json();
     );
   }
 
-  const totalPortfoliosCount = existingPortfolios.length + portfolios.length;
-
   // استخراج تمام دسته‌بندی‌ها (ترکیب دسته‌های پیش‌فرض و دسته‌های جدید احتمالی مثل "سایر خدمات")
-
   const allCategories = Array.from(new Set([...Object.keys(SERVICE_DETAILS), ...Object.keys(customServices)]));
 
   return (
     <div className="max-w-4xl mx-auto pt-8 pb-28 px-4 md:py-12 md:px-0 animate-fade-in">
-      
+
       <div className="flex items-center gap-4 mb-8">
         <Link href="/profile" className="p-2 hover:bg-zinc-100 rounded-full transition-colors">
           <ArrowRight className="text-zinc-600" size={24} />
@@ -511,564 +400,104 @@ const user = await meRes.json();
             </span>
           </div>
         ))}
-      </div>        
+      </div>
 
-                {/* ================= مرحله ۱: اطلاعات پایه ================= */}
-        {step === 1 && (
-          <div className="space-y-6 md:space-y-8 animate-fade-in">
-            <section className="space-y-4 md:space-y-6">
-              <div className="flex items-center gap-2 border-b border-zinc-100 pb-2 md:pb-3">
-                <Store className="text-zinc-700 w-5 h-5 md:w-6 md:h-6" />
-                <h2 className="text-base md:text-lg font-semibold text-zinc-800">اطلاعات پایه سالن</h2>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
-                
-                <div className="space-y-1.5 md:space-y-2">
-                  <label className="block text-xs md:text-sm font-medium text-zinc-700">نام سالن زیبایی <span className="text-red-500">*</span></label>
-                  <input 
-                    type="text" 
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    placeholder="مثال: سالن زیبایی گل‌ها" 
-                    className="w-full px-3 py-2.5 md:px-4 md:py-3 text-sm md:text-base rounded-lg md:rounded-xl border border-zinc-200 focus:border-zinc-300 focus:ring-1 focus:ring-zinc-300 outline-none transition-all" 
-                  />
-                </div>
-                
-                <div className="space-y-1.5 md:space-y-2">
-                  <label className="block text-xs md:text-sm font-medium text-zinc-700">ساعات کاری <span className="text-red-500">*</span></label>
-                  <div className="relative">
-                    <Clock className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 w-4 h-4 md:w-5 md:h-5" />
-                    <input 
-                      type="text" 
-                      value={workingHours}
-                      onChange={(e) => setWorkingHours(e.target.value)}
-                      placeholder="مثال: ۱۰ صبح تا ۸ شب" 
-                      className="w-full pr-9 pl-3 py-2.5 md:pr-10 md:pl-4 md:py-3 text-sm md:text-base rounded-lg md:rounded-xl border border-zinc-200 focus:border-zinc-300 focus:ring-1 focus:ring-zinc-300 outline-none transition-all" 
-                    />
-                  </div>
-                </div>
+      {step === 1 && (
+        <Step1BasicInfo
+          name={name} onNameChange={setName}
+          workingHours={workingHours} onWorkingHoursChange={setWorkingHours}
+          description={description} onDescriptionChange={setDescription}
+          closedDays={closedDays} onToggleClosedDay={toggleClosedDay}
+          phones={phones} onAddPhone={handleAddPhone} onRemovePhone={handleRemovePhone} onPhoneChange={handlePhoneChange}
+          selectedProvince={selectedProvince} selectedCity={selectedCity} onOpenRegionModal={() => setIsRegionModalOpen(true)}
+          selectedNeighborhoods={selectedNeighborhoods} onRemoveNeighborhood={removeNeighborhood}
+          address={address} onAddressChange={setAddress}
+          hasLocation={!!(coordinates && coordinates[0] !== 0 && coordinates[1] !== 0)}
+          coordinates={coordinates}
+          onOpenMapModal={openMapModal}
+        />
+      )}
 
-                <div className="space-y-1.5 md:space-y-2 md:col-span-2">
-                  <label className="block text-xs md:text-sm font-medium text-zinc-700">توضیحات و معرفی سالن <span className="text-red-500">*</span></label>
-                  <div className="relative">
-                    <FileText className="absolute right-3 top-3 md:top-4 text-zinc-400 w-4 h-4 md:w-5 md:h-5" />
-                    <textarea 
-                      rows={3} 
-                      value={description}
-                      onChange={(e) => setDescription(e.target.value)}
-                      placeholder="توضیح مختصری درباره سابقه، خدمات ویژه و محیط سالن خود بنویسید..." 
-                      className="w-full pr-9 pl-3 py-2.5 md:pr-10 md:pl-4 md:py-3 text-sm md:text-base rounded-lg md:rounded-xl border border-zinc-200 focus:border-zinc-300 focus:ring-1 focus:ring-zinc-300 outline-none transition-all resize-none"
-                    ></textarea>
-                  </div>
-                </div>
+      {step === 2 && (
+        <Step2Services
+          categories={allCategories}
+          selectedTags={selectedTags}
+          customServices={customServices}
+          expandedCategories={expandedCategories}
+          onToggleCategory={toggleCategory}
+          onToggleTag={toggleTag}
+          newTagInputs={newTagInputs}
+          onNewTagInputChange={(category, value) => setNewTagInputs(prev => ({ ...prev, [category]: value }))}
+          onAddCustomTag={handleAddCustomTag}
+          onRemoveCustomTag={handleRemoveCustomTag}
+        />
+      )}
 
-                <div className="space-y-2 md:space-y-3 md:col-span-2">
-                  <label className="block text-xs md:text-sm font-medium text-zinc-700">روزهای تعطیل در هفته</label>
-                  <div className="flex flex-wrap gap-1.5 md:gap-2">
-                    {WEEK_DAYS.map(day => (
-                      <button
-                        key={day}
-                        type="button"
-                        onClick={() => toggleClosedDay(day)}
-                        className={`px-3 py-1.5 md:px-4 md:py-2 rounded-lg md:rounded-xl text-xs md:text-sm font-medium transition-colors ${
-                          closedDays.includes(day)
-                            ? 'bg-[#e3c9dc]/20 text-[#824c71] border border-[#824c71]/30'
-                            : 'bg-white border border-zinc-200 text-zinc-600 hover:bg-zinc-50'
-                        }`}
-                      >
-                        {day}
-                      </button>
-                    ))}
-                  </div>
-                </div>
+      {step === 3 && (
+        <Step3Socials
+          socials={socials}
+          onSocialChange={(key, value) => setSocials(prev => ({ ...prev, [key]: value }))}
+        />
+      )}
 
-                <div className="space-y-2 md:space-y-3 md:col-span-2 mt-1 md:mt-2">
-                  <label className="block text-xs md:text-sm font-medium text-zinc-700">شماره تماس‌های سالن <span className="text-red-500">*</span></label>
-                  <div className="space-y-2 md:space-y-3">
-                    {phones.map((phone, index) => (
-                      <div key={index} className="flex gap-2">
-                        <div className="relative flex-1">
-                          <Phone className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 w-4 h-4 md:w-5 md:h-5" />
-                          <input 
-                            type="tel" 
-                            value={phone} 
-                            onChange={(e) => handlePhoneChange(index, e.target.value)} 
-                            placeholder={`شماره تماس ${index + 1}`} 
-                            className="w-full pr-9 pl-3 py-2.5 md:pr-10 md:pl-4 md:py-3 text-sm md:text-base rounded-lg md:rounded-xl border border-zinc-200 focus:border-zinc-300 focus:ring-1 focus:ring-zinc-300 outline-none transition-all text-left dir-ltr" 
-                          />
-                        </div>
-                        {phones.length > 1 && (
-                          <button type="button" onClick={() => handleRemovePhone(index)} className="p-2.5 md:p-3 text-red-500 bg-red-50 hover:bg-red-100 rounded-lg md:rounded-xl transition-colors">
-                            <Trash2 className="w-4 h-4 md:w-5 md:h-5" />
-                          </button>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                  <button type="button" onClick={handleAddPhone} className="text-xs md:text-sm font-medium text-[#824c71] flex items-center gap-1 md:gap-1.5 mt-1 md:mt-2 hover:text-[#6e3f60] transition-colors">
-                    <Plus className="w-4 h-4 md:w-5 md:h-5" /> افزودن شماره جدید
-                  </button>
-                </div>
-              </div>
-            </section>
+      {step === 4 && (
+        <Step4Images
+          coverImage={coverImage}
+          existingCoverUrl={existingCover}
+          onCoverUpload={handleCoverUpload}
+          onRemoveCover={removeCoverImage}
+          portfolios={portfolios}
+          existingPortfolios={existingPortfolios}
+          onPortfoliosUpload={handlePortfoliosUpload}
+          onRemovePortfolio={removePortfolio}
+          onRemoveExistingPortfolio={removeExistingPortfolio}
+          maxPortfolios={maxPortfolios}
+        />
+      )}
 
-            <section className="space-y-4 md:space-y-6 mt-6 md:mt-8">
-              <div className="flex items-center gap-2 border-b border-zinc-100 pb-2 md:pb-3">
-                <MapPin className="text-zinc-700 w-5 h-5 md:w-6 md:h-6" />
-                <h2 className="text-base md:text-lg font-semibold text-zinc-800">آدرس و موقعیت مکانی</h2>
-              </div>
-              
-              <div className="space-y-2 md:space-y-3">
-                <label className="block text-xs md:text-sm font-medium text-zinc-700">استان و شهر <span className="text-red-500">*</span></label>
-                <button
-                  type="button"
-                  onClick={() => setIsRegionModalOpen(true)}
-                  className="w-full px-3 py-2.5 md:px-4 md:py-3 text-sm md:text-base rounded-lg md:rounded-xl border border-zinc-200 text-right flex justify-between items-center hover:border-zinc-300 focus:ring-1 focus:ring-zinc-300 outline-none transition-all bg-white"
-                >
-                  <span className={selectedProvince ? 'text-zinc-800 font-medium' : 'text-zinc-400'}>
-                    {selectedProvince && selectedCity ? `${selectedProvince} - ${selectedCity}` : 'انتخاب استان و شهر...'}
-                  </span>
-                  <ChevronDown className="text-zinc-400 w-4 h-4 md:w-5 md:h-5" />
-                </button>
+      {/* دکمه‌های ناوبری */}
+      <div className="mt-8 md:mt-10 pt-4 md:pt-6 border-t border-zinc-100 flex items-center justify-between">
+        {step > 1 ? (
+          <button type="button" onClick={prevStep} className="flex items-center gap-1.5 md:gap-2 px-4 py-2.5 md:px-6 md:py-3 rounded-lg md:rounded-xl font-medium text-sm md:text-base text-zinc-600 hover:bg-zinc-100 transition">
+            <ArrowRight className="w-4 h-4 md:w-5 md:h-5" /> مرحله قبل
+          </button>
+        ) : <div></div>}
 
-                {selectedProvince === 'تهران' && selectedCity === 'تهران' && selectedNeighborhoods.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5 md:gap-2 mt-1.5 md:mt-2 p-2.5 md:p-3 bg-zinc-50 rounded-lg md:rounded-xl border border-zinc-100">
-                    <div className="w-full text-[10px] md:text-xs text-zinc-500 mb-0.5 md:mb-1">محله‌های انتخابی ({selectedNeighborhoods.length.toLocaleString('fa', { useGrouping: false })} از ۴)</div>
-                    {selectedNeighborhoods.map((nh) => (
-                      <span 
-                        key={nh} 
-                        className="flex items-center gap-1 md:gap-1.5 bg-[#e3c9dc]/20 text-[#824c71] px-2.5 py-1 md:px-3 md:py-1.5 rounded-full text-[10px] md:text-xs font-bold border border-[#e3c9dc]"
-                      >
-                        {nh}
-                        <button 
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            removeNeighborhood(nh);
-                          }} 
-                          className="hover:bg-[#e3c9dc]/40 text-[#824c71] rounded-full p-0.5 transition-colors"
-                        >
-                          <X className="w-3 h-3 md:w-3.5 md:h-3.5" strokeWidth={2.5} />
-                        </button>
-                      </span>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              <div className="space-y-1.5 md:space-y-2">
-                <label className="block text-xs md:text-sm font-medium text-zinc-700">آدرس دقیق <span className="text-red-500">*</span></label>
-                <textarea 
-                  rows={3} 
-                  value={address}
-                  onChange={(e) => setAddress(e.target.value)}
-                  placeholder="خیابان اصلی، کوچه، پلاک، طبقه..." 
-                  className="w-full px-3 py-2.5 md:px-4 md:py-3 text-sm md:text-base rounded-lg md:rounded-xl border border-zinc-200 focus:border-zinc-300 focus:ring-1 focus:ring-zinc-300 outline-none transition-all resize-none"
-                ></textarea>
-              </div>
-              
-              {coordinates && coordinates[0] !== 0 && coordinates[1] !== 0 ? (
-                <div className="w-full space-y-2 md:space-y-3 animate-fade-in mt-4 md:mt-6">
-                  <div className="w-full h-36 md:h-56 rounded-xl md:rounded-2xl border border-zinc-200 overflow-hidden relative shadow-sm pointer-events-none bg-zinc-100">
-                    <img 
-                      src={`https://static-maps.yandex.ru/1.x/?ll=${coordinates[1]},${coordinates[0]}&z=15&l=map&size=600,250&pt=${coordinates[1]},${coordinates[0]},pm2rdm&lang=fa_IR`} 
-                      alt="پیش‌نمایش نقشه" 
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                  <div className="flex flex-row items-center justify-between px-1 pt-1">
-                    <div className="flex items-center gap-1.5 md:gap-2 text-green-600">
-                      <CheckCircle2 className="w-4 h-4 md:w-5 md:h-5" />
-                      <span className="text-xs md:text-sm font-medium text-zinc-800">موقعیت سالن ثبت شد</span>
-                    </div>
-                    <button 
-                      type="button" 
-                      onClick={() => {
-                        setTempCoordinates(coordinates);
-                        setIsMapModalOpen(true);
-                      }} 
-                      className="text-[#824c71] text-[10px] md:text-sm font-medium hover:bg-[#e3c9dc]/20 px-2 py-1 md:px-3 md:py-1.5 rounded-lg transition-colors flex items-center gap-1"
-                    >
-                      <MapPin className="w-3.5 h-3.5 md:w-4 md:h-4" /> ویرایش موقعیت
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <div className="bg-zinc-50 border border-dashed border-zinc-300 rounded-xl md:rounded-2xl p-4 md:p-6 flex flex-col items-center justify-center text-center gap-2 md:gap-3 mt-3 md:mt-4">
-                  <div className="w-10 h-10 md:w-12 md:h-12 bg-white text-zinc-400 rounded-full flex items-center justify-center shadow-sm mb-1 border border-zinc-200">
-                    <Map className="w-5 h-5 md:w-7 md:h-7" />
-                  </div>
-                  <div>
-                    <p className="text-xs md:text-sm font-medium text-zinc-800">موقعیت سالن را روی نقشه مشخص کنید</p>
-                  </div>
-                  <button 
-                    type="button" 
-                    onClick={() => {
-                      setTempCoordinates([35.6997, 51.3380]);
-                      setIsMapModalOpen(true);
-                    }} 
-                    className="mt-1 md:mt-2 bg-white border border-zinc-200 shadow-sm px-4 py-2 md:px-5 md:py-2.5 rounded-lg md:rounded-xl text-zinc-700 text-xs md:text-sm font-medium hover:bg-zinc-100 flex items-center gap-1.5 md:gap-2"
-                  >
-                    <MapPin className="w-4 h-4 md:w-[18px] md:h-[18px] text-zinc-600" /> انتخاب از روی نقشه
-                  </button>
-                </div>
-              )}
-            </section>
-          </div>
+        {step < 4 ? (
+          <button type="button" onClick={nextStep} className="flex items-center gap-1.5 md:gap-2 bg-[#824c71] text-white px-5 py-2.5 md:px-8 md:py-3 rounded-lg md:rounded-xl font-medium text-sm md:text-base hover:bg-[#6e3f60] transition">
+            مرحله بعد <ArrowLeft className="w-4 h-4 md:w-5 md:h-5" />
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={handleSubmit}
+            disabled={isSubmitting}
+            className="flex items-center gap-1.5 md:gap-2 bg-[#824c71] text-white px-5 py-2.5 md:px-8 md:py-3 rounded-lg md:rounded-xl font-medium text-sm md:text-base hover:bg-[#6e3f60] transition disabled:opacity-70 disabled:cursor-not-allowed"
+          >
+            {isSubmitting ? <Loader2 className="w-4 h-4 md:w-5 md:h-5 animate-spin" /> : <Save className="w-4 h-4 md:w-5 md:h-5" />}
+            {isSubmitting ? 'در حال بروزرسانی...' : 'ویرایش و ذخیره'}
+          </button>
         )}
+      </div>
 
-        {/* ================= مرحله ۲: خدمات ================= */}
-        {step === 2 && (
-          <div className="space-y-4 md:space-y-6 animate-fade-in">
-            <div className="flex items-center justify-between border-b border-zinc-100 pb-2 md:pb-3">
-              <div className="flex items-center gap-1.5 md:gap-2">
-                <CheckCircle2 className="text-zinc-700 w-5 h-5 md:w-6 md:h-6" />
-                <h2 className="text-base md:text-lg font-semibold text-zinc-800">خدمات قابل ارائه</h2>
-              </div>
-              <span className="text-[10px] md:text-xs text-[#824c71] bg-[#e3c9dc]/20 px-2 py-0.5 md:px-3 md:py-1 rounded-full font-medium">
-                {selectedTags.length.toLocaleString('fa-IR')} خدمت انتخاب شده
-              </span>
-            </div>
-            <p className="text-xs md:text-sm text-zinc-500 -mt-1 md:-mt-2">
-              جزئیات خدماتی که در سالن شما ارائه می‌شود را با دقت انتخاب کنید تا مشتریان راحت‌تر شما را پیدا کنند.
-            </p>
-            
-            <div className="space-y-3 md:space-y-4">
-              {allCategories.map((category) => {
-                const isExpanded = expandedCategories.includes(category);
-                const defaultServices = SERVICE_DETAILS[category as keyof typeof SERVICE_DETAILS] || [];
-                const categoryCustomServices = customServices[category] || [];
-                const categoryServices = [...defaultServices, ...categoryCustomServices];
-                const selectedCount = categoryServices.filter(s => selectedTags.includes(s)).length;
-                
-                return (
-                  <div key={category} className="border border-zinc-100 rounded-lg md:rounded-xl overflow-hidden bg-zinc-50/50">
-                    <button 
-                      type="button" 
-                      onClick={() => toggleCategory(category)} 
-                      className="w-full flex items-center justify-between p-3 md:p-4 bg-white hover:bg-zinc-50 transition-colors"
-                    >
-                      <div className="flex items-center gap-2 md:gap-3">
-                        <span className="text-sm md:text-base font-medium text-zinc-800">{category}</span>
-                        {selectedCount > 0 && (
-                          <span className="text-[10px] md:text-xs bg-[#e3c9dc]/20 text-[#824c71] px-1.5 py-0.5 md:px-2 md:py-0.5 rounded-full font-medium">
-                            {selectedCount.toLocaleString('fa-IR')} مورد
-                          </span>
-                        )}
-                      </div>
-                      {isExpanded ? (
-                        <ChevronUp className="text-zinc-400 w-4 h-4 md:w-5 md:h-5" />
-                      ) : (
-                        <ChevronDown className="text-zinc-400 w-4 h-4 md:w-5 md:h-5" />
-                      )}
-                    </button>
-                    
-                    {isExpanded && (
-                      <div className="p-3 md:p-4 border-t border-zinc-100 flex flex-col gap-3 md:gap-4">
-                        <div className="flex flex-wrap gap-1.5 md:gap-2">
-                          {categoryServices.map(service => {
-                            const isDefault = defaultServices.includes(service);
-                            const isSelected = selectedTags.includes(service);
-
-                            if (isDefault) {
-                              return (
-                                <button 
-                                  key={service} 
-                                  type="button" 
-                                  onClick={() => toggleTag(service)} 
-                                  className={`px-3 py-1.5 md:px-4 md:py-2 rounded-lg md:rounded-xl text-xs md:text-sm font-medium transition-all ${
-                                    isSelected
-                                      ? 'bg-[#e3c9dc]/20 border border-[#824c71]/30 text-[#824c71]'
-                                      : 'bg-white border border-zinc-200 text-zinc-600 hover:border-zinc-300 hover:bg-zinc-50'
-                                  }`}
-                                >
-                                  {service}
-                                </button>
-                              );
-                            } else {
-                              return (
-                                <div 
-                                  key={service} 
-                                  className={`flex items-center gap-0.5 md:gap-1 pl-1.5 pr-3 py-1 md:pl-2 md:pr-4 md:py-1.5 rounded-lg md:rounded-xl text-xs md:text-sm font-medium transition-all border ${
-                                    isSelected 
-                                      ? 'bg-amber-50 border-amber-300 text-amber-700 shadow-sm shadow-amber-100' 
-                                      : 'bg-white border-dashed border-amber-300 text-amber-600 hover:bg-amber-50/50'
-                                  }`}
-                                >
-                                  <button 
-                                    type="button" 
-                                    onClick={() => toggleTag(service)} 
-                                    className="flex-1 text-right py-0.5"
-                                  >
-                                    {service}
-                                  </button>
-                                  <button 
-                                    type="button" 
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      handleRemoveCustomTag(category, service);
-                                    }} 
-                                    className={`p-1 rounded-full transition-colors ${
-                                      isSelected ? 'text-amber-500 hover:bg-amber-200' : 'text-amber-400 hover:bg-amber-100 hover:text-amber-600'
-                                    }`}
-                                    title="حذف کامل این خدمت"
-                                  >
-                                    <X className="w-3.5 h-3.5 md:w-4 md:h-4" strokeWidth={2.5} />
-                                  </button>
-                                </div>
-                              );
-                            }
-                          })}
-                        </div>
-
-                        <div className="flex items-center gap-1.5 md:gap-2 mt-1 pt-2 md:pt-3 border-t border-zinc-100/60">
-                          <input 
-                            type="text" 
-                            value={newTagInputs[category] || ''}
-                            onChange={(e) => setNewTagInputs({...newTagInputs, [category]: e.target.value})}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter') {
-                                e.preventDefault();
-                                handleAddCustomTag(category);
-                              }
-                            }}
-                            placeholder={`افزودن خدمت جدید به ${category}...`} 
-                            className="flex-1 text-xs md:text-sm px-3 py-2 md:px-4 md:py-2.5 rounded-lg md:rounded-xl border border-zinc-200 focus:border-zinc-300 focus:ring-1 focus:ring-zinc-300 outline-none transition-all"
-                          />
-                          <button 
-                            type="button" 
-                            onClick={() => handleAddCustomTag(category)}
-                            className="px-2 py-2 md:px-3 md:py-2.5 bg-zinc-100 text-zinc-600 hover:bg-zinc-200 hover:text-zinc-800 rounded-lg md:rounded-xl transition-colors flex items-center justify-center gap-1 font-medium text-xs md:text-sm whitespace-nowrap"
-                          >
-                            <Plus className="w-4 h-4 md:w-[18px] md:h-[18px]" /> افزودن
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* ================= مرحله ۳: شبکه‌های اجتماعی ================= */}
-        {step === 3 && (
-          <div className="space-y-4 md:space-y-6 animate-fade-in">
-            <div className="flex items-center gap-2 border-b border-zinc-100 pb-2 md:pb-3">
-              <Globe className="text-zinc-700 w-5 h-5 md:w-6 md:h-6" />
-              <h2 className="text-base md:text-lg font-semibold text-zinc-800">شبکه‌های اجتماعی (اختیاری)</h2>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
-              {['instagram', 'whatsapp', 'telegram', 'rubika', 'bale', 'website'].map((social) => {
-                const faNames: Record<string, string> = {
-                  instagram: 'اینستاگرام', whatsapp: 'واتساپ', telegram: 'تلگرام', 
-                  rubika: 'روبیکا', bale: 'بله', website: 'وب‌سایت'
-                };
-                return (
-                  <div key={social} className="space-y-1.5 md:space-y-2">
-                    <label className="block text-xs md:text-sm font-medium text-zinc-700">{faNames[social]}</label>
-                    <div className="relative">
-                      {social === 'website' ? <Globe className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 w-4 h-4 md:w-5 md:h-5" /> 
-                      : social === 'telegram' ? <Send className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 w-4 h-4 md:w-5 md:h-5" />
-                      : <MessageCircle className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 w-4 h-4 md:w-5 md:h-5" />}
-                      <input 
-                        type={social === 'website' ? 'url' : 'text'} 
-                        value={socials[social as keyof typeof socials]}
-                        onChange={(e) => setSocials({...socials, [social]: e.target.value})}
-                        placeholder={social === 'website' ? "https://..." : "ID یا شماره"} 
-                        className="w-full pr-9 pl-3 py-2.5 md:pr-10 md:pl-4 md:py-3 text-sm md:text-base rounded-lg md:rounded-xl border border-zinc-200 focus:border-zinc-300 focus:ring-1 focus:ring-zinc-300 outline-none transition-all text-left dir-ltr" 
-                      />
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* ================= مرحله ۴: تصاویر و نمونه کارها ================= */}
-        {step === 4 && (
-          <div className="space-y-6 md:space-y-8 animate-fade-in">
-            <div className="flex items-center gap-2 border-b border-zinc-100 pb-2 md:pb-3">
-              <ImagePlus className="text-zinc-700 w-5 h-5 md:w-6 md:h-6" />
-              <h2 className="text-base md:text-lg font-semibold text-zinc-800">تصاویر سالن</h2>
-            </div>
-
-            {/* بخش اول: کاور اصلی */}
-            <div className="space-y-3 md:space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="font-medium text-zinc-800 text-sm md:text-base">عکس کاور اصلی <span className="text-red-500">*</span></h3>
-                <span className="text-[10px] md:text-xs text-zinc-500">برای نمایش در صفحه اصلی سالن</span>
-              </div>
-              
-              {!coverImage && !existingCover ? (
-                <label className="cursor-pointer bg-zinc-50 border-2 border-dashed border-zinc-300 rounded-xl md:rounded-2xl p-6 md:p-8 flex flex-col items-center justify-center text-center gap-2 md:gap-3 hover:bg-zinc-100 transition-colors">
-                  <div className="w-12 h-12 md:w-14 md:h-14 bg-white text-[#824c71] rounded-full flex items-center justify-center shadow-sm mb-1 md:mb-2 border border-zinc-200">
-                    <ImageIcon className="w-6 h-6 md:w-8 md:h-8" />
-                  </div>
-                  <h3 className="font-medium text-zinc-800 text-sm md:text-base">برای آپلود کاور اصلی کلیک کنید</h3>
-                  <p className="text-xs md:text-sm text-zinc-500">فرمت‌های مجاز: JPG, PNG, WEBP</p>
-                  <input 
-                    type="file" 
-                    accept="image/*" 
-                    className="hidden" 
-                    onChange={handleCoverUpload} 
-                  />
-                </label>
-              ) : (
-  <div className="relative max-w-lg">
-    <div className="rounded-lg md:rounded-xl overflow-hidden aspect-video border border-zinc-200 shadow-sm">
-      <img 
-        src={coverImage ? URL.createObjectURL(coverImage) : existingCover!} 
-        alt="کاور اصلی" 
-        className="w-full h-full object-cover"
-      />
-    </div>
-    <button 
-      type="button"
-      onClick={removeCoverImage}
-      className="absolute top-3 left-3 w-10 h-10 rounded-full bg-white text-zinc-800 flex items-center justify-center shadow-lg active:scale-95 transition"
-    >
-      <Trash2 size={20} />
-    </button>
-  </div>
-)}
-   </div>
-
-            {/* بخش دوم: نمونه کارها */}
-            <div className="space-y-3 md:space-y-4 pt-4 border-t border-zinc-100">
-              <div className="flex items-center justify-between">
-                <h3 className="font-medium text-zinc-800 text-sm md:text-base">نمونه کارها (اختیاری)</h3>
-                <span className="text-[10px] md:text-xs bg-zinc-100 text-zinc-600 px-2 py-0.5 md:px-3 md:py-1 rounded-full font-medium">
-                  {totalPortfoliosCount.toLocaleString('fa-IR')} از {maxPortfolios.toLocaleString('fa-IR')} تصویر
-                </span>
-              </div>
-              
-              {totalPortfoliosCount < maxPortfolios && (
-                <label className="cursor-pointer bg-zinc-50 border-2 border-dashed border-zinc-300 rounded-xl md:rounded-2xl p-6 md:p-8 flex flex-col items-center justify-center text-center gap-2 md:gap-3 hover:bg-zinc-100 transition-colors">
-                  <div className="w-12 h-12 md:w-14 md:h-14 bg-white text-[#824c71] rounded-full flex items-center justify-center shadow-sm mb-1 md:mb-2 border border-zinc-200">
-                    <UploadCloud className="w-6 h-6 md:w-8 md:h-8" />
-                  </div>
-                  <h3 className="font-medium text-zinc-800 text-sm md:text-base">برای آپلود نمونه کار جدید کلیک کنید</h3>
-                  <input 
-                    type="file" 
-                    multiple 
-                    accept="image/*" 
-                    className="hidden" 
-                    onChange={handlePortfoliosUpload} 
-                  />
-                </label>
-              )}
-
-              {totalPortfoliosCount > 0 && (
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 md:gap-4 mt-4 md:mt-6">
-                  {existingPortfolios.map((url, index) => (
-  <div key={`existing-${index}`} className="relative rounded-lg md:rounded-xl overflow-hidden aspect-square border border-zinc-200 shadow-sm">
-    <img src={url} alt="نمونه کار قبلی" className="w-full h-full object-cover" />
-    <button 
-      type="button" 
-      onClick={() => removeExistingPortfolio(index)} 
-      className="absolute top-2 left-2 w-8 h-8 rounded-full bg-white text-zinc-800 flex items-center justify-center shadow-lg active:scale-95 transition"
-    >
-      <Trash2 size={16} />
-    </button>
-  </div>
-))}
-
-                  {portfolios.map((file, index) => (
-  <div key={`new-${index}`} className="relative rounded-lg md:rounded-xl overflow-hidden aspect-square border border-emerald-200 shadow-sm">
-    <div className="absolute top-1.5 right-1.5 bg-emerald-500 text-white text-[9px] px-1.5 py-0.5 rounded-full z-10">جدید</div>
-    <img src={URL.createObjectURL(file)} alt="نمونه کار جدید" className="w-full h-full object-cover" />
-    <button 
-      type="button" 
-      onClick={() => removePortfolio(index)} 
-      className="absolute top-2 left-2 w-8 h-8 rounded-full bg-white text-zinc-800 flex items-center justify-center shadow-lg active:scale-95 transition z-20"
-    >
-      <Trash2 size={16} />
-    </button>
-  </div>
-))}
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* دکمه‌های ناوبری */}
-        <div className="mt-8 md:mt-10 pt-4 md:pt-6 border-t border-zinc-100 flex items-center justify-between">
-          {step > 1 ? (
-            <button type="button" onClick={prevStep} className="flex items-center gap-1.5 md:gap-2 px-4 py-2.5 md:px-6 md:py-3 rounded-lg md:rounded-xl font-medium text-sm md:text-base text-zinc-600 hover:bg-zinc-100 transition">
-              <ArrowRight className="w-4 h-4 md:w-5 md:h-5" /> مرحله قبل
-            </button>
-          ) : <div></div>}
-
-          {step < 4 ? (
-            <button type="button" onClick={nextStep} className="flex items-center gap-1.5 md:gap-2 bg-[#824c71] text-white px-5 py-2.5 md:px-8 md:py-3 rounded-lg md:rounded-xl font-medium text-sm md:text-base hover:bg-[#6e3f60] transition">
-              مرحله بعد <ArrowLeft className="w-4 h-4 md:w-5 md:h-5" />
-            </button>
-          ) : (
-            <button 
-              type="button" 
-              onClick={handleSubmit} 
-              disabled={isSubmitting}
-              className="flex items-center gap-1.5 md:gap-2 bg-[#824c71] text-white px-5 py-2.5 md:px-8 md:py-3 rounded-lg md:rounded-xl font-medium text-sm md:text-base hover:bg-[#6e3f60] transition disabled:opacity-70 disabled:cursor-not-allowed"
-            >
-              {isSubmitting ? <Loader2 className="w-4 h-4 md:w-5 md:h-5 animate-spin" /> : <Save className="w-4 h-4 md:w-5 md:h-5" />}
-              {isSubmitting ? 'در حال بروزرسانی...' : 'ویرایش و ذخیره'}
-            </button>
-          )}
-        </div>
-
-            <RegionFilterModal 
-        isOpen={isRegionModalOpen} 
-        onClose={() => setIsRegionModalOpen(false)} 
-        onSelectLocation={handleLocationSelect} 
+      <RegionFilterModal
+        isOpen={isRegionModalOpen}
+        onClose={() => setIsRegionModalOpen(false)}
+        onSelectLocation={handleLocationSelect}
         initialProvince={selectedProvince}
         initialCity={selectedCity}
         initialNeighborhoods={selectedNeighborhoods}
         maxNeighborhoods={4}
       />
 
-
-      {isMapModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-fade-in">
-          <div className="bg-white rounded-2xl w-full max-w-3xl overflow-hidden shadow-2xl flex flex-col h-[75vh] md:h-[85vh]">
-            <div className="p-4 border-b border-zinc-100 flex justify-between items-center bg-white z-10">
-              <h3 className="font-semibold text-zinc-800">انتخاب موقعیت روی نقشه</h3>
-              <button onClick={() => setIsMapModalOpen(false)} className="text-zinc-400 hover:text-zinc-700 transition-colors bg-zinc-100 hover:bg-zinc-200 p-2 rounded-full">
-                <X size={20} />
-              </button>
-            </div>
-            
-            <div className="flex-1 relative bg-zinc-100 w-full h-full">
-               <MapPicker 
-                  position={tempCoordinates || coordinates || [35.6892, 51.3890]} 
-                  setPosition={(coords: [number, number]) => setTempCoordinates(coords)}
-               />
-            </div>
-            
-            <div className="p-4 bg-white border-t border-zinc-100 flex justify-between items-center gap-3 z-10">
-              <span className="text-sm text-zinc-500 hidden md:inline-block">لطفا نقشه را جابجا کنید تا نشانگر روی لوکیشن شما قرار بگیرد.</span>
-              <div className="flex gap-3 w-full md:w-auto">
-                <button onClick={() => setIsMapModalOpen(false)} className="flex-1 md:flex-none px-4 py-2 rounded-[8px] text-xs text-zinc-600 font-medium hover:bg-zinc-100 transition-colors">
-                  انصراف
-                </button>
-                <button 
-                  onClick={() => {
-                    if (tempCoordinates) setCoordinates(tempCoordinates);
-                    setLocationSelected(true);
-                    setIsMapModalOpen(false);
-                  }} 
-                  className="flex-1 md:flex-none px-4 py-2 rounded-[8px] text-xs bg-[#824c71] text-white font-medium hover:bg-[#6e3f60] transition-colors flex items-center justify-center gap-2"
-                >
-                  <CheckCircle2 size={20} /> تایید موقعیت
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      <MapPickerModal
+        isOpen={isMapModalOpen}
+        position={tempCoordinates || coordinates || [35.6892, 51.3890]}
+        onPositionChange={setTempCoordinates}
+        onClose={() => setIsMapModalOpen(false)}
+        onConfirm={confirmMapPosition}
+        helperText="لطفا نقشه را جابجا کنید تا نشانگر روی لوکیشن شما قرار بگیرد."
+      />
     </div>
   );
 }
