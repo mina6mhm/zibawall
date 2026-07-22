@@ -174,10 +174,9 @@ export default function SupportDetailPage() {
         )}
         <div ref={bottomRef} />
       </div>
-
-      {/* باکس ارسال پیام جدید */}
-      {!isFetching && !notFound && (
-        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-zinc-100 px-4 py-3">
+{/* باکس ارسال پیام جدید */}
+{!isFetching && !notFound && (
+  <div className="fixed bottom-16 left-0 right-0 bg-white border-t border-zinc-100 px-4 py-3 z-50">
           <div className="max-w-lg mx-auto flex items-center gap-2">
             <input
               value={newMessage}
