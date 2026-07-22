@@ -33,8 +33,13 @@ export default function SupportDetailPage() {
   const [isSending, setIsSending] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [notFound, setNotFound] = useState(false);
+  const [isTouchDevice, setIsTouchDevice] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    setIsTouchDevice(window.matchMedia('(pointer: coarse)').matches);
+  }, []);
 
   const buildThread = (ticket: any): ThreadItem[] => {
     const items: ThreadItem[] = [
@@ -92,7 +97,6 @@ export default function SupportDetailPage() {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [thread]);
 
-  // ارتفاع خودکار textarea بر اساس محتوا
   useEffect(() => {
     const el = textareaRef.current;
     if (el) {
@@ -127,7 +131,10 @@ export default function SupportDetailPage() {
     }
   };
 
+  // روی دسکتاپ: Enter = ارسال، Shift+Enter = خط جدید
+  // روی موبایل: Enter همیشه خط جدید می‌سازه، ارسال فقط با دکمه‌ست
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (isTouchDevice) return;
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSend();
@@ -191,7 +198,7 @@ export default function SupportDetailPage() {
         {thread.map((item) =>
           item.sender === 'USER' ? (
             <div key={item.id} className="flex items-start gap-2 max-w-[85%] mr-auto flex-row-reverse">
-              <div className="bg-[#e3c9dc]/25 border border-[#e3c9dc]/60 rounded-xl rounded-tr-sm px-4 py-3 text-[14px] leading-relaxed text-zinc-700 whitespace-pre-wrap break-words">
+              <div className="min-w-0 bg-[#e3c9dc]/25 border border-[#e3c9dc]/60 rounded-xl rounded-tr-sm px-4 py-3 text-[14px] leading-relaxed text-zinc-700 whitespace-pre-wrap break-words">
                 <div className="flex items-center gap-1.5 text-[#824c71] text-[11px] font-medium mb-1.5">
                   <User className="w-3.5 h-3.5" /> پیام شما
                 </div>
@@ -203,7 +210,7 @@ export default function SupportDetailPage() {
             </div>
           ) : (
             <div key={item.id} className="flex items-start gap-2 max-w-[85%]">
-              <div className="bg-[#e3c9dc]/25 border border-[#e3c9dc]/60 rounded-xl rounded-tl-sm px-4 py-3 text-[14px] leading-relaxed text-zinc-700 whitespace-pre-wrap break-words">
+              <div className="min-w-0 bg-[#e3c9dc]/25 border border-[#e3c9dc]/60 rounded-xl rounded-tl-sm px-4 py-3 text-[14px] leading-relaxed text-zinc-700 whitespace-pre-wrap break-words">
                 <div className="flex items-center gap-1.5 text-[#824c71] text-[11px] font-medium mb-1.5">
                   <CheckCircle2 className="w-3.5 h-3.5" /> پاسخ پشتیبانی
                 </div>

@@ -35,8 +35,13 @@ export default function AdminSupportDetailPage() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [accessDenied, setAccessDenied] = useState(false);
   const [notFound, setNotFound] = useState(false);
+  const [isTouchDevice, setIsTouchDevice] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    setIsTouchDevice(window.matchMedia('(pointer: coarse)').matches);
+  }, []);
 
   const buildThread = (ticket: any): ThreadItem[] => {
     const items: ThreadItem[] = [
@@ -99,7 +104,6 @@ export default function AdminSupportDetailPage() {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [thread]);
 
-  // ارتفاع خودکار textarea بر اساس محتوا
   useEffect(() => {
     const el = textareaRef.current;
     if (el) {
@@ -135,6 +139,7 @@ export default function AdminSupportDetailPage() {
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (isTouchDevice) return;
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSend();
@@ -225,7 +230,7 @@ export default function AdminSupportDetailPage() {
         {thread.map((item) =>
           item.sender === 'USER' ? (
             <div key={item.id} className="flex items-start gap-2 max-w-[85%] mr-auto flex-row-reverse">
-              <div className="bg-zinc-50 border border-zinc-200 rounded-xl rounded-tr-sm px-4 py-3 text-[14px] leading-relaxed text-zinc-700 whitespace-pre-wrap break-words">
+              <div className="min-w-0 bg-zinc-50 border border-zinc-200 rounded-xl rounded-tr-sm px-4 py-3 text-[14px] leading-relaxed text-zinc-700 whitespace-pre-wrap break-words">
                 <div className="flex items-center gap-1.5 text-zinc-500 text-[11px] font-medium mb-1.5">
                   <User className="w-3.5 h-3.5" /> پیام کاربر
                 </div>
@@ -237,7 +242,7 @@ export default function AdminSupportDetailPage() {
             </div>
           ) : (
             <div key={item.id} className="flex items-start gap-2 max-w-[85%]">
-              <div className="bg-[#e3c9dc]/25 border border-[#e3c9dc]/60 rounded-xl rounded-tl-sm px-4 py-3 text-[14px] leading-relaxed text-zinc-700 whitespace-pre-wrap break-words">
+              <div className="min-w-0 bg-[#e3c9dc]/25 border border-[#e3c9dc]/60 rounded-xl rounded-tl-sm px-4 py-3 text-[14px] leading-relaxed text-zinc-700 whitespace-pre-wrap break-words">
                 <div className="flex items-center gap-1.5 text-[#824c71] text-[11px] font-medium mb-1.5">
                   <CheckCircle2 className="w-3.5 h-3.5" /> پاسخ شما
                 </div>
