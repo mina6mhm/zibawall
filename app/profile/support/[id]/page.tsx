@@ -34,12 +34,12 @@ export default function SupportDetailPage() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [notFound, setNotFound] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const buildThread = (ticket: any): ThreadItem[] => {
     const items: ThreadItem[] = [
       { id: `${ticket.id}-first`, sender: 'USER', message: ticket.message, createdAt: ticket.createdAt },
     ];
-    // پاسخ قدیمی (برای مکالمات قبل از این تغییر)
     if (ticket.adminReply && ticket.replies.length === 0) {
       items.push({
         id: `${ticket.id}-legacy`,
@@ -69,7 +69,6 @@ export default function SupportDetailPage() {
         const data = await res.json();
         setStatus(data.ticket.status);
         setThread(buildThread(data.ticket));
-        // علامت‌گذاری دیده‌شدن
         if (!data.ticket.seenByUser) {
           fetch(`/api/support/${id}`, {
             method: 'PATCH',
@@ -92,6 +91,15 @@ export default function SupportDetailPage() {
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [thread]);
+
+  // ارتفاع خودکار textarea بر اساس محتوا
+  useEffect(() => {
+    const el = textareaRef.current;
+    if (el) {
+      el.style.height = 'auto';
+      el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+    }
+  }, [newMessage]);
 
   const handleSend = async () => {
     const trimmed = newMessage.trim();
@@ -116,6 +124,13 @@ export default function SupportDetailPage() {
       alert('خطای شبکه در ارتباط با سرور');
     } finally {
       setIsSending(false);
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
     }
   };
 
@@ -176,7 +191,7 @@ export default function SupportDetailPage() {
         {thread.map((item) =>
           item.sender === 'USER' ? (
             <div key={item.id} className="flex items-start gap-2 max-w-[85%] mr-auto flex-row-reverse">
-              <div className="bg-[#e3c9dc]/25 border border-[#e3c9dc]/60 rounded-xl rounded-tr-sm px-4 py-3 text-[14px] leading-relaxed text-zinc-700">
+              <div className="bg-[#e3c9dc]/25 border border-[#e3c9dc]/60 rounded-xl rounded-tr-sm px-4 py-3 text-[14px] leading-relaxed text-zinc-700 whitespace-pre-wrap break-words">
                 <div className="flex items-center gap-1.5 text-[#824c71] text-[11px] font-medium mb-1.5">
                   <User className="w-3.5 h-3.5" /> پیام شما
                 </div>
@@ -188,7 +203,7 @@ export default function SupportDetailPage() {
             </div>
           ) : (
             <div key={item.id} className="flex items-start gap-2 max-w-[85%]">
-              <div className="bg-[#e3c9dc]/25 border border-[#e3c9dc]/60 rounded-xl rounded-tl-sm px-4 py-3 text-[14px] leading-relaxed text-zinc-700">
+              <div className="bg-[#e3c9dc]/25 border border-[#e3c9dc]/60 rounded-xl rounded-tl-sm px-4 py-3 text-[14px] leading-relaxed text-zinc-700 whitespace-pre-wrap break-words">
                 <div className="flex items-center gap-1.5 text-[#824c71] text-[11px] font-medium mb-1.5">
                   <CheckCircle2 className="w-3.5 h-3.5" /> پاسخ پشتیبانی
                 </div>
@@ -206,13 +221,15 @@ export default function SupportDetailPage() {
       {/* باکس ارسال پیام جدید */}
       {!isFetching && !notFound && (
         <div className="fixed bottom-6 left-0 right-0 bg-white border-t border-zinc-100 px-4 py-3 z-50">
-          <div className="max-w-lg mx-auto flex items-center gap-2">
-            <input
+          <div className="max-w-lg mx-auto flex items-end gap-2">
+            <textarea
+              ref={textareaRef}
               value={newMessage}
               onChange={(e) => setNewMessage(e.target.value.slice(0, 2000))}
-              onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+              onKeyDown={handleKeyDown}
               placeholder="پیام خود را بنویسید..."
-              className="flex-1 border border-zinc-200 rounded-xl px-4 py-2.5 text-sm focus:border-[#824c71] focus:ring-2 focus:ring-[#824c71]/15 outline-none transition-all"
+              rows={1}
+              className="flex-1 border border-zinc-200 rounded-xl px-4 py-2.5 text-sm resize-none leading-relaxed max-h-[120px] overflow-y-auto focus:border-[#824c71] focus:ring-2 focus:ring-[#824c71]/15 outline-none transition-all"
             />
             <button
               onClick={handleSend}
