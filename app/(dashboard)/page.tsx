@@ -6,17 +6,17 @@ import { useRouter } from 'next/navigation';
 import { CATEGORIES, CATEGORY_MAPPING } from '@/lib/data'; 
 import RegionFilterModal from '@/components/RegionFilterModal';
 import SearchBar from '@/components/SearchBar';
-import { Home, Check, Sparkles, Eye, Hand, Scissors, Flower2, Wind, Heart, Palette, type LucideIcon } from 'lucide-react';
+import { Home, Check, Sparkles, Eye, Gem, Scissors, Flower2, Zap, Crown, Palette, type LucideIcon } from 'lucide-react';
 
 // --- نگاشت دقیق آیکون مینیمال بر اساس اسم واقعی هر دسته (از lib/data.ts) ---
 const CATEGORY_ICON_MAP: Record<string, LucideIcon> = {
   'خدمات مو': Scissors,
-  'خدمات ناخن': Hand,
+  'خدمات ناخن': Gem,
   'خدمات ابرو و مژه': Eye,
   'خدمات پوست و زیبایی': Sparkles,
   'خدمات آرایش و میکاپ': Palette,
-  'پکیج‌های عروس': Heart,
-  'موزدایی و بدن': Wind,
+  'پکیج‌های عروس': Crown,
+  'موزدایی و بدن': Zap,
   'خدمات ماساژ و اسپا': Flower2,
 };
 
@@ -408,10 +408,16 @@ export default function DashboardHomePage() {
                       : 'border-zinc-100 bg-zinc-50/60 hover:bg-zinc-50'
                   }`}
                 >
-                  <CategoryIcon
-                    className={`w-7 h-7 ${isActive ? 'text-[#824c71]' : 'text-[#824c71]/80'}`}
-                    strokeWidth={1.5}
-                  />
+                  <span
+                    className={`w-11 h-11 rounded-full flex items-center justify-center shrink-0 transition-colors ${
+                      isActive ? 'bg-[#824c71]/10' : 'bg-[#824c71]/[0.06]'
+                    }`}
+                  >
+                    <CategoryIcon
+                      className={`w-5 h-5 ${isActive ? 'text-[#824c71]' : 'text-[#824c71]/75'}`}
+                      strokeWidth={1.75}
+                    />
+                  </span>
                   <span
                     className={`text-[11.5px] md:text-xs font-medium text-center leading-tight ${
                       isActive ? 'text-[#824c71]' : 'text-zinc-700'
