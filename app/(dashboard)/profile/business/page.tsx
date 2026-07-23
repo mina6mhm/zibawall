@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation';
 import { ArrowRight, ArrowLeft, CheckCircle2 } from 'lucide-react';
 
 import RegionFilterModal from '@/components/RegionFilterModal';
-import { SERVICE_DETAILS } from '@/components/business-form/constants';
+import { SERVICE_DETAILS, type GenderAudience } from '@/components/business-form/constants';
 import { validateAndCompress } from '@/components/business-form/imageUtils';
 import Step1BasicInfo from '@/components/business-form/Step1BasicInfo';
 import Step2Services from '@/components/business-form/Step2Services';
@@ -43,6 +43,8 @@ export default function BusinessRegistrationPage() {
 
   const [phones, setPhones] = useState<string[]>(['']);
   const [closedDays, setClosedDays] = useState<string[]>([]);
+  const [hasHomeService, setHasHomeService] = useState<boolean>(false);
+  const [genderAudience, setGenderAudience] = useState<GenderAudience>('BOTH');
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [selectedProvince, setSelectedProvince] = useState<string>('');
   const [selectedCity, setSelectedCity] = useState<string>('');
@@ -246,6 +248,8 @@ export default function BusinessRegistrationPage() {
         phones: phones.filter(p => p.trim() !== ''),
         workingHours,
         closedDays,
+        hasHomeService,
+        genderAudience,
         tags: formattedTags,
         description: description || 'توضیحات پیش‌فرض سالن',
         socials,
@@ -326,6 +330,8 @@ export default function BusinessRegistrationPage() {
           workingHours={workingHours} onWorkingHoursChange={setWorkingHours}
           description={description} onDescriptionChange={setDescription}
           closedDays={closedDays} onToggleClosedDay={toggleClosedDay}
+          hasHomeService={hasHomeService} onHasHomeServiceChange={setHasHomeService}
+          genderAudience={genderAudience} onGenderAudienceChange={setGenderAudience}
           phones={phones} onAddPhone={handleAddPhone} onRemovePhone={handleRemovePhone} onPhoneChange={handlePhoneChange}
           selectedProvince={selectedProvince} selectedCity={selectedCity} onOpenRegionModal={() => setIsRegionModalOpen(true)}
           selectedNeighborhoods={selectedNeighborhoods} onRemoveNeighborhood={removeNeighborhood}

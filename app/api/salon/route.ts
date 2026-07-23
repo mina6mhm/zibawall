@@ -131,6 +131,8 @@ if (
         phones: body.phones,
         workingHours: body.workingHours,
         closedDays: body.closedDays,
+        hasHomeService: !!body.hasHomeService,
+        genderAudience: body.genderAudience || 'BOTH',
         tags: body.tags,
         description: body.description,
         imageUrl: body.imageUrl,

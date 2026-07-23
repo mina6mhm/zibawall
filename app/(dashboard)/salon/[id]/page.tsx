@@ -6,9 +6,16 @@ import { useRouter } from "next/navigation";
 import { CATEGORY_MAPPING } from "@/lib/data";
 import { 
   ArrowRight, Star, MapPin, Clock, Phone,
-  CheckCircle2, CalendarOff, X, MessageCircle, ChevronDown, ChevronUp, Map, Trash2
+  CheckCircle2, CalendarOff, X, MessageCircle, ChevronDown, ChevronUp, Map, Trash2,
+  Home, Users
 } from "lucide-react";
 import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
+
+const GENDER_AUDIENCE_LABELS: Record<string, string> = {
+  FEMALE: 'مخصوص خانم‌ها',
+  MALE: 'مخصوص آقایون',
+  BOTH: 'خانم‌ها و آقایون',
+};
 
 export default function SalonDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params);
@@ -240,6 +247,24 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
           <span className="text-[11px] sm:text-xs text-zinc-500 font-medium">({totalVotes} رای)</span>
         </div>
       </div>
+
+      {/* بج‌های خدمات در منزل / مخاطب سالن */}
+      {(salon.hasHomeService || salon.genderAudience) && (
+        <div className="flex flex-wrap gap-2 mb-4">
+          {salon.hasHomeService && (
+            <span className="inline-flex items-center gap-1.5 bg-emerald-50 text-emerald-700 border border-emerald-200 px-2.5 py-1 rounded-lg text-[11px] sm:text-xs font-medium">
+              <Home className="w-3.5 h-3.5" />
+              خدمات در منزل
+            </span>
+          )}
+          {salon.genderAudience && (
+            <span className="inline-flex items-center gap-1.5 bg-[#e3c9dc]/20 text-[#824c71] border border-[#824c71]/20 px-2.5 py-1 rounded-lg text-[11px] sm:text-xs font-medium">
+              <Users className="w-3.5 h-3.5" />
+              {GENDER_AUDIENCE_LABELS[salon.genderAudience] || salon.genderAudience}
+            </span>
+          )}
+        </div>
+      )}
 
       {isAdmin && (
         <button

@@ -36,6 +36,14 @@ export const SERVICE_DETAILS = {
 
 export const WEEK_DAYS = ['شنبه', 'یکشنبه', 'دوشنبه', 'سه‌شنبه', 'چهارشنبه', 'پنج‌شنبه', 'جمعه'];
 
+export const GENDER_AUDIENCE_OPTIONS = [
+  { value: 'FEMALE', label: 'فقط خانم‌ها' },
+  { value: 'MALE', label: 'فقط آقایون' },
+  { value: 'BOTH', label: 'خانم‌ها و آقایون' },
+] as const;
+
+export type GenderAudience = typeof GENDER_AUDIENCE_OPTIONS[number]['value'];
+
 export const SOCIAL_FIELDS = [
   { key: 'instagram', label: 'اینستاگرام', placeholder: 'ID اینستاگرام', icon: 'instagram' as const },
   { key: 'whatsapp', label: 'واتساپ', placeholder: 'شماره واتساپ', icon: 'message' as const },

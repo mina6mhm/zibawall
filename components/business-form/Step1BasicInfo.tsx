@@ -2,7 +2,7 @@
 'use client';
 
 import { Store, MapPin, Clock, Phone, FileText, Plus, Trash2, Map, CheckCircle2, ChevronDown, X } from 'lucide-react';
-import { WEEK_DAYS } from './constants';
+import { WEEK_DAYS, GENDER_AUDIENCE_OPTIONS, type GenderAudience } from './constants';
 
 type Props = {
   name: string;
@@ -16,6 +16,12 @@ type Props = {
 
   closedDays: string[];
   onToggleClosedDay: (day: string) => void;
+
+  hasHomeService: boolean;
+  onHasHomeServiceChange: (value: boolean) => void;
+
+  genderAudience: GenderAudience;
+  onGenderAudienceChange: (value: GenderAudience) => void;
 
   phones: string[];
   onAddPhone: () => void;
@@ -43,6 +49,8 @@ export default function Step1BasicInfo({
   workingHours, onWorkingHoursChange,
   description, onDescriptionChange,
   closedDays, onToggleClosedDay,
+  hasHomeService, onHasHomeServiceChange,
+  genderAudience, onGenderAudienceChange,
   phones, onAddPhone, onRemovePhone, onPhoneChange,
   selectedProvince, selectedCity, onOpenRegionModal,
   selectedNeighborhoods, onRemoveNeighborhood,
@@ -112,6 +120,54 @@ export default function Step1BasicInfo({
                   }`}
                 >
                   {day}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="space-y-2 md:space-y-3">
+            <label className="block text-xs md:text-sm font-medium text-zinc-700">خدمات در منزل</label>
+            <div className="flex gap-1.5 md:gap-2">
+              <button
+                type="button"
+                onClick={() => onHasHomeServiceChange(true)}
+                className={`px-3 py-1.5 md:px-4 md:py-2 rounded-lg md:rounded-xl text-xs md:text-sm font-medium transition-colors ${
+                  hasHomeService
+                    ? 'bg-[#e3c9dc]/20 text-[#824c71] border border-[#824c71]/30'
+                    : 'bg-white border border-zinc-200 text-zinc-600 hover:bg-zinc-50'
+                }`}
+              >
+                دارد
+              </button>
+              <button
+                type="button"
+                onClick={() => onHasHomeServiceChange(false)}
+                className={`px-3 py-1.5 md:px-4 md:py-2 rounded-lg md:rounded-xl text-xs md:text-sm font-medium transition-colors ${
+                  !hasHomeService
+                    ? 'bg-[#e3c9dc]/20 text-[#824c71] border border-[#824c71]/30'
+                    : 'bg-white border border-zinc-200 text-zinc-600 hover:bg-zinc-50'
+                }`}
+              >
+                ندارد
+              </button>
+            </div>
+          </div>
+
+          <div className="space-y-2 md:space-y-3">
+            <label className="block text-xs md:text-sm font-medium text-zinc-700">سالن مخصوص</label>
+            <div className="flex flex-wrap gap-1.5 md:gap-2">
+              {GENDER_AUDIENCE_OPTIONS.map(opt => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => onGenderAudienceChange(opt.value)}
+                  className={`px-3 py-1.5 md:px-4 md:py-2 rounded-lg md:rounded-xl text-xs md:text-sm font-medium transition-colors ${
+                    genderAudience === opt.value
+                      ? 'bg-[#e3c9dc]/20 text-[#824c71] border border-[#824c71]/30'
+                      : 'bg-white border border-zinc-200 text-zinc-600 hover:bg-zinc-50'
+                  }`}
+                >
+                  {opt.label}
                 </button>
               ))}
             </div>

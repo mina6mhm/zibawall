@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation';
 import { ArrowRight, ArrowLeft, CheckCircle2, Save, Loader2 } from 'lucide-react';
 
 import RegionFilterModal from '@/components/RegionFilterModal';
-import { SERVICE_DETAILS } from '@/components/business-form/constants';
+import { SERVICE_DETAILS, type GenderAudience } from '@/components/business-form/constants';
 import { validateAndCompress } from '@/components/business-form/imageUtils';
 import Step1BasicInfo from '@/components/business-form/Step1BasicInfo';
 import Step2Services from '@/components/business-form/Step2Services';
@@ -34,6 +34,8 @@ export default function BusinessEditPage() {
   const [address, setAddress] = useState('');
   const [phones, setPhones] = useState<string[]>(['']);
   const [closedDays, setClosedDays] = useState<string[]>([]);
+  const [hasHomeService, setHasHomeService] = useState<boolean>(false);
+  const [genderAudience, setGenderAudience] = useState<GenderAudience>('BOTH');
 
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [newTagInputs, setNewTagInputs] = useState<Record<string, string>>({});
@@ -90,6 +92,8 @@ export default function BusinessEditPage() {
             setAddress(salon.address || '');
             setPhones(salon.phones && salon.phones.length > 0 ? salon.phones : ['']);
             setClosedDays(salon.closedDays || []);
+            setHasHomeService(!!salon.hasHomeService);
+            setGenderAudience(salon.genderAudience || 'BOTH');
 
             if (salon.tags && salon.tags.length > 0) {
               const extractedNames = salon.tags.map((t: any) => typeof t === 'string' ? t : t.name);
@@ -329,6 +333,7 @@ export default function BusinessEditPage() {
       const payload = {
         userPhone: user.phone,
         name, workingHours, description, address, phones, closedDays,
+        hasHomeService, genderAudience,
         tags: formattedTags, province: selectedProvince, city: selectedCity,
         neighborhoods: selectedProvince === 'تهران' && selectedCity === 'تهران' ? selectedNeighborhoods : [],
         coordinates, imageUrl: finalCoverUrl, portfolios: finalPortfolios, socials
@@ -408,6 +413,8 @@ export default function BusinessEditPage() {
           workingHours={workingHours} onWorkingHoursChange={setWorkingHours}
           description={description} onDescriptionChange={setDescription}
           closedDays={closedDays} onToggleClosedDay={toggleClosedDay}
+          hasHomeService={hasHomeService} onHasHomeServiceChange={setHasHomeService}
+          genderAudience={genderAudience} onGenderAudienceChange={setGenderAudience}
           phones={phones} onAddPhone={handleAddPhone} onRemovePhone={handleRemovePhone} onPhoneChange={handlePhoneChange}
           selectedProvince={selectedProvince} selectedCity={selectedCity} onOpenRegionModal={() => setIsRegionModalOpen(true)}
           selectedNeighborhoods={selectedNeighborhoods} onRemoveNeighborhood={removeNeighborhood}

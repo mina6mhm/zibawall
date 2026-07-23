@@ -31,6 +31,12 @@ enum SenderRole {
   ADMIN
 }
 
+enum GenderAudience {
+  FEMALE
+  MALE
+  BOTH
+}
+
 model Salon {
   id                    String      @id @default(uuid())
   name                  String
@@ -44,6 +50,9 @@ model Salon {
   phones                String[]
   workingHours          String
   closedDays            String[]
+
+  hasHomeService         Boolean        @default(false)
+  genderAudience         GenderAudience @default(BOTH)
 
   rating                Float       @default(0)
   reviewsCount          Int         @default(0)
@@ -70,6 +79,8 @@ model Salon {
 
   @@index([status])
   @@index([status, subscriptionExpiresAt])
+  @@index([hasHomeService])
+  @@index([genderAudience])
 }
 
 model Social {

@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { CATEGORIES, CATEGORY_MAPPING } from '@/lib/data'; 
 import RegionFilterModal from '@/components/RegionFilterModal';
 import SearchBar from '@/components/SearchBar';
+import { Home } from 'lucide-react';
 
 // --- تابع پایه برای نرمال‌سازی حروف ---
 const normalizeChars = (text: string) => {
@@ -101,6 +102,14 @@ const BookmarkIcon = ({ isActive, className }: { isActive: boolean, className?: 
   </svg>
 );
 
+type GenderFilter = 'ALL' | 'FEMALE' | 'MALE' | 'BOTH';
+
+const GENDER_FILTER_OPTIONS: { value: GenderFilter; label: string }[] = [
+  { value: 'FEMALE', label: 'مخصوص خانم‌ها' },
+  { value: 'MALE', label: 'مخصوص آقایون' },
+  { value: 'BOTH', label: 'خانم‌ها و آقایون' },
+];
+
 export default function DashboardHomePage() {
   const router = useRouter();
   
@@ -117,6 +126,10 @@ export default function DashboardHomePage() {
   const [selectedNeighborhoods, setSelectedNeighborhoods] = useState<string[]>([]);
   
   const [isRegionModalOpen, setIsRegionModalOpen] = useState(false);
+
+  // فیلترهای جدید
+  const [homeServiceOnly, setHomeServiceOnly] = useState(false);
+  const [genderFilter, setGenderFilter] = useState<GenderFilter>('ALL');
 
   const removeNeighborhood = (nhToRemove: string) => {
     setSelectedNeighborhoods((prev) => prev.filter((nh) => nh !== nhToRemove));
@@ -190,7 +203,13 @@ export default function DashboardHomePage() {
         ? selectedNeighborhoods.includes('همه محله‌ها') || salonNeighborhoods.some((nh: string) => selectedNeighborhoods.includes(nh))
         : true;
 
-    if (!matchesCategory || !matchesProvince || !matchesCity || !matchesLocation) return false;
+    // فیلتر خدمات در منزل
+    const matchesHomeService = !homeServiceOnly || !!salon.hasHomeService;
+
+    // فیلتر مخاطب سالن (خانم/آقا/هردو)
+    const matchesGender = genderFilter === 'ALL' || salon.genderAudience === genderFilter;
+
+    if (!matchesCategory || !matchesProvince || !matchesCity || !matchesLocation || !matchesHomeService || !matchesGender) return false;
     
     if (!searchQuery.trim()) return true;
 
@@ -214,6 +233,8 @@ export default function DashboardHomePage() {
       });
     });
   });
+
+  const hasActiveExtraFilters = homeServiceOnly || genderFilter !== 'ALL';
 
   return (
     <>
@@ -287,6 +308,37 @@ export default function DashboardHomePage() {
                 }`}
               >
                 {category}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* فیلترهای خدمات در منزل + مخاطب سالن */}
+        <div className="px-4 mt-1">
+          <div className="flex overflow-x-auto gap-2 pb-2 hide-scrollbar">
+            <button
+              onClick={() => setHomeServiceOnly(prev => !prev)}
+              className={`whitespace-nowrap flex items-center gap-1.5 px-3 py-1.5 md:px-4 md:py-2 border rounded-full text-[13px] md:text-sm font-medium transition-colors ${
+                homeServiceOnly
+                  ? 'bg-emerald-600 text-white border-emerald-600'
+                  : 'bg-white border-zinc-200 text-zinc-700 hover:bg-zinc-50'
+              }`}
+            >
+              <Home className="w-3.5 h-3.5" />
+              خدمات در منزل
+            </button>
+
+            {GENDER_FILTER_OPTIONS.map((opt) => (
+              <button
+                key={opt.value}
+                onClick={() => setGenderFilter(prev => prev === opt.value ? 'ALL' : opt.value)}
+                className={`whitespace-nowrap px-3 py-1.5 md:px-4 md:py-2 border rounded-full text-[13px] md:text-sm font-medium transition-colors ${
+                  genderFilter === opt.value
+                    ? 'bg-[#824c71] text-white border-[#824c71]'
+                    : 'bg-white border-zinc-200 text-zinc-700 hover:bg-zinc-50'
+                }`}
+              >
+                {opt.label}
               </button>
             ))}
           </div>
@@ -423,6 +475,8 @@ export default function DashboardHomePage() {
                     setSelectedProvince('تهران'); 
                     setSelectedCity('تهران'); 
                     setSelectedNeighborhoods([]); 
+                    setHomeServiceOnly(false);
+                    setGenderFilter('ALL');
                   }}
                   className="mt-4 text-[#824c71] font-medium text-sm hover:text-[#824c71]/80"
                 >
