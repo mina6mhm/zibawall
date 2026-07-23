@@ -2,7 +2,7 @@
 'use client';
 
 import { Store, MapPin, Clock, Phone, FileText, Plus, Trash2, Map, CheckCircle2, ChevronDown, X } from 'lucide-react';
-import { WEEK_DAYS, GENDER_AUDIENCE_OPTIONS, type GenderAudience } from './constants';
+import { WEEK_DAYS, isFemaleSelected, isMaleSelected, type GenderAudience } from './constants';
 
 type Props = {
   name: string;
@@ -20,8 +20,8 @@ type Props = {
   hasHomeService: boolean;
   onHasHomeServiceChange: (value: boolean) => void;
 
-  genderAudience: GenderAudience;
-  onGenderAudienceChange: (value: GenderAudience) => void;
+  genderAudience: GenderAudience | null;
+  onToggleGenderAudience: (value: 'FEMALE' | 'MALE') => void;
 
   phones: string[];
   onAddPhone: () => void;
@@ -50,7 +50,7 @@ export default function Step1BasicInfo({
   description, onDescriptionChange,
   closedDays, onToggleClosedDay,
   hasHomeService, onHasHomeServiceChange,
-  genderAudience, onGenderAudienceChange,
+  genderAudience, onToggleGenderAudience,
   phones, onAddPhone, onRemovePhone, onPhoneChange,
   selectedProvince, selectedCity, onOpenRegionModal,
   selectedNeighborhoods, onRemoveNeighborhood,
@@ -154,24 +154,37 @@ export default function Step1BasicInfo({
           </div>
 
           <div className="space-y-2 md:space-y-3">
-            <label className="block text-xs md:text-sm font-medium text-zinc-700">سالن مخصوص</label>
-            <div className="flex flex-wrap gap-1.5 md:gap-2">
-              {GENDER_AUDIENCE_OPTIONS.map(opt => (
-                <button
-                  key={opt.value}
-                  type="button"
-                  onClick={() => onGenderAudienceChange(opt.value)}
-                  className={`px-3 py-1.5 md:px-4 md:py-2 rounded-lg md:rounded-xl text-xs md:text-sm font-medium transition-colors ${
-                    genderAudience === opt.value
-                      ? 'bg-[#e3c9dc]/20 text-[#824c71] border border-[#824c71]/30'
-                      : 'bg-white border border-zinc-200 text-zinc-600 hover:bg-zinc-50'
-                  }`}
-                >
-                  {opt.label}
-                </button>
-              ))}
-            </div>
-          </div>
+  <label className="block text-xs md:text-sm font-medium text-zinc-700">
+    مخاطب سالن <span className="text-red-500">*</span>
+  </label>
+  <div className="flex flex-wrap gap-1.5 md:gap-2">
+    <button
+      type="button"
+      onClick={() => onToggleGenderAudience('FEMALE')}
+      className={`px-3 py-1.5 md:px-4 md:py-2 rounded-lg md:rounded-xl text-xs md:text-sm font-medium transition-colors ${
+        isFemaleSelected(genderAudience)
+          ? 'bg-[#e3c9dc]/20 text-[#824c71] border border-[#824c71]/30'
+          : 'bg-white border border-zinc-200 text-zinc-600 hover:bg-zinc-50'
+      }`}
+    >
+      بانوان
+    </button>
+    <button
+      type="button"
+      onClick={() => onToggleGenderAudience('MALE')}
+      className={`px-3 py-1.5 md:px-4 md:py-2 rounded-lg md:rounded-xl text-xs md:text-sm font-medium transition-colors ${
+        isMaleSelected(genderAudience)
+          ? 'bg-[#e3c9dc]/20 text-[#824c71] border border-[#824c71]/30'
+          : 'bg-white border border-zinc-200 text-zinc-600 hover:bg-zinc-50'
+      }`}
+    >
+      آقایون
+    </button>
+  </div>
+  <p className="text-[10px] md:text-xs text-zinc-400">
+    اگر سالن شما به هر دو گروه خدمات می‌دهد، هر دو گزینه را انتخاب کنید.
+  </p>
+</div>
 
           <div className="space-y-2 md:space-y-3 md:col-span-2 mt-1 md:mt-2">
             <label className="block text-xs md:text-sm font-medium text-zinc-700">شماره تماس‌های سالن <span className="text-red-500">*</span></label>

@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation';
 import { ArrowRight, ArrowLeft, CheckCircle2, Save, Loader2 } from 'lucide-react';
 
 import RegionFilterModal from '@/components/RegionFilterModal';
-import { SERVICE_DETAILS, type GenderAudience } from '@/components/business-form/constants';
+import { SERVICE_DETAILS, toggleGenderAudience, type GenderAudience } from '@/components/business-form/constants';
 import { validateAndCompress } from '@/components/business-form/imageUtils';
 import Step1BasicInfo from '@/components/business-form/Step1BasicInfo';
 import Step2Services from '@/components/business-form/Step2Services';
@@ -35,7 +35,7 @@ export default function BusinessEditPage() {
   const [phones, setPhones] = useState<string[]>(['']);
   const [closedDays, setClosedDays] = useState<string[]>([]);
   const [hasHomeService, setHasHomeService] = useState<boolean>(false);
-  const [genderAudience, setGenderAudience] = useState<GenderAudience>('BOTH');
+  const [genderAudience, setGenderAudience] = useState<GenderAudience | null>(null);
 
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [newTagInputs, setNewTagInputs] = useState<Record<string, string>>({});
@@ -217,6 +217,11 @@ export default function BusinessEditPage() {
     setSelectedNeighborhoods((prev) => prev.filter((nh) => nh !== nhToRemove));
   };
 
+  // تیک زدن/برداشتن یکی از دو گزینه‌ی مخاطب سالن (بانوان/آقایون) - هر دو با هم هم قابل انتخابند
+  const handleToggleGenderAudience = (value: 'FEMALE' | 'MALE') => {
+    setGenderAudience(prev => toggleGenderAudience(prev, value));
+  };
+
   const handleCoverUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = await validateAndCompress(e.target.files[0]);
@@ -278,6 +283,12 @@ export default function BusinessEditPage() {
       alert('لطفاً تمام فیلدهای ستاره‌دار در مرحله اول را پر کنید.');
       return;
     }
+
+    if (!genderAudience) {
+      alert('لطفاً مشخص کنید سالن شما مخصوص بانوان، آقایون یا هر دو است.');
+      return;
+    }
+
     if (!coverImage && !existingCover) {
       alert('لطفا یک عکس به عنوان کاور اصلی انتخاب کنید.');
       return;
@@ -414,7 +425,7 @@ export default function BusinessEditPage() {
           description={description} onDescriptionChange={setDescription}
           closedDays={closedDays} onToggleClosedDay={toggleClosedDay}
           hasHomeService={hasHomeService} onHasHomeServiceChange={setHasHomeService}
-          genderAudience={genderAudience} onGenderAudienceChange={setGenderAudience}
+          genderAudience={genderAudience} onToggleGenderAudience={handleToggleGenderAudience}
           phones={phones} onAddPhone={handleAddPhone} onRemovePhone={handleRemovePhone} onPhoneChange={handlePhoneChange}
           selectedProvince={selectedProvince} selectedCity={selectedCity} onOpenRegionModal={() => setIsRegionModalOpen(true)}
           selectedNeighborhoods={selectedNeighborhoods} onRemoveNeighborhood={removeNeighborhood}

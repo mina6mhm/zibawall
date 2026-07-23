@@ -36,13 +36,33 @@ export const SERVICE_DETAILS = {
 
 export const WEEK_DAYS = ['شنبه', 'یکشنبه', 'دوشنبه', 'سه‌شنبه', 'چهارشنبه', 'پنج‌شنبه', 'جمعه'];
 
-export const GENDER_AUDIENCE_OPTIONS = [
-  { value: 'FEMALE', label: 'فقط خانم‌ها' },
-  { value: 'MALE', label: 'فقط آقایون' },
-  { value: 'BOTH', label: 'خانم‌ها و آقایون' },
-] as const;
+export type GenderAudience = 'FEMALE' | 'MALE' | 'BOTH';
 
-export type GenderAudience = typeof GENDER_AUDIENCE_OPTIONS[number]['value'];
+// آیا گزینه «بانوان» در مقدار فعلی مخاطب سالن فعال است؟
+export const isFemaleSelected = (value: GenderAudience | null) =>
+  value === 'FEMALE' || value === 'BOTH';
+
+// آیا گزینه «آقایون» در مقدار فعلی مخاطب سالن فعال است؟
+export const isMaleSelected = (value: GenderAudience | null) =>
+  value === 'MALE' || value === 'BOTH';
+
+// تیک زدن/برداشتن یکی از دو گزینه (بانوان/آقایون) و محاسبه مقدار نهایی GenderAudience
+// اگر هیچ‌کدام انتخاب نشده باشد، null برمی‌گردد (یعنی هنوز انتخابی انجام نشده)
+export const toggleGenderAudience = (
+  current: GenderAudience | null,
+  clicked: 'FEMALE' | 'MALE'
+): GenderAudience | null => {
+  let female = isFemaleSelected(current);
+  let male = isMaleSelected(current);
+
+  if (clicked === 'FEMALE') female = !female;
+  if (clicked === 'MALE') male = !male;
+
+  if (female && male) return 'BOTH';
+  if (female) return 'FEMALE';
+  if (male) return 'MALE';
+  return null;
+};
 
 export const SOCIAL_FIELDS = [
   { key: 'instagram', label: 'اینستاگرام', placeholder: 'ID اینستاگرام', icon: 'instagram' as const },

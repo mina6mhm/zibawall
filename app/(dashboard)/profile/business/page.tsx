@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation';
 import { ArrowRight, ArrowLeft, CheckCircle2 } from 'lucide-react';
 
 import RegionFilterModal from '@/components/RegionFilterModal';
-import { SERVICE_DETAILS, type GenderAudience } from '@/components/business-form/constants';
+import { SERVICE_DETAILS, toggleGenderAudience, type GenderAudience } from '@/components/business-form/constants';
 import { validateAndCompress } from '@/components/business-form/imageUtils';
 import Step1BasicInfo from '@/components/business-form/Step1BasicInfo';
 import Step2Services from '@/components/business-form/Step2Services';
@@ -44,7 +44,7 @@ export default function BusinessRegistrationPage() {
   const [phones, setPhones] = useState<string[]>(['']);
   const [closedDays, setClosedDays] = useState<string[]>([]);
   const [hasHomeService, setHasHomeService] = useState<boolean>(false);
-  const [genderAudience, setGenderAudience] = useState<GenderAudience>('BOTH');
+  const [genderAudience, setGenderAudience] = useState<GenderAudience | null>(null);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [selectedProvince, setSelectedProvince] = useState<string>('');
   const [selectedCity, setSelectedCity] = useState<string>('');
@@ -108,6 +108,11 @@ export default function BusinessRegistrationPage() {
     setClosedDays(prev => prev.includes(day) ? prev.filter(d => d !== day) : [...prev, day]);
   };
 
+  // تیک زدن/برداشتن یکی از دو گزینه‌ی مخاطب سالن (بانوان/آقایون) - هر دو با هم هم قابل انتخابند
+  const handleToggleGenderAudience = (value: 'FEMALE' | 'MALE') => {
+    setGenderAudience(prev => toggleGenderAudience(prev, value));
+  };
+
   const handleCoverUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = await validateAndCompress(e.target.files[0]);
@@ -144,9 +149,10 @@ export default function BusinessRegistrationPage() {
         !selectedProvince ||
         !selectedCity ||
         !address.trim() ||
-        !hasValidPhone
+        !hasValidPhone ||
+        !genderAudience
       ) {
-        alert('لطفاً تمامی کادرهای ستاره‌دار را پر کنید تا بتوانید به مرحله بعد بروید.');
+        alert('لطفاً تمامی کادرهای ستاره‌دار را پر کنید و مشخص کنید سالن مخصوص بانوان، آقایون یا هر دو است.');
         return;
       }
     }
@@ -179,6 +185,11 @@ export default function BusinessRegistrationPage() {
   const handleSubmit = async () => {
     if (!name || !selectedProvince || !selectedCity || !address || !workingHours) {
       alert('لطفاً تمام فیلدهای ستاره‌دار در مرحله اول را پر کنید.');
+      return;
+    }
+
+    if (!genderAudience) {
+      alert('لطفاً مشخص کنید سالن شما مخصوص بانوان، آقایون یا هر دو است.');
       return;
     }
 
@@ -331,7 +342,7 @@ export default function BusinessRegistrationPage() {
           description={description} onDescriptionChange={setDescription}
           closedDays={closedDays} onToggleClosedDay={toggleClosedDay}
           hasHomeService={hasHomeService} onHasHomeServiceChange={setHasHomeService}
-          genderAudience={genderAudience} onGenderAudienceChange={setGenderAudience}
+          genderAudience={genderAudience} onToggleGenderAudience={handleToggleGenderAudience}
           phones={phones} onAddPhone={handleAddPhone} onRemovePhone={handleRemovePhone} onPhoneChange={handlePhoneChange}
           selectedProvince={selectedProvince} selectedCity={selectedCity} onOpenRegionModal={() => setIsRegionModalOpen(true)}
           selectedNeighborhoods={selectedNeighborhoods} onRemoveNeighborhood={removeNeighborhood}
