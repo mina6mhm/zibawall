@@ -6,12 +6,12 @@ import { useRouter } from 'next/navigation';
 import { CATEGORIES, CATEGORY_MAPPING } from '@/lib/data'; 
 import RegionFilterModal from '@/components/RegionFilterModal';
 import SearchBar from '@/components/SearchBar';
-import { Home, Check, Sparkles, Eye, Gem, Scissors, Flower2, Zap, Crown, Palette, type LucideIcon } from 'lucide-react';
+import { Home, Check, Sparkles, Eye, Hand, Scissors, Flower2, Zap, Crown, Palette, type LucideIcon } from 'lucide-react';
 
 // --- نگاشت دقیق آیکون مینیمال بر اساس اسم واقعی هر دسته (از lib/data.ts) ---
 const CATEGORY_ICON_MAP: Record<string, LucideIcon> = {
   'خدمات مو': Scissors,
-  'خدمات ناخن': Gem,
+  'خدمات ناخن': Hand,
   'خدمات ابرو و مژه': Eye,
   'خدمات پوست و زیبایی': Sparkles,
   'خدمات آرایش و میکاپ': Palette,
@@ -21,6 +21,14 @@ const CATEGORY_ICON_MAP: Record<string, LucideIcon> = {
 };
 
 const getCategoryIcon = (category: string): LucideIcon => CATEGORY_ICON_MAP[category] || Sparkles;
+
+// --- عنوان کوتاه‌شده برای نمایش روی کارت (فقط ظاهری؛ فیلتر همچنان با اسم اصلی دسته کار می‌کند) ---
+const CATEGORY_DISPLAY_LABEL: Record<string, string> = {
+  'خدمات پوست و زیبایی': 'خدمات پوست',
+  'خدمات آرایش و میکاپ': 'خدمات میکاپ',
+};
+
+const getCategoryLabel = (category: string): string => CATEGORY_DISPLAY_LABEL[category] || category;
 
 // --- تابع پایه برای نرمال‌سازی حروف ---
 const normalizeChars = (text: string) => {
@@ -402,7 +410,7 @@ export default function DashboardHomePage() {
                 <button
                   key={index}
                   onClick={() => toggleCategory(category)}
-                  className={`flex flex-col items-center justify-center gap-2.5 rounded-2xl border p-3 aspect-[4/5] transition-colors ${
+                  className={`flex flex-col items-center justify-center gap-2 rounded-2xl border p-2 h-[104px] transition-colors ${
                     isActive
                       ? 'border-[#824c71] bg-[#824c71]/5'
                       : 'border-zinc-100 bg-zinc-50/60 hover:bg-zinc-50'
@@ -423,7 +431,7 @@ export default function DashboardHomePage() {
                       isActive ? 'text-[#824c71]' : 'text-zinc-700'
                     }`}
                   >
-                    {category}
+                    {getCategoryLabel(category)}
                   </span>
                 </button>
               );
