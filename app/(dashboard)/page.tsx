@@ -1,12 +1,12 @@
 //app/(dashboard)/page.tsx
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { CATEGORIES, CATEGORY_MAPPING } from '@/lib/data'; 
 import RegionFilterModal from '@/components/RegionFilterModal';
 import SearchBar from '@/components/SearchBar';
-import { Home } from 'lucide-react';
+import { Home, User, MapPin, ChevronDown } from 'lucide-react';
 
 // --- تابع پایه برای نرمال‌سازی حروف ---
 const normalizeChars = (text: string) => {
@@ -108,28 +108,69 @@ type GenderFilter = 'ALL' | 'FEMALE' | 'MALE';
 // --- فیلتر خدمات در منزل (فقط دو گزینه: دارد / ندارد) ---
 type HomeServiceFilter = 'ALL' | 'YES' | 'NO';
 
-// --- دکمه‌ی تکی برای هر گزینه‌ی فیلتر (تاگل: کلیک مجدد = غیرفعال کردن و نمایش همه) ---
-function FilterPill({
-  label,
+type DropdownKey = 'gender' | 'home' | null;
+
+// --- دکمه‌ی کپسولی فیلتر با منوی کشویی (دقیقاً مطابق طرح مرجع) ---
+function FilterDropdownPill({
   icon,
+  label,
+  isActive,
+  isOpen,
+  onToggle,
+  children,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  isActive: boolean;
+  isOpen: boolean;
+  onToggle: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="relative flex-1 min-w-0">
+      <button
+        onClick={onToggle}
+        className={`flex items-center justify-center gap-1.5 w-full px-2.5 py-2.5 rounded-full border text-[12.5px] font-medium transition-all active:scale-[0.98] ${
+          isActive
+            ? 'border-[#824c71] bg-[#824c71]/5 text-[#824c71]'
+            : isOpen
+              ? 'border-zinc-300 text-zinc-800'
+              : 'border-zinc-200 text-zinc-600 hover:border-zinc-300'
+        }`}
+      >
+        {icon}
+        <span className="truncate">{label}</span>
+        <ChevronDown
+          className={`w-3.5 h-3.5 shrink-0 transition-transform ${isOpen ? 'rotate-180' : ''}`}
+          strokeWidth={2.3}
+        />
+      </button>
+
+      {isOpen && (
+        <div className="absolute z-30 top-[calc(100%+6px)] right-0 min-w-[150px] bg-white rounded-xl border border-zinc-200 shadow-lg shadow-black/5 py-1.5 overflow-hidden">
+          {children}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function DropdownOption({
+  label,
   isActive,
   onClick,
 }: {
   label: string;
-  icon?: React.ReactNode;
   isActive: boolean;
   onClick: () => void;
 }) {
   return (
     <button
       onClick={onClick}
-      className={`flex items-center gap-1 whitespace-nowrap px-3 py-1.5 rounded-full text-[12.5px] font-medium transition-all active:scale-95 ${
-        isActive
-          ? 'bg-[#824c71] text-white shadow-sm'
-          : 'text-zinc-600 hover:text-zinc-900'
+      className={`w-full text-right px-4 py-2.5 text-[13px] font-medium transition-colors ${
+        isActive ? 'text-[#824c71] bg-[#824c71]/5' : 'text-zinc-700 hover:bg-zinc-50'
       }`}
     >
-      {icon}
       {label}
     </button>
   );
@@ -156,18 +197,49 @@ export default function DashboardHomePage() {
   const [homeServiceFilter, setHomeServiceFilter] = useState<HomeServiceFilter>('ALL');
   const [genderFilter, setGenderFilter] = useState<GenderFilter>('ALL');
 
-  // کلیک روی گزینه‌ی فعال، همان فیلتر را خاموش می‌کند (برمی‌گردد به حالت «همه»)
-  const toggleHomeService = (value: Exclude<HomeServiceFilter, 'ALL'>) => {
-    setHomeServiceFilter((prev) => (prev === value ? 'ALL' : value));
+  // کنترل بازبودن منوهای کشویی فیلتر (فقط یکی در هر لحظه باز است)
+  const [openDropdown, setOpenDropdown] = useState<DropdownKey>(null);
+  const filtersRowRef = useRef<HTMLDivElement>(null);
+
+  // بستن منوی باز با کلیک بیرون از ردیف فیلترها
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (filtersRowRef.current && !filtersRowRef.current.contains(e.target as Node)) {
+        setOpenDropdown(null);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const toggleDropdown = (key: DropdownKey) => {
+    setOpenDropdown((prev) => (prev === key ? null : key));
   };
 
-  const toggleGender = (value: Exclude<GenderFilter, 'ALL'>) => {
-    setGenderFilter((prev) => (prev === value ? 'ALL' : value));
+  const selectHomeService = (value: HomeServiceFilter) => {
+    setHomeServiceFilter(value);
+    setOpenDropdown(null);
+  };
+
+  const selectGender = (value: GenderFilter) => {
+    setGenderFilter(value);
+    setOpenDropdown(null);
   };
 
   const removeNeighborhood = (nhToRemove: string) => {
     setSelectedNeighborhoods((prev) => prev.filter((nh) => nh !== nhToRemove));
   };
+
+  const genderLabel =
+    genderFilter === 'FEMALE' ? 'خانم‌ها' : genderFilter === 'MALE' ? 'آقایون' : 'بانوان / آقایان';
+
+  const homeServiceLabel =
+    homeServiceFilter === 'YES' ? 'دارای خدمات در منزل' : homeServiceFilter === 'NO' ? 'بدون خدمات در منزل' : 'خدمات در منزل';
+
+  const regionLabel =
+    selectedNeighborhoods.length > 0 && !selectedNeighborhoods.includes('همه محله‌ها')
+      ? selectedNeighborhoods[0] + (selectedNeighborhoods.length > 1 ? ` +${selectedNeighborhoods.length - 1}` : '')
+      : `${selectedProvince}، ${selectedCity}`;
 
   useEffect(() => {
     const fetchSalonsData = async () => {
@@ -282,67 +354,97 @@ export default function DashboardHomePage() {
     <>
       <div className="flex flex-col min-h-screen bg-white pb-24">
         {/* هدر */}
-        {/* پدینگ بالا و پایین هدر در موبایل کمتر شد */}
         <div className="sticky top-0 z-20 bg-white px-4 pt-3 md:pt-5 pb-2 md:pb-3">
-          {/* فاصله بین انتخاب شهر و سرچ‌بار در موبایل کمتر شد (از mb-5 به mb-3) */}
-          <div className="flex items-start mb-3 md:mb-5 w-full">
-            
-            <div className="flex flex-col gap-3 overflow-hidden w-full">
-              <button 
-                onClick={() => setIsRegionModalOpen(true)}
-                className="flex items-center gap-1 w-fit text-zinc-800 hover:text-zinc-600 transition-colors"
-              >
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
-                  <circle cx="12" cy="10" r="3" />
-                </svg>
-                <span className="font-bold text-sm">
-                  {selectedProvince}، {selectedCity}
-                </span>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="m6 9 6 6 6-6" />
-                </svg>
-              </button>
+          <SearchBar searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
 
-              {/* تگ‌های محله */}
-              {selectedNeighborhoods.length > 0 && !selectedNeighborhoods.includes('همه محله‌ها') && (
-                <div className="flex items-center gap-2 overflow-x-auto hide-scrollbar w-full pb-1">
-                  {selectedNeighborhoods.map((nh) => (
-                    <span 
-                      key={nh} 
-                      className="flex items-center gap-1.5 bg-[#e3c9dc]/20 text-[#824c71] px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap border border-[#d3aec8]"
-                    >
-                      {nh}
-                      <button 
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          removeNeighborhood(nh);
-                        }} 
-                        className="hover:bg-rose-200 text-[#824c71] rounded-full p-0.5 transition-colors flex items-center justify-center"
-                      >
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M18 6 6 18"/><path d="m6 6 12 12"/>
-                        </svg>
-                      </button>
-                    </span>
-                  ))}
-                </div>
-              )}
-            </div>
+          {/* ردیف فیلترها: هر سه دکمه هم‌عرض، مطابق طرح مرجع */}
+          <div ref={filtersRowRef} className="flex items-stretch gap-2 mt-3">
+            <FilterDropdownPill
+              icon={<User className="w-3.5 h-3.5 shrink-0" strokeWidth={2.3} />}
+              label={genderLabel}
+              isActive={genderFilter !== 'ALL'}
+              isOpen={openDropdown === 'gender'}
+              onToggle={() => toggleDropdown('gender')}
+            >
+              <DropdownOption label="همه" isActive={genderFilter === 'ALL'} onClick={() => selectGender('ALL')} />
+              <DropdownOption label="خانم‌ها" isActive={genderFilter === 'FEMALE'} onClick={() => selectGender('FEMALE')} />
+              <DropdownOption label="آقایون" isActive={genderFilter === 'MALE'} onClick={() => selectGender('MALE')} />
+            </FilterDropdownPill>
+
+            <FilterDropdownPill
+              icon={<Home className="w-3.5 h-3.5 shrink-0" strokeWidth={2.3} />}
+              label={homeServiceLabel}
+              isActive={homeServiceFilter !== 'ALL'}
+              isOpen={openDropdown === 'home'}
+              onToggle={() => toggleDropdown('home')}
+            >
+              <DropdownOption label="همه" isActive={homeServiceFilter === 'ALL'} onClick={() => selectHomeService('ALL')} />
+              <DropdownOption label="دارد" isActive={homeServiceFilter === 'YES'} onClick={() => selectHomeService('YES')} />
+              <DropdownOption label="ندارد" isActive={homeServiceFilter === 'NO'} onClick={() => selectHomeService('NO')} />
+            </FilterDropdownPill>
+
+            {/* دکمه منطقه: به جای منوی کشویی، مودال کامل انتخاب منطقه را باز می‌کند */}
+            <button
+              onClick={() => setIsRegionModalOpen(true)}
+              className={`flex-1 min-w-0 flex items-center justify-center gap-1.5 px-2.5 py-2.5 rounded-full border text-[12.5px] font-medium transition-all active:scale-[0.98] ${
+                selectedNeighborhoods.length > 0 && !selectedNeighborhoods.includes('همه محله‌ها')
+                  ? 'border-[#824c71] bg-[#824c71]/5 text-[#824c71]'
+                  : 'border-zinc-200 text-zinc-600 hover:border-zinc-300'
+              }`}
+            >
+              <MapPin className="w-3.5 h-3.5 shrink-0" strokeWidth={2.3} />
+              <span className="truncate">{regionLabel}</span>
+              <ChevronDown className="w-3.5 h-3.5 shrink-0" strokeWidth={2.3} />
+            </button>
           </div>
 
-          <SearchBar searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
+          {/* تگ‌های محله انتخاب‌شده (وقتی بیش از یک محله انتخاب شده) */}
+          {selectedNeighborhoods.length > 1 && !selectedNeighborhoods.includes('همه محله‌ها') && (
+            <div className="flex items-center gap-2 overflow-x-auto hide-scrollbar w-full pt-2.5">
+              {selectedNeighborhoods.map((nh) => (
+                <span 
+                  key={nh} 
+                  className="flex items-center gap-1.5 bg-[#e3c9dc]/20 text-[#824c71] px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap border border-[#d3aec8]"
+                >
+                  {nh}
+                  <button 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      removeNeighborhood(nh);
+                    }} 
+                    className="hover:bg-rose-200 text-[#824c71] rounded-full p-0.5 transition-colors flex items-center justify-center"
+                  >
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M18 6 6 18"/><path d="m6 6 12 12"/>
+                    </svg>
+                  </button>
+                </span>
+              ))}
+            </div>
+          )}
+
+          {hasActiveExtraFilters && (
+            <div className="pt-2">
+              <button
+                onClick={() => {
+                  setHomeServiceFilter('ALL');
+                  setGenderFilter('ALL');
+                }}
+                className="text-[12.5px] font-medium text-zinc-400 hover:text-zinc-600 transition-colors"
+              >
+                پاک کردن فیلترها
+              </button>
+            </div>
+          )}
         </div>
 
         {/* دسته‌بندی‌ها */}
-        {/* فاصله بالای دسته‌بندی‌ها در موبایل کم شد */}
         <div className="px-4 mt-1 md:mt-2">
           <div className="flex overflow-x-auto gap-2 pb-2 hide-scrollbar">
             {CATEGORIES.map((category, index) => (
               <button 
                 key={index} 
                 onClick={() => setSelectedCategory(category)}
-                /* پدینگ دکمه‌ها و سایز فونت در موبایل کمی کوچک‌تر و جمع‌وجورتر شد */
                 className={`whitespace-nowrap px-3 py-1.5 md:px-4 md:py-2 border rounded-full text-[13px] md:text-sm font-medium transition-colors ${
                   selectedCategory === category 
                     ? 'bg-[#824c71] text-white' 
@@ -355,50 +457,7 @@ export default function DashboardHomePage() {
           </div>
         </div>
 
-        {/* فیلتر خدمات در منزل + مخاطب سالن: هر گروه فقط دو گزینه، همه در یک ردیف جمع‌وجور */}
-        <div className="px-4 mt-1 flex items-center gap-2 overflow-x-auto hide-scrollbar">
-          <div className="flex items-center gap-0.5 bg-zinc-100 rounded-full p-1 shrink-0">
-            <FilterPill
-              label="دارد"
-              icon={<Home className="w-3.5 h-3.5 shrink-0" strokeWidth={2.3} />}
-              isActive={homeServiceFilter === 'YES'}
-              onClick={() => toggleHomeService('YES')}
-            />
-            <FilterPill
-              label="ندارد"
-              isActive={homeServiceFilter === 'NO'}
-              onClick={() => toggleHomeService('NO')}
-            />
-          </div>
-
-          <div className="flex items-center gap-0.5 bg-zinc-100 rounded-full p-1 shrink-0">
-            <FilterPill
-              label="خانم‌ها"
-              isActive={genderFilter === 'FEMALE'}
-              onClick={() => toggleGender('FEMALE')}
-            />
-            <FilterPill
-              label="آقایون"
-              isActive={genderFilter === 'MALE'}
-              onClick={() => toggleGender('MALE')}
-            />
-          </div>
-
-          {hasActiveExtraFilters && (
-            <button
-              onClick={() => {
-                setHomeServiceFilter('ALL');
-                setGenderFilter('ALL');
-              }}
-              className="text-[12.5px] font-medium text-zinc-400 hover:text-zinc-600 transition-colors whitespace-nowrap px-1 shrink-0"
-            >
-              پاک کردن
-            </button>
-          )}
-        </div>
-
         {/* لیست سالن‌ها */}
-        {/* فاصله بین دسته‌بندی و لیست در موبایل کمتر شد (از mt-6 به mt-4) */}
         <div className="px-4 mt-4 md:mt-6">
           <h2 className="text-base md:text-lg font-bold text-zinc-900 mb-3 md:mb-4">
             {searchQuery ? `نتایج جستجو برای "${searchQuery}"` : (selectedCategory === 'همه' ? 'سالن‌های پیشنهادی' : `سالن‌های دارای ${selectedCategory}`)}
