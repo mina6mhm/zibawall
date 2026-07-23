@@ -6,7 +6,21 @@ import { useRouter } from 'next/navigation';
 import { CATEGORIES, CATEGORY_MAPPING } from '@/lib/data'; 
 import RegionFilterModal from '@/components/RegionFilterModal';
 import SearchBar from '@/components/SearchBar';
-import { Home, Check } from 'lucide-react';
+import { Home, Check, Sparkles, Eye, Hand, Scissors, Flower2, Wind, Heart, Palette, type LucideIcon } from 'lucide-react';
+
+// --- نگاشت دقیق آیکون مینیمال بر اساس اسم واقعی هر دسته (از lib/data.ts) ---
+const CATEGORY_ICON_MAP: Record<string, LucideIcon> = {
+  'خدمات مو': Scissors,
+  'خدمات ناخن': Hand,
+  'خدمات ابرو و مژه': Eye,
+  'خدمات پوست و زیبایی': Sparkles,
+  'خدمات آرایش و میکاپ': Palette,
+  'پکیج‌های عروس': Heart,
+  'موزدایی و بدن': Wind,
+  'خدمات ماساژ و اسپا': Flower2,
+};
+
+const getCategoryIcon = (category: string): LucideIcon => CATEGORY_ICON_MAP[category] || Sparkles;
 
 // --- تابع پایه برای نرمال‌سازی حروف ---
 const normalizeChars = (text: string) => {
@@ -377,22 +391,37 @@ export default function DashboardHomePage() {
           )}
         </div>
 
-        {/* دسته‌بندی‌ها: بدون اسکرول، گرید دو ردیف چهارتایی، بدون گزینه‌ی «همه» */}
-        <div className="px-4 mt-1 md:mt-2">
-          <div className="grid grid-cols-4 gap-2">
-            {categoryList.map((category: string, index: number) => (
-              <button 
-                key={index} 
-                onClick={() => toggleCategory(category)}
-                className={`px-2 py-2 border rounded-full text-[12px] md:text-sm font-medium transition-colors text-center truncate ${
-                  selectedCategory === category 
-                    ? 'bg-[#824c71] text-white border-[#824c71]' 
-                    : 'bg-white border-zinc-200 text-zinc-700 hover:bg-zinc-50'
-                }`}
-              >
-                {category}
-              </button>
-            ))}
+        {/* دسته‌بندی‌ها: عنوان + گرید دو ردیف چهارتایی با آیکون مینیمال، بدون گزینه‌ی «همه» */}
+        <div className="px-4 mt-3 md:mt-4">
+          <h2 className="text-base md:text-lg font-bold text-zinc-900 mb-3">دسته‌بندی خدمات</h2>
+          <div className="grid grid-cols-4 gap-2.5">
+            {categoryList.map((category: string, index: number) => {
+              const CategoryIcon = getCategoryIcon(category);
+              const isActive = selectedCategory === category;
+              return (
+                <button
+                  key={index}
+                  onClick={() => toggleCategory(category)}
+                  className={`flex flex-col items-center justify-center gap-2.5 rounded-2xl border p-3 aspect-[4/5] transition-colors ${
+                    isActive
+                      ? 'border-[#824c71] bg-[#824c71]/5'
+                      : 'border-zinc-100 bg-zinc-50/60 hover:bg-zinc-50'
+                  }`}
+                >
+                  <CategoryIcon
+                    className={`w-7 h-7 ${isActive ? 'text-[#824c71]' : 'text-[#824c71]/80'}`}
+                    strokeWidth={1.5}
+                  />
+                  <span
+                    className={`text-[11.5px] md:text-xs font-medium text-center leading-tight ${
+                      isActive ? 'text-[#824c71]' : 'text-zinc-700'
+                    }`}
+                  >
+                    {category}
+                  </span>
+                </button>
+              );
+            })}
           </div>
         </div>
 
