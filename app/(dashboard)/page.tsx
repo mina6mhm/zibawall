@@ -314,35 +314,37 @@ export default function DashboardHomePage() {
         </div>
 
         {/* فیلترهای خدمات در منزل + مخاطب سالن */}
-        <div className="px-4 mt-1">
-          <div className="flex overflow-x-auto gap-2 pb-2 hide-scrollbar">
-            <button
-              onClick={() => setHomeServiceOnly(prev => !prev)}
-              className={`whitespace-nowrap flex items-center gap-1.5 px-3 py-1.5 md:px-4 md:py-2 border rounded-full text-[13px] md:text-sm font-medium transition-colors ${
-                homeServiceOnly
-                  ? 'bg-emerald-600 text-white border-emerald-600'
-                  : 'bg-white border-zinc-200 text-zinc-700 hover:bg-zinc-50'
-              }`}
-            >
-              <Home className="w-3.5 h-3.5" />
-              خدمات در منزل
-            </button>
+<div className="px-4 mt-1">
+  <div className="flex items-center overflow-x-auto gap-1.5 pb-2 hide-scrollbar">
+    <button
+      onClick={() => setHomeServiceOnly(prev => !prev)}
+      className={`whitespace-nowrap flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-[12.5px] font-medium transition-all active:scale-95 ${
+        homeServiceOnly
+          ? 'bg-[#824c71] text-white'
+          : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'
+      }`}
+    >
+      <Home className="w-3.5 h-3.5" strokeWidth={2.3} />
+      خدمات در منزل
+    </button>
 
-            {GENDER_FILTER_OPTIONS.map((opt) => (
-              <button
-                key={opt.value}
-                onClick={() => setGenderFilter(prev => prev === opt.value ? 'ALL' : opt.value)}
-                className={`whitespace-nowrap px-3 py-1.5 md:px-4 md:py-2 border rounded-full text-[13px] md:text-sm font-medium transition-colors ${
-                  genderFilter === opt.value
-                    ? 'bg-[#824c71] text-white border-[#824c71]'
-                    : 'bg-white border-zinc-200 text-zinc-700 hover:bg-zinc-50'
-                }`}
-              >
-                {opt.label}
-              </button>
-            ))}
-          </div>
-        </div>
+    <span className="w-px h-4 bg-zinc-200 mx-1 shrink-0" />
+
+    {GENDER_FILTER_OPTIONS.map((opt) => (
+      <button
+        key={opt.value}
+        onClick={() => setGenderFilter(prev => prev === opt.value ? 'ALL' : opt.value)}
+        className={`whitespace-nowrap px-3.5 py-1.5 rounded-full text-[12.5px] font-medium transition-all active:scale-95 ${
+          genderFilter === opt.value
+            ? 'bg-[#824c71] text-white'
+            : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'
+        }`}
+      >
+        {opt.label}
+      </button>
+    ))}
+  </div>
+</div>
 
         {/* لیست سالن‌ها */}
         {/* فاصله بین دسته‌بندی و لیست در موبایل کمتر شد (از mt-6 به mt-4) */}
