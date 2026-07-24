@@ -159,8 +159,8 @@ export default function DashboardHomePage() {
   const [error, setError] = useState<string | null>(null);
 
   const [bookmarkedSalons, setBookmarkedSalons] = useState<(number|string)[]>([]);
-  // دسته‌بندی انتخاب‌شده: وقتی خالی/null باشد یعنی «همه دسته‌ها» نمایش داده می‌شود
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  // دسته‌بندی‌های انتخاب‌شده: وقتی آرایه خالی باشد یعنی «همه دسته‌ها» نمایش داده می‌شود؛ چند انتخابی است
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   
   const [selectedProvince, setSelectedProvince] = useState<string>('تهران');
@@ -180,7 +180,9 @@ export default function DashboardHomePage() {
   };
 
   const toggleCategory = (category: string) => {
-    setSelectedCategory((prev) => (prev === category ? null : category));
+    setSelectedCategories((prev) =>
+      prev.includes(category) ? prev.filter((c) => c !== category) : [...prev, category]
+    );
   };
 
   const removeNeighborhood = (nhToRemove: string) => {
@@ -237,12 +239,16 @@ export default function DashboardHomePage() {
   const isCurrentSalonBookmarked = (salonId: number | string) => bookmarkedSalons.includes(salonId);
 
   const filteredSalons = salons.filter((salon) => {
-    const validTagsForCategory = selectedCategory ? (CATEGORY_MAPPING[selectedCategory] || []) : [];
-    
     // تبدیل تگ‌ها به رشته (مدیریت آبجکت‌های Prisma)
     const salonTags = (salon.tags || []).map((t: any) => typeof t === 'object' && t !== null ? t.name : t);
-    
-    const matchesCategory = !selectedCategory || salonTags.some((tag: string) => validTagsForCategory.includes(tag));
+
+    // اگر چند دسته انتخاب شده باشد، کافیست سالن حداقل با یکی از آن‌ها تطابق داشته باشد
+    const matchesCategory =
+      selectedCategories.length === 0 ||
+      selectedCategories.some((cat) => {
+        const validTagsForCategory = CATEGORY_MAPPING[cat] || [];
+        return salonTags.some((tag: string) => validTagsForCategory.includes(tag));
+      });
 
     const matchesProvince = salon.province ? salon.province === selectedProvince : true;
     const matchesCity = salon.city ? salon.city === selectedCity : true;
@@ -405,7 +411,7 @@ export default function DashboardHomePage() {
           <div className="grid grid-cols-4 gap-2.5">
             {categoryList.map((category: string, index: number) => {
               const CategoryIcon = getCategoryIcon(category);
-              const isActive = selectedCategory === category;
+              const isActive = selectedCategories.includes(category);
               return (
                 <button
                   key={index}
@@ -442,7 +448,7 @@ export default function DashboardHomePage() {
         {/* لیست سالن‌ها */}
         <div className="px-4 mt-4 md:mt-6">
           <h2 className="text-base md:text-lg font-bold text-zinc-900 mb-3 md:mb-4">
-            {searchQuery ? `نتایج جستجو برای "${searchQuery}"` : (!selectedCategory ? 'سالن‌های پیشنهادی' : `سالن‌های دارای ${selectedCategory}`)}
+            {searchQuery ? `نتایج جستجو برای "${searchQuery}"` : (selectedCategories.length === 0 ? 'سالن‌های پیشنهادی' : `سالن‌های دارای ${selectedCategories.join('، ')}`)}
           </h2>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -565,7 +571,7 @@ export default function DashboardHomePage() {
                 <button 
                   onClick={() => { 
                     setSearchQuery(''); 
-                    setSelectedCategory(null); 
+                    setSelectedCategories([]); 
                     setSelectedProvince('تهران'); 
                     setSelectedCity('تهران'); 
                     setSelectedNeighborhoods([]); 
