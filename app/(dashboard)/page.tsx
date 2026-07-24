@@ -242,10 +242,10 @@ export default function DashboardHomePage() {
     // تبدیل تگ‌ها به رشته (مدیریت آبجکت‌های Prisma)
     const salonTags = (salon.tags || []).map((t: any) => typeof t === 'object' && t !== null ? t.name : t);
 
-    // اگر چند دسته انتخاب شده باشد، کافیست سالن حداقل با یکی از آن‌ها تطابق داشته باشد
+    // اگر چند دسته انتخاب شده باشد، سالن باید همزمان با تمام آن‌ها تطابق داشته باشد (AND)
     const matchesCategory =
       selectedCategories.length === 0 ||
-      selectedCategories.some((cat) => {
+      selectedCategories.every((cat) => {
         const validTagsForCategory = CATEGORY_MAPPING[cat] || [];
         return salonTags.some((tag: string) => validTagsForCategory.includes(tag));
       });
