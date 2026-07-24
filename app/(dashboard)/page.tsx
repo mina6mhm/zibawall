@@ -448,7 +448,7 @@ export default function DashboardHomePage() {
         {/* لیست سالن‌ها */}
         <div className="px-4 mt-4 md:mt-6">
           <h2 className="text-base md:text-lg font-bold text-zinc-900 mb-3 md:mb-4">
-            {searchQuery ? `نتایج جستجو برای "${searchQuery}"` : (selectedCategories.length === 0 ? 'سالن‌های پیشنهادی' : `سالن‌های دارای ${selectedCategories.join('، ')}`)}
+            {searchQuery ? `نتایج جستجو برای "${searchQuery}"` : 'سالن‌های پیشنهادی'}
           </h2>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
