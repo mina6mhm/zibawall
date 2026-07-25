@@ -93,7 +93,7 @@ export default function BusinessOverviewPage() {
   ];
 
   return (
-    <div className="flex flex-col min-h-screen bg-zinc-50 pb-24">
+    <div className="flex flex-col min-h-screen bg-white pb-24">
       <div className="max-w-lg mx-auto w-full px-4 pt-6">
 
         <Link href="/profile" className="inline-flex items-center gap-1.5 text-sm text-zinc-500 hover:text-zinc-700 transition-colors mb-5">
