@@ -2,7 +2,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { User, Phone, LogOut, Store, Sparkles, Eye, Edit, AtSign, Trash2, MessageCircle, ShieldCheck, ChevronLeft } from 'lucide-react';
+import { User, Phone, LogOut, Store, Sparkles, Eye, Edit, AtSign, Trash2, MessageCircle, ShieldCheck, ChevronLeft, Wallet } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
@@ -85,10 +85,38 @@ export default function ProfilePage() {
     router.refresh();
   };
 
-  const tabs = [
-    { key: 'info', label: 'اطلاعات', icon: User },
-    { key: 'business', label: salonData ? 'کسب‌وکار' : 'ثبت کسب‌وکار', icon: Store },
-  ] as const;
+  const menuItems = [
+    {
+      key: 'info',
+      label: 'اطلاعات کاربری',
+      icon: User,
+      type: 'tab' as const,
+    },
+    {
+      key: 'business',
+      label: salonData ? 'کسب‌وکار من' : 'ثبت کسب‌وکار',
+      icon: Store,
+      type: 'tab' as const,
+    },
+    {
+      key: 'support',
+      label: 'پشتیبانی',
+      icon: MessageCircle,
+      type: 'link' as const,
+      href: '/profile/support',
+    },
+    ...(salonData
+      ? [
+          {
+            key: 'accounting',
+            label: 'حسابداری',
+            icon: Wallet,
+            type: 'link' as const,
+            href: '/profile/accounting',
+          },
+        ]
+      : []),
+  ];
 
   return (
     <div className="flex flex-col min-h-screen bg-white pb-24">
@@ -133,39 +161,49 @@ export default function ProfilePage() {
               پنل مدیریت پشتیبانی
             </Link>
           )}
-
-          {/* لینک پشتیبانی — حالا یک صفحه‌ی جدا، مثل واتساپ */}
-          <Link
-            href="/profile/support"
-            className="mt-3 flex items-center justify-between gap-2 bg-white border border-zinc-100 px-4 py-3 rounded-xl text-sm font-medium text-zinc-700 hover:bg-zinc-50 transition-colors"
-          >
-            <span className="flex items-center gap-2">
-              <MessageCircle className="w-4 h-4 text-[#824c71]" />
-              پشتیبانی
-            </span>
-            <ChevronLeft className="w-4 h-4 text-zinc-400" />
-          </Link>
         </div>
       </div>
 
-      {/* تب‌ها */}
-      <div className="bg-white border-b border-zinc-100 px-4 mt-0.5">
-        <div className="max-w-lg mx-auto flex">
-          {tabs.map(({ key, label, icon: Icon }) => (
+      {/* منوی ردیفی: اطلاعات کاربری / کسب‌وکار من / پشتیبانی / (حسابداری) */}
+      <div className="max-w-lg mx-auto w-full px-4 mt-1 space-y-2">
+        {menuItems.map((item) => {
+          const Icon = item.icon;
+          const isActiveTab = item.type === 'tab' && activeTab === item.key;
+
+          const rowClasses = `flex items-center justify-between gap-2 bg-white border px-4 py-3 rounded-xl text-sm font-medium transition-colors ${
+            isActiveTab
+              ? 'border-[#824c71] text-[#824c71] bg-[#824c71]/5'
+              : 'border-zinc-100 text-zinc-700 hover:bg-zinc-50'
+          }`;
+
+          const content = (
+            <>
+              <span className="flex items-center gap-2">
+                <Icon className={`w-4 h-4 ${isActiveTab ? 'text-[#824c71]' : 'text-[#824c71]'}`} />
+                {item.label}
+              </span>
+              <ChevronLeft className="w-4 h-4 text-zinc-400" />
+            </>
+          );
+
+          if (item.type === 'link') {
+            return (
+              <Link key={item.key} href={item.href} className={rowClasses}>
+                {content}
+              </Link>
+            );
+          }
+
+          return (
             <button
-              key={key}
-              onClick={() => setActiveTab(key)}
-              className={`flex-1 flex items-center justify-center gap-1.5 py-3 text-sm font-medium border-b-2 transition-colors ${
-                activeTab === key
-                  ? 'border-[#824c71] text-[#824c71]'
-                  : 'border-transparent text-zinc-400'
-              }`}
+              key={item.key}
+              onClick={() => setActiveTab(item.key as 'info' | 'business')}
+              className={`${rowClasses} w-full`}
             >
-              <Icon className="w-4 h-4" />
-              {label}
+              {content}
             </button>
-          ))}
-        </div>
+          );
+        })}
       </div>
 
       {/* محتوا */}
