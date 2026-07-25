@@ -74,6 +74,7 @@ model Salon {
   reviews               Review[]
   payments              Payment[]
   visits                Visit[]
+  staff                 Staff[]
 
   createdAt             DateTime    @default(now())
   updatedAt             DateTime    @updatedAt
@@ -82,6 +83,20 @@ model Salon {
   @@index([status, subscriptionExpiresAt])
   @@index([hasHomeService])
   @@index([genderAudience])
+}
+
+model Staff {
+  id        String   @id @default(uuid())
+  name      String
+
+  salonId   String
+  salon     Salon    @relation(fields: [salonId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([salonId, name])
+  @@index([salonId])
 }
 
 model Social {

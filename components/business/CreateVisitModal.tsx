@@ -1,13 +1,24 @@
 //components/business/CreateVisitModal.tsx
 'use client';
 
-import React, { useState } from 'react';
-import { X, Plus, Trash2, Loader2, Clock } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { X, Plus, Trash2, Loader2, Clock, UserPlus } from 'lucide-react';
 import DatePicker, { DateObject } from 'react-multi-date-picker';
 import persian from 'react-date-object/calendars/persian';
 import persian_fa from 'react-date-object/locales/persian_fa';
 
-type ServiceRow = { name: string; price: string; staffName: string; staffPercent: string };
+type ServiceRow = { name: string; price: string; staffId: string; staffPercent: string };
+type StaffMember = { id: string; name: string };
+
+export type VisitForEdit = {
+  id: string;
+  customerPhone: string;
+  customerName: string | null;
+  visitDate: string;
+  checkInTime: string | null;
+  checkOutTime: string | null;
+  services: { name: string; price: number; staffId?: string | null; staffPercent?: number }[];
+};
 
 // تبدیل ارقام فارسی/عربی به انگلیسی
 const toEnglishDigits = (value: string) => {
@@ -41,30 +52,85 @@ const formatNumber = (value: string) => {
   return Number(digits).toLocaleString('en-US');
 };
 
+const emptyRow = (): ServiceRow => ({ name: '', price: '', staffId: '', staffPercent: '' });
+
 export default function CreateVisitModal({
   isOpen,
   onClose,
-  onCreated,
+  onSaved,
   userPhone,
+  editingVisit,
 }: {
   isOpen: boolean;
   onClose: () => void;
-  onCreated: () => void;
+  onSaved: () => void;
   userPhone: string;
+  editingVisit?: VisitForEdit | null;
 }) {
+  const isEditMode = !!editingVisit;
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [customerPhone, setCustomerPhone] = useState('');
   const [customerName, setCustomerName] = useState('');
   const [visitDateObj, setVisitDateObj] = useState<DateObject | null>(null);
   const [checkInTime, setCheckInTime] = useState('');
   const [checkOutTime, setCheckOutTime] = useState('');
-  const [services, setServices] = useState<ServiceRow[]>([
-    { name: '', price: '', staffName: '', staffPercent: '' },
-  ]);
+  const [services, setServices] = useState<ServiceRow[]>([emptyRow()]);
+
+  const [staffList, setStaffList] = useState<StaffMember[]>([]);
+  const [isLoadingStaff, setIsLoadingStaff] = useState(false);
+  const [addingStaffFor, setAddingStaffFor] = useState<number | null>(null);
+  const [newStaffName, setNewStaffName] = useState('');
+  const [isCreatingStaff, setIsCreatingStaff] = useState(false);
+
+  // بارگذاری لیست پرسنل هر بار که مودال باز می‌شود
+  useEffect(() => {
+    if (!isOpen || !userPhone) return;
+    const loadStaff = async () => {
+      setIsLoadingStaff(true);
+      try {
+        const res = await fetch(`/api/staff?userPhone=${userPhone}`);
+        if (res.ok) {
+          const data = await res.json();
+          setStaffList(data.staff || []);
+        }
+      } catch {
+        // بی‌صدا؛ کاربر همچنان می‌تواند خدمت را بدون پرسنل ثبت کند
+      } finally {
+        setIsLoadingStaff(false);
+      }
+    };
+    loadStaff();
+  }, [isOpen, userPhone]);
+
+  // پر کردن فرم در حالت ویرایش
+  useEffect(() => {
+    if (!isOpen) return;
+    if (editingVisit) {
+      setCustomerPhone(editingVisit.customerPhone || '');
+      setCustomerName(editingVisit.customerName || '');
+      setVisitDateObj(new DateObject({ date: new Date(editingVisit.visitDate), calendar: persian }));
+      setCheckInTime(editingVisit.checkInTime || '');
+      setCheckOutTime(editingVisit.checkOutTime || '');
+      setServices(
+        editingVisit.services.length
+          ? editingVisit.services.map((s) => ({
+              name: s.name,
+              price: String(s.price),
+              staffId: s.staffId || '',
+              staffPercent: s.staffPercent ? String(s.staffPercent) : '',
+            }))
+          : [emptyRow()]
+      );
+    } else {
+      resetForm();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, editingVisit]);
 
   if (!isOpen) return null;
 
-  const addRow = () => setServices([...services, { name: '', price: '', staffName: '', staffPercent: '' }]);
+  const addRow = () => setServices([...services, emptyRow()]);
   const removeRow = (i: number) => {
     if (services.length > 1) setServices(services.filter((_, idx) => idx !== i));
   };
@@ -82,7 +148,32 @@ export default function CreateVisitModal({
     setVisitDateObj(null);
     setCheckInTime('');
     setCheckOutTime('');
-    setServices([{ name: '', price: '', staffName: '', staffPercent: '' }]);
+    setServices([emptyRow()]);
+    setAddingStaffFor(null);
+    setNewStaffName('');
+  };
+
+  const handleCreateStaff = async (rowIndex: number) => {
+    if (!newStaffName.trim()) return;
+    setIsCreatingStaff(true);
+    try {
+      const res = await fetch('/api/staff', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userPhone, name: newStaffName.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'خطا در افزودن پرسنل');
+
+      setStaffList((prev) => [...prev, data.staff]);
+      updateRow(rowIndex, 'staffId', data.staff.id);
+      setAddingStaffFor(null);
+      setNewStaffName('');
+    } catch (error: any) {
+      alert(error.message || 'خطایی رخ داد.');
+    } finally {
+      setIsCreatingStaff(false);
+    }
   };
 
   const handleSubmit = async () => {
@@ -100,32 +191,36 @@ export default function CreateVisitModal({
 
     setIsSubmitting(true);
     try {
-      // تبدیل تاریخ شمسی انتخاب‌شده به تاریخ میلادی برای ذخیره در دیتابیس
       const gregorianDate = visitDateObj.toDate();
 
-      const res = await fetch('/api/visit', {
-        method: 'POST',
+      const payload = {
+        userPhone,
+        customerPhone: normalizedPhone,
+        customerName: customerName.trim() || undefined,
+        visitDate: gregorianDate.toISOString(),
+        checkInTime: checkInTime || undefined,
+        checkOutTime: checkOutTime || undefined,
+        services: validServices.map((s) => ({
+          name: s.name.trim(),
+          price: Number(sanitizeDigits(s.price)),
+          staffId: s.staffId || undefined,
+          staffPercent: s.staffPercent ? Number(sanitizeDigits(s.staffPercent)) : 0,
+        })),
+      };
+
+      const url = isEditMode ? `/api/visit/${editingVisit!.id}` : '/api/visit';
+      const method = isEditMode ? 'PUT' : 'POST';
+
+      const res = await fetch(url, {
+        method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userPhone,
-          customerPhone: normalizedPhone,
-          customerName: customerName.trim() || undefined,
-          visitDate: gregorianDate.toISOString(),
-          checkInTime: checkInTime || undefined,
-          checkOutTime: checkOutTime || undefined,
-          services: validServices.map((s) => ({
-            name: s.name.trim(),
-            price: Number(sanitizeDigits(s.price)),
-            staffName: s.staffName.trim() || undefined,
-            staffPercent: s.staffPercent ? Number(sanitizeDigits(s.staffPercent)) : 0,
-          })),
-        }),
+        body: JSON.stringify(payload),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'خطا در ثبت مراجعه');
 
       resetForm();
-      onCreated();
+      onSaved();
       onClose();
     } catch (error: any) {
       alert(error.message || 'خطایی رخ داد.');
@@ -138,7 +233,7 @@ export default function CreateVisitModal({
     <div className="fixed inset-0 z-[100] flex items-end md:items-center justify-center bg-black/40 backdrop-blur-sm px-0 md:px-4">
       <div className="bg-white w-full md:max-w-lg md:rounded-3xl rounded-t-3xl max-h-[85vh] flex flex-col">
         <div className="shrink-0 bg-white flex items-center justify-between px-5 py-4 border-b border-zinc-100 rounded-t-3xl">
-          <h2 className="text-sm font-bold text-zinc-900">ثبت مراجعه جدید</h2>
+          <h2 className="text-sm font-bold text-zinc-900">{isEditMode ? 'ویرایش مراجعه' : 'ثبت مراجعه جدید'}</h2>
           <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-lg bg-zinc-100 text-zinc-500 hover:bg-zinc-200 transition-colors">
             <X className="w-4 h-4" />
           </button>
@@ -183,7 +278,7 @@ export default function CreateVisitModal({
             />
           </div>
 
-          {/* بازه زمانی مراجعه: ورود و خروج کنار هم */}
+          {/* بازه زمانی مراجعه */}
           <div>
             <label className="flex items-center gap-1.5 text-xs font-medium text-zinc-500 mb-1.5">
               <Clock className="w-3.5 h-3.5" /> بازه زمانی مراجعه
@@ -238,15 +333,52 @@ export default function CreateVisitModal({
                         className="w-full border border-zinc-200 rounded-lg px-3 py-2 text-sm bg-white text-left focus:border-[#824c71] focus:ring-2 focus:ring-[#824c71]/10 outline-none transition-all"
                       />
                     </div>
+
+                    {/* انتخاب پرسنل از لیست ثابت به‌جای تایپ آزاد */}
                     <div>
-                      <label className="block text-[10px] text-zinc-400 mb-1">نام پرسنل</label>
-                      <input
-                        value={s.staffName}
-                        onChange={(e) => updateRow(i, 'staffName', e.target.value)}
-                        placeholder="مثلاً سارا"
-                        className="w-full border border-zinc-200 rounded-lg px-3 py-2 text-sm bg-white focus:border-[#824c71] focus:ring-2 focus:ring-[#824c71]/10 outline-none transition-all"
-                      />
+                      <label className="block text-[10px] text-zinc-400 mb-1">پرسنل</label>
+                      {addingStaffFor === i ? (
+                        <div className="flex items-center gap-1">
+                          <input
+                            value={newStaffName}
+                            onChange={(e) => setNewStaffName(e.target.value)}
+                            placeholder="نام پرسنل جدید"
+                            className="w-full border border-zinc-200 rounded-lg px-3 py-2 text-sm bg-white focus:border-[#824c71] focus:ring-2 focus:ring-[#824c71]/10 outline-none transition-all"
+                            autoFocus
+                          />
+                          <button
+                            type="button"
+                            onClick={() => handleCreateStaff(i)}
+                            disabled={isCreatingStaff}
+                            className="w-9 h-9 shrink-0 flex items-center justify-center rounded-lg bg-[#824c71] text-white disabled:opacity-50"
+                          >
+                            {isCreatingStaff ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
+                          </button>
+                        </div>
+                      ) : (
+                        <select
+                          value={s.staffId}
+                          onChange={(e) => {
+                            if (e.target.value === '__new__') {
+                              setAddingStaffFor(i);
+                              setNewStaffName('');
+                            } else {
+                              updateRow(i, 'staffId', e.target.value);
+                            }
+                          }}
+                          className="w-full border border-zinc-200 rounded-lg px-3 py-2 text-sm bg-white focus:border-[#824c71] focus:ring-2 focus:ring-[#824c71]/10 outline-none transition-all"
+                        >
+                          <option value="">بدون پرسنل</option>
+                          {staffList.map((st) => (
+                            <option key={st.id} value={st.id}>
+                              {st.name}
+                            </option>
+                          ))}
+                          <option value="__new__">+ افزودن پرسنل جدید</option>
+                        </select>
+                      )}
                     </div>
+
                     <div>
                       <label className="block text-[10px] text-zinc-400 mb-1">درصد پرسنل</label>
                       <input
@@ -262,13 +394,20 @@ export default function CreateVisitModal({
                 </div>
               ))}
             </div>
-            <button
-              type="button"
-              onClick={addRow}
-              className="mt-3 flex items-center gap-1.5 text-sm font-medium text-[#824c71] hover:text-[#6d3f5e] transition-colors"
-            >
-              <Plus className="w-4 h-4" /> افزودن خدمت دیگر
-            </button>
+            <div className="flex items-center gap-4 mt-3">
+              <button
+                type="button"
+                onClick={addRow}
+                className="flex items-center gap-1.5 text-sm font-medium text-[#824c71] hover:text-[#6d3f5e] transition-colors"
+              >
+                <Plus className="w-4 h-4" /> افزودن خدمت دیگر
+              </button>
+              {isLoadingStaff && (
+                <span className="flex items-center gap-1 text-xs text-zinc-400">
+                  <Loader2 className="w-3 h-3 animate-spin" /> بارگذاری پرسنل...
+                </span>
+              )}
+            </div>
           </div>
 
           <div className="flex items-center justify-between pt-3 border-t border-zinc-100">
@@ -284,10 +423,11 @@ export default function CreateVisitModal({
             className="w-full bg-[#824c71] text-white py-3.5 rounded-2xl text-sm font-bold hover:bg-[#6d3f5e] transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
           >
             {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
-            {isSubmitting ? 'در حال ثبت...' : 'ثبت مراجعه'}
+            {isSubmitting ? 'در حال ثبت...' : isEditMode ? 'ذخیره تغییرات' : 'ثبت مراجعه'}
           </button>
         </div>
       </div>
     </div>
   );
 }
+

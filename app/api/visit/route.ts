@@ -7,7 +7,8 @@ const prisma = new PrismaClient();
 type ServiceItem = {
   name: string;
   price: number;
-  staffName?: string;
+  staffId?: string | null;
+  staffName?: string | null;
   staffPercent?: number;
 };
 
@@ -27,18 +28,30 @@ export async function POST(req: NextRequest) {
     const salon = await prisma.salon.findUnique({ where: { userId: user.id } });
     if (!salon) return NextResponse.json({ error: 'کسب‌وکاری برای این کاربر یافت نشد.' }, { status: 404 });
 
-    const cleanedServices: ServiceItem[] = services
+    const rawServices = services
       .filter((s: any) => s.name?.trim() && Number(s.price) > 0)
       .map((s: any) => ({
         name: s.name.trim(),
         price: Number(s.price),
-        staffName: s.staffName?.trim() || null,
+        staffId: s.staffId || null,
         staffPercent: s.staffPercent ? Number(s.staffPercent) : 0,
       }));
 
-    if (cleanedServices.length === 0) {
+    if (rawServices.length === 0) {
       return NextResponse.json({ error: 'حداقل یک خدمت معتبر لازم است.' }, { status: 400 });
     }
+
+    // نام پرسنل را سمت سرور و بر اساس staffId معتبر resolve می‌کنیم تا تشابه/اختلاف اسمی رخ ندهد
+    const staffIds = [...new Set(rawServices.map((s) => s.staffId).filter(Boolean))] as string[];
+    const staffRecords = staffIds.length
+      ? await prisma.staff.findMany({ where: { id: { in: staffIds }, salonId: salon.id } })
+      : [];
+    const staffMap = new Map(staffRecords.map((s) => [s.id, s.name]));
+
+    const cleanedServices: ServiceItem[] = rawServices.map((s) => ({
+      ...s,
+      staffName: s.staffId ? staffMap.get(s.staffId) || null : null,
+    }));
 
     const totalAmount = cleanedServices.reduce((sum, s) => sum + s.price, 0);
 
@@ -98,7 +111,7 @@ export async function GET(req: NextRequest) {
         orderBy: { visitDate: 'desc' },
       });
 
-      // حذف درصد پرسنل قبل از ارسال به مشتری
+      // حذف درصد پرسنل و شناسه‌ی پرسنل قبل از ارسال به مشتری
       const sanitized = visits.map((v) => ({
         ...v,
         services: Array.isArray(v.services)
@@ -115,3 +128,4 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'خطا در دریافت مراجعه‌ها' }, { status: 500 });
   }
 }
+
