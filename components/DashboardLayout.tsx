@@ -76,7 +76,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
       {/* نَوبار موبایل - در صفحه سالن نمایش داده نمیشه */}
       {!isSalonPage && (
-        <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-t border-zinc-100 pb-6 pt-1">
+        <nav
+  className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-t border-zinc-100 pt-1.5"
+  style={{ paddingBottom: 'max(0.5rem, min(env(safe-area-inset-bottom), 1.25rem))' }}
+>
           <div className="flex items-center justify-between px-2 h-[64px]">
             {navItems.map((item) => {
               const isActive = item.href === '/' ? pathname === '/' : pathname?.startsWith(item.href);

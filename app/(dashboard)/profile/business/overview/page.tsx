@@ -56,7 +56,7 @@ export default function BusinessOverviewPage() {
 
   if (isFetching) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] bg-zinc-50">
+      <div className="flex flex-col items-center justify-center min-h-[60vh] bg-white">
         <Loader2 className="w-10 h-10 text-[#824c71] animate-spin mb-4" />
         <p className="text-zinc-500 font-medium text-sm">در حال دریافت اطلاعات...</p>
       </div>
