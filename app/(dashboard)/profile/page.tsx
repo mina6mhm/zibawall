@@ -2,14 +2,12 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { User, Phone, LogOut, Store, Sparkles, Eye, Edit, AtSign, Trash2, MessageCircle, ShieldCheck, ChevronLeft, Wallet } from 'lucide-react';
+import { User, Phone, LogOut, Store, MessageCircle, ShieldCheck, ChevronLeft, Wallet, AtSign } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
 export default function ProfilePage() {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<'info' | 'business'>('info');
-  const [isLoading, setIsLoading] = useState(false);
   const [userData, setUserData] = useState({ name: '', phone: '', username: '', role: '' });
   const [salonData, setSalonData] = useState<any>(null);
 
@@ -36,46 +34,6 @@ export default function ProfilePage() {
     fetchProfile();
   }, [router]);
 
-  const handleSaveChanges = async () => {
-    setIsLoading(true);
-    try {
-      const res = await fetch('/api/user/profile', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: userData.name, username: userData.username })
-      });
-      if (res.ok) {
-        alert('اطلاعات با موفقیت ذخیره شد!');
-      } else {
-        const errorData = await res.json();
-        alert(errorData.error || 'خطا در ذخیره اطلاعات');
-      }
-    } catch (error) {
-      alert('خطای شبکه در ارتباط با سرور');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleDeleteBusiness = async () => {
-    if (!window.confirm('آیا از حذف کامل کسب‌وکار خود مطمئن هستید؟')) return;
-    setIsLoading(true);
-    try {
-      const res = await fetch(`/api/salon?id=${salonData.id}`, { method: 'DELETE' });
-      if (res.ok) {
-        alert('کسب‌وکار شما با موفقیت حذف شد.');
-        setSalonData(null);
-      } else {
-        const errorData = await res.json();
-        alert(errorData.error || 'خطا در حذف');
-      }
-    } catch {
-      alert('خطای شبکه');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   const handleLogout = async () => {
     if (!window.confirm('آیا می‌خواهید از حساب خود خارج شوید؟')) return;
     try {
@@ -90,19 +48,18 @@ export default function ProfilePage() {
       key: 'info',
       label: 'اطلاعات کاربری',
       icon: User,
-      type: 'tab' as const,
+      href: '/profile/info',
     },
     {
-      key: 'business',
-      label: salonData ? 'کسب‌وکار من' : 'ثبت کسب‌وکار',
-      icon: Store,
-      type: 'tab' as const,
-    },
+  key: 'business',
+  label: salonData ? 'کسب‌وکار من' : 'ثبت کسب‌وکار',
+  icon: Store,
+  href: salonData ? '/profile/business/overview' : '/profile/business',
+},
     {
       key: 'support',
       label: 'پشتیبانی',
       icon: MessageCircle,
-      type: 'link' as const,
       href: '/profile/support',
     },
     ...(salonData
@@ -111,7 +68,6 @@ export default function ProfilePage() {
             key: 'accounting',
             label: 'حسابداری',
             icon: Wallet,
-            type: 'link' as const,
             href: '/profile/accounting',
           },
         ]
@@ -151,7 +107,6 @@ export default function ProfilePage() {
             </button>
           </div>
 
-          {/* لینک ادمین */}
           {userData.role === 'ADMIN' && (
             <Link
               href="/admin/support"
@@ -164,148 +119,24 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      {/* منوی ردیفی: اطلاعات کاربری / کسب‌وکار من / پشتیبانی / (حسابداری) */}
+      {/* منوی ردیفی: همه به صفحه جدید میرن */}
       <div className="max-w-lg mx-auto w-full px-4 mt-1 space-y-2">
         {menuItems.map((item) => {
           const Icon = item.icon;
-          const isActiveTab = item.type === 'tab' && activeTab === item.key;
-
-          const rowClasses = `flex items-center justify-between gap-2 bg-white border px-4 py-3 rounded-xl text-sm font-medium transition-colors ${
-            isActiveTab
-              ? 'border-[#824c71] text-[#824c71] bg-[#824c71]/5'
-              : 'border-zinc-100 text-zinc-700 hover:bg-zinc-50'
-          }`;
-
-          const content = (
-            <>
+          return (
+            <Link
+              key={item.key}
+              href={item.href}
+              className="flex items-center justify-between gap-2 bg-white border border-zinc-100 px-4 py-3 rounded-xl text-sm font-medium text-zinc-700 hover:bg-zinc-50 transition-colors"
+            >
               <span className="flex items-center gap-2">
-                <Icon className={`w-4 h-4 ${isActiveTab ? 'text-[#824c71]' : 'text-[#824c71]'}`} />
+                <Icon className="w-4 h-4 text-[#824c71]" />
                 {item.label}
               </span>
               <ChevronLeft className="w-4 h-4 text-zinc-400" />
-            </>
-          );
-
-          if (item.type === 'link') {
-            return (
-              <Link key={item.key} href={item.href} className={rowClasses}>
-                {content}
-              </Link>
-            );
-          }
-
-          return (
-            <button
-              key={item.key}
-              onClick={() => setActiveTab(item.key as 'info' | 'business')}
-              className={`${rowClasses} w-full`}
-            >
-              {content}
-            </button>
+            </Link>
           );
         })}
-      </div>
-
-      {/* محتوا */}
-      <div className="max-w-lg mx-auto w-full px-4 mt-4">
-
-        {/* تب اطلاعات */}
-        {activeTab === 'info' && (
-          <div className="bg-white border border-zinc-100 rounded-2xl p-4 space-y-4">
-            <div>
-              <label className="block text-xs font-medium text-zinc-500 mb-1.5">شماره موبایل</label>
-              <input
-                value={userData.phone}
-                disabled
-                dir="ltr"
-                className="w-full border border-zinc-100 bg-zinc-50 rounded-xl px-3.5 py-2.5 text-sm text-zinc-400 cursor-not-allowed text-left"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-zinc-500 mb-1.5">نام و نام خانوادگی</label>
-              <input
-                value={userData.name}
-                onChange={(e) => setUserData({...userData, name: e.target.value})}
-                className="w-full border border-zinc-200 rounded-xl px-3.5 py-2.5 text-sm focus:border-[#824c71] focus:ring-2 focus:ring-[#824c71]/10 outline-none transition-all"
-                placeholder="نام خود را وارد کنید"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-zinc-500 mb-1.5">نام کاربری</label>
-              <div className="relative">
-                <AtSign className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
-                <input
-                  value={userData.username}
-                  onChange={(e) => setUserData({...userData, username: e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '')})}
-                  placeholder="username"
-                  dir="ltr"
-                  className="w-full border border-zinc-200 rounded-xl px-3.5 py-2.5 pl-10 text-sm text-left focus:border-[#824c71] focus:ring-2 focus:ring-[#824c71]/10 outline-none transition-all"
-                />
-              </div>
-            </div>
-            <button
-              onClick={handleSaveChanges}
-              disabled={isLoading}
-              className="w-full bg-[#824c71] text-white py-2.5 rounded-xl text-sm font-medium hover:bg-[#6d3f5e] transition-colors disabled:opacity-50 mt-2"
-            >
-              {isLoading ? 'در حال ذخیره...' : 'ذخیره تغییرات'}
-            </button>
-          </div>
-        )}
-
-        {/* تب کسب‌وکار */}
-        {activeTab === 'business' && (
-          <div className="bg-white border border-zinc-100 rounded-2xl p-4">
-            {salonData ? (
-              <div className="space-y-4">
-                <div className="flex items-center gap-3 p-3 bg-zinc-50 rounded-xl">
-                  <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center border border-zinc-200 shrink-0">
-                    <Store className="w-5 h-5 text-[#824c71]" strokeWidth={1.5} />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-zinc-900 text-sm">{salonData.name}</h3>
-                    <p className="text-xs text-zinc-500 mt-0.5">{salonData.province}، {salonData.city}</p>
-                  </div>
-                </div>
-                <div className="grid grid-cols-3 gap-2">
-                  <Link
-                    href={`/salon/${salonData.id}`}
-                    className="flex flex-col items-center gap-1.5 bg-[#824c71] text-white rounded-xl py-3 text-xs font-medium hover:bg-[#6d3f5e] transition-colors"
-                  >
-                    <Eye className="w-4 h-4" /> مشاهده
-                  </Link>
-                  <Link
-                    href="/profile/business/edit"
-                    className="flex flex-col items-center gap-1.5 bg-zinc-100 text-zinc-700 rounded-xl py-3 text-xs font-medium hover:bg-zinc-200 transition-colors"
-                  >
-                    <Edit className="w-4 h-4" /> ویرایش
-                  </Link>
-                  <button
-                    onClick={handleDeleteBusiness}
-                    disabled={isLoading}
-                    className="flex flex-col items-center gap-1.5 bg-red-50 text-red-500 rounded-xl py-3 text-xs font-medium hover:bg-red-100 transition-colors"
-                  >
-                    <Trash2 className="w-4 h-4" /> حذف
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <div className="text-center py-8">
-                <div className="w-16 h-16 bg-zinc-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                  <Store className="w-8 h-8 text-[#824c71]" strokeWidth={1.5} />
-                </div>
-                <h2 className="text-base font-bold mb-2 text-zinc-800">مدیر سالن زیبایی هستید؟</h2>
-                <p className="text-sm text-zinc-500 mb-6 leading-relaxed">کسب‌وکار خود را رایگان ثبت کنید</p>
-                <Link
-                  href="/profile/business"
-                  className="bg-[#824c71] text-white px-6 py-2.5 rounded-xl inline-flex items-center gap-2 text-sm font-medium hover:bg-[#6d3f5e] transition-colors"
-                >
-                  <Sparkles className="w-4 h-4" /> شروع ثبت‌نام کسب‌وکار
-                </Link>
-              </div>
-            )}
-          </div>
-        )}
       </div>
     </div>
   );
