@@ -20,6 +20,15 @@ const BookmarkIcon = ({ isActive, className }: { isActive: boolean, className?: 
   </svg>
 );
 
+const VisitsIcon = ({ isActive, className }: { isActive: boolean, className?: string }) => (
+  <svg viewBox="0 0 24 24" className={className} fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="4" y="5" width="16" height="16" rx="2" fill={isActive ? "currentColor" : "none"} fillOpacity={isActive ? 0.12 : 0} />
+    <path d="M4 9h16" />
+    <path d="M8 3v4M16 3v4" />
+    <path d="M9 14l2 2 4-4" />
+  </svg>
+);
+
 const ProfileIcon = ({ isActive, className }: { isActive: boolean, className?: string }) => (
   <svg viewBox="0 0 24 24" className={className} fill={isActive ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
     <circle cx="12" cy="7" r="3.5" />
@@ -30,6 +39,7 @@ const ProfileIcon = ({ isActive, className }: { isActive: boolean, className?: s
 const navItems = [
   { name: 'پیشخوان', href: '/', icon: DashboardIcon },
   { name: 'نشان‌ها', href: '/bookmarks', icon: BookmarkIcon },
+  { name: 'مراجعه‌ها', href: '/visits', icon: VisitsIcon },
   { name: 'پروفایل', href: '/profile', icon: ProfileIcon },
 ];
 
@@ -77,9 +87,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       {/* نَوبار موبایل - در صفحه سالن نمایش داده نمیشه */}
       {!isSalonPage && (
         <nav
-  className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-t border-zinc-100 pt-1.5"
-  style={{ paddingBottom: 'max(0.5rem, min(env(safe-area-inset-bottom), 1.25rem))' }}
->
+          className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-t border-zinc-100 pt-1.5"
+          style={{ paddingBottom: 'max(0.5rem, min(env(safe-area-inset-bottom), 1.25rem))' }}
+        >
           <div className="flex items-center justify-between px-2 h-[64px]">
             {navItems.map((item) => {
               const isActive = item.href === '/' ? pathname === '/' : pathname?.startsWith(item.href);

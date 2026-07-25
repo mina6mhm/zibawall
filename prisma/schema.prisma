@@ -73,6 +73,7 @@ model Salon {
   socials               Social?
   reviews               Review[]
   payments              Payment[]
+  visits                Visit[]
 
   createdAt             DateTime    @default(now())
   updatedAt             DateTime    @updatedAt
@@ -191,4 +192,32 @@ model SupportReply {
   createdAt DateTime   @default(now())
 
   @@index([ticketId])
+}
+
+model Visit {
+  id            String        @id @default(uuid())
+  customerPhone String
+  customerName  String?
+
+  visitDate     DateTime
+  checkInTime   String?
+  checkOutTime  String?
+
+  // هر آیتم: { name, price, staffName, staffPercent }
+  services      Json          @default("[]")
+  totalAmount   Int
+
+  paymentStatus PaymentStatus @default(PENDING)
+  authority     String?       @unique
+  refId         String?
+
+  salonId       String
+  salon         Salon         @relation(fields: [salonId], references: [id], onDelete: Cascade)
+
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  @@index([salonId])
+  @@index([customerPhone])
+  @@index([paymentStatus])
 }
