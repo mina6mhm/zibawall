@@ -221,3 +221,4 @@ model Visit {
   @@index([customerPhone])
   @@index([paymentStatus])
 }
+
