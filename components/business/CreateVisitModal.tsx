@@ -6,6 +6,33 @@ import { X, Plus, Trash2, Loader2 } from 'lucide-react';
 
 type ServiceRow = { name: string; price: string; staffName: string; staffPercent: string };
 
+// تبدیل ارقام فارسی/عربی به انگلیسی
+const toEnglishDigits = (value: string) => {
+  const persian = '۰۱۲۳۴۵۶۷۸۹';
+  const arabic = '٠١٢٣٤٥٦٧٨٩';
+  return value
+    .split('')
+    .map((ch) => {
+      const pIndex = persian.indexOf(ch);
+      if (pIndex !== -1) return String(pIndex);
+      const aIndex = arabic.indexOf(ch);
+      if (aIndex !== -1) return String(aIndex);
+      return ch;
+    })
+    .join('');
+};
+
+// فقط رقم نگه می‌داره، ولی قبلش ارقام فارسی/عربی رو تبدیل می‌کنه
+const sanitizeDigits = (value: string) => toEnglishDigits(value).replace(/[^0-9]/g, '');
+
+// نرمال‌سازی شماره موبایل: همیشه با صفر شروع بشه
+const normalizePhone = (value: string) => {
+  const digits = sanitizeDigits(value);
+  if (digits.startsWith('98')) return '0' + digits.slice(2);
+  if (digits.startsWith('9') && digits.length === 10) return '0' + digits;
+  return digits;
+};
+
 export default function CreateVisitModal({
   isOpen,
   onClose,
@@ -39,7 +66,7 @@ export default function CreateVisitModal({
     setServices(updated);
   };
 
-  const totalAmount = services.reduce((sum, s) => sum + (Number(s.price) || 0), 0);
+  const totalAmount = services.reduce((sum, s) => sum + (Number(sanitizeDigits(s.price)) || 0), 0);
 
   const resetForm = () => {
     setCustomerPhone('');
@@ -51,11 +78,13 @@ export default function CreateVisitModal({
   };
 
   const handleSubmit = async () => {
-    if (!customerPhone.trim() || !visitDate) {
+    const normalizedPhone = normalizePhone(customerPhone);
+
+    if (!normalizedPhone.trim() || !visitDate) {
       alert('شماره مشتری و تاریخ مراجعه الزامی است.');
       return;
     }
-    const validServices = services.filter((s) => s.name.trim() && Number(s.price) > 0);
+    const validServices = services.filter((s) => s.name.trim() && Number(sanitizeDigits(s.price)) > 0);
     if (validServices.length === 0) {
       alert('حداقل یک خدمت معتبر وارد کنید.');
       return;
@@ -68,16 +97,16 @@ export default function CreateVisitModal({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           userPhone,
-          customerPhone: customerPhone.trim(),
+          customerPhone: normalizedPhone,
           customerName: customerName.trim() || undefined,
           visitDate,
           checkInTime: checkInTime || undefined,
           checkOutTime: checkOutTime || undefined,
           services: validServices.map((s) => ({
             name: s.name.trim(),
-            price: Number(s.price),
+            price: Number(sanitizeDigits(s.price)),
             staffName: s.staffName.trim() || undefined,
-            staffPercent: s.staffPercent ? Number(s.staffPercent) : 0,
+            staffPercent: s.staffPercent ? Number(sanitizeDigits(s.staffPercent)) : 0,
           })),
         }),
       });
@@ -95,25 +124,26 @@ export default function CreateVisitModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/40 backdrop-blur-sm px-0 md:px-4">
-      <div className="bg-white w-full md:max-w-lg md:rounded-3xl rounded-t-3xl max-h-[90vh] overflow-y-auto">
-        <div className="sticky top-0 bg-white flex items-center justify-between px-5 py-4 border-b border-zinc-100">
+    <div className="fixed inset-0 z-[100] flex items-end md:items-center justify-center bg-black/40 backdrop-blur-sm px-0 md:px-4">
+      <div className="bg-white w-full md:max-w-lg md:rounded-3xl rounded-t-3xl max-h-[85vh] flex flex-col">
+        <div className="shrink-0 bg-white flex items-center justify-between px-5 py-4 border-b border-zinc-100 rounded-t-3xl">
           <h2 className="text-sm font-bold text-zinc-900">ثبت مراجعه جدید</h2>
           <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-lg bg-zinc-100 text-zinc-500 hover:bg-zinc-200 transition-colors">
             <X className="w-4 h-4" />
           </button>
         </div>
 
-        <div className="p-5 space-y-4">
-          <div className="grid grid-cols-2 gap-3">
+        <div className="overflow-y-auto p-5 space-y-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-medium text-zinc-500 mb-1.5">شماره موبایل مشتری *</label>
               <input
                 value={customerPhone}
-                onChange={(e) => setCustomerPhone(e.target.value.replace(/[^0-9]/g, ''))}
+                onChange={(e) => setCustomerPhone(sanitizeDigits(e.target.value))}
                 dir="ltr"
-                placeholder="09xxxxxxxxx"
-                className="w-full border border-zinc-200 rounded-xl px-3 py-2.5 text-sm text-left focus:border-[#824c71] focus:ring-2 focus:ring-[#824c71]/10 outline-none"
+                inputMode="numeric"
+                placeholder="09xxxxxxxxx یا 9xxxxxxxxx"
+                className="w-full border border-zinc-200 rounded-xl px-3.5 py-2.5 text-sm text-left focus:border-[#824c71] focus:ring-2 focus:ring-[#824c71]/10 outline-none transition-all"
               />
             </div>
             <div>
@@ -121,19 +151,20 @@ export default function CreateVisitModal({
               <input
                 value={customerName}
                 onChange={(e) => setCustomerName(e.target.value)}
-                className="w-full border border-zinc-200 rounded-xl px-3 py-2.5 text-sm focus:border-[#824c71] focus:ring-2 focus:ring-[#824c71]/10 outline-none"
+                placeholder="نام و نام خانوادگی"
+                className="w-full border border-zinc-200 rounded-xl px-3.5 py-2.5 text-sm focus:border-[#824c71] focus:ring-2 focus:ring-[#824c71]/10 outline-none transition-all"
               />
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
               <label className="block text-xs font-medium text-zinc-500 mb-1.5">تاریخ مراجعه *</label>
               <input
                 type="date"
                 value={visitDate}
                 onChange={(e) => setVisitDate(e.target.value)}
-                className="w-full border border-zinc-200 rounded-xl px-3 py-2.5 text-sm focus:border-[#824c71] focus:ring-2 focus:ring-[#824c71]/10 outline-none"
+                className="w-full border border-zinc-200 rounded-xl px-3.5 py-2.5 text-sm focus:border-[#824c71] focus:ring-2 focus:ring-[#824c71]/10 outline-none transition-all"
               />
             </div>
             <div>
@@ -142,7 +173,7 @@ export default function CreateVisitModal({
                 type="time"
                 value={checkInTime}
                 onChange={(e) => setCheckInTime(e.target.value)}
-                className="w-full border border-zinc-200 rounded-xl px-3 py-2.5 text-sm focus:border-[#824c71] focus:ring-2 focus:ring-[#824c71]/10 outline-none"
+                className="w-full border border-zinc-200 rounded-xl px-3.5 py-2.5 text-sm focus:border-[#824c71] focus:ring-2 focus:ring-[#824c71]/10 outline-none transition-all"
               />
             </div>
             <div>
@@ -151,53 +182,64 @@ export default function CreateVisitModal({
                 type="time"
                 value={checkOutTime}
                 onChange={(e) => setCheckOutTime(e.target.value)}
-                className="w-full border border-zinc-200 rounded-xl px-3 py-2.5 text-sm focus:border-[#824c71] focus:ring-2 focus:ring-[#824c71]/10 outline-none"
+                className="w-full border border-zinc-200 rounded-xl px-3.5 py-2.5 text-sm focus:border-[#824c71] focus:ring-2 focus:ring-[#824c71]/10 outline-none transition-all"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-zinc-500 mb-2">خدمات انجام‌شده *</label>
+            <label className="block text-xs font-medium text-zinc-500 mb-2.5">خدمات انجام‌شده *</label>
             <div className="space-y-3">
               {services.map((s, i) => (
-                <div key={i} className="border border-zinc-100 rounded-xl p-3 space-y-2 bg-zinc-50/50">
+                <div key={i} className="border border-zinc-200 rounded-2xl p-3.5 space-y-2.5 bg-zinc-50/60">
                   <div className="flex items-center gap-2">
                     <input
                       value={s.name}
                       onChange={(e) => updateRow(i, 'name', e.target.value)}
                       placeholder="نام خدمت (مثلاً میکاپ)"
-                      className="flex-1 border border-zinc-200 rounded-lg px-3 py-2 text-sm bg-white focus:border-[#824c71] outline-none"
+                      className="flex-1 border border-zinc-200 rounded-xl px-3.5 py-2.5 text-sm bg-white focus:border-[#824c71] focus:ring-2 focus:ring-[#824c71]/10 outline-none transition-all"
                     />
                     <button
                       type="button"
                       onClick={() => removeRow(i)}
                       disabled={services.length === 1}
-                      className="w-8 h-8 flex items-center justify-center rounded-lg bg-white text-zinc-400 hover:bg-red-50 hover:text-red-500 transition-colors disabled:opacity-30 shrink-0"
+                      className="w-9 h-9 flex items-center justify-center rounded-xl bg-white border border-zinc-200 text-zinc-400 hover:bg-red-50 hover:border-red-200 hover:text-red-500 transition-colors disabled:opacity-30 shrink-0"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
                   </div>
-                  <div className="grid grid-cols-3 gap-2">
-                    <input
-                      value={s.price}
-                      onChange={(e) => updateRow(i, 'price', e.target.value.replace(/[^0-9]/g, ''))}
-                      placeholder="هزینه (تومان)"
-                      dir="ltr"
-                      className="border border-zinc-200 rounded-lg px-3 py-2 text-sm bg-white text-left focus:border-[#824c71] outline-none"
-                    />
-                    <input
-                      value={s.staffName}
-                      onChange={(e) => updateRow(i, 'staffName', e.target.value)}
-                      placeholder="نام پرسنل"
-                      className="border border-zinc-200 rounded-lg px-3 py-2 text-sm bg-white focus:border-[#824c71] outline-none"
-                    />
-                    <input
-                      value={s.staffPercent}
-                      onChange={(e) => updateRow(i, 'staffPercent', e.target.value.replace(/[^0-9]/g, ''))}
-                      placeholder="درصد پرسنل"
-                      dir="ltr"
-                      className="border border-zinc-200 rounded-lg px-3 py-2 text-sm bg-white text-left focus:border-[#824c71] outline-none"
-                    />
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                    <div>
+                      <label className="block text-[10px] text-zinc-400 mb-1">هزینه (تومان)</label>
+                      <input
+                        value={s.price}
+                        onChange={(e) => updateRow(i, 'price', sanitizeDigits(e.target.value))}
+                        inputMode="numeric"
+                        placeholder="مثلاً 200000"
+                        dir="ltr"
+                        className="w-full border border-zinc-200 rounded-lg px-3 py-2 text-sm bg-white text-left focus:border-[#824c71] focus:ring-2 focus:ring-[#824c71]/10 outline-none transition-all"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] text-zinc-400 mb-1">نام پرسنل</label>
+                      <input
+                        value={s.staffName}
+                        onChange={(e) => updateRow(i, 'staffName', e.target.value)}
+                        placeholder="مثلاً سارا"
+                        className="w-full border border-zinc-200 rounded-lg px-3 py-2 text-sm bg-white focus:border-[#824c71] focus:ring-2 focus:ring-[#824c71]/10 outline-none transition-all"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] text-zinc-400 mb-1">درصد پرسنل</label>
+                      <input
+                        value={s.staffPercent}
+                        onChange={(e) => updateRow(i, 'staffPercent', sanitizeDigits(e.target.value))}
+                        inputMode="numeric"
+                        placeholder="مثلاً 30"
+                        dir="ltr"
+                        className="w-full border border-zinc-200 rounded-lg px-3 py-2 text-sm bg-white text-left focus:border-[#824c71] focus:ring-2 focus:ring-[#824c71]/10 outline-none transition-all"
+                      />
+                    </div>
                   </div>
                 </div>
               ))}
@@ -205,21 +247,23 @@ export default function CreateVisitModal({
             <button
               type="button"
               onClick={addRow}
-              className="mt-2.5 flex items-center gap-1.5 text-sm font-medium text-[#824c71] hover:text-[#6d3f5e] transition-colors"
+              className="mt-3 flex items-center gap-1.5 text-sm font-medium text-[#824c71] hover:text-[#6d3f5e] transition-colors"
             >
               <Plus className="w-4 h-4" /> افزودن خدمت دیگر
             </button>
           </div>
 
-          <div className="flex items-center justify-between pt-2 border-t border-zinc-100">
+          <div className="flex items-center justify-between pt-3 border-t border-zinc-100">
             <span className="text-sm font-medium text-zinc-500">مبلغ کل</span>
             <span className="text-base font-bold text-[#824c71]">{totalAmount.toLocaleString('fa-IR')} تومان</span>
           </div>
+        </div>
 
+        <div className="shrink-0 p-5 pt-3 border-t border-zinc-100">
           <button
             onClick={handleSubmit}
             disabled={isSubmitting}
-            className="w-full bg-[#824c71] text-white py-3 rounded-xl text-sm font-bold hover:bg-[#6d3f5e] transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+            className="w-full bg-[#824c71] text-white py-3.5 rounded-2xl text-sm font-bold hover:bg-[#6d3f5e] transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
           >
             {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
             {isSubmitting ? 'در حال ثبت...' : 'ثبت مراجعه'}
