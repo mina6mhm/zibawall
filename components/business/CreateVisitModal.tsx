@@ -1,36 +1,43 @@
-//components/business/CreateVisitModal.tsx
 'use client';
 
 import React, { useState } from 'react';
-import { X, Plus, Trash2, Loader2 } from 'lucide-react';
+import { X, Plus, Trash2, Loader2, Clock } from 'lucide-react';
+import DatePicker, { DateObject } from 'react-multi-date-picker';
+import persian from 'react-date-object/calendars/persian';
+import persian_fa from 'react-date-object/locales/persian_fa';
 
 type ServiceRow = { name: string; price: string; staffName: string; staffPercent: string };
 
 // تبدیل ارقام فارسی/عربی به انگلیسی
 const toEnglishDigits = (value: string) => {
-  const persian = '۰۱۲۳۴۵۶۷۸۹';
-  const arabic = '٠١٢٣٤٥٦٧٨٩';
+  const persianDigits = '۰۱۲۳۴۵۶۷۸۹';
+  const arabicDigits = '٠١٢٣٤٥٦٧٨٩';
   return value
     .split('')
     .map((ch) => {
-      const pIndex = persian.indexOf(ch);
+      const pIndex = persianDigits.indexOf(ch);
       if (pIndex !== -1) return String(pIndex);
-      const aIndex = arabic.indexOf(ch);
+      const aIndex = arabicDigits.indexOf(ch);
       if (aIndex !== -1) return String(aIndex);
       return ch;
     })
     .join('');
 };
 
-// فقط رقم نگه می‌داره، ولی قبلش ارقام فارسی/عربی رو تبدیل می‌کنه
 const sanitizeDigits = (value: string) => toEnglishDigits(value).replace(/[^0-9]/g, '');
 
-// نرمال‌سازی شماره موبایل: همیشه با صفر شروع بشه
 const normalizePhone = (value: string) => {
   const digits = sanitizeDigits(value);
   if (digits.startsWith('98')) return '0' + digits.slice(2);
   if (digits.startsWith('9') && digits.length === 10) return '0' + digits;
   return digits;
+};
+
+// فرمت عدد با جداکننده سه‌رقمی (۲۰۰۰۰۰۰ -> 2,000,000)
+const formatNumber = (value: string) => {
+  const digits = sanitizeDigits(value);
+  if (!digits) return '';
+  return Number(digits).toLocaleString('en-US');
 };
 
 export default function CreateVisitModal({
@@ -47,7 +54,7 @@ export default function CreateVisitModal({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [customerPhone, setCustomerPhone] = useState('');
   const [customerName, setCustomerName] = useState('');
-  const [visitDate, setVisitDate] = useState('');
+  const [visitDateObj, setVisitDateObj] = useState<DateObject | null>(null);
   const [checkInTime, setCheckInTime] = useState('');
   const [checkOutTime, setCheckOutTime] = useState('');
   const [services, setServices] = useState<ServiceRow[]>([
@@ -71,7 +78,7 @@ export default function CreateVisitModal({
   const resetForm = () => {
     setCustomerPhone('');
     setCustomerName('');
-    setVisitDate('');
+    setVisitDateObj(null);
     setCheckInTime('');
     setCheckOutTime('');
     setServices([{ name: '', price: '', staffName: '', staffPercent: '' }]);
@@ -80,7 +87,7 @@ export default function CreateVisitModal({
   const handleSubmit = async () => {
     const normalizedPhone = normalizePhone(customerPhone);
 
-    if (!normalizedPhone.trim() || !visitDate) {
+    if (!normalizedPhone.trim() || !visitDateObj) {
       alert('شماره مشتری و تاریخ مراجعه الزامی است.');
       return;
     }
@@ -92,6 +99,9 @@ export default function CreateVisitModal({
 
     setIsSubmitting(true);
     try {
+      // تبدیل تاریخ شمسی انتخاب‌شده به تاریخ میلادی برای ذخیره در دیتابیس
+      const gregorianDate = visitDateObj.toDate();
+
       const res = await fetch('/api/visit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -99,7 +109,7 @@ export default function CreateVisitModal({
           userPhone,
           customerPhone: normalizedPhone,
           customerName: customerName.trim() || undefined,
-          visitDate,
+          visitDate: gregorianDate.toISOString(),
           checkInTime: checkInTime || undefined,
           checkOutTime: checkOutTime || undefined,
           services: validServices.map((s) => ({
@@ -157,32 +167,39 @@ export default function CreateVisitModal({
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <div>
-              <label className="block text-xs font-medium text-zinc-500 mb-1.5">تاریخ مراجعه *</label>
-              <input
-                type="date"
-                value={visitDate}
-                onChange={(e) => setVisitDate(e.target.value)}
-                className="w-full border border-zinc-200 rounded-xl px-3.5 py-2.5 text-sm focus:border-[#824c71] focus:ring-2 focus:ring-[#824c71]/10 outline-none transition-all"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-zinc-500 mb-1.5">ساعت ورود</label>
+          {/* تاریخ مراجعه (شمسی) */}
+          <div>
+            <label className="block text-xs font-medium text-zinc-500 mb-1.5">تاریخ مراجعه *</label>
+            <DatePicker
+              value={visitDateObj}
+              onChange={(date) => setVisitDateObj(date as DateObject)}
+              calendar={persian}
+              locale={persian_fa}
+              calendarPosition="bottom-right"
+              inputClass="w-full border border-zinc-200 rounded-xl px-3.5 py-2.5 text-sm focus:border-[#824c71] focus:ring-2 focus:ring-[#824c71]/10 outline-none transition-all"
+              containerClassName="w-full"
+              placeholder="انتخاب تاریخ"
+            />
+          </div>
+
+          {/* بازه زمانی مراجعه: ورود و خروج کنار هم */}
+          <div>
+            <label className="flex items-center gap-1.5 text-xs font-medium text-zinc-500 mb-1.5">
+              <Clock className="w-3.5 h-3.5" /> بازه زمانی مراجعه
+            </label>
+            <div className="flex items-center gap-2 border border-zinc-200 rounded-xl px-3.5 py-2 focus-within:border-[#824c71] focus-within:ring-2 focus-within:ring-[#824c71]/10 transition-all">
               <input
                 type="time"
                 value={checkInTime}
                 onChange={(e) => setCheckInTime(e.target.value)}
-                className="w-full border border-zinc-200 rounded-xl px-3.5 py-2.5 text-sm focus:border-[#824c71] focus:ring-2 focus:ring-[#824c71]/10 outline-none transition-all"
+                className="flex-1 min-w-0 text-sm outline-none bg-transparent"
               />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-zinc-500 mb-1.5">ساعت خروج</label>
+              <span className="text-zinc-300 text-xs shrink-0">تا</span>
               <input
                 type="time"
                 value={checkOutTime}
                 onChange={(e) => setCheckOutTime(e.target.value)}
-                className="w-full border border-zinc-200 rounded-xl px-3.5 py-2.5 text-sm focus:border-[#824c71] focus:ring-2 focus:ring-[#824c71]/10 outline-none transition-all"
+                className="flex-1 min-w-0 text-sm outline-none bg-transparent"
               />
             </div>
           </div>
@@ -212,10 +229,10 @@ export default function CreateVisitModal({
                     <div>
                       <label className="block text-[10px] text-zinc-400 mb-1">هزینه (تومان)</label>
                       <input
-                        value={s.price}
+                        value={formatNumber(s.price)}
                         onChange={(e) => updateRow(i, 'price', sanitizeDigits(e.target.value))}
                         inputMode="numeric"
-                        placeholder="مثلاً 200000"
+                        placeholder="مثلاً 200,000"
                         dir="ltr"
                         className="w-full border border-zinc-200 rounded-lg px-3 py-2 text-sm bg-white text-left focus:border-[#824c71] focus:ring-2 focus:ring-[#824c71]/10 outline-none transition-all"
                       />
