@@ -1,16 +1,16 @@
-// app/(dashboard)/profile/page.tsx
+// app/(dashboard)/profile/business/overview/page.tsx
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { User, Phone, LogOut, Store, MessageCircle, ShieldCheck, ChevronLeft, Wallet, AtSign, Sparkles } from 'lucide-react';
+import { Store, Eye, Edit, Trash2, ArrowRight, Loader2, MapPin, ChevronLeft } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
-export default function ProfilePage() {
+export default function BusinessOverviewPage() {
   const router = useRouter();
-  const [userData, setUserData] = useState({ name: '', phone: '', username: '', role: '' });
-  const [salonData, setSalonData] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(false);
   const [isFetching, setIsFetching] = useState(true);
+  const [salonData, setSalonData] = useState<any>(null);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -18,12 +18,10 @@ export default function ProfilePage() {
         const res = await fetch('/api/user/profile');
         if (res.ok) {
           const data = await res.json();
-          setUserData({
-            name: data.name || '',
-            phone: data.phone || '',
-            username: data.username || '',
-            role: data.role || 'USER'
-          });
+          if (!data.salon) {
+            router.push('/profile/business');
+            return;
+          }
           setSalonData(data.salon);
         } else if (res.status === 401) {
           router.push('/login');
@@ -37,128 +35,151 @@ export default function ProfilePage() {
     fetchProfile();
   }, [router]);
 
-  const handleLogout = async () => {
-    if (!window.confirm('آیا می‌خواهید از حساب خود خارج شوید؟')) return;
+  const handleDeleteBusiness = async () => {
+    if (!window.confirm('آیا از حذف کامل کسب‌وکار خود مطمئن هستید؟ این عمل غیرقابل بازگشت است.')) return;
+    setIsLoading(true);
     try {
-      await fetch('/api/auth/logout', { method: 'POST' });
-    } catch {}
-    router.push('/login');
-    router.refresh();
+      const res = await fetch(`/api/salon?id=${salonData.id}`, { method: 'DELETE' });
+      if (res.ok) {
+        alert('کسب‌وکار شما با موفقیت حذف شد.');
+        router.push('/profile');
+      } else {
+        const errorData = await res.json();
+        alert(errorData.error || 'خطا در حذف');
+      }
+    } catch {
+      alert('خطای شبکه');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const menuItems = [
+  if (isFetching) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] bg-zinc-50">
+        <Loader2 className="w-10 h-10 text-[#824c71] animate-spin mb-4" />
+        <p className="text-zinc-500 font-medium text-sm">در حال دریافت اطلاعات...</p>
+      </div>
+    );
+  }
+
+  if (!salonData) return null;
+
+  const actions = [
     {
-      key: 'info',
-      label: 'اطلاعات کاربری',
-      description: 'نام، نام کاربری و شماره تماس',
-      icon: User,
-      href: '/profile/info',
+      key: 'view',
+      label: 'مشاهده صفحه عمومی',
+      description: 'همان چیزی که مشتری‌ها می‌بینند',
+      icon: Eye,
+      href: `/salon/${salonData.id}`,
+      variant: 'primary' as const,
     },
     {
-      key: 'business',
-      label: salonData ? 'کسب‌وکار من' : 'ثبت کسب‌وکار',
-      description: salonData ? 'مشاهده، ویرایش و مدیریت سالن' : 'کسب‌وکار خود را رایگان ثبت کنید',
-      icon: salonData ? Store : Sparkles,
-      href: salonData ? '/profile/business/overview' : '/profile/business',
-      highlight: !salonData,
+      key: 'edit',
+      label: 'ویرایش اطلاعات',
+      description: 'خدمات، تصاویر و مشخصات سالن',
+      icon: Edit,
+      href: '/profile/business/edit',
+      variant: 'default' as const,
     },
     {
-      key: 'support',
-      label: 'پشتیبانی',
-      description: 'ارتباط با تیم پشتیبانی زیباوال',
-      icon: MessageCircle,
-      href: '/profile/support',
+      key: 'delete',
+      label: 'حذف کسب‌وکار',
+      description: 'این عمل غیرقابل بازگشت است',
+      icon: Trash2,
+      onClick: handleDeleteBusiness,
+      variant: 'danger' as const,
     },
-    ...(salonData
-      ? [
-          {
-            key: 'accounting',
-            label: 'حسابداری',
-            description: 'گزارش تراکنش‌ها و درآمد سالن',
-            icon: Wallet,
-            href: '/profile/accounting',
-          },
-        ]
-      : []),
   ];
 
   return (
     <div className="flex flex-col min-h-screen bg-zinc-50 pb-24">
+      <div className="max-w-lg mx-auto w-full px-4 pt-6">
 
-      {/* هدر */}
-      <div className="bg-white px-4 pt-8 pb-6 rounded-b-3xl shadow-sm shadow-zinc-100">
-        <div className="max-w-lg mx-auto">
+        <Link href="/profile" className="inline-flex items-center gap-1.5 text-sm text-zinc-500 hover:text-zinc-700 transition-colors mb-5">
+          <ArrowRight className="w-4 h-4" /> بازگشت
+        </Link>
+
+        {/* کارت سالن */}
+        <div className="bg-gradient-to-br from-[#824c71] to-[#6d3f5e] rounded-3xl p-5 shadow-lg shadow-[#824c71]/20 mb-5">
           <div className="flex items-center gap-4">
-            <div className="w-16 h-16 bg-gradient-to-br from-[#824c71] to-[#6d3f5e] rounded-2xl flex items-center justify-center text-white shrink-0 shadow-md shadow-[#824c71]/25">
-              <User className="w-7 h-7" strokeWidth={1.5} />
+            <div className="w-14 h-14 bg-white/15 backdrop-blur rounded-2xl flex items-center justify-center shrink-0 border border-white/20">
+              <Store className="w-6 h-6 text-white" strokeWidth={1.5} />
             </div>
             <div className="flex-1 min-w-0">
-              <h1 className="text-lg font-bold text-zinc-900 truncate">
-                {isFetching ? 'در حال بارگذاری...' : (userData.name || 'کاربر عزیز')}
-              </h1>
-              <div className="flex items-center gap-3 mt-1.5 flex-wrap">
-                {userData.username && (
-                  <span className="text-zinc-500 text-xs font-medium flex items-center gap-1">
-                    <AtSign className="w-3 h-3" />{userData.username}
-                  </span>
-                )}
-                {userData.phone && (
-                  <span className="text-zinc-400 text-xs flex items-center gap-1" dir="ltr">
-                    <Phone className="w-3 h-3" />{userData.phone}
-                  </span>
-                )}
-              </div>
+              <h1 className="text-white font-bold text-base truncate">{salonData.name}</h1>
+              <p className="text-white/70 text-xs flex items-center gap-1 mt-1">
+                <MapPin className="w-3 h-3" />
+                {salonData.province}، {salonData.city}
+              </p>
             </div>
-            <button
-              onClick={handleLogout}
-              className="w-10 h-10 flex items-center justify-center rounded-xl bg-zinc-100 text-zinc-500 hover:bg-red-50 hover:text-red-500 transition-colors shrink-0"
-              title="خروج از حساب"
-            >
-              <LogOut className="w-4 h-4" />
-            </button>
           </div>
-
-          {userData.role === 'ADMIN' && (
-            <Link
-              href="/admin/support"
-              className="mt-5 flex items-center gap-2 bg-[#824c71] text-white px-4 py-3 rounded-xl text-sm font-medium hover:bg-[#6d3f5e] transition-colors shadow-sm shadow-[#824c71]/20"
-            >
-              <ShieldCheck className="w-4 h-4" />
-              پنل مدیریت پشتیبانی
-            </Link>
-          )}
         </div>
-      </div>
 
-      {/* منو */}
-      <div className="max-w-lg mx-auto w-full px-4 mt-5 space-y-3">
-        {menuItems.map((item) => {
-          const Icon = item.icon;
-          return (
-            <Link
-              key={item.key}
-              href={item.href}
-              className={`group flex items-center gap-3.5 px-4 py-4 rounded-2xl transition-all ${
-                item.highlight
-                  ? 'bg-[#824c71]/5 border border-[#824c71]/15 hover:bg-[#824c71]/10'
-                  : 'bg-white border border-zinc-100 hover:border-zinc-200 hover:shadow-sm'
-              }`}
-            >
+        {/* اکشن‌ها */}
+        <div className="space-y-2.5">
+          {actions.map((action) => {
+            const Icon = action.icon;
+
+            const iconBox = (
               <div
-                className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 ${
-                  item.highlight ? 'bg-[#824c71] text-white' : 'bg-zinc-100 text-[#824c71]'
+                className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
+                  action.variant === 'primary'
+                    ? 'bg-[#824c71]/10 text-[#824c71]'
+                    : action.variant === 'danger'
+                    ? 'bg-red-50 text-red-500'
+                    : 'bg-zinc-100 text-zinc-600'
                 }`}
               >
-                <Icon className="w-5 h-5" strokeWidth={1.5} />
+                <Icon className="w-4.5 h-4.5" strokeWidth={1.75} />
               </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-bold text-zinc-900">{item.label}</p>
-                <p className="text-xs text-zinc-400 mt-0.5 truncate">{item.description}</p>
+            );
+
+            const textBlock = (
+              <div className="flex-1 min-w-0 text-right">
+                <p className={`text-sm font-bold ${action.variant === 'danger' ? 'text-red-600' : 'text-zinc-900'}`}>
+                  {action.label}
+                </p>
+                <p className={`text-xs mt-0.5 truncate ${action.variant === 'danger' ? 'text-red-400' : 'text-zinc-400'}`}>
+                  {action.description}
+                </p>
               </div>
-              <ChevronLeft className="w-4 h-4 text-zinc-300 group-hover:-translate-x-0.5 group-hover:text-zinc-400 transition-all shrink-0" />
-            </Link>
-          );
-        })}
+            );
+
+            const baseClass = `group w-full flex items-center gap-3.5 px-4 py-3.5 rounded-2xl bg-white border transition-all text-right ${
+              action.variant === 'danger'
+                ? 'border-zinc-100 hover:border-red-200 hover:bg-red-50/50'
+                : 'border-zinc-100 hover:border-zinc-200 hover:shadow-sm'
+            }`;
+
+            if (action.href) {
+              return (
+                <Link key={action.key} href={action.href} className={baseClass}>
+                  {iconBox}
+                  {textBlock}
+                  <ChevronLeft className="w-4 h-4 text-zinc-300 group-hover:-translate-x-0.5 transition-transform shrink-0" />
+                </Link>
+              );
+            }
+
+            return (
+              <button
+                key={action.key}
+                onClick={action.onClick}
+                disabled={isLoading}
+                className={`${baseClass} disabled:opacity-50`}
+              >
+                {iconBox}
+                {textBlock}
+                {isLoading ? (
+                  <Loader2 className="w-4 h-4 text-red-400 animate-spin shrink-0" />
+                ) : (
+                  <ChevronLeft className="w-4 h-4 text-red-200 group-hover:-translate-x-0.5 transition-transform shrink-0" />
+                )}
+              </button>
+            );
+          })}
+        </div>
       </div>
     </div>
   );
