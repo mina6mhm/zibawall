@@ -22,10 +22,8 @@ const BookmarkIcon = ({ isActive, className }: { isActive: boolean, className?: 
 
 const VisitsIcon = ({ isActive, className }: { isActive: boolean, className?: string }) => (
   <svg viewBox="0 0 24 24" className={className} fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-    <rect x="4" y="5" width="16" height="16" rx="2" fill={isActive ? "currentColor" : "none"} fillOpacity={isActive ? 0.12 : 0} />
-    <path d="M4 9h16" />
-    <path d="M8 3v4M16 3v4" />
-    <path d="M9 14l2 2 4-4" />
+    <rect x="3" y="3" width="11" height="11" rx="2.5" fill={isActive ? "currentColor" : "none"} />
+    <rect x="10" y="10" width="11" height="11" rx="2.5" fill={isActive ? "currentColor" : "none"} />
   </svg>
 );
 
