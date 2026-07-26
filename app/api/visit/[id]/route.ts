@@ -111,3 +111,31 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
   }
 }
 
+// تغییر دستی وضعیت پرداخت (مثلاً وقتی مشتری نقدی/کارتخوان پرداخت کرده)
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  try {
+    const { id } = await params;
+    const body = await req.json();
+    const { userPhone, paymentStatus } = body;
+
+    if (!userPhone || !paymentStatus) {
+      return NextResponse.json({ error: 'شماره کاربر و وضعیت پرداخت الزامی است.' }, { status: 400 });
+    }
+    if (!['PENDING', 'SUCCESS', 'FAILED'].includes(paymentStatus)) {
+      return NextResponse.json({ error: 'وضعیت پرداخت نامعتبر است.' }, { status: 400 });
+    }
+
+    const check = await verifyOwnership(userPhone, id);
+    if ('error' in check) return NextResponse.json({ error: check.error }, { status: check.status });
+
+    const visit = await prisma.visit.update({
+      where: { id },
+      data: { paymentStatus },
+    });
+
+    return NextResponse.json({ success: true, visit });
+  } catch (error) {
+    console.error('Error updating payment status:', error);
+    return NextResponse.json({ error: 'خطا در به‌روزرسانی وضعیت پرداخت' }, { status: 500 });
+  }
+}

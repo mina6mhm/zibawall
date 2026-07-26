@@ -4,7 +4,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   ArrowRight, Plus, Loader2, User, Clock, Calendar, Pencil, Trash2,
-  Users, ChevronRight as ChevronRightIcon, ChevronLeft as ChevronLeftIcon, ChevronLeft
+  Users, ChevronRight as ChevronRightIcon, ChevronLeft as ChevronLeftIcon, ChevronLeft, Wallet
 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -139,6 +139,22 @@ export default function AccountingPage() {
       const res = await fetch(`/api/visit/${visitId}?userPhone=${userPhone}`, { method: 'DELETE' });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'خطا در حذف مراجعه');
+      fetchVisits(userPhone);
+    } catch (error: any) {
+      alert(error.message || 'خطایی رخ داد.');
+    }
+  };
+
+  const handleConfirmOtherPayment = async (visitId: string) => {
+    if (!window.confirm('آیا مبلغ این مراجعه به روش دیگری (نقدی، کارتخوان و ...) دریافت شده است؟')) return;
+    try {
+      const res = await fetch(`/api/visit/${visitId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userPhone, paymentStatus: 'SUCCESS' }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'خطا در ثبت پرداخت');
       fetchVisits(userPhone);
     } catch (error: any) {
       alert(error.message || 'خطایی رخ داد.');
@@ -353,7 +369,16 @@ export default function AccountingPage() {
                           <span className="text-sm font-bold text-[#824c71]">{visit.totalAmount.toLocaleString('fa-IR')} تومان</span>
                         </div>
 
-                        <div className="flex items-center gap-2 mt-3">
+                        {visit.paymentStatus === 'PENDING' && (
+                          <button
+                            onClick={() => handleConfirmOtherPayment(visit.id)}
+                            className="w-full flex items-center justify-center gap-1.5 bg-green-50 border border-green-100 text-green-600 rounded-xl py-2.5 text-xs font-bold hover:bg-green-100 transition-colors mt-3"
+                          >
+                            <Wallet className="w-3.5 h-3.5" /> پرداخت با روش‌های دیگر
+                          </button>
+                        )}
+
+                        <div className="flex items-center gap-2 mt-2">
                           <button
                             onClick={() => openEditModal(visit)}
                             className="flex-1 flex items-center justify-center gap-1.5 border border-zinc-200 rounded-xl py-2 text-xs font-bold text-zinc-600 hover:bg-zinc-50 transition-colors"
