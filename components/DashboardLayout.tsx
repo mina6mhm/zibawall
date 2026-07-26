@@ -20,7 +20,7 @@ const BookmarkIcon = ({ isActive, className }: { isActive: boolean, className?: 
   </svg>
 );
 
-const VisitsIcon = ({ isActive, className }: { isActive: boolean, className?: string }) => (
+const AppointmentsIcon = ({ isActive, className }: { isActive: boolean, className?: string }) => (
   <svg viewBox="0 0 24 24" className={className} fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
     <rect x="3.5" y="5" width="17" height="15" rx="3" fill={isActive ? "currentColor" : "none"} />
     <path d="M8 3v3.5M16 3v3.5" stroke={isActive ? "#fff" : "currentColor"} />
@@ -39,7 +39,7 @@ const ProfileIcon = ({ isActive, className }: { isActive: boolean, className?: s
 const navItems = [
   { name: 'پیشخوان', href: '/', icon: DashboardIcon },
   { name: 'نشان‌ها', href: '/bookmarks', icon: BookmarkIcon },
-  { name: 'مراجعه‌ها', href: '/visits', icon: VisitsIcon },
+  { name: 'نوبت‌های من', href: '/appointments', icon: AppointmentsIcon },
   { name: 'پروفایل', href: '/profile', icon: ProfileIcon },
 ];
 
