@@ -65,7 +65,7 @@ export async function GET(req: NextRequest) {
 
     if (scope === 'customer') {
       const appointments = await prisma.appointment.findMany({
-        where: { customerId: user.id },
+        where: { customerId: user.id, hiddenForCustomer: false },
         include: { salon: { select: { name: true, imageUrl: true } } },
         orderBy: { updatedAt: 'desc' },
       });
@@ -77,7 +77,7 @@ export async function GET(req: NextRequest) {
       if (!salon) return NextResponse.json({ error: 'کسب‌وکاری یافت نشد.' }, { status: 404 });
 
       const appointments = await prisma.appointment.findMany({
-        where: { salonId: salon.id },
+        where: { salonId: salon.id, hiddenForSalon: false },
         include: { customer: { select: { name: true, phone: true } } },
         orderBy: { updatedAt: 'desc' },
       });

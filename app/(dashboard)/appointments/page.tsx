@@ -2,35 +2,29 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { Loader2, Calendar, Clock, User, Store, MessageCircle, ChevronRight, ChevronLeft } from 'lucide-react';
+import { Loader2, Calendar, Clock, User, Store, ChevronRight, ChevronLeft } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
 type ServiceItem = { name: string; price: number };
-type AppointmentStatus = 'NEGOTIATING' | 'AWAITING_PAYMENT' | 'CONFIRMED' | 'CANCELLED';
-
 type CustomerAppointment = {
   id: string;
-  status: AppointmentStatus;
+  status: 'CONFIRMED';
   visitDate: string | null;
   checkInTime: string | null;
   checkOutTime: string | null;
   services: ServiceItem[];
   totalAmount: number;
-  depositAmount: number;
-  updatedAt: string;
   salon: { name: string; imageUrl: string };
 };
-
 type SalonAppointment = {
   id: string;
-  status: AppointmentStatus;
+  status: 'CONFIRMED';
   visitDate: string | null;
   checkInTime: string | null;
   checkOutTime: string | null;
   services: ServiceItem[];
   totalAmount: number;
-  updatedAt: string;
   customer: { name: string | null; phone: string | null };
 };
 
@@ -53,21 +47,8 @@ function getDayLabel(offset: number, date: Date) {
   return date.toLocaleDateString('fa-IR', { weekday: 'long', day: 'numeric', month: 'long' });
 }
 
-const STATUS_LABEL: Record<AppointmentStatus, { text: string; className: string }> = {
-  NEGOTIATING: { text: 'در حال گفتگو', className: 'bg-amber-50 text-amber-600' },
-  AWAITING_PAYMENT: { text: 'منتظر پرداخت', className: 'bg-blue-50 text-blue-600' },
-  CONFIRMED: { text: 'تایید شده', className: 'bg-green-50 text-green-600' },
-  CANCELLED: { text: 'لغو شده', className: 'bg-red-50 text-red-500' },
-};
-
-function StatusBadge({ status }: { status: AppointmentStatus }) {
-  const s = STATUS_LABEL[status];
-  return <span className={`text-[10px] px-2 py-1 rounded-full font-medium shrink-0 ${s.className}`}>{s.text}</span>;
-}
-
 export default function AppointmentsPage() {
   const router = useRouter();
-  const [userPhone, setUserPhone] = useState('');
   const [hasSalon, setHasSalon] = useState(false);
   const [activeTab, setActiveTab] = useState<TabKey>('mine');
 
@@ -77,26 +58,18 @@ export default function AppointmentsPage() {
   const [dayOffset, setDayOffset] = useState(0);
 
   const fetchMine = useCallback(async (phone: string) => {
-    try {
-      const res = await fetch(`/api/appointment?scope=customer&userPhone=${phone}`);
-      if (res.ok) {
-        const data = await res.json();
-        setMyAppointments(data.appointments || []);
-      }
-    } catch (error) {
-      console.error('خطا در دریافت نوبت‌ها:', error);
+    const res = await fetch(`/api/appointment?scope=customer&userPhone=${phone}`);
+    if (res.ok) {
+      const data = await res.json();
+      setMyAppointments((data.appointments || []).filter((a: any) => a.status === 'CONFIRMED'));
     }
   }, []);
 
   const fetchSalon = useCallback(async (phone: string) => {
-    try {
-      const res = await fetch(`/api/appointment?scope=salon&userPhone=${phone}`);
-      if (res.ok) {
-        const data = await res.json();
-        setSalonAppointments(data.appointments || []);
-      }
-    } catch (error) {
-      console.error('خطا در دریافت نوبت‌های سالن:', error);
+    const res = await fetch(`/api/appointment?scope=salon&userPhone=${phone}`);
+    if (res.ok) {
+      const data = await res.json();
+      setSalonAppointments((data.appointments || []).filter((a: any) => a.status === 'CONFIRMED'));
     }
   }, []);
 
@@ -108,7 +81,6 @@ export default function AppointmentsPage() {
         return;
       }
       const user = await meRes.json();
-      setUserPhone(user.phone);
 
       const profileRes = await fetch('/api/user/profile');
       let ownsSalon = false;
@@ -125,21 +97,12 @@ export default function AppointmentsPage() {
     init();
   }, [router, fetchMine, fetchSalon]);
 
-  const pendingChats = useMemo(
-    () => salonAppointments.filter((a) => a.status === 'NEGOTIATING'),
-    [salonAppointments]
-  );
-  const awaitingPayment = useMemo(
-    () => salonAppointments.filter((a) => a.status === 'AWAITING_PAYMENT'),
-    [salonAppointments]
-  );
-
   const selectedDate = getDateForOffset(dayOffset);
   const dayLabel = getDayLabel(dayOffset, selectedDate);
   const confirmedForDay = useMemo(
     () =>
       salonAppointments.filter(
-        (a) => a.status === 'CONFIRMED' && a.visitDate && startOfDay(new Date(a.visitDate)).getTime() === selectedDate.getTime()
+        (a) => a.visitDate && startOfDay(new Date(a.visitDate)).getTime() === selectedDate.getTime()
       ),
     [salonAppointments, selectedDate]
   );
@@ -157,7 +120,7 @@ export default function AppointmentsPage() {
                 activeTab === 'mine' ? 'bg-white text-[#824c71] shadow-sm' : 'text-zinc-500'
               }`}
             >
-              <User className="w-3.5 h-3.5" /> نوبت‌های من
+              <User className="w-3.5 h-3.5" /> نوبت من
             </button>
             <button
               onClick={() => setActiveTab('salon')}
@@ -165,7 +128,7 @@ export default function AppointmentsPage() {
                 activeTab === 'salon' ? 'bg-white text-[#824c71] shadow-sm' : 'text-zinc-500'
               }`}
             >
-              <Store className="w-3.5 h-3.5" /> نوبت‌های سالن
+              <Store className="w-3.5 h-3.5" /> نوبت سالن
             </button>
           </div>
         )}
@@ -177,7 +140,7 @@ export default function AppointmentsPage() {
           </div>
         ) : activeTab === 'mine' ? (
           myAppointments.length === 0 ? (
-            <p className="text-sm text-zinc-400 text-center py-16">هنوز نوبتی ثبت نکرده‌اید.</p>
+            <p className="text-sm text-zinc-400 text-center py-16">هنوز نوبت قطعی‌شده‌ای ندارید.</p>
           ) : (
             <div className="space-y-3">
               {myAppointments.map((a) => (
@@ -188,9 +151,9 @@ export default function AppointmentsPage() {
                 >
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-sm font-bold text-zinc-900">{a.salon.name}</span>
-                    <StatusBadge status={a.status} />
+                    <span className="text-[10px] px-2 py-1 rounded-full font-medium bg-green-50 text-green-600">تایید شده</span>
                   </div>
-                  {a.visitDate ? (
+                  {a.visitDate && (
                     <div className="flex items-center gap-3 text-xs text-zinc-400">
                       <span className="flex items-center gap-1">
                         <Calendar className="w-3 h-3" /> {new Date(a.visitDate).toLocaleDateString('fa-IR')}
@@ -201,116 +164,73 @@ export default function AppointmentsPage() {
                         </span>
                       )}
                     </div>
-                  ) : (
-                    <span className="flex items-center gap-1 text-xs text-zinc-400">
-                      <MessageCircle className="w-3 h-3" /> در انتظار هماهنگی زمان
-                    </span>
                   )}
                 </Link>
               ))}
             </div>
           )
         ) : (
-          <div className="space-y-6">
-            {pendingChats.length > 0 && (
-              <div>
-                <h2 className="text-xs font-bold text-zinc-500 mb-2.5">گفتگوهای جدید نیازمند پاسخ</h2>
-                <div className="space-y-2.5">
-                  {pendingChats.map((a) => (
-                    <Link
-                      key={a.id}
-                      href={`/appointments/${a.id}`}
-                      className="flex items-center justify-between border border-amber-100 bg-amber-50/50 rounded-2xl p-3.5"
-                    >
-                      <span className="text-sm font-medium text-zinc-800">{a.customer.name || a.customer.phone}</span>
-                      <StatusBadge status={a.status} />
-                    </Link>
-                  ))}
-                </div>
+          <div>
+            <div className="flex items-center justify-between bg-zinc-50 rounded-2xl p-2 mb-4">
+              <button
+                onClick={() => setDayOffset((v) => Math.max(v - 1, 0))}
+                disabled={dayOffset <= 0}
+                className="w-10 h-10 flex items-center justify-center rounded-xl bg-white text-zinc-600 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-zinc-100 transition-colors shrink-0"
+              >
+                <ChevronRight className="w-5 h-5" />
+              </button>
+              <div className="text-center">
+                <p className="text-sm font-bold text-zinc-800">{dayLabel}</p>
+                {confirmedForDay.length > 0 && (
+                  <p className="text-[11px] text-zinc-400 mt-0.5">{confirmedForDay.length.toLocaleString('fa-IR')} نوبت</p>
+                )}
               </div>
-            )}
-
-            {awaitingPayment.length > 0 && (
-              <div>
-                <h2 className="text-xs font-bold text-zinc-500 mb-2.5">منتظر پرداخت مشتری</h2>
-                <div className="space-y-2.5">
-                  {awaitingPayment.map((a) => (
-                    <Link
-                      key={a.id}
-                      href={`/appointments/${a.id}`}
-                      className="flex items-center justify-between border border-blue-100 bg-blue-50/50 rounded-2xl p-3.5"
-                    >
-                      <span className="text-sm font-medium text-zinc-800">{a.customer.name || a.customer.phone}</span>
-                      <StatusBadge status={a.status} />
-                    </Link>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            <div>
-              <h2 className="text-xs font-bold text-zinc-500 mb-2.5">برنامه نوبت‌های قطعی</h2>
-              <div className="flex items-center justify-between bg-zinc-50 rounded-2xl p-2 mb-4">
-                <button
-                  onClick={() => setDayOffset((v) => Math.max(v - 1, 0))}
-                  disabled={dayOffset <= 0}
-                  className="w-10 h-10 flex items-center justify-center rounded-xl bg-white text-zinc-600 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-zinc-100 transition-colors shrink-0"
-                >
-                  <ChevronRight className="w-5 h-5" />
-                </button>
-                <div className="text-center">
-                  <p className="text-sm font-bold text-zinc-800">{dayLabel}</p>
-                  {confirmedForDay.length > 0 && (
-                    <p className="text-[11px] text-zinc-400 mt-0.5">{confirmedForDay.length.toLocaleString('fa-IR')} نوبت</p>
-                  )}
-                </div>
-                <button
-                  onClick={() => setDayOffset((v) => Math.min(v + 1, MAX_DAYS_BACK))}
-                  disabled={dayOffset >= MAX_DAYS_BACK}
-                  className="w-10 h-10 flex items-center justify-center rounded-xl bg-white text-zinc-600 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-zinc-100 transition-colors shrink-0"
-                >
-                  <ChevronLeft className="w-5 h-5" />
-                </button>
-              </div>
-
-              {confirmedForDay.length === 0 ? (
-                <p className="text-sm text-zinc-400 text-center py-10">نوبتی برای این روز ثبت نشده است.</p>
-              ) : (
-                <div className="space-y-3">
-                  {confirmedForDay.map((a) => (
-                    <Link
-                      key={a.id}
-                      href={`/appointments/${a.id}`}
-                      className="block border border-zinc-100 rounded-2xl p-4 hover:border-zinc-200 transition-colors"
-                    >
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-1.5 text-sm font-bold text-zinc-900">
-                          <User className="w-3.5 h-3.5 text-[#824c71]" />
-                          {a.customer.name || a.customer.phone}
-                        </div>
-                        {a.checkInTime && (
-                          <span className="flex items-center gap-1 text-xs text-zinc-400">
-                            <Clock className="w-3 h-3" /> {a.checkInTime} - {a.checkOutTime || '—'}
-                          </span>
-                        )}
-                      </div>
-                      <div className="space-y-1.5">
-                        {a.services.map((s, i) => (
-                          <div key={i} className="flex items-center justify-between text-xs bg-zinc-50 rounded-lg px-3 py-2">
-                            <span className="text-zinc-600">{s.name}</span>
-                            <span className="font-medium text-zinc-800">{s.price.toLocaleString('fa-IR')} ت</span>
-                          </div>
-                        ))}
-                      </div>
-                      <div className="flex items-center justify-between mt-3 pt-3 border-t border-zinc-100">
-                        <span className="text-xs text-zinc-500">مبلغ کل</span>
-                        <span className="text-sm font-bold text-[#824c71]">{a.totalAmount.toLocaleString('fa-IR')} تومان</span>
-                      </div>
-                    </Link>
-                  ))}
-                </div>
-              )}
+              <button
+                onClick={() => setDayOffset((v) => Math.min(v + 1, MAX_DAYS_BACK))}
+                disabled={dayOffset >= MAX_DAYS_BACK}
+                className="w-10 h-10 flex items-center justify-center rounded-xl bg-white text-zinc-600 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-zinc-100 transition-colors shrink-0"
+              >
+                <ChevronLeft className="w-5 h-5" />
+              </button>
             </div>
+
+            {confirmedForDay.length === 0 ? (
+              <p className="text-sm text-zinc-400 text-center py-10">نوبتی برای این روز ثبت نشده است.</p>
+            ) : (
+              <div className="space-y-3">
+                {confirmedForDay.map((a) => (
+                  <Link
+                    key={a.id}
+                    href={`/appointments/${a.id}`}
+                    className="block border border-zinc-100 rounded-2xl p-4 hover:border-zinc-200 transition-colors"
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-1.5 text-sm font-bold text-zinc-900">
+                        <User className="w-3.5 h-3.5 text-[#824c71]" />
+                        {a.customer.name || a.customer.phone}
+                      </div>
+                      {a.checkInTime && (
+                        <span className="flex items-center gap-1 text-xs text-zinc-400">
+                          <Clock className="w-3 h-3" /> {a.checkInTime} - {a.checkOutTime || '—'}
+                        </span>
+                      )}
+                    </div>
+                    <div className="space-y-1.5">
+                      {a.services.map((s, i) => (
+                        <div key={i} className="flex items-center justify-between text-xs bg-zinc-50 rounded-lg px-3 py-2">
+                          <span className="text-zinc-600">{s.name}</span>
+                          {s.price > 0 && <span className="font-medium text-zinc-800">{s.price.toLocaleString('fa-IR')} ت</span>}
+                        </div>
+                      ))}
+                    </div>
+                    <div className="flex items-center justify-between mt-3 pt-3 border-t border-zinc-100">
+                      <span className="text-xs text-zinc-500">مبلغ کل</span>
+                      <span className="text-sm font-bold text-[#824c71]">{a.totalAmount.toLocaleString('fa-IR')} تومان</span>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </div>

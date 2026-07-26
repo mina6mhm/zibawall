@@ -38,9 +38,9 @@ enum GenderAudience {
 }
 
 enum AppointmentStatus {
-  NEGOTIATING      // در حال گفتگو، هنوز زمان/خدمت نهایی نشده
-  AWAITING_PAYMENT // سالن‌دار جزئیات را ثبت کرده، منتظر واریز بیعانه
-  CONFIRMED        // بیعانه واریز شد، نوبت قطعی است
+  NEGOTIATING      // در حال گفتگو، هنوز زمان/آیتم نهایی نشده
+  AWAITING_PAYMENT // سالن‌دار جزئیات را ثبت کرده، منتظر واریز مبلغ ثبت نوبت
+  CONFIRMED        // مبلغ واریز شد، نوبت قطعی است
   CANCELLED        // لغو شده
 }
 
@@ -207,7 +207,7 @@ model SupportReply {
   @@index([ticketId])
 }
 
-// یک نوبت آنلاین: از گفتگوی اولیه شروع می‌شود، بعد از تایید سالن‌دار و واریز بیعانه قطعی می‌شود
+// یک نوبت آنلاین: از گفتگوی اولیه شروع می‌شود، بعد از تایید سالن‌دار و واریز مبلغ ثبت نوبت قطعی می‌شود
 model Appointment {
   id            String            @id @default(uuid())
   status        AppointmentStatus @default(NEGOTIATING)
@@ -226,7 +226,7 @@ model Appointment {
   services      Json              @default("[]")
   totalAmount   Int               @default(0)
 
-  depositAmount Int               @default(30000)
+  depositAmount Int               @default(20000)
   depositStatus PaymentStatus     @default(PENDING)
   authority     String?           @unique
   refId         String?
@@ -235,6 +235,9 @@ model Appointment {
 
   seenByCustomer Boolean          @default(true)
   seenBySalon    Boolean          @default(true)
+
+  hiddenForCustomer Boolean       @default(false)
+  hiddenForSalon    Boolean       @default(false)
 
   createdAt     DateTime          @default(now())
   updatedAt     DateTime          @updatedAt

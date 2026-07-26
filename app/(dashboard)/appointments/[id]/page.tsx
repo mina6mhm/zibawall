@@ -4,7 +4,7 @@
 import React, { useState, useEffect, useRef, use } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
-  ArrowRight, Loader2, Send, Calendar, Clock, Plus, Trash2, CheckCircle2, XCircle, Wallet,
+  ArrowRight, Loader2, Send, Calendar, Clock, Plus, Trash2, CheckCircle2, XCircle, Wallet, Info,
 } from 'lucide-react';
 import DatePicker, { DateObject } from 'react-multi-date-picker';
 import persian from 'react-date-object/calendars/persian';
@@ -30,6 +30,25 @@ type Appointment = {
 
 type ServiceRow = { name: string; price: string };
 const emptyRow = (): ServiceRow => ({ name: '', price: '' });
+
+const DEPOSIT_AMOUNT_DISPLAY = 20000;
+
+// تبدیل ارقام فارسی/عربی به انگلیسی، برای فیلد قیمت
+const toEnglishDigits = (value: string) => {
+  const persianDigits = '۰۱۲۳۴۵۶۷۸۹';
+  const arabicDigits = '٠١٢٣٤٥٦٧٨٩';
+  return value
+    .split('')
+    .map((ch) => {
+      const p = persianDigits.indexOf(ch);
+      if (p !== -1) return String(p);
+      const a = arabicDigits.indexOf(ch);
+      if (a !== -1) return String(a);
+      return ch;
+    })
+    .join('');
+};
+const sanitizeDigits = (value: string) => toEnglishDigits(value).replace(/[^0-9]/g, '');
 
 const STATUS_LABEL: Record<AppointmentStatus, { text: string; className: string }> = {
   NEGOTIATING: { text: 'در حال گفتگو', className: 'bg-amber-50 text-amber-600' },
@@ -58,9 +77,9 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
   const [checkInTime, setCheckInTime] = useState('');
   const [checkOutTime, setCheckOutTime] = useState('');
   const [services, setServices] = useState<ServiceRow[]>([emptyRow()]);
-  const [depositAmount, setDepositAmount] = useState('30000');
   const [isSubmittingFinalize, setIsSubmittingFinalize] = useState(false);
   const [isPaying, setIsPaying] = useState(false);
+  const [isHiding, setIsHiding] = useState(false);
 
   const fetchAppointment = async (phone: string, silent = false) => {
     if (!silent) setIsFetching(true);
@@ -93,7 +112,6 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, router]);
 
-  // به‌روزرسانی دوره‌ای برای دریافت پیام‌های جدید طرف مقابل
   useEffect(() => {
     if (!userPhone) return;
     const interval = setInterval(() => fetchAppointment(userPhone, true), 4000);
@@ -141,6 +159,24 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
     }
   };
 
+  const handleHideChat = async () => {
+    if (!window.confirm('این گفتگو فقط برای شما حذف می‌شود و طرف مقابل همچنان آن را می‌بیند. ادامه می‌دهید؟')) return;
+    setIsHiding(true);
+    try {
+      const res = await fetch(`/api/appointment/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userPhone, action: 'hide' }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'خطا در حذف گفتگو');
+      router.push('/chat');
+    } catch (error: any) {
+      alert(error.message || 'خطایی رخ داد.');
+      setIsHiding(false);
+    }
+  };
+
   const addRow = () => setServices([...services, emptyRow()]);
   const removeRow = (i: number) => {
     if (services.length > 1) setServices(services.filter((_, idx) => idx !== i));
@@ -156,9 +192,9 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
       alert('تاریخ نوبت الزامی است.');
       return;
     }
-    const validServices = services.filter((s) => s.name.trim() && Number(s.price) > 0);
+    const validServices = services.filter((s) => s.name.trim());
     if (validServices.length === 0) {
-      alert('حداقل یک خدمت معتبر وارد کنید.');
+      alert('حداقل یک آیتم معتبر وارد کنید.');
       return;
     }
 
@@ -174,8 +210,7 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
           visitDate: gregorianDate.toISOString(),
           checkInTime: checkInTime || undefined,
           checkOutTime: checkOutTime || undefined,
-          services: validServices.map((s) => ({ name: s.name.trim(), price: Number(s.price) })),
-          depositAmount: Number(depositAmount) || 30000,
+          services: validServices.map((s) => ({ name: s.name.trim(), price: sanitizeDigits(s.price) })),
         }),
       });
       const data = await res.json();
@@ -234,7 +269,7 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
         {/* هدر */}
         <div className="shrink-0 flex items-center justify-between pt-6 pb-4 border-b border-zinc-100">
           <button
-            onClick={() => router.push('/appointments')}
+            onClick={() => router.push('/chat')}
             className="flex items-center gap-1.5 text-sm text-zinc-500 hover:text-zinc-700 transition-colors"
           >
             <ArrowRight className="w-4 h-4" /> بازگشت
@@ -245,7 +280,7 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
           </div>
         </div>
 
-        {/* بنر نتیجه پرداخت (بعد از برگشت از زرین‌پال) */}
+        {/* بنر نتیجه پرداخت */}
         {paymentResult === 'success' && (
           <div className="shrink-0 mt-3 flex items-center gap-2 bg-green-50 text-green-700 rounded-xl p-3 text-xs font-medium">
             <CheckCircle2 className="w-4 h-4" /> پرداخت با موفقیت انجام شد؛ نوبت شما قطعی است.
@@ -257,7 +292,7 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
           </div>
         )}
 
-        {/* خلاصه نوبت (وقتی جزئیات ثبت شده) */}
+        {/* خلاصه نوبت */}
         {appointment.visitDate && (
           <div className="shrink-0 mt-3 border border-zinc-100 rounded-2xl p-4">
             <div className="flex items-center gap-3 text-xs text-zinc-500 mb-2">
@@ -274,14 +309,16 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
               {appointment.services.map((s, i) => (
                 <div key={i} className="flex items-center justify-between text-xs bg-zinc-50 rounded-lg px-3 py-2">
                   <span className="text-zinc-600">{s.name}</span>
-                  <span className="font-medium text-zinc-800">{s.price.toLocaleString('fa-IR')} ت</span>
+                  {s.price > 0 && <span className="font-medium text-zinc-800">{s.price.toLocaleString('fa-IR')} ت</span>}
                 </div>
               ))}
             </div>
-            <div className="flex items-center justify-between pt-2 border-t border-zinc-100 text-xs">
-              <span className="text-zinc-500">مبلغ کل خدمات</span>
-              <span className="font-bold text-[#824c71]">{appointment.totalAmount.toLocaleString('fa-IR')} تومان</span>
-            </div>
+            {appointment.totalAmount > 0 && (
+              <div className="flex items-center justify-between pt-2 border-t border-zinc-100 text-xs">
+                <span className="text-zinc-500">مبلغ کل</span>
+                <span className="font-bold text-[#824c71]">{appointment.totalAmount.toLocaleString('fa-IR')} تومان</span>
+              </div>
+            )}
           </div>
         )}
 
@@ -293,7 +330,7 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
             className="shrink-0 mt-3 w-full flex items-center justify-center gap-2 bg-[#824c71] text-white py-3 rounded-xl text-sm font-bold hover:bg-[#6d3f5e] transition-colors disabled:opacity-50"
           >
             {isPaying ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wallet className="w-4 h-4" />}
-            پرداخت بیعانه {appointment.depositAmount.toLocaleString('fa-IR')} تومان
+            پرداخت {appointment.depositAmount.toLocaleString('fa-IR')} تومان بابت ثبت نوبت
           </button>
         )}
 
@@ -330,21 +367,22 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
             </div>
 
             <div className="space-y-2">
+              <label className="block text-xs font-medium text-zinc-500">آیتم‌ها *</label>
               {services.map((s, i) => (
                 <div key={i} className="flex items-center gap-2">
                   <input
                     value={s.name}
                     onChange={(e) => updateRow(i, 'name', e.target.value)}
-                    placeholder="نام خدمت"
+                    placeholder="نام آیتم"
                     className="flex-1 border border-zinc-200 rounded-lg px-3 py-2 text-sm bg-white outline-none"
                   />
                   <input
                     value={s.price}
-                    onChange={(e) => updateRow(i, 'price', e.target.value.replace(/[^0-9]/g, ''))}
-                    placeholder="قیمت"
+                    onChange={(e) => updateRow(i, 'price', sanitizeDigits(e.target.value))}
+                    placeholder="قیمت (اختیاری)"
                     dir="ltr"
                     inputMode="numeric"
-                    className="w-28 border border-zinc-200 rounded-lg px-3 py-2 text-sm bg-white text-left outline-none"
+                    className="w-32 border border-zinc-200 rounded-lg px-3 py-2 text-sm bg-white text-left outline-none"
                   />
                   <button onClick={() => removeRow(i)} disabled={services.length === 1} className="w-9 h-9 shrink-0 flex items-center justify-center rounded-lg bg-white border border-zinc-200 text-zinc-400 disabled:opacity-30">
                     <Trash2 className="w-3.5 h-3.5" />
@@ -352,19 +390,16 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
                 </div>
               ))}
               <button onClick={addRow} className="flex items-center gap-1.5 text-xs font-medium text-[#824c71]">
-                <Plus className="w-3.5 h-3.5" /> افزودن خدمت
+                <Plus className="w-3.5 h-3.5" /> افزودن آیتم
               </button>
             </div>
 
-            <div>
-              <label className="block text-xs font-medium text-zinc-500 mb-1.5">مبلغ بیعانه (تومان)</label>
-              <input
-                value={depositAmount}
-                onChange={(e) => setDepositAmount(e.target.value.replace(/[^0-9]/g, ''))}
-                dir="ltr"
-                inputMode="numeric"
-                className="w-full border border-zinc-200 rounded-xl px-3.5 py-2.5 text-sm bg-white outline-none"
-              />
+            {/* مبلغ ثبت نوبت: ثابت و غیرقابل ویرایش */}
+            <div className="flex items-start gap-2 bg-[#824c71]/5 border border-[#824c71]/15 rounded-xl p-3">
+              <Info className="w-4 h-4 text-[#824c71] shrink-0 mt-0.5" />
+              <p className="text-xs text-zinc-600 leading-relaxed">
+                مبلغ {DEPOSIT_AMOUNT_DISPLAY.toLocaleString('fa-IR')} تومان بابت ثبت نوبت (کارمزد سایت) از مشتری دریافت می‌شود. این مبلغ ثابت است و قابل تغییر نیست.
+              </p>
             </div>
 
             <div className="flex items-center gap-2 pt-1">
@@ -393,7 +428,7 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
                 <div key={m.id} className={`flex ${isMine ? 'justify-start' : 'justify-end'}`}>
                   <div
                     className={`max-w-[75%] rounded-2xl px-3.5 py-2.5 text-sm ${
-                      isMine ? 'bg-[#824c71] text-white rounded-bl-sm' : 'bg-zinc-100 text-zinc-800 rounded-br-sm'
+                      isMine ? 'bg-[#824c71]/10 text-[#6d3f5e] rounded-bl-sm' : 'bg-zinc-100 text-zinc-800 rounded-br-sm'
                     }`}
                   >
                     {m.message}
@@ -407,7 +442,7 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
 
         {/* اینپوت ارسال پیام */}
         {canChat && (
-          <div className="shrink-0 flex items-center gap-2 pb-6 pt-2 border-t border-zinc-100">
+          <div className="shrink-0 flex items-center gap-2 pb-3 pt-2 border-t border-zinc-100">
             <input
               value={messageText}
               onChange={(e) => setMessageText(e.target.value)}
@@ -425,11 +460,16 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
           </div>
         )}
 
-        {appointment.status !== 'CANCELLED' && appointment.status !== 'CONFIRMED' && (
-          <button onClick={handleCancel} className="shrink-0 mb-4 text-xs font-medium text-red-500 text-center">
-            لغو این نوبت
+        <div className="shrink-0 flex items-center justify-center gap-4 mb-4 pt-1">
+          {appointment.status !== 'CANCELLED' && appointment.status !== 'CONFIRMED' && (
+            <button onClick={handleCancel} className="text-xs font-medium text-red-500">
+              لغو این نوبت
+            </button>
+          )}
+          <button onClick={handleHideChat} disabled={isHiding} className="text-xs font-medium text-zinc-400 disabled:opacity-50">
+            {isHiding ? 'در حال حذف...' : 'حذف این گفتگو'}
           </button>
-        )}
+        </div>
       </div>
     </div>
   );
