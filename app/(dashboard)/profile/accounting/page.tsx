@@ -2,7 +2,10 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { ArrowRight, Plus, Loader2, User, Clock, Calendar, Pencil, Trash2, Users, Wallet, BarChart3 } from 'lucide-react';
+import {
+  ArrowRight, Plus, Loader2, User, Clock, Calendar, Pencil, Trash2,
+  Users, Wallet, ChevronDown, ChevronUp, TrendingUp
+} from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import CreateVisitModal, { VisitForEdit } from '@/components/business/CreateVisitModal';
@@ -21,7 +24,7 @@ type Visit = {
 };
 type StaffMember = { id: string; name: string };
 
-type TabKey = 'visits' | 'staff' | 'commission' | 'reports';
+type TabKey = 'visits' | 'staff';
 type RangeKey = 'today' | 'week' | 'month' | 'all';
 
 const RANGE_LABELS: Record<RangeKey, string> = {
@@ -30,6 +33,8 @@ const RANGE_LABELS: Record<RangeKey, string> = {
   month: '۳۰ روز اخیر',
   all: 'همه',
 };
+
+const DAYS_TO_SHOW = 7;
 
 function isInRange(dateStr: string, range: RangeKey) {
   if (range === 'all') return true;
@@ -44,6 +49,30 @@ function isInRange(dateStr: string, range: RangeKey) {
   return date >= cutoff;
 }
 
+function startOfDay(d: Date) {
+  const nd = new Date(d);
+  nd.setHours(0, 0, 0, 0);
+  return nd;
+}
+
+function getDayLabel(date: Date, todayStart: Date) {
+  const diffDays = Math.round((todayStart.getTime() - startOfDay(date).getTime()) / 86400000);
+  if (diffDays === 0) return 'امروز';
+  if (diffDays === 1) return 'دیروز';
+  return date.toLocaleDateString('fa-IR', { weekday: 'long', day: 'numeric', month: 'long' });
+}
+
+function getLastDaySlots(n: number) {
+  const today = startOfDay(new Date());
+  const slots: Date[] = [];
+  for (let i = 0; i < n; i++) {
+    const d = new Date(today);
+    d.setDate(d.getDate() - i);
+    slots.push(d);
+  }
+  return slots; // امروز اول، قدیمی‌ترین آخر
+}
+
 export default function AccountingPage() {
   const router = useRouter();
   const [userPhone, setUserPhone] = useState('');
@@ -54,6 +83,9 @@ export default function AccountingPage() {
   const [editingVisit, setEditingVisit] = useState<VisitForEdit | null>(null);
   const [activeTab, setActiveTab] = useState<TabKey>('visits');
   const [reportRange, setReportRange] = useState<RangeKey>('today');
+
+  const [isIncomeExpanded, setIsIncomeExpanded] = useState(false);
+  const [isCommissionExpanded, setIsCommissionExpanded] = useState(false);
 
   // مدیریت پرسنل
   const [newStaffName, setNewStaffName] = useState('');
@@ -194,25 +226,7 @@ export default function AccountingPage() {
     }
   };
 
-  // گزارش پورسانت: گروه‌بندی بر اساس پرسنل (با staffId، برای رفع مشکل تشابه اسمی)
-  const commissionByStaff = useMemo(() => {
-    const map = new Map<string, { name: string; totalCommission: number; serviceCount: number }>();
-    visits.forEach((v) => {
-      v.services.forEach((s) => {
-        if (!s.staffPercent) return;
-        const key = s.staffId || `unlinked:${s.staffName || 'نامشخص'}`;
-        const name = s.staffName || 'بدون پرسنل مشخص';
-        const commission = (s.price * (s.staffPercent || 0)) / 100;
-        const entry = map.get(key) || { name, totalCommission: 0, serviceCount: 0 };
-        entry.totalCommission += commission;
-        entry.serviceCount += 1;
-        map.set(key, entry);
-      });
-    });
-    return Array.from(map.values()).sort((a, b) => b.totalCommission - a.totalCommission);
-  }, [visits]);
-
-  // گزارش دوره‌ای (روزانه/هفتگی/ماهانه)
+  // گزارش دوره‌ای (برای کارت درآمد کل)
   const rangeVisits = useMemo(() => visits.filter((v) => isInRange(v.visitDate, reportRange)), [visits, reportRange]);
   const rangeIncome = rangeVisits.reduce((sum, v) => sum + v.totalAmount, 0);
   const rangeCommission = rangeVisits.reduce(
@@ -220,11 +234,52 @@ export default function AccountingPage() {
     0
   );
 
+  // مراجعه‌ها به‌صورت روزانه، تا ۷ روز قبل
+  const visitsByDaySlots = useMemo(() => {
+    const slots = getLastDaySlots(DAYS_TO_SHOW);
+    const todayStart = startOfDay(new Date());
+    return slots.map((slotDate) => {
+      const dayVisits = visits.filter(
+        (v) => startOfDay(new Date(v.visitDate)).getTime() === slotDate.getTime()
+      );
+      return { date: slotDate, label: getDayLabel(slotDate, todayStart), visits: dayVisits };
+    });
+  }, [visits]);
+
+  // پورسانت پرسنل به‌صورت روزانه، تا ۷ روز قبل (برای کارت پورسانت پرسنل)
+  const commissionByDaySlots = useMemo(() => {
+    const slots = getLastDaySlots(DAYS_TO_SHOW);
+    const todayStart = startOfDay(new Date());
+    return slots.map((slotDate) => {
+      const dayVisits = visits.filter(
+        (v) => startOfDay(new Date(v.visitDate)).getTime() === slotDate.getTime()
+      );
+      const map = new Map<string, { name: string; totalCommission: number; serviceCount: number }>();
+      dayVisits.forEach((v) => {
+        v.services.forEach((s) => {
+          if (!s.staffPercent) return;
+          const key = s.staffId || `unlinked:${s.staffName || 'نامشخص'}`;
+          const name = s.staffName || 'بدون پرسنل مشخص';
+          const commission = (s.price * (s.staffPercent || 0)) / 100;
+          const entry = map.get(key) || { name, totalCommission: 0, serviceCount: 0 };
+          entry.totalCommission += commission;
+          entry.serviceCount += 1;
+          map.set(key, entry);
+        });
+      });
+      const dayTotal = Array.from(map.values()).reduce((sum, e) => sum + e.totalCommission, 0);
+      return {
+        date: slotDate,
+        label: getDayLabel(slotDate, todayStart),
+        dayTotal,
+        staffEntries: Array.from(map.values()).sort((a, b) => b.totalCommission - a.totalCommission),
+      };
+    });
+  }, [visits]);
+
   const tabs: { key: TabKey; label: string; icon: any }[] = [
     { key: 'visits', label: 'مراجعه‌ها', icon: Calendar },
     { key: 'staff', label: 'پرسنل', icon: Users },
-    { key: 'commission', label: 'پورسانت', icon: Wallet },
-    { key: 'reports', label: 'گزارش‌ها', icon: BarChart3 },
   ];
 
   return (
@@ -244,21 +299,115 @@ export default function AccountingPage() {
           </button>
         </div>
 
-        <div className="grid grid-cols-2 gap-3 mb-5">
-          <div className="bg-[#824c71]/5 border border-[#824c71]/15 rounded-2xl p-4">
-            <p className="text-xs text-zinc-500 mb-1">درآمد کل</p>
+        {/* کارت درآمد کل: قابل باز شدن -> گزارش دوره‌ای */}
+        <div className="grid grid-cols-2 gap-3 mb-2.5">
+          <button
+            onClick={() => setIsIncomeExpanded((v) => !v)}
+            className="bg-[#824c71]/5 border border-[#824c71]/15 rounded-2xl p-4 text-right hover:bg-[#824c71]/10 transition-colors"
+          >
+            <div className="flex items-center justify-between mb-1">
+              <p className="text-xs text-zinc-500">درآمد کل</p>
+              {isIncomeExpanded ? <ChevronUp className="w-3.5 h-3.5 text-[#824c71]" /> : <ChevronDown className="w-3.5 h-3.5 text-[#824c71]" />}
+            </div>
             <p className="text-lg font-bold text-[#824c71]">{totalIncome.toLocaleString('fa-IR')}</p>
             <p className="text-[10px] text-zinc-400">تومان</p>
-          </div>
-          <div className="bg-zinc-50 border border-zinc-100 rounded-2xl p-4">
-            <p className="text-xs text-zinc-500 mb-1">پورسانت پرسنل</p>
+          </button>
+
+          <button
+            onClick={() => setIsCommissionExpanded((v) => !v)}
+            className="bg-zinc-50 border border-zinc-100 rounded-2xl p-4 text-right hover:bg-zinc-100 transition-colors"
+          >
+            <div className="flex items-center justify-between mb-1">
+              <p className="text-xs text-zinc-500">پورسانت پرسنل</p>
+              {isCommissionExpanded ? <ChevronUp className="w-3.5 h-3.5 text-zinc-500" /> : <ChevronDown className="w-3.5 h-3.5 text-zinc-500" />}
+            </div>
             <p className="text-lg font-bold text-zinc-700">{Math.round(totalCommission).toLocaleString('fa-IR')}</p>
             <p className="text-[10px] text-zinc-400">تومان</p>
-          </div>
+          </button>
         </div>
 
-        {/* تب‌ها */}
-        <div className="flex items-center gap-1.5 bg-zinc-50 rounded-2xl p-1.5 mb-5 overflow-x-auto">
+        {/* گزارش دوره‌ای باز شده (داخل کارت درآمد کل) */}
+        {isIncomeExpanded && (
+          <div className="border border-[#824c71]/15 bg-[#824c71]/5 rounded-2xl p-4 mb-2.5 space-y-4">
+            <div className="flex items-center gap-2">
+              {(Object.keys(RANGE_LABELS) as RangeKey[]).map((key) => (
+                <button
+                  key={key}
+                  onClick={() => setReportRange(key)}
+                  className={`flex-1 py-2 rounded-xl text-xs font-bold transition-colors ${
+                    reportRange === key ? 'bg-[#824c71] text-white' : 'bg-white text-zinc-500'
+                  }`}
+                >
+                  {RANGE_LABELS[key]}
+                </button>
+              ))}
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="bg-white rounded-xl p-3">
+                <p className="text-[11px] text-zinc-500 mb-1">تعداد مراجعه</p>
+                <p className="text-base font-bold text-zinc-800">{rangeVisits.length.toLocaleString('fa-IR')}</p>
+              </div>
+              <div className="bg-white rounded-xl p-3">
+                <p className="text-[11px] text-zinc-500 mb-1">درآمد</p>
+                <p className="text-base font-bold text-[#824c71]">{rangeIncome.toLocaleString('fa-IR')}</p>
+                <p className="text-[10px] text-zinc-400">تومان</p>
+              </div>
+              <div className="bg-white rounded-xl p-3">
+                <p className="text-[11px] text-zinc-500 mb-1">پورسانت پرسنل</p>
+                <p className="text-base font-bold text-zinc-700">{Math.round(rangeCommission).toLocaleString('fa-IR')}</p>
+                <p className="text-[10px] text-zinc-400">تومان</p>
+              </div>
+              <div className="bg-white rounded-xl p-3">
+                <p className="text-[11px] text-zinc-500 mb-1 flex items-center gap-1">
+                  <TrendingUp className="w-3 h-3" /> سود خالص (تقریبی)
+                </p>
+                <p className="text-base font-bold text-green-600">
+                  {Math.round(rangeIncome - rangeCommission).toLocaleString('fa-IR')}
+                </p>
+                <p className="text-[10px] text-zinc-400">تومان</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* پورسانت روزانه باز شده (داخل کارت پورسانت پرسنل) */}
+        {isCommissionExpanded && (
+          <div className="border border-zinc-100 bg-zinc-50 rounded-2xl p-4 mb-5 space-y-4">
+            {commissionByDaySlots.map((day) => (
+              <div key={day.date.toISOString()}>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-bold text-zinc-700">{day.label}</span>
+                  <span className="text-xs font-bold text-[#824c71]">
+                    {Math.round(day.dayTotal).toLocaleString('fa-IR')} تومان
+                  </span>
+                </div>
+                {day.staffEntries.length === 0 ? (
+                  <p className="text-[11px] text-zinc-400 bg-white rounded-lg px-3 py-2">پورسانتی برای این روز ثبت نشده</p>
+                ) : (
+                  <div className="space-y-1.5">
+                    {day.staffEntries.map((entry, idx) => (
+                      <div key={idx} className="flex items-center justify-between bg-white rounded-lg px-3 py-2">
+                        <div>
+                          <span className="text-xs font-medium text-zinc-800">{entry.name}</span>
+                          <span className="text-[10px] text-zinc-400 mr-1.5">
+                            ({entry.serviceCount.toLocaleString('fa-IR')} خدمت)
+                          </span>
+                        </div>
+                        <span className="text-xs font-bold text-zinc-700">
+                          {Math.round(entry.totalCommission).toLocaleString('fa-IR')} ت
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* تب‌ها: فقط مراجعه‌ها و پرسنل */}
+        <div className="flex items-center gap-1.5 bg-zinc-50 rounded-2xl p-1.5 mb-5">
           {tabs.map((tab) => {
             const Icon = tab.icon;
             const active = activeTab === tab.key;
@@ -266,7 +415,7 @@ export default function AccountingPage() {
               <button
                 key={tab.key}
                 onClick={() => setActiveTab(tab.key)}
-                className={`flex-1 min-w-fit flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-colors whitespace-nowrap ${
+                className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl text-xs font-bold transition-colors ${
                   active ? 'bg-white text-[#824c71] shadow-sm' : 'text-zinc-500'
                 }`}
               >
@@ -283,79 +432,85 @@ export default function AccountingPage() {
           </div>
         ) : (
           <>
-            {/* تب مراجعه‌ها */}
+            {/* تب مراجعه‌ها: روزانه، تا ۷ روز قبل */}
             {activeTab === 'visits' && (
-              visits.length === 0 ? (
-                <div className="text-center py-16">
-                  <p className="text-sm text-zinc-400">هنوز مراجعه‌ای ثبت نشده است.</p>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {visits.map((visit) => (
-                    <div key={visit.id} className="border border-zinc-100 rounded-2xl p-4">
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-1.5 text-sm font-bold text-zinc-900">
-                          <User className="w-3.5 h-3.5 text-[#824c71]" />
-                          {visit.customerName || visit.customerPhone}
-                        </div>
-                        <span
-                          className={`text-[10px] px-2 py-1 rounded-full font-medium ${
-                            visit.paymentStatus === 'SUCCESS'
-                              ? 'bg-green-50 text-green-600'
-                              : visit.paymentStatus === 'FAILED'
-                              ? 'bg-red-50 text-red-500'
-                              : 'bg-amber-50 text-amber-600'
-                          }`}
-                        >
-                          {visit.paymentStatus === 'SUCCESS' ? 'پرداخت‌شده' : visit.paymentStatus === 'FAILED' ? 'ناموفق' : 'در انتظار پرداخت'}
-                        </span>
-                      </div>
+              <div className="space-y-5">
+                {visitsByDaySlots.map((day) => (
+                  <div key={day.date.toISOString()}>
+                    <div className="flex items-center justify-between mb-2.5">
+                      <span className="text-sm font-bold text-zinc-800">{day.label}</span>
+                      {day.visits.length > 0 && (
+                        <span className="text-xs text-zinc-400">{day.visits.length.toLocaleString('fa-IR')} مراجعه</span>
+                      )}
+                    </div>
 
-                      <div className="flex items-center gap-3 text-xs text-zinc-400 mb-3">
-                        <span className="flex items-center gap-1">
-                          <Calendar className="w-3 h-3" /> {new Date(visit.visitDate).toLocaleDateString('fa-IR')}
-                        </span>
-                        {visit.checkInTime && (
-                          <span className="flex items-center gap-1">
-                            <Clock className="w-3 h-3" /> {visit.checkInTime} - {visit.checkOutTime || '—'}
-                          </span>
-                        )}
-                      </div>
+                    {day.visits.length === 0 ? (
+                      <p className="text-xs text-zinc-400 bg-zinc-50 rounded-xl px-3.5 py-3">مراجعه‌ای برای این روز ثبت نشده</p>
+                    ) : (
+                      <div className="space-y-3">
+                        {day.visits.map((visit) => (
+                          <div key={visit.id} className="border border-zinc-100 rounded-2xl p-4">
+                            <div className="flex items-center justify-between mb-2">
+                              <div className="flex items-center gap-1.5 text-sm font-bold text-zinc-900">
+                                <User className="w-3.5 h-3.5 text-[#824c71]" />
+                                {visit.customerName || visit.customerPhone}
+                              </div>
+                              <span
+                                className={`text-[10px] px-2 py-1 rounded-full font-medium ${
+                                  visit.paymentStatus === 'SUCCESS'
+                                    ? 'bg-green-50 text-green-600'
+                                    : visit.paymentStatus === 'FAILED'
+                                    ? 'bg-red-50 text-red-500'
+                                    : 'bg-amber-50 text-amber-600'
+                                }`}
+                              >
+                                {visit.paymentStatus === 'SUCCESS' ? 'پرداخت‌شده' : visit.paymentStatus === 'FAILED' ? 'ناموفق' : 'در انتظار پرداخت'}
+                              </span>
+                            </div>
 
-                      <div className="space-y-1.5">
-                        {visit.services.map((s, i) => (
-                          <div key={i} className="flex items-center justify-between text-xs bg-zinc-50 rounded-lg px-3 py-2">
-                            <span className="text-zinc-600">
-                              {s.name} {s.staffName ? `· ${s.staffName}` : ''} {s.staffPercent ? `(${s.staffPercent}٪)` : ''}
-                            </span>
-                            <span className="font-medium text-zinc-800">{s.price.toLocaleString('fa-IR')} ت</span>
+                            {visit.checkInTime && (
+                              <div className="flex items-center gap-1 text-xs text-zinc-400 mb-3">
+                                <Clock className="w-3 h-3" /> {visit.checkInTime} - {visit.checkOutTime || '—'}
+                              </div>
+                            )}
+
+                            <div className="space-y-1.5">
+                              {visit.services.map((s, i) => (
+                                <div key={i} className="flex items-center justify-between text-xs bg-zinc-50 rounded-lg px-3 py-2">
+                                  <span className="text-zinc-600">
+                                    {s.name} {s.staffName ? `· ${s.staffName}` : ''} {s.staffPercent ? `(${s.staffPercent}٪)` : ''}
+                                  </span>
+                                  <span className="font-medium text-zinc-800">{s.price.toLocaleString('fa-IR')} ت</span>
+                                </div>
+                              ))}
+                            </div>
+
+                            <div className="flex items-center justify-between mt-3 pt-3 border-t border-zinc-100">
+                              <span className="text-xs text-zinc-500">مبلغ کل</span>
+                              <span className="text-sm font-bold text-[#824c71]">{visit.totalAmount.toLocaleString('fa-IR')} تومان</span>
+                            </div>
+
+                            <div className="flex items-center gap-2 mt-3">
+                              <button
+                                onClick={() => openEditModal(visit)}
+                                className="flex-1 flex items-center justify-center gap-1.5 border border-zinc-200 rounded-xl py-2 text-xs font-bold text-zinc-600 hover:bg-zinc-50 transition-colors"
+                              >
+                                <Pencil className="w-3.5 h-3.5" /> ویرایش
+                              </button>
+                              <button
+                                onClick={() => handleDeleteVisit(visit.id)}
+                                className="flex-1 flex items-center justify-center gap-1.5 border border-red-100 rounded-xl py-2 text-xs font-bold text-red-500 hover:bg-red-50 transition-colors"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" /> حذف
+                              </button>
+                            </div>
                           </div>
                         ))}
                       </div>
-
-                      <div className="flex items-center justify-between mt-3 pt-3 border-t border-zinc-100">
-                        <span className="text-xs text-zinc-500">مبلغ کل</span>
-                        <span className="text-sm font-bold text-[#824c71]">{visit.totalAmount.toLocaleString('fa-IR')} تومان</span>
-                      </div>
-
-                      <div className="flex items-center gap-2 mt-3">
-                        <button
-                          onClick={() => openEditModal(visit)}
-                          className="flex-1 flex items-center justify-center gap-1.5 border border-zinc-200 rounded-xl py-2 text-xs font-bold text-zinc-600 hover:bg-zinc-50 transition-colors"
-                        >
-                          <Pencil className="w-3.5 h-3.5" /> ویرایش
-                        </button>
-                        <button
-                          onClick={() => handleDeleteVisit(visit.id)}
-                          className="flex-1 flex items-center justify-center gap-1.5 border border-red-100 rounded-xl py-2 text-xs font-bold text-red-500 hover:bg-red-50 transition-colors"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" /> حذف
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )
+                    )}
+                  </div>
+                ))}
+              </div>
             )}
 
             {/* تب پرسنل */}
@@ -390,16 +545,10 @@ export default function AccountingPage() {
                             className="flex-1 border border-zinc-200 rounded-lg px-3 py-2 text-sm focus:border-[#824c71] outline-none"
                             autoFocus
                           />
-                          <button
-                            onClick={() => handleRenameStaff(staff.id)}
-                            className="text-xs font-bold text-[#824c71] px-2"
-                          >
+                          <button onClick={() => handleRenameStaff(staff.id)} className="text-xs font-bold text-[#824c71] px-2">
                             ذخیره
                           </button>
-                          <button
-                            onClick={() => setEditingStaffId(null)}
-                            className="text-xs font-bold text-zinc-400 px-2"
-                          >
+                          <button onClick={() => setEditingStaffId(null)} className="text-xs font-bold text-zinc-400 px-2">
                             انصراف
                           </button>
                         </div>
@@ -428,70 +577,6 @@ export default function AccountingPage() {
                     </div>
                   ))
                 )}
-              </div>
-            )}
-
-            {/* تب پورسانت */}
-            {activeTab === 'commission' && (
-              <div className="space-y-3">
-                {commissionByStaff.length === 0 ? (
-                  <p className="text-sm text-zinc-400 text-center py-10">هنوز پورسانتی ثبت نشده است.</p>
-                ) : (
-                  commissionByStaff.map((entry, idx) => (
-                    <div key={idx} className="flex items-center justify-between border border-zinc-100 rounded-2xl p-4">
-                      <div>
-                        <p className="text-sm font-bold text-zinc-900">{entry.name}</p>
-                        <p className="text-xs text-zinc-400 mt-0.5">{entry.serviceCount.toLocaleString('fa-IR')} خدمت</p>
-                      </div>
-                      <p className="text-sm font-bold text-[#824c71]">
-                        {Math.round(entry.totalCommission).toLocaleString('fa-IR')} تومان
-                      </p>
-                    </div>
-                  ))
-                )}
-              </div>
-            )}
-
-            {/* تب گزارش‌ها */}
-            {activeTab === 'reports' && (
-              <div className="space-y-4">
-                <div className="flex items-center gap-2">
-                  {(Object.keys(RANGE_LABELS) as RangeKey[]).map((key) => (
-                    <button
-                      key={key}
-                      onClick={() => setReportRange(key)}
-                      className={`flex-1 py-2 rounded-xl text-xs font-bold transition-colors ${
-                        reportRange === key ? 'bg-[#824c71] text-white' : 'bg-zinc-50 text-zinc-500'
-                      }`}
-                    >
-                      {RANGE_LABELS[key]}
-                    </button>
-                  ))}
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="border border-zinc-100 rounded-2xl p-4">
-                    <p className="text-xs text-zinc-500 mb-1">تعداد مراجعه</p>
-                    <p className="text-lg font-bold text-zinc-800">{rangeVisits.length.toLocaleString('fa-IR')}</p>
-                  </div>
-                  <div className="border border-zinc-100 rounded-2xl p-4">
-                    <p className="text-xs text-zinc-500 mb-1">درآمد</p>
-                    <p className="text-lg font-bold text-[#824c71]">{rangeIncome.toLocaleString('fa-IR')}</p>
-                    <p className="text-[10px] text-zinc-400">تومان</p>
-                  </div>
-                  <div className="border border-zinc-100 rounded-2xl p-4">
-                    <p className="text-xs text-zinc-500 mb-1">پورسانت پرسنل</p>
-                    <p className="text-lg font-bold text-zinc-700">{Math.round(rangeCommission).toLocaleString('fa-IR')}</p>
-                    <p className="text-[10px] text-zinc-400">تومان</p>
-                  </div>
-                  <div className="border border-zinc-100 rounded-2xl p-4">
-                    <p className="text-xs text-zinc-500 mb-1">سود خالص (تقریبی)</p>
-                    <p className="text-lg font-bold text-green-600">
-                      {Math.round(rangeIncome - rangeCommission).toLocaleString('fa-IR')}
-                    </p>
-                    <p className="text-[10px] text-zinc-400">تومان</p>
-                  </div>
-                </div>
               </div>
             )}
           </>
