@@ -98,10 +98,10 @@ export default function CommissionReportPage() {
             {/* ناوبری روزها با فلش */}
             <div className="flex items-center justify-between bg-zinc-50 rounded-2xl p-2 mb-5">
               <button
-                onClick={() => setDayOffset((v) => Math.min(v + 1, MAX_DAYS_BACK))}
-                disabled={dayOffset >= MAX_DAYS_BACK}
+                onClick={() => setDayOffset((v) => Math.max(v - 1, 0))}
+                disabled={dayOffset <= 0}
                 className="w-10 h-10 flex items-center justify-center rounded-xl bg-white text-zinc-600 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-zinc-100 transition-colors shrink-0"
-                aria-label="روز قبل"
+                aria-label="روز بعد"
               >
                 <ChevronRight className="w-5 h-5" />
               </button>
@@ -114,10 +114,10 @@ export default function CommissionReportPage() {
               </div>
 
               <button
-                onClick={() => setDayOffset((v) => Math.max(v - 1, 0))}
-                disabled={dayOffset <= 0}
+                onClick={() => setDayOffset((v) => Math.min(v + 1, MAX_DAYS_BACK))}
+                disabled={dayOffset >= MAX_DAYS_BACK}
                 className="w-10 h-10 flex items-center justify-center rounded-xl bg-white text-zinc-600 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-zinc-100 transition-colors shrink-0"
-                aria-label="روز بعد"
+                aria-label="روز قبل"
               >
                 <ChevronLeft className="w-5 h-5" />
               </button>
