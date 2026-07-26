@@ -51,7 +51,7 @@ export default function StartAppointmentButton({
       disabled={isLoading}
       className={
         className ||
-        'w-full bg-[#824c71] hover:bg-[#6e3f60] text-white font-medium py-3 rounded-xl text-center transition flex items-center justify-center gap-2 disabled:opacity-60'
+        'w-full bg-[#824c71]/10 hover:bg-[#824c71]/15 text-[#824c71] font-medium py-3 rounded-xl text-center transition flex items-center justify-center gap-2 disabled:opacity-60'
       }
     >
       {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <MessageCircle className="w-4 h-4" />}

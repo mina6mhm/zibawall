@@ -4,7 +4,7 @@
 import React, { useState, useEffect, useRef, use } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
-  ArrowRight, Loader2, Send, Calendar, Clock, Plus, Trash2, CheckCircle2, XCircle, Wallet, Info,
+  ArrowRight, Loader2, Send, Calendar, Clock, Plus, Trash2, CheckCircle2, XCircle, Wallet, Info, X,
 } from 'lucide-react';
 import DatePicker, { DateObject } from 'react-multi-date-picker';
 import persian from 'react-date-object/calendars/persian';
@@ -33,7 +33,6 @@ const emptyRow = (): ServiceRow => ({ name: '', price: '' });
 
 const DEPOSIT_AMOUNT_DISPLAY = 20000;
 
-// تبدیل ارقام فارسی/عربی به انگلیسی، برای فیلد قیمت
 const toEnglishDigits = (value: string) => {
   const persianDigits = '۰۱۲۳۴۵۶۷۸۹';
   const arabicDigits = '٠١٢٣٤٥٦٧٨٩';
@@ -264,10 +263,11 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
   const headerTitle = isSalon ? (appointment.customer.name || appointment.customer.phone) : appointment.salon.name;
 
   return (
-    <div className="flex flex-col h-screen bg-white">
-      <div className="max-w-lg mx-auto w-full flex flex-col h-full px-4">
+    <div className="flex flex-col min-h-screen bg-white pb-28">
+      <div className="max-w-lg mx-auto w-full px-4">
+
         {/* هدر */}
-        <div className="shrink-0 flex items-center justify-between pt-6 pb-4 border-b border-zinc-100">
+        <div className="flex items-center justify-between pt-6 pb-4 border-b border-zinc-100">
           <button
             onClick={() => router.push('/chat')}
             className="flex items-center gap-1.5 text-sm text-zinc-500 hover:text-zinc-700 transition-colors"
@@ -282,19 +282,19 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
 
         {/* بنر نتیجه پرداخت */}
         {paymentResult === 'success' && (
-          <div className="shrink-0 mt-3 flex items-center gap-2 bg-green-50 text-green-700 rounded-xl p-3 text-xs font-medium">
+          <div className="mt-3 flex items-center gap-2 bg-green-50 text-green-700 rounded-xl p-3 text-xs font-medium">
             <CheckCircle2 className="w-4 h-4" /> پرداخت با موفقیت انجام شد؛ نوبت شما قطعی است.
           </div>
         )}
         {paymentResult === 'failed' && (
-          <div className="shrink-0 mt-3 flex items-center gap-2 bg-red-50 text-red-600 rounded-xl p-3 text-xs font-medium">
+          <div className="mt-3 flex items-center gap-2 bg-red-50 text-red-600 rounded-xl p-3 text-xs font-medium">
             <XCircle className="w-4 h-4" /> پرداخت ناموفق بود. می‌توانید دوباره تلاش کنید.
           </div>
         )}
 
         {/* خلاصه نوبت */}
         {appointment.visitDate && (
-          <div className="shrink-0 mt-3 border border-zinc-100 rounded-2xl p-4">
+          <div className="mt-3 border border-zinc-100 rounded-2xl p-4">
             <div className="flex items-center gap-3 text-xs text-zinc-500 mb-2">
               <span className="flex items-center gap-1">
                 <Calendar className="w-3.5 h-3.5" /> {new Date(appointment.visitDate).toLocaleDateString('fa-IR')}
@@ -327,7 +327,7 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
           <button
             onClick={handlePay}
             disabled={isPaying}
-            className="shrink-0 mt-3 w-full flex items-center justify-center gap-2 bg-[#824c71] text-white py-3 rounded-xl text-sm font-bold hover:bg-[#6d3f5e] transition-colors disabled:opacity-50"
+            className="mt-3 w-full flex items-center justify-center gap-2 bg-[#824c71] text-white py-3 rounded-xl text-sm font-bold hover:bg-[#6d3f5e] transition-colors disabled:opacity-50"
           >
             {isPaying ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wallet className="w-4 h-4" />}
             پرداخت {appointment.depositAmount.toLocaleString('fa-IR')} تومان بابت ثبت نوبت
@@ -338,7 +338,7 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
         {isSalon && appointment.status !== 'CONFIRMED' && appointment.status !== 'CANCELLED' && !isFinalizing && (
           <button
             onClick={() => setIsFinalizing(true)}
-            className="shrink-0 mt-3 w-full flex items-center justify-center gap-2 bg-[#824c71] text-white py-3 rounded-xl text-sm font-bold hover:bg-[#6d3f5e] transition-colors"
+            className="mt-3 w-full flex items-center justify-center gap-2 bg-[#824c71] text-white py-3 rounded-xl text-sm font-bold hover:bg-[#6d3f5e] transition-colors"
           >
             ثبت جزئیات نوبت و ارسال برای پرداخت
           </button>
@@ -346,7 +346,7 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
 
         {/* فرم نهایی‌سازی (سالن‌دار) */}
         {isFinalizing && (
-          <div className="shrink-0 mt-3 border border-zinc-200 rounded-2xl p-4 space-y-3 bg-zinc-50/60">
+          <div className="mt-3 border border-zinc-200 rounded-2xl p-4 space-y-3 bg-zinc-50/60">
             <div>
               <label className="block text-xs font-medium text-zinc-500 mb-1.5">تاریخ نوبت *</label>
               <DatePicker
@@ -394,7 +394,6 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
               </button>
             </div>
 
-            {/* مبلغ ثبت نوبت: ثابت و غیرقابل ویرایش */}
             <div className="flex items-start gap-2 bg-[#824c71]/5 border border-[#824c71]/15 rounded-xl p-3">
               <Info className="w-4 h-4 text-[#824c71] shrink-0 mt-0.5" />
               <p className="text-xs text-zinc-600 leading-relaxed">
@@ -418,7 +417,7 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
         )}
 
         {/* پیام‌ها */}
-        <div className="flex-1 overflow-y-auto py-4 space-y-2.5">
+        <div className="mt-4 space-y-2.5">
           {appointment.messages.length === 0 ? (
             <p className="text-center text-xs text-zinc-400 py-10">هنوز پیامی رد و بدل نشده. گفتگو رو شروع کنید.</p>
           ) : (
@@ -442,7 +441,7 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
 
         {/* اینپوت ارسال پیام */}
         {canChat && (
-          <div className="shrink-0 flex items-center gap-2 pb-3 pt-2 border-t border-zinc-100">
+          <div className="mt-4 flex items-center gap-2 pt-3 border-t border-zinc-100">
             <input
               value={messageText}
               onChange={(e) => setMessageText(e.target.value)}
@@ -460,13 +459,22 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
           </div>
         )}
 
-        <div className="shrink-0 flex items-center justify-center gap-4 mb-4 pt-1">
+        {/* اکشن‌های مدیریت نوبت/گفتگو */}
+        <div className="mt-5 flex items-center gap-2.5">
           {appointment.status !== 'CANCELLED' && appointment.status !== 'CONFIRMED' && (
-            <button onClick={handleCancel} className="text-xs font-medium text-red-500">
-              لغو این نوبت
+            <button
+              onClick={handleCancel}
+              className="flex-1 flex items-center justify-center gap-1.5 border border-red-100 rounded-xl py-2.5 text-xs font-bold text-red-500 hover:bg-red-50 transition-colors"
+            >
+              <XCircle className="w-3.5 h-3.5" /> لغو این نوبت
             </button>
           )}
-          <button onClick={handleHideChat} disabled={isHiding} className="text-xs font-medium text-zinc-400 disabled:opacity-50">
+          <button
+            onClick={handleHideChat}
+            disabled={isHiding}
+            className="flex-1 flex items-center justify-center gap-1.5 border border-zinc-200 rounded-xl py-2.5 text-xs font-bold text-zinc-500 hover:bg-zinc-50 transition-colors disabled:opacity-50"
+          >
+            {isHiding ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <X className="w-3.5 h-3.5" />}
             {isHiding ? 'در حال حذف...' : 'حذف این گفتگو'}
           </button>
         </div>
