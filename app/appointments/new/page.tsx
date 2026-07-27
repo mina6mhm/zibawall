@@ -1,11 +1,11 @@
 // app/appointments/new/page.tsx
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { ArrowRight, Send, Loader2 } from 'lucide-react';
 
-export default function NewAppointmentPage() {
+function NewAppointmentContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const salonId = searchParams.get('salonId');
@@ -32,7 +32,6 @@ export default function NewAppointmentPage() {
       const user = await meRes.json();
       setUserPhone(user.phone);
 
-      // اگه از قبل گفتگوی بازی (با پیام) با همین سالن وجود داشته باشه، مستقیم بریم همونجا
       const listRes = await fetch(`/api/appointment?scope=customer&userPhone=${user.phone}`);
       if (listRes.ok) {
         const data = await listRes.json();
@@ -45,7 +44,6 @@ export default function NewAppointmentPage() {
         }
       }
 
-      // نام سالن رو برای هدر بگیریم
       const salonRes = await fetch(`/api/salon/${salonId}`);
       if (salonRes.ok) {
         const salonData = await salonRes.json();
@@ -132,5 +130,20 @@ export default function NewAppointmentPage() {
         </button>
       </div>
     </div>
+  );
+}
+
+export default function NewAppointmentPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex flex-col items-center justify-center h-dvh">
+          <Loader2 className="w-8 h-8 text-[#824c71] animate-spin mb-3" />
+          <p className="text-sm text-zinc-400">در حال آماده‌سازی...</p>
+        </div>
+      }
+    >
+      <NewAppointmentContent />
+    </Suspense>
   );
 }
