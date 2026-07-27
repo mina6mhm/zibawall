@@ -1,10 +1,10 @@
-//app/(dashboard)/appointments/[id]/page.tsx
+//app/appointments/[id]/page.tsx
 'use client';
 
 import React, { useState, useEffect, useRef, use } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
-  ArrowRight, Loader2, Send, Calendar, Clock, Plus, Trash2, CheckCircle2, XCircle, Wallet, Info, X,
+  ArrowRight, Loader2, Send, Calendar, Plus, Trash2, CheckCircle2, XCircle, MoreVertical,
 } from 'lucide-react';
 import DatePicker, { DateObject } from 'react-multi-date-picker';
 import persian from 'react-date-object/calendars/persian';
@@ -18,7 +18,6 @@ type Appointment = {
   status: AppointmentStatus;
   visitDate: string | null;
   checkInTime: string | null;
-  checkOutTime: string | null;
   services: ServiceItem[];
   totalAmount: number;
   depositAmount: number;
@@ -30,8 +29,6 @@ type Appointment = {
 
 type ServiceRow = { name: string; price: string };
 const emptyRow = (): ServiceRow => ({ name: '', price: '' });
-
-const DEPOSIT_AMOUNT_DISPLAY = 20000;
 
 const toEnglishDigits = (value: string) => {
   const persianDigits = '۰۱۲۳۴۵۶۷۸۹';
@@ -56,6 +53,18 @@ const STATUS_LABEL: Record<AppointmentStatus, { text: string; className: string 
   CANCELLED: { text: 'لغو شده', className: 'bg-red-50 text-red-500' },
 };
 
+// خلاصه نوبت را در یک خط فشرده می‌سازد: تاریخ - ساعت - آیتم‌ها (قیمت اختیاری)
+function buildSummaryLine(appointment: Appointment) {
+  const parts: string[] = [];
+  if (appointment.visitDate) parts.push(new Date(appointment.visitDate).toLocaleDateString('fa-IR'));
+  if (appointment.checkInTime) parts.push(`ساعت ${appointment.checkInTime}`);
+  const itemsText = appointment.services
+    .map((s) => (s.price > 0 ? `${s.name} (${s.price.toLocaleString('fa-IR')} تومان)` : s.name))
+    .join('، ');
+  if (itemsText) parts.push(itemsText);
+  return parts.join(' - ');
+}
+
 export default function AppointmentDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const router = useRouter();
@@ -70,15 +79,17 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
   const [messageText, setMessageText] = useState('');
   const [isSending, setIsSending] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isHiding, setIsHiding] = useState(false);
 
   const [isFinalizing, setIsFinalizing] = useState(false);
   const [visitDateObj, setVisitDateObj] = useState<DateObject | null>(null);
   const [checkInTime, setCheckInTime] = useState('');
-  const [checkOutTime, setCheckOutTime] = useState('');
   const [services, setServices] = useState<ServiceRow[]>([emptyRow()]);
   const [isSubmittingFinalize, setIsSubmittingFinalize] = useState(false);
   const [isPaying, setIsPaying] = useState(false);
-  const [isHiding, setIsHiding] = useState(false);
 
   const fetchAppointment = async (phone: string, silent = false) => {
     if (!silent) setIsFetching(true);
@@ -122,6 +133,15 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [appointment?.messages.length]);
 
+  const handleMessageInput = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setMessageText(e.target.value);
+    const el = textareaRef.current;
+    if (el) {
+      el.style.height = 'auto';
+      el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+    }
+  };
+
   const handleSendMessage = async () => {
     if (!messageText.trim() || !userPhone) return;
     setIsSending(true);
@@ -134,6 +154,7 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'خطا در ارسال پیام');
       setMessageText('');
+      if (textareaRef.current) textareaRef.current.style.height = 'auto';
       fetchAppointment(userPhone, true);
     } catch (error: any) {
       alert(error.message || 'خطایی رخ داد.');
@@ -143,6 +164,7 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
   };
 
   const handleCancel = async () => {
+    setIsMenuOpen(false);
     if (!window.confirm('آیا از لغو این نوبت مطمئن هستید؟')) return;
     try {
       const res = await fetch(`/api/appointment/${id}`, {
@@ -159,6 +181,7 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
   };
 
   const handleHideChat = async () => {
+    setIsMenuOpen(false);
     if (!window.confirm('این گفتگو فقط برای شما حذف می‌شود و طرف مقابل همچنان آن را می‌بیند. ادامه می‌دهید؟')) return;
     setIsHiding(true);
     try {
@@ -208,7 +231,6 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
           action: 'finalize',
           visitDate: gregorianDate.toISOString(),
           checkInTime: checkInTime || undefined,
-          checkOutTime: checkOutTime || undefined,
           services: validServices.map((s) => ({ name: s.name.trim(), price: sanitizeDigits(s.price) })),
         }),
       });
@@ -242,7 +264,7 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
 
   if (isFetching) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh]">
+      <div className="flex flex-col items-center justify-center h-dvh">
         <Loader2 className="w-8 h-8 text-[#824c71] animate-spin mb-3" />
         <p className="text-sm text-zinc-400">در حال دریافت اطلاعات...</p>
       </div>
@@ -251,7 +273,7 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
 
   if (!appointment || !viewerRole) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh]">
+      <div className="flex flex-col items-center justify-center h-dvh">
         <p className="text-sm text-zinc-400">نوبت پیدا نشد.</p>
       </div>
     );
@@ -261,92 +283,101 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
   const statusInfo = STATUS_LABEL[appointment.status];
   const canChat = appointment.status !== 'CANCELLED';
   const headerTitle = isSalon ? (appointment.customer.name || appointment.customer.phone) : appointment.salon.name;
+  const summaryLine = buildSummaryLine(appointment);
+  const canCancel = appointment.status !== 'CANCELLED' && appointment.status !== 'CONFIRMED';
 
   return (
-    <div className="flex flex-col min-h-screen bg-white pb-28">
-      <div className="max-w-lg mx-auto w-full px-4">
+    <div className="flex flex-col h-dvh bg-white dir-rtl font-sans">
+      {/* هدر ثابت بالا */}
+      <div className="shrink-0 flex items-center justify-between px-4 py-3.5 border-b border-zinc-100 relative">
+        <button
+          onClick={() => router.push('/chat')}
+          className="flex items-center gap-1.5 text-sm text-zinc-500 hover:text-zinc-700 transition-colors"
+        >
+          <ArrowRight className="w-4 h-4" /> بازگشت
+        </button>
 
-        {/* هدر */}
-        <div className="flex items-center justify-between pt-6 pb-4 border-b border-zinc-100">
-          <button
-            onClick={() => router.push('/chat')}
-            className="flex items-center gap-1.5 text-sm text-zinc-500 hover:text-zinc-700 transition-colors"
-          >
-            <ArrowRight className="w-4 h-4" /> بازگشت
-          </button>
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-bold text-zinc-900">{headerTitle}</span>
-            <span className={`text-[10px] px-2 py-1 rounded-full font-medium ${statusInfo.className}`}>{statusInfo.text}</span>
-          </div>
+        <div className="flex items-center gap-2 absolute left-1/2 -translate-x-1/2">
+          <span className="text-sm font-bold text-zinc-900">{headerTitle}</span>
+          <span className={`text-[10px] px-2 py-1 rounded-full font-medium ${statusInfo.className}`}>{statusInfo.text}</span>
         </div>
 
-        {/* بنر نتیجه پرداخت */}
+        <div className="relative">
+          <button
+            onClick={() => setIsMenuOpen((v) => !v)}
+            className="w-8 h-8 flex items-center justify-center rounded-lg text-zinc-500 hover:bg-zinc-100 transition-colors"
+          >
+            <MoreVertical className="w-4.5 h-4.5" />
+          </button>
+
+          {isMenuOpen && (
+            <>
+              <div className="fixed inset-0 z-40" onClick={() => setIsMenuOpen(false)} />
+              <div className="absolute left-0 top-10 z-50 w-44 bg-white rounded-xl shadow-lg border border-zinc-100 overflow-hidden">
+                {canCancel && (
+                  <button
+                    onClick={handleCancel}
+                    className="w-full text-right px-4 py-3 text-xs font-bold text-red-500 hover:bg-red-50 transition-colors"
+                  >
+                    لغو نوبت
+                  </button>
+                )}
+                <button
+                  onClick={handleHideChat}
+                  disabled={isHiding}
+                  className="w-full text-right px-4 py-3 text-xs font-bold text-zinc-600 hover:bg-zinc-50 transition-colors disabled:opacity-50"
+                >
+                  {isHiding ? 'در حال حذف...' : 'حذف گفتگو'}
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* محتوای قابل اسکرول: بنرها + خلاصه + فرم‌ها + پیام‌ها */}
+      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
         {paymentResult === 'success' && (
-          <div className="mt-3 flex items-center gap-2 bg-green-50 text-green-700 rounded-xl p-3 text-xs font-medium">
-            <CheckCircle2 className="w-4 h-4" /> پرداخت با موفقیت انجام شد؛ نوبت شما قطعی است.
+          <div className="flex items-center gap-2 bg-green-50 text-green-700 rounded-xl p-3 text-xs font-medium">
+            <CheckCircle2 className="w-4 h-4 shrink-0" /> پرداخت با موفقیت انجام شد؛ نوبت شما قطعی است.
           </div>
         )}
         {paymentResult === 'failed' && (
-          <div className="mt-3 flex items-center gap-2 bg-red-50 text-red-600 rounded-xl p-3 text-xs font-medium">
-            <XCircle className="w-4 h-4" /> پرداخت ناموفق بود. می‌توانید دوباره تلاش کنید.
+          <div className="flex items-center gap-2 bg-red-50 text-red-600 rounded-xl p-3 text-xs font-medium">
+            <XCircle className="w-4 h-4 shrink-0" /> پرداخت ناموفق بود. می‌توانید دوباره تلاش کنید.
           </div>
         )}
 
-        {/* خلاصه نوبت */}
-        {appointment.visitDate && (
-          <div className="mt-3 border border-zinc-100 rounded-2xl p-4">
-            <div className="flex items-center gap-3 text-xs text-zinc-500 mb-2">
-              <span className="flex items-center gap-1">
-                <Calendar className="w-3.5 h-3.5" /> {new Date(appointment.visitDate).toLocaleDateString('fa-IR')}
-              </span>
-              {appointment.checkInTime && (
-                <span className="flex items-center gap-1">
-                  <Clock className="w-3.5 h-3.5" /> {appointment.checkInTime} - {appointment.checkOutTime || '—'}
-                </span>
-              )}
-            </div>
-            <div className="space-y-1.5 mb-2">
-              {appointment.services.map((s, i) => (
-                <div key={i} className="flex items-center justify-between text-xs bg-zinc-50 rounded-lg px-3 py-2">
-                  <span className="text-zinc-600">{s.name}</span>
-                  {s.price > 0 && <span className="font-medium text-zinc-800">{s.price.toLocaleString('fa-IR')} ت</span>}
-                </div>
-              ))}
-            </div>
-            {appointment.totalAmount > 0 && (
-              <div className="flex items-center justify-between pt-2 border-t border-zinc-100 text-xs">
-                <span className="text-zinc-500">مبلغ کل</span>
-                <span className="font-bold text-[#824c71]">{appointment.totalAmount.toLocaleString('fa-IR')} تومان</span>
-              </div>
-            )}
+        {/* خلاصه فشرده نوبت، همه در یک خط */}
+        {summaryLine && (
+          <div className="flex items-center gap-2 text-xs text-zinc-600 bg-zinc-50 rounded-xl px-3 py-2.5 overflow-x-auto whitespace-nowrap">
+            <Calendar className="w-3.5 h-3.5 text-[#824c71] shrink-0" />
+            {summaryLine}
           </div>
         )}
 
-        {/* دکمه پرداخت برای مشتری */}
         {!isSalon && appointment.status === 'AWAITING_PAYMENT' && (
           <button
             onClick={handlePay}
             disabled={isPaying}
-            className="mt-3 w-full flex items-center justify-center gap-2 bg-[#824c71] text-white py-3 rounded-xl text-sm font-bold hover:bg-[#6d3f5e] transition-colors disabled:opacity-50"
+            className="w-full flex items-center justify-center gap-2 bg-[#824c71] text-white py-3 rounded-xl text-sm font-bold hover:bg-[#6d3f5e] transition-colors disabled:opacity-50"
           >
-            {isPaying ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wallet className="w-4 h-4" />}
-            پرداخت {appointment.depositAmount.toLocaleString('fa-IR')} تومان بابت ثبت نوبت
+            {isPaying ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+            ثبت نوبت
           </button>
         )}
 
-        {/* دکمه ثبت جزئیات برای سالن‌دار */}
         {isSalon && appointment.status !== 'CONFIRMED' && appointment.status !== 'CANCELLED' && !isFinalizing && (
           <button
             onClick={() => setIsFinalizing(true)}
-            className="mt-3 w-full flex items-center justify-center gap-2 bg-[#824c71] text-white py-3 rounded-xl text-sm font-bold hover:bg-[#6d3f5e] transition-colors"
+            className="w-full flex items-center justify-center gap-2 bg-[#824c71] text-white py-3 rounded-xl text-sm font-bold hover:bg-[#6d3f5e] transition-colors"
           >
             ثبت جزئیات نوبت و ارسال برای پرداخت
           </button>
         )}
 
-        {/* فرم نهایی‌سازی (سالن‌دار) */}
         {isFinalizing && (
-          <div className="mt-3 border border-zinc-200 rounded-2xl p-4 space-y-3 bg-zinc-50/60">
+          <div className="border border-zinc-200 rounded-2xl p-4 space-y-3 bg-zinc-50/60">
             <div>
               <label className="block text-xs font-medium text-zinc-500 mb-1.5">تاریخ نوبت *</label>
               <DatePicker
@@ -360,10 +391,14 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
                 placeholder="انتخاب تاریخ"
               />
             </div>
-            <div className="flex items-center gap-2 border border-zinc-200 rounded-xl px-3.5 py-2 bg-white">
-              <input type="time" value={checkInTime} onChange={(e) => setCheckInTime(e.target.value)} className="flex-1 text-sm outline-none bg-transparent" />
-              <span className="text-zinc-300 text-xs shrink-0">تا</span>
-              <input type="time" value={checkOutTime} onChange={(e) => setCheckOutTime(e.target.value)} className="flex-1 text-sm outline-none bg-transparent" />
+            <div>
+              <label className="block text-xs font-medium text-zinc-500 mb-1.5">ساعت</label>
+              <input
+                type="time"
+                value={checkInTime}
+                onChange={(e) => setCheckInTime(e.target.value)}
+                className="w-full border border-zinc-200 rounded-xl px-3.5 py-2.5 text-sm bg-white outline-none"
+              />
             </div>
 
             <div className="space-y-2">
@@ -394,13 +429,6 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
               </button>
             </div>
 
-            <div className="flex items-start gap-2 bg-[#824c71]/5 border border-[#824c71]/15 rounded-xl p-3">
-              <Info className="w-4 h-4 text-[#824c71] shrink-0 mt-0.5" />
-              <p className="text-xs text-zinc-600 leading-relaxed">
-                مبلغ {DEPOSIT_AMOUNT_DISPLAY.toLocaleString('fa-IR')} تومان بابت ثبت نوبت (کارمزد سایت) از مشتری دریافت می‌شود. این مبلغ ثابت است و قابل تغییر نیست.
-              </p>
-            </div>
-
             <div className="flex items-center gap-2 pt-1">
               <button
                 onClick={handleSubmitFinalize}
@@ -417,68 +445,47 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
         )}
 
         {/* پیام‌ها */}
-        <div className="mt-4 space-y-2.5">
-          {appointment.messages.length === 0 ? (
-            <p className="text-center text-xs text-zinc-400 py-10">هنوز پیامی رد و بدل نشده. گفتگو رو شروع کنید.</p>
-          ) : (
-            appointment.messages.map((m) => {
-              const isMine = isSalon ? m.sender === 'SALON' : m.sender === 'CUSTOMER';
-              return (
-                <div key={m.id} className={`flex ${isMine ? 'justify-start' : 'justify-end'}`}>
-                  <div
-                    className={`max-w-[75%] rounded-2xl px-3.5 py-2.5 text-sm ${
-                      isMine ? 'bg-[#824c71]/10 text-[#6d3f5e] rounded-bl-sm' : 'bg-zinc-100 text-zinc-800 rounded-br-sm'
-                    }`}
-                  >
-                    {m.message}
-                  </div>
+        {appointment.messages.length === 0 ? (
+          <p className="text-center text-xs text-zinc-400 py-10">هنوز پیامی رد و بدل نشده. گفتگو رو شروع کنید.</p>
+        ) : (
+          appointment.messages.map((m) => {
+            const isMine = isSalon ? m.sender === 'SALON' : m.sender === 'CUSTOMER';
+            return (
+              <div key={m.id} className={`flex ${isMine ? 'justify-start' : 'justify-end'}`}>
+                <div
+                  className={`max-w-[75%] rounded-2xl px-3.5 py-2.5 text-sm break-words whitespace-pre-wrap ${
+                    isMine ? 'bg-[#824c71]/10 text-[#6d3f5e] rounded-bl-sm' : 'bg-zinc-100 text-zinc-800 rounded-br-sm'
+                  }`}
+                >
+                  {m.message}
                 </div>
-              );
-            })
-          )}
-          <div ref={messagesEndRef} />
-        </div>
-
-        {/* اینپوت ارسال پیام */}
-        {canChat && (
-          <div className="mt-4 flex items-center gap-2 pt-3 border-t border-zinc-100">
-            <input
-              value={messageText}
-              onChange={(e) => setMessageText(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
-              placeholder="پیام خود را بنویسید..."
-              className="flex-1 border border-zinc-200 rounded-xl px-3.5 py-2.5 text-sm outline-none focus:border-[#824c71]"
-            />
-            <button
-              onClick={handleSendMessage}
-              disabled={isSending || !messageText.trim()}
-              className="w-11 h-11 shrink-0 flex items-center justify-center rounded-xl bg-[#824c71] text-white disabled:opacity-50"
-            >
-              {isSending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-            </button>
-          </div>
+              </div>
+            );
+          })
         )}
+        <div ref={messagesEndRef} />
+      </div>
 
-        {/* اکشن‌های مدیریت نوبت/گفتگو */}
-        <div className="mt-5 flex items-center gap-2.5">
-          {appointment.status !== 'CANCELLED' && appointment.status !== 'CONFIRMED' && (
-            <button
-              onClick={handleCancel}
-              className="flex-1 flex items-center justify-center gap-1.5 border border-red-100 rounded-xl py-2.5 text-xs font-bold text-red-500 hover:bg-red-50 transition-colors"
-            >
-              <XCircle className="w-3.5 h-3.5" /> لغو این نوبت
-            </button>
-          )}
+      {/* نوار ارسال پیام، همیشه پایین صفحه */}
+      {canChat && (
+        <div className="shrink-0 flex items-end gap-2 px-4 py-3 border-t border-zinc-100 bg-white">
+          <textarea
+            ref={textareaRef}
+            value={messageText}
+            onChange={handleMessageInput}
+            rows={1}
+            placeholder="پیام خود را بنویسید..."
+            className="flex-1 resize-none border border-zinc-200 rounded-2xl px-3.5 py-2.5 text-sm outline-none focus:border-[#824c71] max-h-[120px] leading-6"
+          />
           <button
-            onClick={handleHideChat}
-            disabled={isHiding}
-            className="flex-1 flex items-center justify-center gap-1.5 border border-zinc-200 rounded-xl py-2.5 text-xs font-bold text-zinc-500 hover:bg-zinc-50 transition-colors disabled:opacity-50"
+            onClick={handleSendMessage}
+            disabled={isSending || !messageText.trim()}
+            className="w-11 h-11 shrink-0 flex items-center justify-center rounded-xl bg-[#824c71] text-white disabled:opacity-50"
           >
-            {isHiding ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <X className="w-3.5 h-3.5" />}
-            {isHiding ? 'در حال حذف...' : 'حذف این گفتگو'}
+            {isSending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
           </button>
         </div>
-      </div>
+      )}
     </div>
   );
 }
