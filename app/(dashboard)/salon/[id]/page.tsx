@@ -312,9 +312,9 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
         )}
 
         {salon.closedDays && salon.closedDays.length > 0 && (
-          <div className="flex items-center text-red-500 bg-red-50 p-2 rounded-lg">
+          <div className="inline-flex items-center text-red-500 bg-red-50 px-3 py-1.5 rounded-lg">
             <CalendarOff className="w-4 h-4 sm:w-5 sm:h-5 ml-2 flex-shrink-0" />
-            <p className="font-medium">تعطیل: {salon.closedDays.join('، ')}</p>
+            <p className="font-medium text-xs sm:text-sm">تعطیل: {salon.closedDays.join('، ')}</p>
           </div>
         )}
       </div>
