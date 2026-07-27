@@ -120,7 +120,7 @@ export default function AppointmentsPage() {
                 activeTab === 'mine' ? 'bg-white text-[#824c71] shadow-sm' : 'text-zinc-500'
               }`}
             >
-              <User className="w-3.5 h-3.5" /> نوبت من
+              <User className="w-3.5 h-3.5" /> نوبت‌های من
             </button>
             <button
               onClick={() => setActiveTab('salon')}
@@ -128,7 +128,7 @@ export default function AppointmentsPage() {
                 activeTab === 'salon' ? 'bg-white text-[#824c71] shadow-sm' : 'text-zinc-500'
               }`}
             >
-              <Store className="w-3.5 h-3.5" /> نوبت سالن
+              <Store className="w-3.5 h-3.5" /> نوبت‌های سالن
             </button>
           </div>
         )}

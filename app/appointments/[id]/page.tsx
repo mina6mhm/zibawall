@@ -5,14 +5,26 @@ import React, { useState, useEffect, useRef, use } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
   ArrowRight, Loader2, Send, Calendar, Plus, Trash2, CheckCircle2, XCircle, X,
+  MoreVertical, Reply, Image as ImageIcon, Mic, Check, CheckCheck,
 } from 'lucide-react';
 import DatePicker, { DateObject } from 'react-multi-date-picker';
 import persian from 'react-date-object/calendars/persian';
 import persian_fa from 'react-date-object/locales/persian_fa';
 
 type AppointmentStatus = 'NEGOTIATING' | 'AWAITING_PAYMENT' | 'CONFIRMED' | 'CANCELLED';
+type MessageType = 'TEXT' | 'IMAGE' | 'VOICE';
 type ServiceItem = { name: string; price: number };
-type Message = { id: string; message: string; sender: 'CUSTOMER' | 'SALON'; createdAt: string };
+type Message = {
+  id: string;
+  message: string | null;
+  type: MessageType;
+  mediaUrl: string | null;
+  duration: number | null;
+  sender: 'CUSTOMER' | 'SALON';
+  createdAt: string;
+  seenAt: string | null;
+  replyTo?: { id: string; message: string | null; type: MessageType; sender: 'CUSTOMER' | 'SALON' } | null;
+};
 type Appointment = {
   id: string;
   status: AppointmentStatus;
@@ -64,6 +76,12 @@ function buildSummaryLine(appointment: Appointment) {
   return parts.join(' - ');
 }
 
+function replySnippet(m: { type: MessageType; message: string | null }) {
+  if (m.type === 'IMAGE') return '📷 عکس';
+  if (m.type === 'VOICE') return '🎙 پیام صوتی';
+  return m.message || '';
+}
+
 export default function AppointmentDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const router = useRouter();
@@ -79,9 +97,17 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
   const [isSending, setIsSending] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [isCancelling, setIsCancelling] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
+  const [showDeleteOptions, setShowDeleteOptions] = useState(false);
   const [isHiding, setIsHiding] = useState(false);
+
+  const [replyTarget, setReplyTarget] = useState<Message | null>(null);
+  const [isUploadingMedia, setIsUploadingMedia] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
 
   const [isFinalizing, setIsFinalizing] = useState(false);
   const [visitDateObj, setVisitDateObj] = useState<DateObject | null>(null);
@@ -148,11 +174,17 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
       const res = await fetch(`/api/appointment/${id}/messages`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userPhone, message: messageText.trim() }),
+        body: JSON.stringify({
+          userPhone,
+          type: 'TEXT',
+          message: messageText.trim(),
+          replyToId: replyTarget?.id,
+        }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'خطا در ارسال پیام');
       setMessageText('');
+      setReplyTarget(null);
       if (textareaRef.current) textareaRef.current.style.height = 'auto';
       fetchAppointment(userPhone, true);
     } catch (error: any) {
@@ -162,33 +194,97 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
     }
   };
 
-  const handleCancel = async () => {
-    if (!window.confirm('آیا از لغو این نوبت مطمئن هستید؟')) return;
-    setIsCancelling(true);
+  const handlePickImage = () => fileInputRef.current?.click();
+
+  const handleImageSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file || !userPhone) return;
+    setIsUploadingMedia(true);
     try {
-      const res = await fetch(`/api/appointment/${id}`, {
-        method: 'PATCH',
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('kind', 'image');
+      const uploadRes = await fetch('/api/appointment/upload', { method: 'POST', body: formData });
+      const uploadData = await uploadRes.json();
+      if (!uploadRes.ok) throw new Error(uploadData.error || 'خطا در آپلود تصویر');
+
+      const res = await fetch(`/api/appointment/${id}/messages`, {
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userPhone, action: 'cancel' }),
+        body: JSON.stringify({ userPhone, type: 'IMAGE', mediaUrl: uploadData.url, replyToId: replyTarget?.id }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'خطا در لغو نوبت');
-      fetchAppointment(userPhone);
+      if (!res.ok) throw new Error(data.error || 'خطا در ارسال تصویر');
+      setReplyTarget(null);
+      fetchAppointment(userPhone, true);
     } catch (error: any) {
       alert(error.message || 'خطایی رخ داد.');
     } finally {
-      setIsCancelling(false);
+      setIsUploadingMedia(false);
     }
   };
 
-  const handleHideChat = async () => {
-    if (!window.confirm('این گفتگو فقط برای شما حذف می‌شود و طرف مقابل همچنان آن را می‌بیند. ادامه می‌دهید؟')) return;
+  const handleSendVoice = async (blob: Blob) => {
+    if (!userPhone) return;
+    setIsUploadingMedia(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', blob, 'voice.webm');
+      formData.append('kind', 'voice');
+      const uploadRes = await fetch('/api/appointment/upload', { method: 'POST', body: formData });
+      const uploadData = await uploadRes.json();
+      if (!uploadRes.ok) throw new Error(uploadData.error || 'خطا در آپلود صدا');
+
+      const res = await fetch(`/api/appointment/${id}/messages`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userPhone, type: 'VOICE', mediaUrl: uploadData.url, replyToId: replyTarget?.id }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'خطا در ارسال پیام صوتی');
+      setReplyTarget(null);
+      fetchAppointment(userPhone, true);
+    } catch (error: any) {
+      alert(error.message || 'خطایی رخ داد.');
+    } finally {
+      setIsUploadingMedia(false);
+    }
+  };
+
+  const handleStartRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const recorder = new MediaRecorder(stream);
+      audioChunksRef.current = [];
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) audioChunksRef.current.push(e.data);
+      };
+      recorder.onstop = async () => {
+        stream.getTracks().forEach((t) => t.stop());
+        const blob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        await handleSendVoice(blob);
+      };
+      recorder.start();
+      mediaRecorderRef.current = recorder;
+      setIsRecording(true);
+    } catch (error) {
+      alert('دسترسی به میکروفون امکان‌پذیر نیست.');
+    }
+  };
+
+  const handleStopRecording = () => {
+    mediaRecorderRef.current?.stop();
+    setIsRecording(false);
+  };
+
+  const handleHideChat = async (scope: 'me' | 'both') => {
     setIsHiding(true);
     try {
       const res = await fetch(`/api/appointment/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userPhone, action: 'hide' }),
+        body: JSON.stringify({ userPhone, action: 'hide', scope }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'خطا در حذف گفتگو');
@@ -284,47 +380,80 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
   const canChat = appointment.status !== 'CANCELLED';
   const headerTitle = isSalon ? (appointment.customer.name || appointment.customer.phone) : appointment.salon.name;
   const summaryLine = buildSummaryLine(appointment);
-  const canCancel = appointment.status !== 'CANCELLED' && appointment.status !== 'CONFIRMED';
 
   return (
     <div className="flex flex-col h-dvh bg-white dir-rtl font-sans">
       {/* هدر ثابت بالا */}
-      <div className="shrink-0 flex flex-col border-b border-zinc-100">
-        <div className="flex items-center justify-between px-4 py-3.5">
-          <button
-            onClick={() => router.push('/chat')}
-            className="flex items-center gap-1.5 text-sm text-zinc-500 hover:text-zinc-700 transition-colors"
-          >
-            <ArrowRight className="w-4 h-4" /> بازگشت
-          </button>
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-bold text-zinc-900">{headerTitle}</span>
-            <span className={`text-[10px] px-2 py-1 rounded-full font-medium ${statusInfo.className}`}>{statusInfo.text}</span>
-          </div>
+      <div className="shrink-0 flex items-center justify-between px-4 py-3.5 border-b border-zinc-100">
+        <button
+          onClick={() => router.push('/chat')}
+          className="flex items-center gap-1.5 text-sm text-zinc-500 hover:text-zinc-700 transition-colors"
+        >
+          <ArrowRight className="w-4 h-4" /> بازگشت
+        </button>
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-bold text-zinc-900">{headerTitle}</span>
+          <span className={`text-[10px] px-2 py-1 rounded-full font-medium ${statusInfo.className}`}>{statusInfo.text}</span>
         </div>
-
-        {/* دو دکمه‌ی ساده و همیشه قابل‌مشاهده، بدون منو */}
-        <div className="flex items-center gap-2 px-4 pb-3">
-          {canCancel && (
-            <button
-              onClick={handleCancel}
-              disabled={isCancelling}
-              className="flex items-center gap-1 text-xs font-bold text-red-500 hover:bg-red-50 px-2.5 py-1.5 rounded-lg transition-colors disabled:opacity-50"
-            >
-              {isCancelling ? <Loader2 className="w-3 h-3 animate-spin" /> : <XCircle className="w-3 h-3" />}
-              لغو نوبت
-            </button>
-          )}
+        <div className="relative">
           <button
-            onClick={handleHideChat}
-            disabled={isHiding}
-            className="flex items-center gap-1 text-xs font-bold text-zinc-400 hover:bg-zinc-50 px-2.5 py-1.5 rounded-lg transition-colors disabled:opacity-50"
+            onClick={() => setShowMenu((v) => !v)}
+            className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-zinc-100 text-zinc-500 transition-colors"
           >
-            {isHiding ? <Loader2 className="w-3 h-3 animate-spin" /> : <X className="w-3 h-3" />}
-            حذف گفتگو
+            <MoreVertical className="w-4.5 h-4.5" />
           </button>
+          {showMenu && (
+            <>
+              <div className="fixed inset-0 z-10" onClick={() => setShowMenu(false)} />
+              <div className="absolute left-0 top-full mt-1 w-44 bg-white border border-zinc-100 rounded-xl shadow-lg py-1 z-20">
+                <button
+                  onClick={() => {
+                    setShowMenu(false);
+                    setShowDeleteOptions(true);
+                  }}
+                  className="w-full text-right px-3.5 py-2.5 text-xs font-medium text-red-500 hover:bg-red-50 flex items-center gap-2"
+                >
+                  <Trash2 className="w-3.5 h-3.5" /> حذف گفتگو
+                </button>
+              </div>
+            </>
+          )}
         </div>
       </div>
+
+      {/* پنجره‌ی گزینه‌های حذف گفتگو */}
+      {showDeleteOptions && (
+        <div
+          className="fixed inset-0 bg-black/40 z-30 flex items-end justify-center"
+          onClick={() => setShowDeleteOptions(false)}
+        >
+          <div className="bg-white w-full max-w-lg rounded-t-2xl p-4 space-y-1.5" onClick={(e) => e.stopPropagation()}>
+            <p className="text-sm font-bold text-zinc-800 px-1 pb-2">حذف گفتگو</p>
+            <button
+              onClick={() => handleHideChat('me')}
+              disabled={isHiding}
+              className="w-full text-right px-3 py-3 rounded-xl text-sm text-zinc-700 hover:bg-zinc-50 disabled:opacity-50 flex items-center justify-between"
+            >
+              حذف فقط برای من
+              {isHiding && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+            </button>
+            <button
+              onClick={() => handleHideChat('both')}
+              disabled={isHiding}
+              className="w-full text-right px-3 py-3 rounded-xl text-sm text-red-500 hover:bg-red-50 disabled:opacity-50 flex items-center justify-between"
+            >
+              حذف برای هر دو طرف
+              {isHiding && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+            </button>
+            <button
+              onClick={() => setShowDeleteOptions(false)}
+              className="w-full text-center px-3 py-3 rounded-xl text-sm text-zinc-400 hover:bg-zinc-50"
+            >
+              انصراف
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* محتوای قابل اسکرول */}
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
@@ -368,7 +497,6 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
 
         {isFinalizing && (
           <div className="border border-zinc-200 rounded-2xl p-4 space-y-3 bg-zinc-50/60">
-            {/* تاریخ و ساعت کنار هم، بدون سرریز */}
             <div className="grid grid-cols-2 gap-2">
               <div className="min-w-0">
                 <label className="block text-xs font-medium text-zinc-500 mb-1.5">تاریخ نوبت *</label>
@@ -412,7 +540,11 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
                     inputMode="numeric"
                     className="w-32 border border-zinc-200 rounded-lg px-3 py-2 text-sm bg-white text-left outline-none"
                   />
-                  <button onClick={() => removeRow(i)} disabled={services.length === 1} className="w-9 h-9 shrink-0 flex items-center justify-center rounded-lg bg-white border border-zinc-200 text-zinc-400 disabled:opacity-30">
+                  <button
+                    onClick={() => removeRow(i)}
+                    disabled={services.length === 1}
+                    className="w-9 h-9 shrink-0 flex items-center justify-center rounded-lg bg-white border border-zinc-200 text-zinc-400 disabled:opacity-30"
+                  >
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
                 </div>
@@ -430,7 +562,10 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
               >
                 {isSubmittingFinalize ? 'در حال ثبت...' : 'ثبت و ارسال لینک پرداخت'}
               </button>
-              <button onClick={() => setIsFinalizing(false)} className="px-4 py-2.5 rounded-xl text-xs font-bold text-zinc-500 bg-white border border-zinc-200">
+              <button
+                onClick={() => setIsFinalizing(false)}
+                className="px-4 py-2.5 rounded-xl text-xs font-bold text-zinc-500 bg-white border border-zinc-200"
+              >
                 انصراف
               </button>
             </div>
@@ -444,12 +579,52 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
             const isMine = isSalon ? m.sender === 'SALON' : m.sender === 'CUSTOMER';
             return (
               <div key={m.id} className={`flex ${isMine ? 'justify-start' : 'justify-end'}`}>
-                <div
-                  className={`max-w-[75%] rounded-2xl px-3.5 py-2.5 text-sm break-words whitespace-pre-wrap ${
-                    isMine ? 'bg-[#824c71]/10 text-[#6d3f5e] rounded-bl-sm' : 'bg-zinc-100 text-zinc-800 rounded-br-sm'
-                  }`}
-                >
-                  {m.message}
+                <div className="max-w-[75%] group relative">
+                  {canChat && (
+                    <button
+                      onClick={() => setReplyTarget(m)}
+                      className="absolute -top-2 -left-2 opacity-0 group-hover:opacity-100 w-6 h-6 rounded-full bg-white border border-zinc-200 flex items-center justify-center text-zinc-400 transition-opacity z-10"
+                      title="پاسخ"
+                    >
+                      <Reply className="w-3 h-3" />
+                    </button>
+                  )}
+
+                  {m.replyTo && (
+                    <div
+                      className={`mb-1 rounded-lg px-2.5 py-1.5 text-[11px] border-r-2 truncate ${
+                        isMine ? 'bg-[#824c71]/5 border-[#824c71]/40 text-zinc-500' : 'bg-zinc-50 border-zinc-300 text-zinc-500'
+                      }`}
+                    >
+                      {replySnippet(m.replyTo)}
+                    </div>
+                  )}
+
+                  <div
+                    className={`rounded-2xl px-3.5 py-2.5 text-sm break-words whitespace-pre-wrap ${
+                      isMine ? 'bg-[#824c71]/10 text-[#6d3f5e] rounded-bl-sm' : 'bg-zinc-100 text-zinc-800 rounded-br-sm'
+                    }`}
+                  >
+                    {m.type === 'IMAGE' && m.mediaUrl && (
+                      <img src={m.mediaUrl} alt="عکس" className="rounded-lg max-w-full mb-1" />
+                    )}
+                    {m.type === 'VOICE' && m.mediaUrl && (
+                      <audio controls src={m.mediaUrl} className="max-w-full" />
+                    )}
+                    {m.message && <div>{m.message}</div>}
+
+                    <div className="flex items-center justify-end gap-1 mt-1">
+                      <span className="text-[10px] text-zinc-400">
+                        {new Date(m.createdAt).toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                      {isMine &&
+                        (m.seenAt ? (
+                          <CheckCheck className="w-3.5 h-3.5 text-blue-400" />
+                        ) : (
+                          <Check className="w-3.5 h-3.5 text-zinc-400" />
+                        ))}
+                    </div>
+                  </div>
                 </div>
               </div>
             );
@@ -460,22 +635,55 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
 
       {/* نوار ارسال پیام، ثابت پایین صفحه */}
       {canChat && (
-        <div className="shrink-0 flex items-end gap-2 px-4 py-3 border-t border-zinc-100 bg-white">
-          <textarea
-            ref={textareaRef}
-            value={messageText}
-            onChange={handleMessageInput}
-            rows={1}
-            placeholder="پیام خود را بنویسید..."
-            className="flex-1 resize-none border border-zinc-200 rounded-2xl px-3.5 py-2.5 text-sm outline-none focus:border-[#824c71] max-h-[120px] leading-6"
-          />
-          <button
-            onClick={handleSendMessage}
-            disabled={isSending || !messageText.trim()}
-            className="w-11 h-11 shrink-0 flex items-center justify-center rounded-xl bg-[#824c71] text-white disabled:opacity-50"
-          >
-            {isSending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-          </button>
+        <div className="shrink-0 border-t border-zinc-100 bg-white">
+          {replyTarget && (
+            <div className="flex items-center justify-between px-4 py-2 bg-zinc-50 border-b border-zinc-100">
+              <div className="text-xs text-zinc-500 truncate">پاسخ به: {replySnippet(replyTarget)}</div>
+              <button onClick={() => setReplyTarget(null)} className="text-zinc-400 hover:text-zinc-600 shrink-0 ml-2">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          )}
+          <div className="flex items-end gap-2 px-4 py-3">
+            <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageSelected} />
+            <button
+              onClick={handlePickImage}
+              disabled={isUploadingMedia || isRecording}
+              className="w-10 h-10 shrink-0 flex items-center justify-center rounded-xl bg-zinc-50 text-zinc-500 disabled:opacity-50"
+            >
+              <ImageIcon className="w-4.5 h-4.5" />
+            </button>
+
+            <textarea
+              ref={textareaRef}
+              value={messageText}
+              onChange={handleMessageInput}
+              rows={1}
+              placeholder="پیام خود را بنویسید..."
+              disabled={isRecording}
+              className="flex-1 resize-none border border-zinc-200 rounded-2xl px-3.5 py-2.5 text-sm outline-none focus:border-[#824c71] max-h-[120px] leading-6 disabled:opacity-50"
+            />
+
+            {messageText.trim() ? (
+              <button
+                onClick={handleSendMessage}
+                disabled={isSending}
+                className="w-11 h-11 shrink-0 flex items-center justify-center rounded-xl bg-[#824c71] text-white disabled:opacity-50"
+              >
+                {isSending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+              </button>
+            ) : (
+              <button
+                onClick={isRecording ? handleStopRecording : handleStartRecording}
+                disabled={isUploadingMedia}
+                className={`w-11 h-11 shrink-0 flex items-center justify-center rounded-xl text-white disabled:opacity-50 transition-colors ${
+                  isRecording ? 'bg-red-500' : 'bg-[#824c71]'
+                }`}
+              >
+                {isUploadingMedia ? <Loader2 className="w-4 h-4 animate-spin" /> : <Mic className="w-4 h-4" />}
+              </button>
+            )}
+          </div>
         </div>
       )}
     </div>

@@ -49,6 +49,12 @@ enum AppointmentSender {
   SALON
 }
 
+enum AppointmentMessageType {
+  TEXT
+  IMAGE
+  VOICE
+}
+
 model Salon {
   id                    String      @id @default(uuid())
   name                  String
@@ -249,14 +255,25 @@ model Appointment {
 }
 
 model AppointmentMessage {
-  id            String            @id @default(uuid())
-  message       String
+  id            String                  @id @default(uuid())
+  message       String?
+  type          AppointmentMessageType  @default(TEXT)
+  mediaUrl      String?
+  duration      Int?                    // مدت زمان ویس به ثانیه
+
   sender        AppointmentSender
 
-  appointmentId String
-  appointment   Appointment       @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  replyToId     String?
+  replyTo       AppointmentMessage?     @relation("MessageReplies", fields: [replyToId], references: [id], onDelete: SetNull)
+  replies       AppointmentMessage[]    @relation("MessageReplies")
 
-  createdAt     DateTime          @default(now())
+  seenAt        DateTime?               // زمانی که طرف مقابل پیام رو دید (تیک آبی)
+
+  appointmentId String
+  appointment   Appointment             @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+
+  createdAt     DateTime                @default(now())
 
   @@index([appointmentId])
+  @@index([replyToId])
 }

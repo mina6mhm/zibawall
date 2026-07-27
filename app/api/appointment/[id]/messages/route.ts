@@ -8,10 +8,16 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   try {
     const { id } = await params;
     const body = await req.json();
-    const { userPhone, message } = body;
+    const { userPhone, message, type = 'TEXT', mediaUrl, duration, replyToId } = body;
 
-    if (!userPhone || !message?.trim()) {
+    if (!userPhone) {
+      return NextResponse.json({ error: 'شماره کاربر الزامی است.' }, { status: 400 });
+    }
+    if (type === 'TEXT' && !message?.trim()) {
       return NextResponse.json({ error: 'متن پیام الزامی است.' }, { status: 400 });
+    }
+    if ((type === 'IMAGE' || type === 'VOICE') && !mediaUrl) {
+      return NextResponse.json({ error: 'فایل ارسالی نامعتبر است.' }, { status: 400 });
     }
 
     const user = await prisma.user.findUnique({ where: { phone: userPhone } });
@@ -32,12 +38,26 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       return NextResponse.json({ error: 'این گفتگو لغو شده است.' }, { status: 400 });
     }
 
+    if (replyToId) {
+      const replyTarget = await prisma.appointmentMessage.findFirst({
+        where: { id: replyToId, appointmentId: id },
+      });
+      if (!replyTarget) {
+        return NextResponse.json({ error: 'پیامی که به آن پاسخ می‌دهید یافت نشد.' }, { status: 400 });
+      }
+    }
+
     const created = await prisma.appointmentMessage.create({
       data: {
         appointmentId: id,
         sender: isSalonOwner ? 'SALON' : 'CUSTOMER',
-        message: message.trim(),
+        type,
+        message: message?.trim() || null,
+        mediaUrl: mediaUrl || null,
+        duration: duration || null,
+        replyToId: replyToId || null,
       },
+      include: { replyTo: true },
     });
 
     await prisma.appointment.update({

@@ -31,7 +31,6 @@ async function loadAppointmentWithAccess(userPhone: string, appointmentId: strin
     include: {
       salon: { select: { id: true, name: true, imageUrl: true, userId: true } },
       customer: { select: { id: true, name: true, phone: true } },
-      messages: { orderBy: { createdAt: 'asc' } },
     },
   });
   if (!appointment) return { error: 'نوبت یافت نشد.', status: 404 } as const;
@@ -55,9 +54,24 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     const result = await loadAppointmentWithAccess(userPhone, id);
     if ('error' in result) return NextResponse.json({ error: result.error }, { status: result.status });
 
+    const { appointment, isSalonOwner } = result;
+    const otherSender = isSalonOwner ? 'CUSTOMER' : 'SALON';
+
+    // پیام‌های طرف مقابل که هنوز دیده نشده‌اند رو به‌محض باز شدن گفتگو "دیده‌شده" علامت بزن
+    await prisma.appointmentMessage.updateMany({
+      where: { appointmentId: id, sender: otherSender, seenAt: null },
+      data: { seenAt: new Date() },
+    });
+
+    const messages = await prisma.appointmentMessage.findMany({
+      where: { appointmentId: id },
+      orderBy: { createdAt: 'asc' },
+      include: { replyTo: true },
+    });
+
     return NextResponse.json({
-      appointment: result.appointment,
-      viewerRole: result.isSalonOwner ? 'SALON' : 'CUSTOMER',
+      appointment: { ...appointment, messages },
+      viewerRole: isSalonOwner ? 'SALON' : 'CUSTOMER',
     });
   } catch (error) {
     console.error('Error fetching appointment:', error);
@@ -66,13 +80,12 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 }
 
 // action=finalize → ثبت جزئیات نهایی نوبت توسط سالن‌دار
-// action=cancel   → لغو نوبت
-// action=hide     → حذف یک‌طرفه‌ی گفتگو (فقط برای بیننده‌ی فعلی)
+// action=hide     → حذف گفتگو (scope=me یک‌طرفه / scope=both برای هر دو طرف)
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
     const body = await req.json();
-    const { userPhone, action, visitDate, checkInTime, checkOutTime, services } = body;
+    const { userPhone, action, visitDate, checkInTime, checkOutTime, services, scope } = body;
 
     if (!userPhone) return NextResponse.json({ error: 'شماره کاربر الزامی است.' }, { status: 400 });
 
@@ -82,19 +95,11 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     const { appointment, isSalonOwner } = result;
 
     if (action === 'hide') {
-      const field = isSalonOwner ? 'hiddenForSalon' : 'hiddenForCustomer';
-      const updated = await prisma.appointment.update({
-        where: { id },
-        data: { [field]: true },
-      });
-      return NextResponse.json({ appointment: updated });
-    }
-
-    if (action === 'cancel') {
-      const updated = await prisma.appointment.update({
-        where: { id },
-        data: { status: 'CANCELLED' },
-      });
+      const data =
+        scope === 'both'
+          ? { hiddenForCustomer: true, hiddenForSalon: true }
+          : { [isSalonOwner ? 'hiddenForSalon' : 'hiddenForCustomer']: true };
+      const updated = await prisma.appointment.update({ where: { id }, data });
       return NextResponse.json({ appointment: updated });
     }
 
@@ -109,7 +114,6 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
         return NextResponse.json({ error: 'تاریخ و حداقل یک آیتم الزامی است.' }, { status: 400 });
       }
 
-      // قیمت اختیاریه؛ فقط نام آیتم الزامیه
       const cleanedServices = services
         .filter((s: any) => s.name?.trim())
         .map((s: any) => ({ name: s.name.trim(), price: sanitizeNumber(s.price) }));
@@ -120,7 +124,6 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
       const totalAmount = cleanedServices.reduce((sum: number, s: any) => sum + s.price, 0);
 
-      // مبلغ بیعانه همیشه ثابت و سمت سرور تعیین می‌شود؛ ورودی کاربر برای این مقدار نادیده گرفته می‌شود
       const updated = await prisma.appointment.update({
         where: { id },
         data: {
@@ -138,6 +141,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
         data: {
           appointmentId: id,
           sender: 'SALON',
+          type: 'TEXT',
           message: 'جزئیات نوبت ثبت شد. برای قطعی‌شدن نوبت، لینک پرداخت را دنبال کنید.',
         },
       });
