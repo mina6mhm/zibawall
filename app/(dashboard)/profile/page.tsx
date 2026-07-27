@@ -1,16 +1,16 @@
 // app/(dashboard)/profile/page.tsx
 'use client';
-
+ 
 import React, { useState, useEffect } from 'react';
-import { User, Phone, LogOut, Store, MessageCircle, ShieldCheck, ChevronLeft, Wallet, AtSign } from 'lucide-react';
+import { User, Phone, LogOut, Store, MessageCircle, ShieldCheck, ChevronLeft, AtSign } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-
+ 
 export default function ProfilePage() {
   const router = useRouter();
   const [userData, setUserData] = useState({ name: '', phone: '', username: '', role: '' });
   const [salonData, setSalonData] = useState<any>(null);
-
+ 
   useEffect(() => {
     const fetchProfile = async () => {
       try {
@@ -33,7 +33,7 @@ export default function ProfilePage() {
     };
     fetchProfile();
   }, [router]);
-
+ 
   const handleLogout = async () => {
     if (!window.confirm('آیا می‌خواهید از حساب خود خارج شوید؟')) return;
     try {
@@ -42,7 +42,7 @@ export default function ProfilePage() {
     router.push('/login');
     router.refresh();
   };
-
+ 
   const menuItems = [
     {
       key: 'info',
@@ -51,32 +51,22 @@ export default function ProfilePage() {
       href: '/profile/info',
     },
     {
-  key: 'business',
-  label: salonData ? 'کسب‌وکار من' : 'ثبت کسب‌وکار',
-  icon: Store,
-  href: salonData ? '/profile/business/overview' : '/profile/business',
-},
+      key: 'business',
+      label: salonData ? 'کسب‌وکار من' : 'ثبت کسب‌وکار',
+      icon: Store,
+      href: salonData ? '/profile/business/overview' : '/profile/business',
+    },
     {
       key: 'support',
       label: 'پشتیبانی',
       icon: MessageCircle,
       href: '/profile/support',
     },
-    ...(salonData
-      ? [
-          {
-            key: 'accounting',
-            label: 'حسابداری',
-            icon: Wallet,
-            href: '/profile/accounting',
-          },
-        ]
-      : []),
   ];
-
+ 
   return (
     <div className="flex flex-col min-h-screen bg-white pb-24">
-
+ 
       {/* هدر */}
       <div className="bg-white px-4 pt-6 pb-4">
         <div className="max-w-lg mx-auto">
@@ -106,7 +96,7 @@ export default function ProfilePage() {
               <LogOut className="w-4 h-4" />
             </button>
           </div>
-
+ 
           {userData.role === 'ADMIN' && (
             <Link
               href="/admin/support"
@@ -118,7 +108,7 @@ export default function ProfilePage() {
           )}
         </div>
       </div>
-
+ 
       {/* منوی ردیفی: همه به صفحه جدید میرن */}
       <div className="max-w-lg mx-auto w-full px-4 mt-1 space-y-2">
         {menuItems.map((item) => {

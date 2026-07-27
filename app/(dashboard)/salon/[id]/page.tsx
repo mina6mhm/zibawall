@@ -750,13 +750,13 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
       <div className="fixed bottom-8 left-5 right-5 z-[60] lg:hidden flex gap-2.5">
         <StartAppointmentButton
           salonId={salon.id}
-          className="flex-1 bg-[#824c71]/10 hover:bg-[#824c71]/15 text-[#824c71] font-medium py-4 rounded-xl text-sm flex items-center justify-center gap-2 shadow-lg shadow-[#824c71]/10 active:scale-95 transition-transform disabled:opacity-60"
+          className="flex-1 bg-[#824c71] hover:bg-[#824c71]/90 text-white font-medium py-4 rounded-xl text-sm flex items-center justify-center gap-2 shadow-lg shadow-[#824c71]/10 active:scale-95 transition-transform disabled:opacity-60"
         />
         {primaryPhone && (
           <a 
             href={`tel:${primaryPhone}`}
             onClick={handleCallButtonClick}
-            className="w-14 shrink-0 bg-[#824c71]/10 text-[#824c71] rounded-xl flex items-center justify-center shadow-lg active:scale-95 transition-transform"
+            className="w-14 shrink-0 bg-[#824c71] text-white rounded-xl flex items-center justify-center shadow-lg active:scale-95 transition-transform"
           >
             <Phone className="w-5 h-5" />
           </a>
