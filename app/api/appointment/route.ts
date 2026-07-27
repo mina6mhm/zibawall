@@ -4,7 +4,7 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
-// شروع یک گفتگوی نوبت‌دهی جدید (سمت مشتری، از صفحه‌ی سالن)
+// شروع یک گفتگوی نوبت‌دهی جدید — فقط وقتی پیام اول ارسال شده باشد ساخته می‌شود
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
@@ -13,6 +13,9 @@ export async function POST(req: NextRequest) {
     if (!customerPhone || !salonId) {
       return NextResponse.json({ error: 'شماره مشتری و شناسه سالن الزامی است.' }, { status: 400 });
     }
+    if (!firstMessage?.trim()) {
+      return NextResponse.json({ error: 'برای شروع نوبت، ارسال یک پیام الزامی است.' }, { status: 400 });
+    }
 
     const customer = await prisma.user.findUnique({ where: { phone: customerPhone } });
     if (!customer) return NextResponse.json({ error: 'کاربر یافت نشد.' }, { status: 404 });
@@ -20,7 +23,7 @@ export async function POST(req: NextRequest) {
     const salon = await prisma.salon.findUnique({ where: { id: salonId } });
     if (!salon) return NextResponse.json({ error: 'سالن یافت نشد.' }, { status: 404 });
 
-    // اگر گفتگوی باز (هنوز قطعی/لغو نشده) با همین سالن وجود دارد، همان را برگردان تا تکراری ساخته نشود
+    // اگر گفتگوی باز (هنوز قطعی/لغو نشده) با همین سالن وجود دارد، همان را برگردان
     const existing = await prisma.appointment.findFirst({
       where: {
         customerId: customer.id,
@@ -37,9 +40,7 @@ export async function POST(req: NextRequest) {
       data: {
         customerId: customer.id,
         salonId,
-        messages: firstMessage?.trim()
-          ? { create: [{ message: firstMessage.trim(), sender: 'CUSTOMER' }] }
-          : undefined,
+        messages: { create: [{ message: firstMessage.trim(), sender: 'CUSTOMER' }] },
       },
     });
 
@@ -51,8 +52,6 @@ export async function POST(req: NextRequest) {
 }
 
 // دریافت لیست نوبت‌ها
-// scope=customer → نوبت‌های خود کاربر (به‌عنوان مشتری)
-// scope=salon    → نوبت‌های سالنِ کاربر (اگر صاحب سالن باشد)
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
@@ -66,7 +65,7 @@ export async function GET(req: NextRequest) {
     if (scope === 'customer') {
       const appointments = await prisma.appointment.findMany({
         where: { customerId: user.id, hiddenForCustomer: false },
-        include: { salon: { select: { name: true, imageUrl: true } } },
+        include: { salon: { select: { id: true, name: true, imageUrl: true } } },
         orderBy: { updatedAt: 'desc' },
       });
       return NextResponse.json({ appointments });

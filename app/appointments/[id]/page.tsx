@@ -4,7 +4,7 @@
 import React, { useState, useEffect, useRef, use } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
-  ArrowRight, Loader2, Send, Calendar, Plus, Trash2, CheckCircle2, XCircle, MoreVertical,
+  ArrowRight, Loader2, Send, Calendar, Plus, Trash2, CheckCircle2, XCircle, X,
 } from 'lucide-react';
 import DatePicker, { DateObject } from 'react-multi-date-picker';
 import persian from 'react-date-object/calendars/persian';
@@ -53,7 +53,6 @@ const STATUS_LABEL: Record<AppointmentStatus, { text: string; className: string 
   CANCELLED: { text: 'لغو شده', className: 'bg-red-50 text-red-500' },
 };
 
-// خلاصه نوبت را در یک خط فشرده می‌سازد: تاریخ - ساعت - آیتم‌ها (قیمت اختیاری)
 function buildSummaryLine(appointment: Appointment) {
   const parts: string[] = [];
   if (appointment.visitDate) parts.push(new Date(appointment.visitDate).toLocaleDateString('fa-IR'));
@@ -81,7 +80,7 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isCancelling, setIsCancelling] = useState(false);
   const [isHiding, setIsHiding] = useState(false);
 
   const [isFinalizing, setIsFinalizing] = useState(false);
@@ -164,8 +163,8 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
   };
 
   const handleCancel = async () => {
-    setIsMenuOpen(false);
     if (!window.confirm('آیا از لغو این نوبت مطمئن هستید؟')) return;
+    setIsCancelling(true);
     try {
       const res = await fetch(`/api/appointment/${id}`, {
         method: 'PATCH',
@@ -177,11 +176,12 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
       fetchAppointment(userPhone);
     } catch (error: any) {
       alert(error.message || 'خطایی رخ داد.');
+    } finally {
+      setIsCancelling(false);
     }
   };
 
   const handleHideChat = async () => {
-    setIsMenuOpen(false);
     if (!window.confirm('این گفتگو فقط برای شما حذف می‌شود و طرف مقابل همچنان آن را می‌بیند. ادامه می‌دهید؟')) return;
     setIsHiding(true);
     try {
@@ -289,53 +289,44 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
   return (
     <div className="flex flex-col h-dvh bg-white dir-rtl font-sans">
       {/* هدر ثابت بالا */}
-      <div className="shrink-0 flex items-center justify-between px-4 py-3.5 border-b border-zinc-100 relative">
-        <button
-          onClick={() => router.push('/chat')}
-          className="flex items-center gap-1.5 text-sm text-zinc-500 hover:text-zinc-700 transition-colors"
-        >
-          <ArrowRight className="w-4 h-4" /> بازگشت
-        </button>
-
-        <div className="flex items-center gap-2 absolute left-1/2 -translate-x-1/2">
-          <span className="text-sm font-bold text-zinc-900">{headerTitle}</span>
-          <span className={`text-[10px] px-2 py-1 rounded-full font-medium ${statusInfo.className}`}>{statusInfo.text}</span>
+      <div className="shrink-0 flex flex-col border-b border-zinc-100">
+        <div className="flex items-center justify-between px-4 py-3.5">
+          <button
+            onClick={() => router.push('/chat')}
+            className="flex items-center gap-1.5 text-sm text-zinc-500 hover:text-zinc-700 transition-colors"
+          >
+            <ArrowRight className="w-4 h-4" /> بازگشت
+          </button>
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-bold text-zinc-900">{headerTitle}</span>
+            <span className={`text-[10px] px-2 py-1 rounded-full font-medium ${statusInfo.className}`}>{statusInfo.text}</span>
+          </div>
         </div>
 
-        <div className="relative">
-          <button
-            onClick={() => setIsMenuOpen((v) => !v)}
-            className="w-8 h-8 flex items-center justify-center rounded-lg text-zinc-500 hover:bg-zinc-100 transition-colors"
-          >
-            <MoreVertical className="w-4.5 h-4.5" />
-          </button>
-
-          {isMenuOpen && (
-            <>
-              <div className="fixed inset-0 z-40" onClick={() => setIsMenuOpen(false)} />
-              <div className="absolute left-0 top-10 z-50 w-44 bg-white rounded-xl shadow-lg border border-zinc-100 overflow-hidden">
-                {canCancel && (
-                  <button
-                    onClick={handleCancel}
-                    className="w-full text-right px-4 py-3 text-xs font-bold text-red-500 hover:bg-red-50 transition-colors"
-                  >
-                    لغو نوبت
-                  </button>
-                )}
-                <button
-                  onClick={handleHideChat}
-                  disabled={isHiding}
-                  className="w-full text-right px-4 py-3 text-xs font-bold text-zinc-600 hover:bg-zinc-50 transition-colors disabled:opacity-50"
-                >
-                  {isHiding ? 'در حال حذف...' : 'حذف گفتگو'}
-                </button>
-              </div>
-            </>
+        {/* دو دکمه‌ی ساده و همیشه قابل‌مشاهده، بدون منو */}
+        <div className="flex items-center gap-2 px-4 pb-3">
+          {canCancel && (
+            <button
+              onClick={handleCancel}
+              disabled={isCancelling}
+              className="flex items-center gap-1 text-xs font-bold text-red-500 hover:bg-red-50 px-2.5 py-1.5 rounded-lg transition-colors disabled:opacity-50"
+            >
+              {isCancelling ? <Loader2 className="w-3 h-3 animate-spin" /> : <XCircle className="w-3 h-3" />}
+              لغو نوبت
+            </button>
           )}
+          <button
+            onClick={handleHideChat}
+            disabled={isHiding}
+            className="flex items-center gap-1 text-xs font-bold text-zinc-400 hover:bg-zinc-50 px-2.5 py-1.5 rounded-lg transition-colors disabled:opacity-50"
+          >
+            {isHiding ? <Loader2 className="w-3 h-3 animate-spin" /> : <X className="w-3 h-3" />}
+            حذف گفتگو
+          </button>
         </div>
       </div>
 
-      {/* محتوای قابل اسکرول: بنرها + خلاصه + فرم‌ها + پیام‌ها */}
+      {/* محتوای قابل اسکرول */}
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
         {paymentResult === 'success' && (
           <div className="flex items-center gap-2 bg-green-50 text-green-700 rounded-xl p-3 text-xs font-medium">
@@ -348,7 +339,6 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
           </div>
         )}
 
-        {/* خلاصه فشرده نوبت، همه در یک خط */}
         {summaryLine && (
           <div className="flex items-center gap-2 text-xs text-zinc-600 bg-zinc-50 rounded-xl px-3 py-2.5 overflow-x-auto whitespace-nowrap">
             <Calendar className="w-3.5 h-3.5 text-[#824c71] shrink-0" />
@@ -378,27 +368,30 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
 
         {isFinalizing && (
           <div className="border border-zinc-200 rounded-2xl p-4 space-y-3 bg-zinc-50/60">
-            <div>
-              <label className="block text-xs font-medium text-zinc-500 mb-1.5">تاریخ نوبت *</label>
-              <DatePicker
-                value={visitDateObj}
-                onChange={(date) => setVisitDateObj(date as DateObject)}
-                calendar={persian}
-                locale={persian_fa}
-                calendarPosition="bottom-right"
-                inputClass="w-full border border-zinc-200 rounded-xl px-3.5 py-2.5 text-sm bg-white focus:border-[#824c71] outline-none"
-                containerClassName="w-full"
-                placeholder="انتخاب تاریخ"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-zinc-500 mb-1.5">ساعت</label>
-              <input
-                type="time"
-                value={checkInTime}
-                onChange={(e) => setCheckInTime(e.target.value)}
-                className="w-full border border-zinc-200 rounded-xl px-3.5 py-2.5 text-sm bg-white outline-none"
-              />
+            {/* تاریخ و ساعت کنار هم، بدون سرریز */}
+            <div className="grid grid-cols-2 gap-2">
+              <div className="min-w-0">
+                <label className="block text-xs font-medium text-zinc-500 mb-1.5">تاریخ نوبت *</label>
+                <DatePicker
+                  value={visitDateObj}
+                  onChange={(date) => setVisitDateObj(date as DateObject)}
+                  calendar={persian}
+                  locale={persian_fa}
+                  calendarPosition="bottom-right"
+                  inputClass="w-full min-w-0 border border-zinc-200 rounded-xl px-3 py-2.5 text-sm bg-white focus:border-[#824c71] outline-none"
+                  containerClassName="w-full"
+                  placeholder="انتخاب تاریخ"
+                />
+              </div>
+              <div className="min-w-0">
+                <label className="block text-xs font-medium text-zinc-500 mb-1.5">ساعت</label>
+                <input
+                  type="time"
+                  value={checkInTime}
+                  onChange={(e) => setCheckInTime(e.target.value)}
+                  className="w-full min-w-0 border border-zinc-200 rounded-xl px-3 py-2.5 text-sm bg-white outline-none"
+                />
+              </div>
             </div>
 
             <div className="space-y-2">
@@ -444,9 +437,8 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
           </div>
         )}
 
-        {/* پیام‌ها */}
         {appointment.messages.length === 0 ? (
-          <p className="text-center text-xs text-zinc-400 py-10">هنوز پیامی رد و بدل نشده. گفتگو رو شروع کنید.</p>
+          <p className="text-center text-xs text-zinc-400 py-10">هنوز پیامی رد و بدل نشده.</p>
         ) : (
           appointment.messages.map((m) => {
             const isMine = isSalon ? m.sender === 'SALON' : m.sender === 'CUSTOMER';
@@ -466,7 +458,7 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
         <div ref={messagesEndRef} />
       </div>
 
-      {/* نوار ارسال پیام، همیشه پایین صفحه */}
+      {/* نوار ارسال پیام، ثابت پایین صفحه */}
       {canChat && (
         <div className="shrink-0 flex items-end gap-2 px-4 py-3 border-t border-zinc-100 bg-white">
           <textarea

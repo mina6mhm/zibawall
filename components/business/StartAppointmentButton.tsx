@@ -29,15 +29,9 @@ export default function StartAppointmentButton({
         return;
       }
 
-      const res = await fetch('/api/appointment', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ customerPhone: user.phone, salonId }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'خطا در شروع نوبت‌دهی');
-
-      router.push(`/appointments/${data.appointment.id}`);
+      // نکته: اینجا هیچ نوبتی ساخته نمی‌شود. فقط وقتی مشتری پیام اول را
+      // در صفحه‌ی بعدی بفرستد، نوبت واقعاً در دیتابیس ثبت می‌شود.
+      router.push(`/appointments/new?salonId=${salonId}`);
     } catch (error: any) {
       alert(error.message || 'خطایی رخ داد.');
     } finally {
