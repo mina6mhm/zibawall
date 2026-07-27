@@ -37,22 +37,10 @@ enum GenderAudience {
   BOTH
 }
 
-enum AppointmentStatus {
-  NEGOTIATING      // در حال گفتگو، هنوز زمان/آیتم نهایی نشده
-  AWAITING_PAYMENT // سالن‌دار جزئیات را ثبت کرده، منتظر واریز مبلغ ثبت نوبت
-  CONFIRMED        // مبلغ واریز شد، نوبت قطعی است
-  CANCELLED        // لغو شده
-}
-
-enum AppointmentSender {
-  CUSTOMER
-  SALON
-}
-
-enum AppointmentMessageType {
-  TEXT
-  IMAGE
-  VOICE
+enum BookingStatus {
+  PENDING_PAYMENT // مشتری مراحل انتخاب رو تموم کرده، منتظر واریز بیعانه‌ست
+  CONFIRMED       // بیعانه واریز شد، نوبت قطعیه
+  CANCELLED       // لغو شده
 }
 
 model Salon {
@@ -85,13 +73,21 @@ model Salon {
   subscriptionExpiresAt DateTime?
   reminderSentAt        DateTime?
 
+  // نوبت‌دهی آنلاین: کاملاً اختیاری و سمت سالن‌دار روشن/خاموش می‌شود
+  bookingEnabled        Boolean     @default(false)
+
   userId                String      @unique
   user                  User        @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   socials               Social?
   reviews               Review[]
   payments              Payment[]
-  appointments          Appointment[]
+  visits                Visit[]
+  staff                 Staff[]
+
+  bookingCategories      BookingCategory[]
+  bookingServices        BookingService[]
+  bookings                Booking[]
 
   createdAt             DateTime    @default(now())
   updatedAt             DateTime    @updatedAt
@@ -100,6 +96,24 @@ model Salon {
   @@index([status, subscriptionExpiresAt])
   @@index([hasHomeService])
   @@index([genderAudience])
+}
+
+model Staff {
+  id        String   @id @default(uuid())
+  name      String
+
+  salonId   String
+  salon     Salon    @relation(fields: [salonId], references: [id], onDelete: Cascade)
+
+  // پرسنل می‌تواند در چند دسته‌ی خدمات فعالیت کند
+  categories BookingCategory[]
+  bookings   Booking[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([salonId, name])
+  @@index([salonId])
 }
 
 model Social {
@@ -144,7 +158,7 @@ model User {
   salon         Salon?
 
   supportMessages SupportMessage[]
-  appointments    Appointment[]
+  bookings        Booking[]
 
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
@@ -213,67 +227,120 @@ model SupportReply {
   @@index([ticketId])
 }
 
-// یک نوبت آنلاین: از گفتگوی اولیه شروع می‌شود، بعد از تایید سالن‌دار و واریز مبلغ ثبت نوبت قطعی می‌شود
-model Appointment {
-  id            String            @id @default(uuid())
-  status        AppointmentStatus @default(NEGOTIATING)
+model Visit {
+  id            String        @id @default(uuid())
+  customerPhone String
+  customerName  String?
 
-  customerId    String
-  customer      User              @relation(fields: [customerId], references: [id], onDelete: Cascade)
-
-  salonId       String
-  salon         Salon             @relation(fields: [salonId], references: [id], onDelete: Cascade)
-
-  visitDate     DateTime?
+  visitDate     DateTime
   checkInTime   String?
   checkOutTime  String?
 
-  // هر آیتم: { name, price }
-  services      Json              @default("[]")
-  totalAmount   Int               @default(0)
+  services      Json          @default("[]")
+  totalAmount   Int
 
-  depositAmount Int               @default(20000)
-  depositStatus PaymentStatus     @default(PENDING)
-  authority     String?           @unique
+  paymentStatus PaymentStatus @default(PENDING)
+  paymentMethod String?
+  authority     String?       @unique
   refId         String?
 
-  messages      AppointmentMessage[]
+  salonId       String
+  salon         Salon         @relation(fields: [salonId], references: [id], onDelete: Cascade)
 
-  seenByCustomer Boolean          @default(true)
-  seenBySalon    Boolean          @default(true)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
 
-  hiddenForCustomer Boolean       @default(false)
-  hiddenForSalon    Boolean       @default(false)
+  @@index([salonId])
+  @@index([customerPhone])
+  @@index([paymentStatus])
+}
 
-  createdAt     DateTime          @default(now())
-  updatedAt     DateTime          @updatedAt
+// دسته‌ی خدمات نوبت‌دهی — کاملاً توسط خود سالن‌دار تعریف می‌شود، هیچ وابستگی به دیتای پیش‌فرض سایت ندارد
+model BookingCategory {
+  id        String   @id @default(uuid())
+  name      String
+  order     Int      @default(0)
+
+  salonId   String
+  salon     Salon    @relation(fields: [salonId], references: [id], onDelete: Cascade)
+
+  services  BookingService[]
+  staff     Staff[]
+  bookings  Booking[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([salonId, name])
+  @@index([salonId])
+}
+
+// ریزخدمت داخل هر دسته — مثلاً «کاشت ناخن» زیر دسته‌ی «خدمات ناخن»
+model BookingService {
+  id              String   @id @default(uuid())
+  name            String
+  durationMinutes Int      // اجباری، برای محاسبه‌ی تداخل زمانی لازم است
+  price           Int?     // اختیاری
+  order           Int      @default(0)
+
+  categoryId      String
+  category        BookingCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  salonId         String
+  salon           Salon    @relation(fields: [salonId], references: [id], onDelete: Cascade)
+
+  bookings        Booking[]
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([categoryId, name])
+  @@index([categoryId])
+  @@index([salonId])
+}
+
+// یک نوبت نهایی مشتری
+model Booking {
+  id            String        @id @default(uuid())
+  status        BookingStatus @default(PENDING_PAYMENT)
+
+  customerId    String
+  customer      User          @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  salonId       String
+  salon         Salon         @relation(fields: [salonId], references: [id], onDelete: Cascade)
+
+  categoryId    String?
+  category      BookingCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  serviceId     String?
+  service       BookingService?  @relation(fields: [serviceId], references: [id], onDelete: SetNull)
+  staffId       String?
+  staff         Staff?           @relation(fields: [staffId], references: [id], onDelete: SetNull)
+
+  // اسنپ‌شات اطلاعات در لحظه‌ی ثبت، تا حذف بعدی دسته/سرویس/پرسنل تاریخچه را از بین نبرد
+  categoryName  String
+  serviceName   String
+  durationMinutes Int
+  price         Int?
+  staffName     String?
+
+  date          DateTime      // فقط تاریخ روز نوبت (نیمه‌شب نرمال‌شده)
+  startTime     String        // "HH:mm"
+  endTime       String        // "HH:mm" - محاسبه‌شده از durationMinutes
+
+  customerName  String
+  customerPhone String
+
+  depositAmount Int           @default(25000)
+  depositStatus PaymentStatus @default(PENDING)
+  authority     String?       @unique
+  refId         String?
+
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
 
   @@index([salonId])
   @@index([customerId])
+  @@index([staffId, date])
   @@index([status])
-  @@index([salonId, visitDate])
-}
-
-model AppointmentMessage {
-  id            String                  @id @default(uuid())
-  message       String?
-  type          AppointmentMessageType  @default(TEXT)
-  mediaUrl      String?
-  duration      Int?                    // مدت زمان ویس به ثانیه
-
-  sender        AppointmentSender
-
-  replyToId     String?
-  replyTo       AppointmentMessage?     @relation("MessageReplies", fields: [replyToId], references: [id], onDelete: SetNull)
-  replies       AppointmentMessage[]    @relation("MessageReplies")
-
-  seenAt        DateTime?               // زمانی که طرف مقابل پیام رو دید (تیک آبی)
-
-  appointmentId String
-  appointment   Appointment             @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
-
-  createdAt     DateTime                @default(now())
-
-  @@index([appointmentId])
-  @@index([replyToId])
 }
