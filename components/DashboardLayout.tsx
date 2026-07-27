@@ -22,14 +22,15 @@ const BookmarkIcon = ({ isActive, className }: { isActive: boolean, className?: 
 
 const ChatIcon = ({ isActive, className }: { isActive: boolean, className?: string }) => (
   <svg viewBox="0 0 24 24" className={className} fill={isActive ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M4 6.5A2.5 2.5 0 0 1 6.5 4h11A2.5 2.5 0 0 1 20 6.5v8A2.5 2.5 0 0 1 17.5 17H9.5L5 20.5V17h-.5A2.5 2.5 0 0 1 4 14.5v-8z" />
+    <rect x="4" y="4" width="16" height="13" rx="3" />
+    <path d="M14 17l3.2 3.2V17" fill={isActive ? "currentColor" : "none"} />
   </svg>
 );
 
 const AppointmentsIcon = ({ isActive, className }: { isActive: boolean, className?: string }) => (
-  <svg viewBox="0 0 24 24" className={className} fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-    <rect x="3.5" y="4" width="17" height="16" rx="3" fill={isActive ? "currentColor" : "none"} />
-    <path d="M8 9.8l2.3 2.3L16 7.5" stroke={isActive ? "#fff" : "currentColor"} />
+  <svg viewBox="0 0 24 24" className={className} fill={isActive ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="8" />
+    <path d="M12 8v4l3 2" stroke={isActive ? "#fff" : "currentColor"} />
   </svg>
 );
 
