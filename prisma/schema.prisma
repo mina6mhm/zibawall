@@ -303,9 +303,10 @@ model BookingService {
 model Booking {
   id            String        @id @default(uuid())
   status        BookingStatus @default(PENDING_PAYMENT)
+  source        BookingSource @default(ONLINE)
 
-  customerId    String
-  customer      User          @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  customerId    String?
+  customer      User?         @relation(fields: [customerId], references: [id], onDelete: SetNull)
 
   salonId       String
   salon         Salon         @relation(fields: [salonId], references: [id], onDelete: Cascade)
@@ -317,19 +318,18 @@ model Booking {
   staffId       String?
   staff         Staff?           @relation(fields: [staffId], references: [id], onDelete: SetNull)
 
-  // اسنپ‌شات اطلاعات در لحظه‌ی ثبت، تا حذف بعدی دسته/سرویس/پرسنل تاریخچه را از بین نبرد
-  categoryName  String
-  serviceName   String
+  categoryName  String?
+  serviceName   String?
   durationMinutes Int
   price         Int?
   staffName     String?
 
-  date          DateTime      // فقط تاریخ روز نوبت (نیمه‌شب نرمال‌شده)
-  startTime     String        // "HH:mm"
-  endTime       String        // "HH:mm" - محاسبه‌شده از durationMinutes
+  date          DateTime
+  startTime     String
+  endTime       String
 
-  customerName  String
-  customerPhone String
+  customerName  String?
+  customerPhone String?
 
   depositAmount Int           @default(25000)
   depositStatus PaymentStatus @default(PENDING)
@@ -343,4 +343,10 @@ model Booking {
   @@index([customerId])
   @@index([staffId, date])
   @@index([status])
+}
+
+enum BookingSource {
+  ONLINE
+  MANUAL
+  BLOCKED
 }
