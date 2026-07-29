@@ -3,18 +3,19 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import {
-  Loader2, Store, Plus, Trash2, Pencil, ChevronDown, ChevronUp, Clock, Wallet,
-  Users, Layers, Eye, Edit, MapPin,
+  Loader2, Plus, Trash2, Pencil, ChevronDown, ChevronUp, Clock, Wallet,
+  Users, Layers, Calendar, ChevronRight as ChevronRightIcon, ChevronLeft as ChevronLeftIcon,
+  User, Phone, Ban,
 } from 'lucide-react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import ManualBookingModal from '@/components/business/ManualBookingModal';
 
 type BookingService = { id: string; name: string; durationMinutes: number; price: number | null };
 type StaffRef = { id: string; name: string };
 type BookingCategory = { id: string; name: string; services: BookingService[]; staff: StaffRef[] };
 type Staff = { id: string; name: string; categories: { id: string; name: string }[] };
 
-type TabKey = 'categories' | 'staff';
+type TabKey = 'categories' | 'staff' | 'bookings';
 
 export default function MySalonPage() {
   const router = useRouter();
@@ -48,6 +49,12 @@ export default function MySalonPage() {
   const [editingStaffName, setEditingStaffName] = useState('');
   const [editingStaffCategoryIds, setEditingStaffCategoryIds] = useState<string[]>([]);
 
+  // --- نوبت‌های سالن ---
+  const [bookings, setBookings] = useState<any[]>([]);
+  const [dayOffset, setDayOffset] = useState(0);
+  const [isManualModalOpen, setIsManualModalOpen] = useState(false);
+  const MAX_DAYS_FORWARD = 30;
+
   const toEnglishDigits = (value: string) => {
     const p = '۰۱۲۳۴۵۶۷۸۹';
     const a = '٠١٢٣٤٥٦٧٨٩';
@@ -77,6 +84,14 @@ export default function MySalonPage() {
     }
   }, []);
 
+  const fetchBookings = useCallback(async (phone: string) => {
+    const res = await fetch(`/api/booking?userPhone=${phone}`);
+    if (res.ok) {
+      const data = await res.json();
+      setBookings(data.bookings || []);
+    }
+  }, []);
+
   useEffect(() => {
     const init = async () => {
       const meRes = await fetch('/api/auth/me');
@@ -99,10 +114,11 @@ export default function MySalonPage() {
 
       await fetchCategories(user.phone);
       await fetchStaff(user.phone);
+      await fetchBookings(user.phone);
       setIsFetching(false);
     };
     init();
-  }, [router, fetchCategories, fetchStaff]);
+  }, [router, fetchCategories, fetchStaff, fetchBookings]);
 
   const handleToggleBooking = async () => {
     setIsTogglingBooking(true);
@@ -297,8 +313,37 @@ export default function MySalonPage() {
     }
   };
 
+  const handleCancelBooking = async (id: string) => {
+    if (!window.confirm('آیا از لغو این نوبت مطمئن هستید؟')) return;
+    try {
+      const res = await fetch(`/api/booking/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userPhone }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'خطا در لغو نوبت');
+      fetchBookings(userPhone);
+    } catch (error: any) {
+      alert(error.message || 'خطایی رخ داد.');
+    }
+  };
+
   const toggleCategoryInList = (list: string[], setList: (v: string[]) => void, categoryId: string) => {
     setList(list.includes(categoryId) ? list.filter((c) => c !== categoryId) : [...list, categoryId]);
+  };
+
+  const getDateForOffset = (offset: number) => {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    d.setDate(d.getDate() + offset);
+    return d;
+  };
+  const getDayLabel = (offset: number, date: Date) => {
+    if (offset === 0) return 'امروز';
+    if (offset === 1) return 'فردا';
+    if (offset === -1) return 'دیروز';
+    return date.toLocaleDateString('fa-IR', { weekday: 'long', day: 'numeric', month: 'long' });
   };
 
   const totalServices = categories.reduce((sum, c) => sum + c.services.length, 0);
@@ -312,38 +357,16 @@ export default function MySalonPage() {
     );
   }
 
+  const selectedDate = getDateForOffset(dayOffset);
+  const dayLabel = getDayLabel(dayOffset, selectedDate);
+  const dayBookings = bookings.filter(
+    (b) => new Date(b.date).toDateString() === selectedDate.toDateString()
+  );
+
   return (
     <div className="flex flex-col min-h-screen bg-white pb-32">
       <div className="max-w-lg mx-auto w-full px-4 pt-6">
-        {/* کارت خلاصه سالن */}
-        <div className="bg-gradient-to-br from-[#824c71] to-[#6d3f5e] rounded-3xl p-5 shadow-lg shadow-[#824c71]/20 mb-4">
-          <div className="flex items-center gap-4">
-            <div className="w-14 h-14 bg-white/15 backdrop-blur rounded-2xl flex items-center justify-center shrink-0 border border-white/20">
-              <Store className="w-6 h-6 text-white" strokeWidth={1.5} />
-            </div>
-            <div className="flex-1 min-w-0">
-              <h1 className="text-white font-bold text-base truncate">{salon.name}</h1>
-              <p className="text-white/70 text-xs flex items-center gap-1 mt-1">
-                <MapPin className="w-3 h-3" /> {salon.province}، {salon.city}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-2 gap-2.5 mb-5">
-          <Link
-            href={`/salon/${salon.id}`}
-            className="flex items-center justify-center gap-1.5 bg-[#824c71]/5 border border-[#824c71]/15 rounded-xl py-2.5 text-xs font-bold text-[#824c71]"
-          >
-            <Eye className="w-3.5 h-3.5" /> مشاهده صفحه عمومی
-          </Link>
-          <Link
-            href="/profile/business/edit"
-            className="flex items-center justify-center gap-1.5 bg-zinc-50 border border-zinc-100 rounded-xl py-2.5 text-xs font-bold text-zinc-600"
-          >
-            <Edit className="w-3.5 h-3.5" /> ویرایش اطلاعات سالن
-          </Link>
-        </div>
+        <h1 className="text-base font-bold text-zinc-900 mb-4">مدیریت نوبت‌دهی</h1>
 
         {/* روشن/خاموش کردن نوبت‌دهی */}
         <div className="border border-zinc-100 rounded-2xl p-4 mb-5">
@@ -392,6 +415,14 @@ export default function MySalonPage() {
             }`}
           >
             <Users className="w-3.5 h-3.5" /> پرسنل
+          </button>
+          <button
+            onClick={() => setActiveTab('bookings')}
+            className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl text-xs font-bold transition-colors ${
+              activeTab === 'bookings' ? 'bg-white text-[#824c71] shadow-sm' : 'text-zinc-500'
+            }`}
+          >
+            <Calendar className="w-3.5 h-3.5" /> نوبت‌های سالن
           </button>
         </div>
 
@@ -637,7 +668,79 @@ export default function MySalonPage() {
             )}
           </div>
         )}
+
+        {/* تب نوبت‌های سالن */}
+        {activeTab === 'bookings' && (
+          <div>
+            <button
+              onClick={() => setIsManualModalOpen(true)}
+              className="w-full flex items-center justify-center gap-1.5 bg-[#824c71] text-white py-2.5 rounded-xl text-xs font-bold mb-4"
+            >
+              <Plus className="w-3.5 h-3.5" /> ثبت نوبت دستی / مسدودسازی زمان
+            </button>
+
+            <div className="flex items-center justify-between bg-zinc-50 rounded-2xl p-2 mb-4">
+              <button
+                onClick={() => setDayOffset((v) => Math.max(v - 1, -7))}
+                className="w-10 h-10 flex items-center justify-center rounded-xl bg-white text-zinc-600"
+              >
+                <ChevronRightIcon className="w-5 h-5" />
+              </button>
+              <p className="text-sm font-bold text-zinc-800">{dayLabel}</p>
+              <button
+                onClick={() => setDayOffset((v) => Math.min(v + 1, MAX_DAYS_FORWARD))}
+                className="w-10 h-10 flex items-center justify-center rounded-xl bg-white text-zinc-600"
+              >
+                <ChevronLeftIcon className="w-5 h-5" />
+              </button>
+            </div>
+
+            {dayBookings.length === 0 ? (
+              <p className="text-sm text-zinc-400 text-center py-10">نوبتی برای این روز ثبت نشده است.</p>
+            ) : (
+              <div className="space-y-2.5">
+                {dayBookings.map((b) => (
+                  <div key={b.id} className="border border-zinc-100 rounded-2xl p-3.5">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm font-bold text-zinc-900">{b.startTime} - {b.endTime}</span>
+                      <span className={`text-[10px] px-2 py-1 rounded-full font-medium ${
+                        b.source === 'BLOCKED' ? 'bg-zinc-100 text-zinc-500' : b.source === 'MANUAL' ? 'bg-blue-50 text-blue-600' : 'bg-green-50 text-green-600'
+                      }`}>
+                        {b.source === 'BLOCKED' ? 'مسدود' : b.source === 'MANUAL' ? 'ثبت دستی' : 'آنلاین'}
+                      </span>
+                    </div>
+                    {b.source !== 'BLOCKED' && (
+                      <p className="text-xs text-zinc-600 mb-1">{b.categoryName} — {b.serviceName}</p>
+                    )}
+                    {b.staffName && <p className="text-[11px] text-zinc-400">پرسنل: {b.staffName}</p>}
+                    {b.customerName && (
+                      <p className="text-[11px] text-zinc-400 flex items-center gap-1 mt-1">
+                        <User className="w-3 h-3" /> {b.customerName}
+                        {b.customerPhone && <span className="flex items-center gap-1 mr-2"><Phone className="w-3 h-3" /> {b.customerPhone}</span>}
+                      </p>
+                    )}
+                    <button
+                      onClick={() => handleCancelBooking(b.id)}
+                      className="w-full mt-2.5 flex items-center justify-center gap-1.5 border border-red-100 rounded-lg py-1.5 text-xs font-bold text-red-500"
+                    >
+                      <Ban className="w-3.5 h-3.5" /> لغو
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </div>
+
+      <ManualBookingModal
+        isOpen={isManualModalOpen}
+        onClose={() => setIsManualModalOpen(false)}
+        onCreated={() => fetchBookings(userPhone)}
+        userPhone={userPhone}
+        categories={categories}
+        staffList={staffList}
+      />
     </div>
   );
 }
