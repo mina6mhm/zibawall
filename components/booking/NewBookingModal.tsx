@@ -42,11 +42,17 @@ const formatPriceDisplay = (rawDigits: string) => {
   return Number(rawDigits).toLocaleString('fa-IR');
 };
 
-// کلاس‌های مشترک برای یکسان‌سازی ارتفاع و ظاهر همه‌ی فیلدها
-const fieldBaseClass =
-  'w-full h-11 box-border border border-zinc-200 rounded-xl px-3 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-[#824c71]/40 focus:border-[#824c71]';
-const fieldSmallClass =
-  'w-full h-10 box-border border border-zinc-200 rounded-lg px-3 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-[#824c71]/40 focus:border-[#824c71]';
+// --- الگوی «باکس مالک ظاهر»: خود دیو صاحب کادر/ارتفاع/بردر است،
+// عنصر native فقط شفاف و بدون بردر داخلش قرار می‌گیرد و کل فضا رو پر می‌کنه.
+// این‌طوری هیچ فرقی نمی‌کنه داخلش input باشه یا select یا کتابخونه‌ی تاریخ،
+// ارتفاع و ظاهر بیرونی همیشه دقیقاً یکسانه.
+
+const boxClass =
+  'w-full h-11 box-border flex items-center border border-zinc-200 rounded-xl bg-white focus-within:ring-1 focus-within:ring-[#824c71]/40 focus-within:border-[#824c71] overflow-hidden';
+const boxSmallClass =
+  'w-full h-10 box-border flex items-center border border-zinc-200 rounded-lg bg-white focus-within:ring-1 focus-within:ring-[#824c71]/40 focus-within:border-[#824c71] overflow-hidden';
+const fillInputClass =
+  'w-full h-full bg-transparent outline-none border-0 px-3 text-sm';
 
 export default function NewBookingModal({ isOpen, onClose, onCreated }: NewBookingModalProps) {
   const [customerName, setCustomerName] = useState('');
@@ -195,26 +201,30 @@ export default function NewBookingModal({ isOpen, onClose, onCreated }: NewBooki
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-medium text-zinc-600 mb-1.5">نام مشتری</label>
-              <input
-                type="text"
-                value={customerName}
-                onChange={(e) => setCustomerName(e.target.value)}
-                className={fieldBaseClass}
-                placeholder="اختیاری"
-              />
+              <div className={boxClass}>
+                <input
+                  type="text"
+                  value={customerName}
+                  onChange={(e) => setCustomerName(e.target.value)}
+                  className={fillInputClass}
+                  placeholder="اختیاری"
+                />
+              </div>
             </div>
             <div>
               <label className="block text-xs font-medium text-zinc-600 mb-1.5">
                 شماره موبایل مشتری <span className="text-red-500">*</span>
               </label>
-              <input
-                type="tel"
-                inputMode="numeric"
-                value={toPersianDigits(customerPhoneDigits)}
-                onChange={(e) => handlePhoneChange(e.target.value)}
-                className={fieldBaseClass}
-                placeholder="۰۹۱۲۳۴۵۶۷۸۹"
-              />
+              <div className={boxClass}>
+                <input
+                  type="tel"
+                  inputMode="numeric"
+                  value={toPersianDigits(customerPhoneDigits)}
+                  onChange={(e) => handlePhoneChange(e.target.value)}
+                  className={fillInputClass}
+                  placeholder="۰۹۱۲۳۴۵۶۷۸۹"
+                />
+              </div>
             </div>
           </div>
 
@@ -224,27 +234,32 @@ export default function NewBookingModal({ isOpen, onClose, onCreated }: NewBooki
               <label className="block text-xs font-medium text-zinc-600 mb-1.5">
                 تاریخ نوبت <span className="text-red-500">*</span>
               </label>
-              <DatePicker
-                value={dateObj}
-                onChange={(d) => setDateObj(d as DateObject)}
-                calendar={persian}
-                locale={persian_fa}
-                calendarPosition="bottom-right"
-                inputClass={fieldBaseClass}
-                containerClassName="w-full block"
-                placeholder="انتخاب تاریخ"
-              />
+              <div className={boxClass}>
+                <DatePicker
+                  value={dateObj}
+                  onChange={(d) => setDateObj(d as DateObject)}
+                  calendar={persian}
+                  locale={persian_fa}
+                  calendarPosition="bottom-right"
+                  inputClass={`${fillInputClass} !h-full`}
+                  containerClassName="w-full h-full block"
+                  style={{ width: '100%', height: '100%' }}
+                  placeholder="انتخاب تاریخ"
+                />
+              </div>
             </div>
             <div>
               <label className="block text-xs font-medium text-zinc-600 mb-1.5">
                 ساعت نوبت <span className="text-red-500">*</span>
               </label>
-              <input
-                type="time"
-                value={startTime}
-                onChange={(e) => setStartTime(e.target.value)}
-                className={`${fieldBaseClass} leading-[2.75rem]`}
-              />
+              <div className={boxClass}>
+                <input
+                  type="time"
+                  value={startTime}
+                  onChange={(e) => setStartTime(e.target.value)}
+                  className={fillInputClass}
+                />
+              </div>
             </div>
           </div>
 
@@ -270,34 +285,38 @@ export default function NewBookingModal({ isOpen, onClose, onCreated }: NewBooki
                     <label className="block text-[11px] font-medium text-zinc-500 mb-1">
                       نام خدمت {(index + 1).toLocaleString('fa-IR')}
                     </label>
-                    <input
-                      type="text"
-                      value={service.name}
-                      onChange={(e) => updateService(index, 'name', e.target.value)}
-                      className={fieldSmallClass}
-                      placeholder="مثلاً کراتین مو"
-                    />
+                    <div className={boxSmallClass}>
+                      <input
+                        type="text"
+                        value={service.name}
+                        onChange={(e) => updateService(index, 'name', e.target.value)}
+                        className={fillInputClass}
+                        placeholder="مثلاً کراتین مو"
+                      />
+                    </div>
                   </div>
 
                   <div className="grid grid-cols-2 gap-2">
                     <div>
                       <label className="block text-[11px] font-medium text-zinc-500 mb-1">قیمت (اختیاری)</label>
-                      <input
-                        type="text"
-                        inputMode="numeric"
-                        value={formatPriceDisplay(service.priceDigits)}
-                        onChange={(e) => handleServicePriceChange(index, e.target.value)}
-                        className={fieldSmallClass}
-                        placeholder="۰"
-                      />
+                      <div className={boxSmallClass}>
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          value={formatPriceDisplay(service.priceDigits)}
+                          onChange={(e) => handleServicePriceChange(index, e.target.value)}
+                          className={fillInputClass}
+                          placeholder="۰"
+                        />
+                      </div>
                     </div>
                     <div>
                       <label className="block text-[11px] font-medium text-zinc-500 mb-1">اسم پرسنل</label>
-                      <div className="relative">
+                      <div className={`${boxSmallClass} relative`}>
                         <select
                           value={service.staffName}
                           onChange={(e) => updateService(index, 'staffName', e.target.value)}
-                          className={`${fieldSmallClass} appearance-none pr-3 pl-7`}
+                          className={`${fillInputClass} appearance-none pl-7`}
                         >
                           <option value="">بدون پرسنل مشخص</option>
                           {staffList.map((s) => (
@@ -323,14 +342,16 @@ export default function NewBookingModal({ isOpen, onClose, onCreated }: NewBooki
           {/* بیعانه */}
           <div>
             <label className="block text-xs font-medium text-zinc-600 mb-1.5">مبلغ بیعانه (تومان)</label>
-            <input
-              type="text"
-              inputMode="numeric"
-              value={formatPriceDisplay(depositDigits)}
-              onChange={(e) => handleDepositChange(e.target.value)}
-              className={fieldBaseClass}
-              placeholder="اگر بیعانه نمی‌خواهید خالی بگذارید"
-            />
+            <div className={boxClass}>
+              <input
+                type="text"
+                inputMode="numeric"
+                value={formatPriceDisplay(depositDigits)}
+                onChange={(e) => handleDepositChange(e.target.value)}
+                className={fillInputClass}
+                placeholder="اگر بیعانه نمی‌خواهید خالی بگذارید"
+              />
+            </div>
           </div>
 
           <p className="text-[11px] text-zinc-400 bg-zinc-50 rounded-lg p-2.5 leading-relaxed">
