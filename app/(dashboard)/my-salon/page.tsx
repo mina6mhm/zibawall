@@ -7,11 +7,13 @@ import Link from 'next/link';
 import {
   Plus, Loader2, Calendar, Clock, Phone, User as UserIcon,
   Scissors, Trash2, Store, Settings, Pencil, ChevronRight, ChevronLeft, CalendarDays,
+  Wallet, TrendingUp, Users,
 } from 'lucide-react';
 import DatePicker, { DateObject } from 'react-multi-date-picker';
 import persian from 'react-date-object/calendars/persian';
 import persian_fa from 'react-date-object/locales/persian_fa';
 import NewBookingModal, { BookingToEdit } from '@/components/booking/NewBookingModal';
+import StaffShareModal from '@/components/booking/StaffShareModal';
 
 type ServiceItem = { name: string; price?: number; staffName?: string; staffPercentage?: number };
 
@@ -51,6 +53,7 @@ export default function MySalonPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingBooking, setEditingBooking] = useState<BookingToEdit | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [isStaffModalOpen, setIsStaffModalOpen] = useState(false);
 
   const [selectedDate, setSelectedDate] = useState<Date>(() => toDateOnlyAnchor(new Date()));
 
@@ -173,6 +176,40 @@ export default function MySalonPage() {
         .sort((a, b) => a.startTime.localeCompare(b.startTime)),
     [bookings, selectedDateStr]
   );
+
+  type StaffShareRow = { name: string; amount: number };
+
+const dailySummary = useMemo(() => {
+  let revenue = 0;
+  let staffShareTotal = 0;
+  const staffMap: Record<string, number> = {};
+
+  dayBookings
+    .filter((b) => b.status !== 'CANCELLED')
+    .forEach((booking) => {
+      booking.services.forEach((s) => {
+        const price = s.price || 0;
+        revenue += price;
+
+        if (s.staffName && s.staffPercentage) {
+          const share = Math.round((price * s.staffPercentage) / 100);
+          staffShareTotal += share;
+          staffMap[s.staffName] = (staffMap[s.staffName] || 0) + share;
+        }
+      });
+    });
+
+  const staffBreakdown: StaffShareRow[] = Object.entries(staffMap)
+    .map(([name, amount]) => ({ name, amount }))
+    .sort((a, b) => b.amount - a.amount);
+
+  return {
+    revenue,
+    staffShareTotal,
+    netProfit: revenue - staffShareTotal,
+    staffBreakdown,
+  };
+}, [dayBookings]);
 
   if (isLoading) {
     return (
@@ -349,6 +386,47 @@ export default function MySalonPage() {
         </div>
       )}
 
+      {dayBookings.length > 0 && (
+  <div className="grid grid-cols-3 gap-2 mb-6">
+    <div className="bg-white border border-zinc-100 rounded-2xl p-3 shadow-sm shadow-zinc-200/50">
+      <div className="flex items-center gap-1.5 mb-1.5">
+        <TrendingUp className="w-3.5 h-3.5 text-emerald-600" />
+        <span className="text-[11px] font-medium text-zinc-500">درآمد کل</span>
+      </div>
+      <p className="text-sm font-bold text-zinc-800 leading-tight">
+        {formatMoney(dailySummary.revenue)}
+        <span className="text-[10px] font-medium text-zinc-400 mr-1">تومان</span>
+      </p>
+    </div>
+
+    <button
+      type="button"
+      onClick={() => setIsStaffModalOpen(true)}
+      className="bg-white border border-zinc-100 rounded-2xl p-3 shadow-sm shadow-zinc-200/50 text-right"
+    >
+      <div className="flex items-center gap-1.5 mb-1.5">
+        <Users className="w-3.5 h-3.5 text-[#824c71]" />
+        <span className="text-[11px] font-medium text-zinc-500">سهم پرسنل</span>
+      </div>
+      <p className="text-sm font-bold text-[#824c71] leading-tight underline underline-offset-2">
+        {formatMoney(dailySummary.staffShareTotal)}
+        <span className="text-[10px] font-medium text-zinc-400 mr-1">تومان</span>
+      </p>
+    </button>
+
+    <div className="bg-white border border-zinc-100 rounded-2xl p-3 shadow-sm shadow-zinc-200/50">
+      <div className="flex items-center gap-1.5 mb-1.5">
+        <Wallet className="w-3.5 h-3.5 text-amber-600" />
+        <span className="text-[11px] font-medium text-zinc-500">سود خالص</span>
+      </div>
+      <p className="text-sm font-bold text-zinc-800 leading-tight">
+        {formatMoney(dailySummary.netProfit)}
+        <span className="text-[10px] font-medium text-zinc-400 mr-1">تومان</span>
+      </p>
+    </div>
+  </div>
+)}
+
       <div className="mb-8 mt-4">
         <h2 className="text-sm font-bold text-zinc-800 mb-3">
           نوبت‌های این روز {dayBookings.length > 0 && `(${dayBookings.length.toLocaleString('fa-IR')})`}
@@ -365,11 +443,19 @@ export default function MySalonPage() {
       </div>
 
       <NewBookingModal
-        isOpen={isModalOpen}
-        onClose={handleModalClose}
-        onSaved={fetchData}
-        bookingToEdit={editingBooking}
-      />
+  isOpen={isModalOpen}
+  onClose={handleModalClose}
+  onSaved={fetchData}
+  bookingToEdit={editingBooking}
+/>
+
+<StaffShareModal
+  isOpen={isStaffModalOpen}
+  onClose={() => setIsStaffModalOpen(false)}
+  staffBreakdown={dailySummary.staffBreakdown}
+  total={dailySummary.staffShareTotal}
+  dayLabel={dayLabel}
+/>
     </div>
   );
 }
