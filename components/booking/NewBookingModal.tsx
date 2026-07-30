@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { X, Plus, Trash2, Loader2 } from 'lucide-react';
+import { X, Plus, Trash2, Loader2, ChevronDown } from 'lucide-react';
 import DatePicker, { DateObject } from 'react-multi-date-picker';
 import persian from 'react-date-object/calendars/persian';
 import persian_fa from 'react-date-object/locales/persian_fa';
@@ -41,6 +41,12 @@ const formatPriceDisplay = (rawDigits: string) => {
   if (!rawDigits) return '';
   return Number(rawDigits).toLocaleString('fa-IR');
 };
+
+// کلاس‌های مشترک برای یکسان‌سازی ارتفاع و ظاهر همه‌ی فیلدها
+const fieldBaseClass =
+  'w-full h-11 box-border border border-zinc-200 rounded-xl px-3 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-[#824c71]/40 focus:border-[#824c71]';
+const fieldSmallClass =
+  'w-full h-10 box-border border border-zinc-200 rounded-lg px-3 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-[#824c71]/40 focus:border-[#824c71]';
 
 export default function NewBookingModal({ isOpen, onClose, onCreated }: NewBookingModalProps) {
   const [customerName, setCustomerName] = useState('');
@@ -193,7 +199,7 @@ export default function NewBookingModal({ isOpen, onClose, onCreated }: NewBooki
                 type="text"
                 value={customerName}
                 onChange={(e) => setCustomerName(e.target.value)}
-                className="w-full border border-zinc-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-[#824c71]/40 focus:border-[#824c71]"
+                className={fieldBaseClass}
                 placeholder="اختیاری"
               />
             </div>
@@ -206,7 +212,7 @@ export default function NewBookingModal({ isOpen, onClose, onCreated }: NewBooki
                 inputMode="numeric"
                 value={toPersianDigits(customerPhoneDigits)}
                 onChange={(e) => handlePhoneChange(e.target.value)}
-                className="w-full border border-zinc-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-[#824c71]/40 focus:border-[#824c71]"
+                className={fieldBaseClass}
                 placeholder="۰۹۱۲۳۴۵۶۷۸۹"
               />
             </div>
@@ -224,8 +230,8 @@ export default function NewBookingModal({ isOpen, onClose, onCreated }: NewBooki
                 calendar={persian}
                 locale={persian_fa}
                 calendarPosition="bottom-right"
-                inputClass="w-full border border-zinc-200 rounded-xl px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-[#824c71]/40 focus:border-[#824c71]"
-                containerClassName="w-full"
+                inputClass={fieldBaseClass}
+                containerClassName="w-full block"
                 placeholder="انتخاب تاریخ"
               />
             </div>
@@ -237,7 +243,7 @@ export default function NewBookingModal({ isOpen, onClose, onCreated }: NewBooki
                 type="time"
                 value={startTime}
                 onChange={(e) => setStartTime(e.target.value)}
-                className="w-full border border-zinc-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-[#824c71]/40 focus:border-[#824c71]"
+                className={`${fieldBaseClass} leading-[2.75rem]`}
               />
             </div>
           </div>
@@ -268,7 +274,7 @@ export default function NewBookingModal({ isOpen, onClose, onCreated }: NewBooki
                       type="text"
                       value={service.name}
                       onChange={(e) => updateService(index, 'name', e.target.value)}
-                      className="w-full border border-zinc-200 rounded-lg px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-[#824c71]/40 focus:border-[#824c71]"
+                      className={fieldSmallClass}
                       placeholder="مثلاً کراتین مو"
                     />
                   </div>
@@ -281,22 +287,25 @@ export default function NewBookingModal({ isOpen, onClose, onCreated }: NewBooki
                         inputMode="numeric"
                         value={formatPriceDisplay(service.priceDigits)}
                         onChange={(e) => handleServicePriceChange(index, e.target.value)}
-                        className="w-full border border-zinc-200 rounded-lg px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-[#824c71]/40 focus:border-[#824c71]"
+                        className={fieldSmallClass}
                         placeholder="۰"
                       />
                     </div>
                     <div>
                       <label className="block text-[11px] font-medium text-zinc-500 mb-1">اسم پرسنل</label>
-                      <select
-                        value={service.staffName}
-                        onChange={(e) => updateService(index, 'staffName', e.target.value)}
-                        className="w-full border border-zinc-200 rounded-lg px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-[#824c71]/40 focus:border-[#824c71]"
-                      >
-                        <option value="">بدون پرسنل مشخص</option>
-                        {staffList.map((s) => (
-                          <option key={s.id} value={s.name}>{s.name}</option>
-                        ))}
-                      </select>
+                      <div className="relative">
+                        <select
+                          value={service.staffName}
+                          onChange={(e) => updateService(index, 'staffName', e.target.value)}
+                          className={`${fieldSmallClass} appearance-none pr-3 pl-7`}
+                        >
+                          <option value="">بدون پرسنل مشخص</option>
+                          {staffList.map((s) => (
+                            <option key={s.id} value={s.name}>{s.name}</option>
+                          ))}
+                        </select>
+                        <ChevronDown className="w-3.5 h-3.5 text-zinc-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -319,7 +328,7 @@ export default function NewBookingModal({ isOpen, onClose, onCreated }: NewBooki
               inputMode="numeric"
               value={formatPriceDisplay(depositDigits)}
               onChange={(e) => handleDepositChange(e.target.value)}
-              className="w-full border border-zinc-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-[#824c71]/40 focus:border-[#824c71]"
+              className={fieldBaseClass}
               placeholder="اگر بیعانه نمی‌خواهید خالی بگذارید"
             />
           </div>
