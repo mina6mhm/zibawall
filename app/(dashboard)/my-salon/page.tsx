@@ -318,6 +318,8 @@ export default function MySalonPage() {
           calendar={persian}
           locale={persian_fa}
           calendarPosition="bottom-center"
+          className="salon-datepicker"
+          containerClassName="flex-1"
           render={(_value, openCalendar) => (
             <button
               type="button"

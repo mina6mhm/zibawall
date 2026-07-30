@@ -410,7 +410,7 @@ export default function NewBookingModal({ isOpen, onClose, onSaved, bookingToEdi
                         <ChevronDown className="w-3.5 h-3.5 text-zinc-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
                       </div>
                     </div>
-                    <div className="w-24 shrink-0">
+                    <div className="w-28 shrink-0">
                       <label className="block text-[11px] font-medium text-zinc-500 mb-1">درصد پرسنل</label>
                       <div className={boxSmallClass}>
                         <input
