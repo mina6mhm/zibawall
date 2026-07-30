@@ -3,10 +3,14 @@
 
 import { useState } from 'react';
 import { X, Plus, Trash2, Loader2 } from 'lucide-react';
+import DatePicker, { DateObject } from 'react-multi-date-picker';
+import persian from 'react-date-object/calendars/persian';
+import persian_fa from 'react-date-object/locales/persian_fa';
 
 type ServiceRow = {
   name: string;
-  price: string; // به‌صورت رشته نگه داشته میشه تا ورودی فرم راحت‌تر مدیریت بشه
+  priceDigits: string; // فقط ارقام انگلیسی خام، برای نمایش به فارسی و با جداکننده هزارگان تبدیل می‌شود
+  staffName: string;
 };
 
 type NewBookingModalProps = {
@@ -15,31 +19,45 @@ type NewBookingModalProps = {
   onCreated: () => void;
 };
 
+const emptyService = (): ServiceRow => ({ name: '', priceDigits: '', staffName: '' });
+
+// هر رقم فارسی/عربی ورودی رو به انگلیسی تبدیل می‌کنه (برای اعتبارسنجی و ارسال به سرور)
+const toEnglishDigits = (str: string) =>
+  str
+    .replace(/[۰-۹]/g, (d) => String(d.charCodeAt(0) - '۰'.charCodeAt(0)))
+    .replace(/[٠-٩]/g, (d) => String(d.charCodeAt(0) - '٠'.charCodeAt(0)));
+
+// هر رقم انگلیسی رو برای نمایش به کاربر به فارسی تبدیل می‌کنه
+const toPersianDigits = (str: string) =>
+  str.replace(/[0-9]/g, (d) => '۰۱۲۳۴۵۶۷۸۹'[Number(d)]);
+
+// فقط ارقام رو نگه می‌داره (بعد از تبدیل به انگلیسی) — برای ذخیره در state
+const sanitizeDigitsOnly = (value: string) => toEnglishDigits(value).replace(/[^0-9]/g, '');
+
+// نمایش یک رشته رقمی خام با جداکننده‌ی هزارگان فارسی، مثلاً "800000" -> "۸۰۰٬۰۰۰"
+const formatPriceDisplay = (rawDigits: string) => {
+  if (!rawDigits) return '';
+  return Number(rawDigits).toLocaleString('fa-IR');
+};
+
 export default function NewBookingModal({ isOpen, onClose, onCreated }: NewBookingModalProps) {
   const [customerName, setCustomerName] = useState('');
-  const [customerPhone, setCustomerPhone] = useState('');
-  const [date, setDate] = useState('');
+  const [customerPhoneDigits, setCustomerPhoneDigits] = useState('');
+  const [dateObj, setDateObj] = useState<DateObject | null>(null);
   const [startTime, setStartTime] = useState('');
-  const [staffName, setStaffName] = useState('');
-  const [depositAmount, setDepositAmount] = useState('');
-  const [services, setServices] = useState<ServiceRow[]>([{ name: '', price: '' }]);
+  const [depositDigits, setDepositDigits] = useState('');
+  const [services, setServices] = useState<ServiceRow[]>([emptyService()]);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
 
-  const toEnglishDigits = (str: string) =>
-    str
-      .replace(/[۰-۹]/g, (d) => String(d.charCodeAt(0) - '۰'.charCodeAt(0)))
-      .replace(/[٠-٩]/g, (d) => String(d.charCodeAt(0) - '٠'.charCodeAt(0)));
-
   const resetForm = () => {
     setCustomerName('');
-    setCustomerPhone('');
-    setDate('');
+    setCustomerPhoneDigits('');
+    setDateObj(null);
     setStartTime('');
-    setStaffName('');
-    setDepositAmount('');
-    setServices([{ name: '', price: '' }]);
+    setDepositDigits('');
+    setServices([emptyService()]);
     setError('');
   };
 
@@ -48,7 +66,15 @@ export default function NewBookingModal({ isOpen, onClose, onCreated }: NewBooki
     onClose();
   };
 
-  const handleServiceChange = (index: number, field: 'name' | 'price', value: string) => {
+  const handlePhoneChange = (value: string) => {
+    setCustomerPhoneDigits(sanitizeDigitsOnly(value).slice(0, 11));
+  };
+
+  const handleDepositChange = (value: string) => {
+    setDepositDigits(sanitizeDigitsOnly(value));
+  };
+
+  const updateService = (index: number, field: keyof ServiceRow, value: string) => {
     setServices((prev) => {
       const updated = [...prev];
       updated[index] = { ...updated[index], [field]: value };
@@ -56,7 +82,11 @@ export default function NewBookingModal({ isOpen, onClose, onCreated }: NewBooki
     });
   };
 
-  const addServiceRow = () => setServices((prev) => [...prev, { name: '', price: '' }]);
+  const handleServicePriceChange = (index: number, value: string) => {
+    updateService(index, 'priceDigits', sanitizeDigitsOnly(value));
+  };
+
+  const addServiceRow = () => setServices((prev) => [...prev, emptyService()]);
 
   const removeServiceRow = (index: number) => {
     setServices((prev) => (prev.length > 1 ? prev.filter((_, i) => i !== index) : prev));
@@ -65,15 +95,13 @@ export default function NewBookingModal({ isOpen, onClose, onCreated }: NewBooki
   const handleSubmit = async () => {
     setError('');
 
-    const normalizedPhone = toEnglishDigits(customerPhone.trim());
     const mobileRegex = /^09\d{9}$/;
-
-    if (!mobileRegex.test(normalizedPhone)) {
+    if (!mobileRegex.test(customerPhoneDigits)) {
       setError('شماره موبایل مشتری معتبر نیست (مثال: 09123456789)');
       return;
     }
 
-    if (!date || !startTime) {
+    if (!dateObj || !startTime) {
       setError('لطفاً تاریخ و ساعت نوبت را وارد کنید');
       return;
     }
@@ -81,7 +109,8 @@ export default function NewBookingModal({ isOpen, onClose, onCreated }: NewBooki
     const cleanedServices = services
       .map((s) => ({
         name: s.name.trim(),
-        price: s.price.trim() ? Number(toEnglishDigits(s.price.trim())) : undefined,
+        price: s.priceDigits ? Number(s.priceDigits) : undefined,
+        staffName: s.staffName.trim() || undefined,
       }))
       .filter((s) => s.name !== '');
 
@@ -93,17 +122,18 @@ export default function NewBookingModal({ isOpen, onClose, onCreated }: NewBooki
     try {
       setIsSubmitting(true);
 
+      const gregorianDate = dateObj.toDate();
+
       const res = await fetch('/api/booking', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           customerName: customerName.trim() || undefined,
-          customerPhone: normalizedPhone,
-          date,
+          customerPhone: customerPhoneDigits,
+          date: gregorianDate.toISOString(),
           startTime,
           services: cleanedServices,
-          staffName: staffName.trim() || undefined,
-          depositAmount: depositAmount.trim() ? Number(toEnglishDigits(depositAmount.trim())) : 0,
+          depositAmount: depositDigits ? Number(depositDigits) : 0,
         }),
       });
 
@@ -162,11 +192,11 @@ export default function NewBookingModal({ isOpen, onClose, onCreated }: NewBooki
               </label>
               <input
                 type="tel"
-                dir="ltr"
-                value={customerPhone}
-                onChange={(e) => setCustomerPhone(e.target.value)}
-                className="w-full border border-zinc-200 rounded-xl px-3 py-2.5 text-sm text-left focus:outline-none focus:ring-1 focus:ring-[#824c71]/40 focus:border-[#824c71]"
-                placeholder="09123456789"
+                inputMode="numeric"
+                value={toPersianDigits(customerPhoneDigits)}
+                onChange={(e) => handlePhoneChange(e.target.value)}
+                className="w-full border border-zinc-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-[#824c71]/40 focus:border-[#824c71]"
+                placeholder="۰۹۱۲۳۴۵۶۷۸۹"
               />
             </div>
           </div>
@@ -177,11 +207,15 @@ export default function NewBookingModal({ isOpen, onClose, onCreated }: NewBooki
               <label className="block text-xs font-medium text-zinc-600 mb-1.5">
                 تاریخ نوبت <span className="text-red-500">*</span>
               </label>
-              <input
-                type="date"
-                value={date}
-                onChange={(e) => setDate(e.target.value)}
-                className="w-full border border-zinc-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-[#824c71]/40 focus:border-[#824c71]"
+              <DatePicker
+                value={dateObj}
+                onChange={(d) => setDateObj(d as DateObject)}
+                calendar={persian}
+                locale={persian_fa}
+                calendarPosition="bottom-right"
+                inputClass="w-full border border-zinc-200 rounded-xl px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-[#824c71]/40 focus:border-[#824c71]"
+                containerClassName="w-full"
+                placeholder="انتخاب تاریخ"
               />
             </div>
             <div>
@@ -197,75 +231,83 @@ export default function NewBookingModal({ isOpen, onClose, onCreated }: NewBooki
             </div>
           </div>
 
-          {/* خدمات */}
+          {/* خدمات — برای هرکدوم اسم پرسنل جدا */}
           <div>
             <label className="block text-xs font-medium text-zinc-600 mb-1.5">
               خدمات <span className="text-red-500">*</span>
             </label>
-            <div className="space-y-2">
+            <div className="space-y-2.5">
               {services.map((service, index) => (
-                <div key={index} className="flex items-center gap-2">
-                  <input
-                    type="text"
-                    value={service.name}
-                    onChange={(e) => handleServiceChange(index, 'name', e.target.value)}
-                    className="flex-1 border border-zinc-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-[#824c71]/40 focus:border-[#824c71]"
-                    placeholder="نام خدمت (مثلاً کراتین مو)"
-                  />
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    value={service.price}
-                    onChange={(e) => handleServiceChange(index, 'price', e.target.value)}
-                    className="w-28 border border-zinc-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-[#824c71]/40 focus:border-[#824c71]"
-                    placeholder="قیمت (اختیاری)"
-                  />
+                <div key={index} className="relative border border-zinc-200 rounded-xl p-3 space-y-2.5 bg-zinc-50/40">
                   {services.length > 1 && (
                     <button
                       type="button"
                       onClick={() => removeServiceRow(index)}
-                      className="shrink-0 w-9 h-9 flex items-center justify-center rounded-xl bg-red-50 text-red-500"
+                      className="absolute top-2.5 left-2.5 w-7 h-7 flex items-center justify-center rounded-lg bg-red-50 text-red-500"
                     >
-                      <Trash2 className="w-4 h-4" />
+                      <Trash2 className="w-3.5 h-3.5" />
                     </button>
                   )}
+
+                  <div className="pl-9">
+                    <label className="block text-[11px] font-medium text-zinc-500 mb-1">
+                      نام خدمت {(index + 1).toLocaleString('fa-IR')}
+                    </label>
+                    <input
+                      type="text"
+                      value={service.name}
+                      onChange={(e) => updateService(index, 'name', e.target.value)}
+                      className="w-full border border-zinc-200 rounded-lg px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-[#824c71]/40 focus:border-[#824c71]"
+                      placeholder="مثلاً کراتین مو"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="block text-[11px] font-medium text-zinc-500 mb-1">قیمت (اختیاری)</label>
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        value={formatPriceDisplay(service.priceDigits)}
+                        onChange={(e) => handleServicePriceChange(index, e.target.value)}
+                        className="w-full border border-zinc-200 rounded-lg px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-[#824c71]/40 focus:border-[#824c71]"
+                        placeholder="۰"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-medium text-zinc-500 mb-1">اسم پرسنل</label>
+                      <input
+                        type="text"
+                        value={service.staffName}
+                        onChange={(e) => updateService(index, 'staffName', e.target.value)}
+                        className="w-full border border-zinc-200 rounded-lg px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-[#824c71]/40 focus:border-[#824c71]"
+                        placeholder="اختیاری"
+                      />
+                    </div>
+                  </div>
                 </div>
               ))}
             </div>
             <button
               type="button"
               onClick={addServiceRow}
-              className="mt-2 flex items-center gap-1.5 text-xs font-medium text-[#824c71]"
+              className="mt-2.5 flex items-center gap-1.5 text-xs font-medium text-[#824c71]"
             >
               <Plus className="w-3.5 h-3.5" /> افزودن خدمت دیگر
             </button>
           </div>
 
-          {/* پرسنل و بیعانه */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs font-medium text-zinc-600 mb-1.5">اسم پرسنل</label>
-              <input
-                type="text"
-                value={staffName}
-                onChange={(e) => setStaffName(e.target.value)}
-                className="w-full border border-zinc-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-[#824c71]/40 focus:border-[#824c71]"
-                placeholder="اختیاری"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-zinc-600 mb-1.5">
-                مبلغ بیعانه (تومان)
-              </label>
-              <input
-                type="text"
-                inputMode="numeric"
-                value={depositAmount}
-                onChange={(e) => setDepositAmount(e.target.value)}
-                className="w-full border border-zinc-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-[#824c71]/40 focus:border-[#824c71]"
-                placeholder="اگر بیعانه نمی‌خواهید خالی بگذارید"
-              />
-            </div>
+          {/* بیعانه */}
+          <div>
+            <label className="block text-xs font-medium text-zinc-600 mb-1.5">مبلغ بیعانه (تومان)</label>
+            <input
+              type="text"
+              inputMode="numeric"
+              value={formatPriceDisplay(depositDigits)}
+              onChange={(e) => handleDepositChange(e.target.value)}
+              className="w-full border border-zinc-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-[#824c71]/40 focus:border-[#824c71]"
+              placeholder="اگر بیعانه نمی‌خواهید خالی بگذارید"
+            />
           </div>
 
           <p className="text-[11px] text-zinc-400 bg-zinc-50 rounded-lg p-2.5 leading-relaxed">
