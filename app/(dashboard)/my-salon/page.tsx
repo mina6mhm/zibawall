@@ -256,7 +256,7 @@ export default function MySalonPage() {
       <NewBookingModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        onCreated={fetchData}
+        onSaved={fetchData}
       />
     </div>
   );

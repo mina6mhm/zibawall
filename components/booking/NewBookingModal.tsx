@@ -9,52 +9,55 @@ import persian_fa from 'react-date-object/locales/persian_fa';
 
 type ServiceRow = {
   name: string;
-  priceDigits: string; // فقط ارقام انگلیسی خام، برای نمایش به فارسی و با جداکننده هزارگان تبدیل می‌شود
+  priceDigits: string;
   staffName: string;
 };
 
 type StaffMember = { id: string; name: string };
 
+// شکل داده‌ای که برای ویرایش از صفحه‌ی سالن من پاس داده می‌شود
+export type BookingToEdit = {
+  id: string;
+  customerName: string | null;
+  customerPhone: string;
+  date: string; // ISO
+  startTime: string;
+  services: { name: string; price?: number; staffName?: string }[];
+  depositAmount: number;
+};
+
 type NewBookingModalProps = {
   isOpen: boolean;
   onClose: () => void;
-  onCreated: () => void;
+  onSaved: () => void;
+  bookingToEdit?: BookingToEdit | null;
 };
 
 const emptyService = (): ServiceRow => ({ name: '', priceDigits: '', staffName: '' });
 
-// هر رقم فارسی/عربی ورودی رو به انگلیسی تبدیل می‌کنه (برای اعتبارسنجی و ارسال به سرور)
 const toEnglishDigits = (str: string) =>
   str
     .replace(/[۰-۹]/g, (d) => String(d.charCodeAt(0) - '۰'.charCodeAt(0)))
     .replace(/[٠-٩]/g, (d) => String(d.charCodeAt(0) - '٠'.charCodeAt(0)));
 
-// هر رقم انگلیسی رو برای نمایش به کاربر به فارسی تبدیل می‌کنه
-const toPersianDigits = (str: string) =>
-  str.replace(/[0-9]/g, (d) => '۰۱۲۳۴۵۶۷۸۹'[Number(d)]);
+const toPersianDigits = (str: string) => str.replace(/[0-9]/g, (d) => '۰۱۲۳۴۵۶۷۸۹'[Number(d)]);
 
-// فقط ارقام رو نگه می‌داره (بعد از تبدیل به انگلیسی) — برای ذخیره در state
 const sanitizeDigitsOnly = (value: string) => toEnglishDigits(value).replace(/[^0-9]/g, '');
 
-// نمایش یک رشته رقمی خام با جداکننده‌ی هزارگان فارسی، مثلاً "800000" -> "۸۰۰٬۰۰۰"
 const formatPriceDisplay = (rawDigits: string) => {
   if (!rawDigits) return '';
   return Number(rawDigits).toLocaleString('fa-IR');
 };
 
-// --- الگوی «باکس مالک ظاهر»: خود دیو صاحب کادر/ارتفاع/بردر است،
-// عنصر native فقط شفاف و بدون بردر داخلش قرار می‌گیرد و کل فضا رو پر می‌کنه.
-// این‌طوری هیچ فرقی نمی‌کنه داخلش input باشه یا select یا کتابخونه‌ی تاریخ،
-// ارتفاع و ظاهر بیرونی همیشه دقیقاً یکسانه.
-
 const boxClass =
   'w-full h-11 box-border flex items-center border border-zinc-200 rounded-xl bg-white focus-within:ring-1 focus-within:ring-[#824c71]/40 focus-within:border-[#824c71] overflow-hidden';
 const boxSmallClass =
   'w-full h-10 box-border flex items-center border border-zinc-200 rounded-lg bg-white focus-within:ring-1 focus-within:ring-[#824c71]/40 focus-within:border-[#824c71] overflow-hidden';
-const fillInputClass =
-  'w-full h-full bg-transparent outline-none border-0 px-3 text-sm';
+const fillInputClass = 'w-full h-full bg-transparent outline-none border-0 px-3 text-sm';
 
-export default function NewBookingModal({ isOpen, onClose, onCreated }: NewBookingModalProps) {
+export default function NewBookingModal({ isOpen, onClose, onSaved, bookingToEdit }: NewBookingModalProps) {
+  const isEditMode = !!bookingToEdit;
+
   const [customerName, setCustomerName] = useState('');
   const [customerPhoneDigits, setCustomerPhoneDigits] = useState('');
   const [dateObj, setDateObj] = useState<DateObject | null>(null);
@@ -73,6 +76,31 @@ export default function NewBookingModal({ isOpen, onClose, onCreated }: NewBooki
       .then((data) => setStaffList(data.staff || []))
       .catch(() => setStaffList([]));
   }, [isOpen]);
+
+  // پر کردن فرم با داده‌ی نوبت هنگام باز شدن در حالت ویرایش
+  useEffect(() => {
+    if (!isOpen) return;
+
+    if (bookingToEdit) {
+      setCustomerName(bookingToEdit.customerName || '');
+      setCustomerPhoneDigits(bookingToEdit.customerPhone || '');
+      setDateObj(new DateObject({ date: new Date(bookingToEdit.date), calendar: persian, locale: persian_fa }));
+      setStartTime(bookingToEdit.startTime || '');
+      setDepositDigits(bookingToEdit.depositAmount ? String(bookingToEdit.depositAmount) : '');
+      setServices(
+        bookingToEdit.services.length > 0
+          ? bookingToEdit.services.map((s) => ({
+              name: s.name,
+              priceDigits: s.price ? String(s.price) : '',
+              staffName: s.staffName || '',
+            }))
+          : [emptyService()]
+      );
+    } else {
+      resetForm();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, bookingToEdit]);
 
   const resetForm = () => {
     setCustomerName('');
@@ -146,19 +174,26 @@ export default function NewBookingModal({ isOpen, onClose, onCreated }: NewBooki
       setIsSubmitting(true);
 
       const gregorianDate = dateObj.toDate();
+      const payload = {
+        customerName: customerName.trim() || undefined,
+        customerPhone: customerPhoneDigits,
+        date: gregorianDate.toISOString(),
+        startTime,
+        services: cleanedServices,
+        depositAmount: depositDigits ? Number(depositDigits) : 0,
+      };
 
-      const res = await fetch('/api/booking', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          customerName: customerName.trim() || undefined,
-          customerPhone: customerPhoneDigits,
-          date: gregorianDate.toISOString(),
-          startTime,
-          services: cleanedServices,
-          depositAmount: depositDigits ? Number(depositDigits) : 0,
-        }),
-      });
+      const res = isEditMode
+        ? await fetch(`/api/booking?id=${bookingToEdit!.id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          })
+        : await fetch('/api/booking', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          });
 
       const data = await res.json();
 
@@ -168,7 +203,7 @@ export default function NewBookingModal({ isOpen, onClose, onCreated }: NewBooki
       }
 
       resetForm();
-      onCreated();
+      onSaved();
       onClose();
     } catch {
       setError('خطای ارتباط با سرور');
@@ -190,14 +225,15 @@ export default function NewBookingModal({ isOpen, onClose, onCreated }: NewBooki
         dir="rtl"
       >
         <div className="flex justify-between items-center mb-5">
-          <h3 className="text-base font-bold text-zinc-900">ثبت نوبت جدید</h3>
+          <h3 className="text-base font-bold text-zinc-900">
+            {isEditMode ? 'ویرایش نوبت' : 'ثبت نوبت جدید'}
+          </h3>
           <button onClick={handleClose} className="p-1.5 text-zinc-400 bg-zinc-50 rounded-full">
             <X className="w-5 h-5" />
           </button>
         </div>
 
         <div className="space-y-4">
-          {/* نام و شماره مشتری */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-medium text-zinc-600 mb-1.5">نام مشتری</label>
@@ -228,7 +264,6 @@ export default function NewBookingModal({ isOpen, onClose, onCreated }: NewBooki
             </div>
           </div>
 
-          {/* تاریخ و ساعت */}
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-medium text-zinc-600 mb-1.5">
@@ -263,7 +298,6 @@ export default function NewBookingModal({ isOpen, onClose, onCreated }: NewBooki
             </div>
           </div>
 
-          {/* خدمات — برای هرکدوم اسم پرسنل جدا */}
           <div>
             <label className="block text-xs font-medium text-zinc-600 mb-1.5">
               خدمات <span className="text-red-500">*</span>
@@ -339,7 +373,6 @@ export default function NewBookingModal({ isOpen, onClose, onCreated }: NewBooki
             </button>
           </div>
 
-          {/* بیعانه */}
           <div>
             <label className="block text-xs font-medium text-zinc-600 mb-1.5">مبلغ بیعانه (تومان)</label>
             <div className={boxClass}>
@@ -367,7 +400,9 @@ export default function NewBookingModal({ isOpen, onClose, onCreated }: NewBooki
             className="w-full bg-[#824c71] hover:bg-[#6d3f5e] text-white rounded-xl py-3 text-sm font-bold transition-colors disabled:opacity-60 flex items-center justify-center gap-2"
           >
             {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
-            {isSubmitting ? 'در حال ثبت...' : 'ثبت نوبت'}
+            {isSubmitting
+              ? isEditMode ? 'در حال ذخیره...' : 'در حال ثبت...'
+              : isEditMode ? 'ذخیره تغییرات' : 'ثبت نوبت'}
           </button>
         </div>
       </div>
