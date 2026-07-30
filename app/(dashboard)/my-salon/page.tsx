@@ -1,16 +1,19 @@
 // app/(dashboard)/my-salon/page.tsx
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
   Plus, Loader2, Calendar, Clock, Phone, User as UserIcon,
-  Scissors, Trash2, Store, Settings, Pencil,
+  Scissors, Trash2, Store, Settings, Pencil, ChevronRight, ChevronLeft, CalendarDays,
 } from 'lucide-react';
+import DatePicker, { DateObject } from 'react-multi-date-picker';
+import persian from 'react-date-object/calendars/persian';
+import persian_fa from 'react-date-object/locales/persian_fa';
 import NewBookingModal, { BookingToEdit } from '@/components/booking/NewBookingModal';
 
-type ServiceItem = { name: string; price?: number; staffName?: string };
+type ServiceItem = { name: string; price?: number; staffName?: string; staffPercentage?: number };
 
 type Booking = {
   id: string;
@@ -33,6 +36,11 @@ const STATUS_LABELS: Record<Booking['status'], { label: string; className: strin
   CANCELLED: { label: 'لغو شده', className: 'bg-zinc-100 text-zinc-500' },
 };
 
+// یک روز را به شکل «لنگرِ» تاریخ بدون ساعت در می‌آوریم — دقیقاً هم‌روش با
+// روشی که NewBookingModal برای ساخت booking.date استفاده می‌کند (toISOString سپس اسلایس)
+// تا مقایسه‌ی تاریخ‌ها همیشه با داده‌ی ذخیره‌شده در دیتابیس یکی در بیاید.
+const toDateOnlyAnchor = (d: Date) => new Date(d.toISOString().slice(0, 10));
+
 export default function MySalonPage() {
   const router = useRouter();
 
@@ -43,6 +51,8 @@ export default function MySalonPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingBooking, setEditingBooking] = useState<BookingToEdit | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  const [selectedDate, setSelectedDate] = useState<Date>(() => toDateOnlyAnchor(new Date()));
 
   const fetchData = useCallback(async () => {
     try {
@@ -123,15 +133,46 @@ export default function MySalonPage() {
 
   const formatMoney = (amount: number) => amount.toLocaleString('fa-IR');
 
-  const todayStr = new Date().toISOString().slice(0, 10);
+  const goToPrevDay = () => {
+    setSelectedDate((prev) => {
+      const d = new Date(prev);
+      d.setUTCDate(d.getUTCDate() - 1);
+      return d;
+    });
+  };
 
-  const upcomingBookings = bookings
-    .filter((b) => b.status !== 'CANCELLED' && b.date.slice(0, 10) >= todayStr)
-    .sort((a, b) => (a.date + a.startTime).localeCompare(b.date + b.startTime));
+  const goToNextDay = () => {
+    setSelectedDate((prev) => {
+      const d = new Date(prev);
+      d.setUTCDate(d.getUTCDate() + 1);
+      return d;
+    });
+  };
 
-  const pastBookings = bookings
-    .filter((b) => b.status === 'CANCELLED' || b.date.slice(0, 10) < todayStr)
-    .sort((a, b) => (b.date + b.startTime).localeCompare(a.date + a.startTime));
+  const goToToday = () => setSelectedDate(toDateOnlyAnchor(new Date()));
+
+  const handleJumpToDate = (d: DateObject) => {
+    setSelectedDate(toDateOnlyAnchor(d.toDate()));
+  };
+
+  const selectedDateStr = selectedDate.toISOString().slice(0, 10);
+  const todayStr = toDateOnlyAnchor(new Date()).toISOString().slice(0, 10);
+  const isToday = selectedDateStr === todayStr;
+
+  const dayLabel = selectedDate.toLocaleDateString('fa-IR', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  });
+
+  const dayBookings = useMemo(
+    () =>
+      bookings
+        .filter((b) => b.date.slice(0, 10) === selectedDateStr)
+        .sort((a, b) => a.startTime.localeCompare(b.startTime)),
+    [bookings, selectedDateStr]
+  );
 
   if (isLoading) {
     return (
@@ -184,12 +225,6 @@ export default function MySalonPage() {
             <Clock className="w-3.5 h-3.5 text-zinc-400" />
             <span dir="ltr">{booking.startTime}</span>
           </div>
-          {booking.staffName && (
-            <div className="flex items-center gap-1.5">
-              <UserIcon className="w-3.5 h-3.5 text-zinc-400" />
-              <span>پرسنل: {booking.staffName}</span>
-            </div>
-          )}
         </div>
 
         <div className="bg-zinc-50 rounded-xl p-3 mb-3">
@@ -202,6 +237,8 @@ export default function MySalonPage() {
               <span key={idx} className="bg-white px-2 py-1 rounded-md text-[11px] text-zinc-600 border border-zinc-100">
                 {s.name}
                 {s.price ? ` · ${formatMoney(s.price)} تومان` : ''}
+                {s.staffName ? ` · ${s.staffName}` : ''}
+                {s.staffPercentage ? ` (${s.staffPercentage.toLocaleString('fa-IR')}٪)` : ''}
               </span>
             ))}
           </div>
@@ -263,29 +300,67 @@ export default function MySalonPage() {
         ثبت نوبت جدید
       </button>
 
-      <div className="mb-8">
+      {/* ناوبری روز: قبل / انتخاب تاریخ (برای پرش به روزهای دور) / بعد */}
+      <div className="flex items-center gap-2 mb-2">
+        <button
+          onClick={goToPrevDay}
+          aria-label="روز قبل"
+          className="w-11 h-11 flex items-center justify-center rounded-xl bg-zinc-100 text-zinc-600 hover:bg-zinc-200 transition shrink-0"
+        >
+          <ChevronRight className="w-5 h-5" />
+        </button>
+
+        <DatePicker
+          value={new DateObject({ date: selectedDate, calendar: persian, locale: persian_fa })}
+          onChange={(d) => {
+            if (d) handleJumpToDate(d as DateObject);
+          }}
+          calendar={persian}
+          locale={persian_fa}
+          calendarPosition="bottom-center"
+          render={(_value, openCalendar) => (
+            <button
+              type="button"
+              onClick={openCalendar}
+              className="w-full h-11 flex items-center justify-center gap-2 rounded-xl bg-white border border-zinc-200 px-2"
+            >
+              <CalendarDays className="w-4 h-4 text-[#824c71] shrink-0" />
+              <span className="text-xs sm:text-sm font-bold text-zinc-800 truncate">{dayLabel}</span>
+            </button>
+          )}
+        />
+
+        <button
+          onClick={goToNextDay}
+          aria-label="روز بعد"
+          className="w-11 h-11 flex items-center justify-center rounded-xl bg-zinc-100 text-zinc-600 hover:bg-zinc-200 transition shrink-0"
+        >
+          <ChevronLeft className="w-5 h-5" />
+        </button>
+      </div>
+
+      {!isToday && (
+        <div className="mb-4">
+          <button onClick={goToToday} className="text-xs font-medium text-[#824c71] underline underline-offset-2">
+            بازگشت به امروز
+          </button>
+        </div>
+      )}
+
+      <div className="mb-8 mt-4">
         <h2 className="text-sm font-bold text-zinc-800 mb-3">
-          نوبت‌های پیش‌رو {upcomingBookings.length > 0 && `(${upcomingBookings.length.toLocaleString('fa-IR')})`}
+          نوبت‌های این روز {dayBookings.length > 0 && `(${dayBookings.length.toLocaleString('fa-IR')})`}
         </h2>
-        {upcomingBookings.length > 0 ? (
+        {dayBookings.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {upcomingBookings.map(renderBookingCard)}
+            {dayBookings.map(renderBookingCard)}
           </div>
         ) : (
           <div className="text-center py-10 bg-zinc-50 rounded-2xl">
-            <p className="text-zinc-400 text-sm">هنوز نوبتی ثبت نشده است.</p>
+            <p className="text-zinc-400 text-sm">نوبتی برای این روز ثبت نشده است.</p>
           </div>
         )}
       </div>
-
-      {pastBookings.length > 0 && (
-        <div>
-          <h2 className="text-sm font-bold text-zinc-800 mb-3">نوبت‌های گذشته / لغو شده</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 opacity-70">
-            {pastBookings.map(renderBookingCard)}
-          </div>
-        </div>
-      )}
 
       <NewBookingModal
         isOpen={isModalOpen}

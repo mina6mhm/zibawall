@@ -34,7 +34,7 @@ async function getOwnedSalonFromToken() {
 
 // یک تابع مشترک برای پاک‌سازی و اعتبارسنجی آرایه‌ی خدمات (شامل staffName هر ردیف)
 // قبلاً اینجا staffName نادیده گرفته می‌شد و ذخیره نمی‌شد — همین‌جا اصلاح شده
-function sanitizeServices(services: any): { name: string; price?: number; staffName?: string }[] {
+function sanitizeServices(services: any): { name: string; price?: number; staffName?: string; staffPercentage?: number }[] {
   if (!Array.isArray(services)) return [];
 
   return services
@@ -43,6 +43,10 @@ function sanitizeServices(services: any): { name: string; price?: number; staffN
       price: typeof s?.price === 'number' && s.price > 0 ? s.price : undefined,
       staffName:
         typeof s?.staffName === 'string' && s.staffName.trim() ? s.staffName.trim() : undefined,
+      staffPercentage:
+        typeof s?.staffPercentage === 'number' && s.staffPercentage > 0 && s.staffPercentage <= 100
+          ? s.staffPercentage
+          : undefined,
     }))
     .filter((s) => s.name !== '');
 }
