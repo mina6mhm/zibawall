@@ -146,13 +146,6 @@ export async function PUT(req: Request) {
       return NextResponse.json({ error: 'نوبتی یافت نشد' }, { status: 404 });
     }
 
-    if (existingBooking.status === 'CONFIRMED') {
-      return NextResponse.json(
-        { error: 'نوبت‌های قطعی‌شده (پرداخت‌شده) قابل ویرایش نیستند' },
-        { status: 400 }
-      );
-    }
-
     const body = await req.json();
     const { customerName, customerPhone, date, startTime, services, depositAmount } = body;
 

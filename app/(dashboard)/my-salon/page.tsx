@@ -6,11 +6,11 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
   Plus, Loader2, Calendar, Clock, Phone, User as UserIcon,
-  Scissors, Trash2, Store, Settings,
+  Scissors, Trash2, Store, Settings, Pencil,
 } from 'lucide-react';
-import NewBookingModal from '@/components/booking/NewBookingModal';
+import NewBookingModal, { BookingToEdit } from '@/components/booking/NewBookingModal';
 
-type ServiceItem = { name: string; price?: number };
+type ServiceItem = { name: string; price?: number; staffName?: string };
 
 type Booking = {
   id: string;
@@ -41,6 +41,7 @@ export default function MySalonPage() {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingBooking, setEditingBooking] = useState<BookingToEdit | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
@@ -75,6 +76,29 @@ export default function MySalonPage() {
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+  const openNewBookingModal = () => {
+    setEditingBooking(null);
+    setIsModalOpen(true);
+  };
+
+  const openEditBookingModal = (booking: Booking) => {
+    setEditingBooking({
+      id: booking.id,
+      customerName: booking.customerName,
+      customerPhone: booking.customerPhone,
+      date: booking.date,
+      startTime: booking.startTime,
+      services: booking.services,
+      depositAmount: booking.depositAmount,
+    });
+    setIsModalOpen(true);
+  };
+
+  const handleModalClose = () => {
+    setIsModalOpen(false);
+    setEditingBooking(null);
+  };
 
   const handleDelete = async (id: string) => {
     if (!window.confirm('آیا از حذف این نوبت مطمئن هستید؟')) return;
@@ -188,20 +212,30 @@ export default function MySalonPage() {
           <span>مبلغ کل: {formatMoney(booking.totalAmount)} تومان</span>
         </div>
 
-        {booking.status !== 'CONFIRMED' && (
+        <div className="mt-3 flex items-center gap-2">
           <button
-            onClick={() => handleDelete(booking.id)}
-            disabled={deletingId === booking.id}
-            className="mt-3 w-full flex items-center justify-center gap-1.5 py-2 rounded-xl bg-red-50 text-red-600 text-xs font-medium hover:bg-red-100 transition disabled:opacity-50"
+            onClick={() => openEditBookingModal(booking)}
+            className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl bg-zinc-100 text-zinc-700 text-xs font-medium hover:bg-zinc-200 transition"
           >
-            {deletingId === booking.id ? (
-              <Loader2 className="w-3.5 h-3.5 animate-spin" />
-            ) : (
-              <Trash2 className="w-3.5 h-3.5" />
-            )}
-            حذف نوبت
+            <Pencil className="w-3.5 h-3.5" />
+            ویرایش
           </button>
-        )}
+
+          {booking.status !== 'CONFIRMED' && (
+            <button
+              onClick={() => handleDelete(booking.id)}
+              disabled={deletingId === booking.id}
+              className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl bg-red-50 text-red-600 text-xs font-medium hover:bg-red-100 transition disabled:opacity-50"
+            >
+              {deletingId === booking.id ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <Trash2 className="w-3.5 h-3.5" />
+              )}
+              حذف نوبت
+            </button>
+          )}
+        </div>
       </div>
     );
   };
@@ -222,7 +256,7 @@ export default function MySalonPage() {
       </div>
 
       <button
-        onClick={() => setIsModalOpen(true)}
+        onClick={openNewBookingModal}
         className="w-full flex items-center justify-center gap-2 bg-[#824c71] hover:bg-[#6e3f60] text-white py-3.5 rounded-xl font-medium text-sm transition-colors shadow-lg shadow-[#e3c9dc]/40 mb-6"
       >
         <Plus className="w-4.5 h-4.5" />
@@ -255,8 +289,9 @@ export default function MySalonPage() {
 
       <NewBookingModal
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
+        onClose={handleModalClose}
         onSaved={fetchData}
+        bookingToEdit={editingBooking}
       />
     </div>
   );
