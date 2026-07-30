@@ -350,23 +350,27 @@ export default function NewBookingModal({ isOpen, onClose, onSaved, bookingToEdi
             </label>
             <div className="space-y-2.5">
               {services.map((service, index) => (
-                <div key={index} className="relative border border-zinc-200 rounded-xl p-3 space-y-2.5 bg-zinc-50/40">
-                  {services.length > 1 && (
-                    <button
-                      type="button"
-                      onClick={() => removeServiceRow(index)}
-                      className="absolute top-2.5 left-2.5 w-7 h-7 flex items-center justify-center rounded-lg bg-red-50 text-red-500 z-10"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  )}
+                <div key={index} className="border border-zinc-200 rounded-xl p-3 space-y-2.5 bg-zinc-50/40">
+                  {/* هدر: عنوان خدمت + دکمه حذف، کنار هم توی یک ردیف */}
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-medium text-zinc-500">
+                      خدمت {(index + 1).toLocaleString('fa-IR')}
+                    </span>
+                    {services.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => removeServiceRow(index)}
+                        className="w-7 h-7 flex items-center justify-center rounded-lg bg-red-50 text-red-500"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
 
                   {/* ردیف اول: نام خدمت + قیمت */}
-                  <div className="pl-9 flex gap-2">
+                  <div className="flex gap-2">
                     <div className="flex-1">
-                      <label className="block text-[11px] font-medium text-zinc-500 mb-1">
-                        نام خدمت {(index + 1).toLocaleString('fa-IR')}
-                      </label>
+                      <label className="block text-[11px] font-medium text-zinc-500 mb-1">نام خدمت</label>
                       <div className={boxSmallClass}>
                         <input
                           type="text"
@@ -391,7 +395,7 @@ export default function NewBookingModal({ isOpen, onClose, onSaved, bookingToEdi
                       </div>
                     </div>
                   </div>
-
+                  
                   {/* ردیف دوم: پرسنل + درصد پرسنل */}
                   <div className="flex gap-2">
                     <div className="flex-1">
