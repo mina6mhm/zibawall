@@ -1,7 +1,7 @@
 // components/booking/NewBookingModal.tsx
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { X, Plus, Trash2, Loader2 } from 'lucide-react';
 import DatePicker, { DateObject } from 'react-multi-date-picker';
 import persian from 'react-date-object/calendars/persian';
@@ -12,6 +12,8 @@ type ServiceRow = {
   priceDigits: string; // فقط ارقام انگلیسی خام، برای نمایش به فارسی و با جداکننده هزارگان تبدیل می‌شود
   staffName: string;
 };
+
+type StaffMember = { id: string; name: string };
 
 type NewBookingModalProps = {
   isOpen: boolean;
@@ -47,9 +49,18 @@ export default function NewBookingModal({ isOpen, onClose, onCreated }: NewBooki
   const [startTime, setStartTime] = useState('');
   const [depositDigits, setDepositDigits] = useState('');
   const [services, setServices] = useState<ServiceRow[]>([emptyService()]);
+  const [staffList, setStaffList] = useState<StaffMember[]>([]);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    if (!isOpen) return;
+    fetch('/api/staff')
+      .then((res) => (res.ok ? res.json() : { staff: [] }))
+      .then((data) => setStaffList(data.staff || []))
+      .catch(() => setStaffList([]));
+  }, [isOpen]);
 
   const resetForm = () => {
     setCustomerName('');
@@ -276,13 +287,16 @@ export default function NewBookingModal({ isOpen, onClose, onCreated }: NewBooki
                     </div>
                     <div>
                       <label className="block text-[11px] font-medium text-zinc-500 mb-1">اسم پرسنل</label>
-                      <input
-                        type="text"
+                      <select
                         value={service.staffName}
                         onChange={(e) => updateService(index, 'staffName', e.target.value)}
                         className="w-full border border-zinc-200 rounded-lg px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-[#824c71]/40 focus:border-[#824c71]"
-                        placeholder="اختیاری"
-                      />
+                      >
+                        <option value="">بدون پرسنل مشخص</option>
+                        {staffList.map((s) => (
+                          <option key={s.id} value={s.name}>{s.name}</option>
+                        ))}
+                      </select>
                     </div>
                   </div>
                 </div>

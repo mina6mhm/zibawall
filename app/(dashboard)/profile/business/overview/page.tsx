@@ -2,7 +2,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Store, Eye, Edit, Trash2, ArrowRight, Loader2, MapPin, ChevronLeft } from 'lucide-react';
+import { Store, Eye, Edit, Trash2, ArrowRight, Loader2, MapPin, ChevronLeft, Users } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
@@ -80,6 +80,14 @@ export default function BusinessOverviewPage() {
       description: 'خدمات، تصاویر و مشخصات سالن',
       icon: Edit,
       href: '/profile/business/edit',
+      variant: 'default' as const,
+    },
+    {
+      key: 'staff',
+      label: 'پرسنل سالن',
+      description: 'مدیریت لیست پرسنل برای ثبت نوبت',
+      icon: Users,
+      href: '/profile/business/staff',
       variant: 'default' as const,
     },
     {
