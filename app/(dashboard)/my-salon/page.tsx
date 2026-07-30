@@ -14,6 +14,7 @@ import persian from 'react-date-object/calendars/persian';
 import persian_fa from 'react-date-object/locales/persian_fa';
 import NewBookingModal, { BookingToEdit } from '@/components/booking/NewBookingModal';
 import StaffShareModal from '@/components/booking/StaffShareModal';
+import { toDateOnlyAnchor } from '@/lib/dateUtils';
 
 type ServiceItem = { name: string; price?: number; staffName?: string; staffPercentage?: number };
 
@@ -37,11 +38,6 @@ const STATUS_LABELS: Record<Booking['status'], { label: string; className: strin
   CONFIRMED: { label: 'قطعی شده', className: 'bg-emerald-50 text-emerald-700' },
   CANCELLED: { label: 'لغو شده', className: 'bg-zinc-100 text-zinc-500' },
 };
-
-// یک روز را به شکل «لنگرِ» تاریخ بدون ساعت در می‌آوریم — دقیقاً هم‌روش با
-// روشی که NewBookingModal برای ساخت booking.date استفاده می‌کند (toISOString سپس اسلایس)
-// تا مقایسه‌ی تاریخ‌ها همیشه با داده‌ی ذخیره‌شده در دیتابیس یکی در بیاید.
-const toDateOnlyAnchor = (d: Date) => new Date(d.toISOString().slice(0, 10));
 
 export default function MySalonPage() {
   const router = useRouter();
@@ -315,8 +311,8 @@ const dailySummary = useMemo(() => {
   };
 
   return (
-    <div className="max-w-3xl mx-auto pt-6 pb-32 px-4 md:pt-8 md:px-0">
-      <div className="flex items-center justify-between mb-6">
+    <div className="max-w-3xl mx-auto pt-8 pb-32 px-4 md:pt-10 md:px-0">
+  <div className="flex items-center justify-between mb-7">
         <div>
           <h1 className="text-xl md:text-2xl font-bold text-zinc-900">{salonName}</h1>
           <p className="text-zinc-500 text-xs md:text-sm mt-0.5">مدیریت نوبت‌های سالن</p>
@@ -338,14 +334,10 @@ const dailySummary = useMemo(() => {
       </button>
 
       {/* ناوبری روز: قبل / انتخاب تاریخ (برای پرش به روزهای دور) / بعد */}
-      <div className="flex items-center gap-2 mb-2">
-        <button
-          onClick={goToPrevDay}
-          aria-label="روز قبل"
-          className="w-11 h-11 flex items-center justify-center rounded-xl bg-zinc-100 text-zinc-600 hover:bg-zinc-200 transition shrink-0"
-        >
-          <ChevronRight className="w-5 h-5" />
-        </button>
+      <div className="flex items-center gap-2 mb-3 mt-1">
+        <button onClick={goToNextDay} aria-label="روز بعد" className="w-11 h-11 flex items-center justify-center rounded-xl bg-zinc-100 text-zinc-600 hover:bg-zinc-200 transition shrink-0">
+  <ChevronRight className="w-5 h-5" />
+</button>
 
         <DatePicker
           value={new DateObject({ date: selectedDate, calendar: persian, locale: persian_fa })}
@@ -369,13 +361,9 @@ const dailySummary = useMemo(() => {
           )}
         />
 
-        <button
-          onClick={goToNextDay}
-          aria-label="روز بعد"
-          className="w-11 h-11 flex items-center justify-center rounded-xl bg-zinc-100 text-zinc-600 hover:bg-zinc-200 transition shrink-0"
-        >
-          <ChevronLeft className="w-5 h-5" />
-        </button>
+        <button onClick={goToPrevDay} aria-label="روز قبل" className="w-11 h-11 flex items-center justify-center rounded-xl bg-zinc-100 text-zinc-600 hover:bg-zinc-200 transition shrink-0">
+  <ChevronLeft className="w-5 h-5" />
+</button>
       </div>
 
       {!isToday && (

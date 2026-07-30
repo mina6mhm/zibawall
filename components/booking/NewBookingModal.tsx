@@ -6,6 +6,7 @@ import { X, Plus, Trash2, Loader2, ChevronDown } from 'lucide-react';
 import DatePicker, { DateObject } from 'react-multi-date-picker';
 import persian from 'react-date-object/calendars/persian';
 import persian_fa from 'react-date-object/locales/persian_fa';
+import { toDateOnlyAnchor } from '@/lib/dateUtils';
 
 type ServiceRow = {
   name: string;
@@ -202,13 +203,13 @@ export default function NewBookingModal({ isOpen, onClose, onSaved, bookingToEdi
     try {
       setIsSubmitting(true);
 
-      const gregorianDate = dateObj.toDate();
-      const startTime = `${pad2(startHourDigits)}:${pad2(startMinuteDigits)}`;
+      const gregorianDate = toDateOnlyAnchor(dateObj.toDate());
+const startTime = `${pad2(startHourDigits)}:${pad2(startMinuteDigits)}`;
 
-      const payload = {
-        customerName: customerName.trim() || undefined,
-        customerPhone: customerPhoneDigits,
-        date: gregorianDate.toISOString(),
+const payload = {
+  customerName: customerName.trim() || undefined,
+  customerPhone: customerPhoneDigits,
+  date: gregorianDate.toISOString(),
         startTime,
         services: cleanedServices,
         depositAmount: depositDigits ? Number(depositDigits) : 0,
