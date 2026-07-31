@@ -7,39 +7,19 @@ import Image from 'next/image';
 import { Globe, Download } from 'lucide-react';
 import IosInstallPrompt from '@/components/IosInstallPrompt';
 
-const isIosDevice = () => {
-  if (typeof window === 'undefined') return false;
-  return /iphone|ipad|ipod/.test(window.navigator.userAgent.toLowerCase());
-};
-
-const isStandaloneMode = () => {
-  if (typeof window === 'undefined') return false;
-  return (
-    // @ts-ignore
-    ('standalone' in window.navigator && window.navigator.standalone) ||
-    window.matchMedia('(display-mode: standalone)').matches
-  );
-};
-
 export default function LandingScreen() {
   const router = useRouter();
-  const [showIosPrompt, setShowIosPrompt] = useState(false);
+  const [showInstallPrompt, setShowInstallPrompt] = useState(false);
 
+  // کلیک روی «ورود به وب اپ»: همیشه پرامپت راهنمای نصب نشون داده می‌شه
   const handleEnter = () => {
-    const alreadyDismissed = localStorage.getItem('iosInstallPromptDismissed');
-
-    if (isIosDevice() && !isStandaloneMode() && !alreadyDismissed) {
-      setShowIosPrompt(true);
-      return;
-    }
-
-    router.push('/dashboard');
+    setShowInstallPrompt(true);
   };
 
+  // بعد از بستن پرامپت (کلیک روی «متوجه شدم»)، کاربر به صفحه‌ی ورود هدایت می‌شه
   const handleClosePrompt = () => {
-    localStorage.setItem('iosInstallPromptDismissed', 'true');
-    setShowIosPrompt(false);
-    router.push('/dashboard');
+    setShowInstallPrompt(false);
+    router.push('/login');
   };
 
   return (
@@ -91,7 +71,7 @@ export default function LandingScreen() {
         </a>
       </div>
 
-      <IosInstallPrompt isOpen={showIosPrompt} onClose={handleClosePrompt} />
+      <IosInstallPrompt isOpen={showInstallPrompt} onClose={handleClosePrompt} />
     </div>
   );
 }
