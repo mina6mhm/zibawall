@@ -1,7 +1,7 @@
+// app/layout.tsx
 import localFont from 'next/font/local';
 import './globals.css';
-import IosInstallPrompt from "@/components/IosInstallPrompt";
-import { Metadata, Viewport } from 'next'; // اضافه کردن این ایمپورت‌ها
+import { Metadata, Viewport } from 'next';
 
 const shabnam = localFont({
   src: [
@@ -11,22 +11,20 @@ const shabnam = localFont({
   display: 'swap',
 });
 
-// اضافه کردن تنظیمات PWA و اپل
 export const metadata: Metadata = {
   title: 'zibaWall',
   description: 'description',
-  manifest: '/manifest.json', // مسیر مانیفست
+  manifest: '/manifest.json',
   appleWebApp: {
-    capable: true, // این خط باعث می‌شود تمام‌صفحه و بدون نوار آدرس باز شود
+    capable: true,
     statusBarStyle: 'default',
     title: 'zibaWall',
   },
   icons: {
-    apple: '/APP.png', // آیکونی که روی صفحه گوشی قرار می‌گیرد
+    apple: '/APP.png',
   },
 };
 
-// تنظیم رنگ نوار بالای گوشی (اختیاری)
 export const viewport: Viewport = {
   themeColor: '#ffffff',
   width: 'device-width',
@@ -45,9 +43,6 @@ export default function RootLayout({
     <html lang="fa" dir="rtl">
       <body className={`${shabnam.className} bg-white text-black antialiased`}>
         {children}
-        
-        {/* کامپوننت راهنمای نصب PWA فقط برای آیفون */}
-        <IosInstallPrompt />
       </body>
     </html>
   );

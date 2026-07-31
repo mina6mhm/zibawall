@@ -41,7 +41,7 @@ const ProfileIcon = ({ isActive, className }: { isActive: boolean, className?: s
 );
 
 const navItems = [
-  { name: 'پیشخوان', href: '/', icon: DashboardIcon },
+  { name: 'پیشخوان', href: '/dashboard', icon: DashboardIcon },
   { name: 'نشان‌ها', href: '/bookmarks', icon: BookmarkIcon },
   { name: 'نوبت‌های من', href: '/appointments', icon: AppointmentsIcon },
   { name: 'سالن من', href: '/my-salon', icon: MySalonIcon },
@@ -60,7 +60,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </div>
         <nav className="flex-1 px-4 space-y-0.5 mt-2 overflow-y-auto">
           {navItems.map((item) => {
-            const isActive = item.href === '/' ? pathname === '/' : pathname?.startsWith(item.href);
+            const isActive = pathname?.startsWith(item.href);
             return (
               <Link
                 key={item.name}
@@ -90,7 +90,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         >
           <div className="flex items-center justify-between px-2 h-[64px]">
             {navItems.map((item) => {
-              const isActive = item.href === '/' ? pathname === '/' : pathname?.startsWith(item.href);
+              const isActive = pathname?.startsWith(item.href);
               return (
                 <Link
                   key={item.name}

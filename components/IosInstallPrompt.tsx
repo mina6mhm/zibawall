@@ -1,71 +1,45 @@
-//components/IosInstallPrompt.tsx
+// components/IosInstallPrompt.tsx
 "use client";
 
-import { useState, useEffect } from "react";
 import Image from "next/image";
 import { Share, PlusSquare } from "lucide-react";
 
-export default function IosInstallPrompt() {
-  const [showPrompt, setShowPrompt] = useState(false);
+type IosInstallPromptProps = {
+  isOpen: boolean;
+  onClose: () => void;
+};
 
-  useEffect(() => {
-    const isIos = () => {
-      const userAgent = window.navigator.userAgent.toLowerCase();
-      return /iphone|ipad|ipod/.test(userAgent);
-    };
-
-    const isStandalone = () => {
-      return (
-        // @ts-ignore
-        ('standalone' in window.navigator && window.navigator.standalone) ||
-        window.matchMedia('(display-mode: standalone)').matches
-      );
-    };
-
-    const hasDismissed = localStorage.getItem("iosInstallPromptDismissed");
-
-    if (isIos() && !isStandalone() && !hasDismissed) {
-      setShowPrompt(true);
-    }
-  }, []);
-
-  const handleDismiss = () => {
-    setShowPrompt(false);
-    localStorage.setItem("iosInstallPromptDismissed", "true");
-  };
-
-  if (!showPrompt) return null;
+export default function IosInstallPrompt({ isOpen, onClose }: IosInstallPromptProps) {
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4" dir="rtl">
       <div className="bg-white rounded-2xl w-full max-w-sm p-6 shadow-2xl relative animate-in fade-in zoom-in duration-300">
-        
-        {/* لوگو */}
-<div className="flex justify-center mb-4">
-  <div className="w-16 h-16 flex items-center justify-center bg-[#e3c9dc]/40 rounded-full shadow-sm border border-[#e3c9dc] overflow-hidden">
-    <Image 
-      src="/APP.png" 
-      alt="logo" 
-      width={64} 
-      height={64} 
-      className="object-cover w-full h-full"
-    />
-  </div>
-</div>
+
+        <div className="flex justify-center mb-4">
+          <div className="w-16 h-16 flex items-center justify-center bg-[#e3c9dc]/40 rounded-full shadow-sm border border-[#e3c9dc] overflow-hidden">
+            <Image
+              src="/APP.png"
+              alt="logo"
+              width={64}
+              height={64}
+              className="object-cover w-full h-full"
+            />
+          </div>
+        </div>
         <h3 className="text-center text-lg font-bold text-gray-800 mb-6">
           نصب نسخهٔ وب اپلیکیشن
         </h3>
 
-        {/* باکس توضیحات */}
         <div className="border border-dashed border-[#824c71]/40 rounded-xl p-5 mb-6 space-y-6 text-sm text-gray-700 leading-relaxed">
-          
+
           <div className="flex items-start gap-3">
             <span className="font-bold shrink-0 text-[#824c71]">۱-</span>
             <p className="leading-7">
-              در نوار پایین گوشی، دکمهٔ 
+              در نوار پایین گوشی، دکمهٔ
               <span className="inline-flex items-center justify-center w-7 h-7 bg-[#e3c9dc]/40 rounded-md mx-1 align-middle">
                 <Share className="w-4 h-4 text-[#824c71]" />
-              </span> 
+              </span>
               را انتخاب کنید.
             </p>
           </div>
@@ -73,10 +47,10 @@ export default function IosInstallPrompt() {
           <div className="flex items-start gap-3">
             <span className="font-bold shrink-0 text-[#824c71]">۲-</span>
             <p className="leading-7">
-              منوی باز شده را به بالا اسکرول کنید و دکمهٔ 
+              منوی باز شده را به بالا اسکرول کنید و دکمهٔ
               <span className="inline-flex items-center gap-1 bg-[#e3c9dc]/40 px-2 py-1 rounded-md mx-1 font-medium text-[#824c71] whitespace-nowrap align-middle">
                 Add to Home Screen <PlusSquare className="w-4 h-4 inline" />
-              </span> 
+              </span>
               را انتخاب کنید.
             </p>
           </div>
@@ -84,19 +58,18 @@ export default function IosInstallPrompt() {
           <div className="flex items-start gap-3">
             <span className="font-bold shrink-0 text-[#824c71]">۳-</span>
             <p className="leading-7">
-              در بالای صفحه، دکمهٔ 
+              در بالای صفحه، دکمهٔ
               <span className="inline-flex items-center justify-center bg-[#e3c9dc]/40 px-3 py-1 rounded-md mx-1 font-medium text-[#824c71] align-middle">
                 Add
-              </span> 
+              </span>
               را انتخاب کنید.
             </p>
           </div>
 
         </div>
 
-        {/* دکمه تایید */}
         <button
-          onClick={handleDismiss}
+          onClick={onClose}
           className="w-full py-3 rounded-xl border-2 border-[#824c71] text-[#824c71] font-bold text-base hover:bg-[#e3c9dc]/30 transition-colors"
         >
           متوجه شدم

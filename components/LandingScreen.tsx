@@ -1,15 +1,51 @@
 // components/LandingScreen.tsx
 'use client';
 
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { Globe, Download } from 'lucide-react';
+import IosInstallPrompt from '@/components/IosInstallPrompt';
 
-export default function LandingScreen({ onEnter }: { onEnter: () => void }) {
+const isIosDevice = () => {
+  if (typeof window === 'undefined') return false;
+  return /iphone|ipad|ipod/.test(window.navigator.userAgent.toLowerCase());
+};
+
+const isStandaloneMode = () => {
+  if (typeof window === 'undefined') return false;
+  return (
+    // @ts-ignore
+    ('standalone' in window.navigator && window.navigator.standalone) ||
+    window.matchMedia('(display-mode: standalone)').matches
+  );
+};
+
+export default function LandingScreen() {
+  const router = useRouter();
+  const [showIosPrompt, setShowIosPrompt] = useState(false);
+
+  const handleEnter = () => {
+    const alreadyDismissed = localStorage.getItem('iosInstallPromptDismissed');
+
+    if (isIosDevice() && !isStandaloneMode() && !alreadyDismissed) {
+      setShowIosPrompt(true);
+      return;
+    }
+
+    router.push('/dashboard');
+  };
+
+  const handleClosePrompt = () => {
+    localStorage.setItem('iosInstallPromptDismissed', 'true');
+    setShowIosPrompt(false);
+    router.push('/dashboard');
+  };
+
   return (
     <div className="min-h-[100dvh] bg-white flex flex-col items-center justify-center px-6 py-10" dir="rtl">
       <div className="w-full max-w-sm flex flex-col items-center text-center">
 
-        {/* لوگو */}
         <div className="mb-6">
           <Image src="/logoo.png" alt="زیباوال" width={88} height={88} className="object-contain w-20 h-20" />
         </div>
@@ -19,17 +55,15 @@ export default function LandingScreen({ onEnter }: { onEnter: () => void }) {
           پیدا کردن و رزرو نوبت سالن‌های زیبایی، فقط با یک کلیک
         </p>
 
-        {/* دکمه‌ها */}
         <div className="w-full flex flex-col gap-3 mb-10">
           <button
-            onClick={onEnter}
+            onClick={handleEnter}
             className="w-full flex items-center justify-center gap-2 bg-[#824c71] hover:bg-[#6d3f5e] text-white rounded-xl py-3.5 text-sm font-bold transition-colors"
           >
             <Globe className="w-4 h-4" />
             ورود به وب اپ
           </button>
 
-          {/* لینک دانلود برنامه رو اینجا با آدرس واقعی (بازار/مایکت/APK مستقیم) جایگزین کن */}
           <a
             href="#"
             className="w-full flex items-center justify-center gap-2 border border-zinc-200 text-zinc-700 rounded-xl py-3.5 text-sm font-bold hover:bg-zinc-50 transition-colors"
@@ -39,7 +73,6 @@ export default function LandingScreen({ onEnter }: { onEnter: () => void }) {
           </a>
         </div>
 
-        {/* نماد اعتماد الکترونیکی */}
         <a
           referrerPolicy="origin"
           target="_blank"
@@ -57,6 +90,8 @@ export default function LandingScreen({ onEnter }: { onEnter: () => void }) {
           />
         </a>
       </div>
+
+      <IosInstallPrompt isOpen={showIosPrompt} onClose={handleClosePrompt} />
     </div>
   );
 }

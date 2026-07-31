@@ -142,7 +142,7 @@ export default function LoginPage() {
       if (data.isNewUser || !data.user?.username) {
         setStep('username');
       } else {
-        router.push('/');
+        router.push('/dashboard');
         router.refresh();
       }
     } catch {
@@ -181,7 +181,7 @@ export default function LoginPage() {
         return;
       }
 
-      router.push('/');
+      router.push('/dashboard');
       router.refresh();
     } catch {
       alert('خطای ارتباط با سرور');

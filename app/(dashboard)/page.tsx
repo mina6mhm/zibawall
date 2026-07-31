@@ -154,7 +154,6 @@ function FilterPill({
 
 export default function DashboardHomePage() {
   const router = useRouter();
-  const [hasEnteredApp, setHasEnteredApp] = useState(false);
   
   const [salons, setSalons] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -301,10 +300,6 @@ export default function DashboardHomePage() {
   });
 
   const hasActiveExtraFilters = homeServiceOnly || genderFilter !== 'ALL';
-
-  if (!hasEnteredApp) {
-  return <LandingScreen onEnter={() => setHasEnteredApp(true)} />;
-}
 
   return (
     <>
