@@ -22,7 +22,6 @@ const CATEGORY_ICON_MAP: Record<string, LucideIcon> = {
 };
 
 const getCategoryIcon = (category: string): LucideIcon => CATEGORY_ICON_MAP[category] || Sparkles;
-const [hasEnteredApp, setHasEnteredApp] = useState(false);
 
 // --- عنوان کوتاه‌شده برای نمایش روی کارت (فقط ظاهری؛ فیلتر همچنان با اسم اصلی دسته کار می‌کند) ---
 const CATEGORY_DISPLAY_LABEL: Record<string, string> = {
@@ -155,6 +154,7 @@ function FilterPill({
 
 export default function DashboardHomePage() {
   const router = useRouter();
+  const [hasEnteredApp, setHasEnteredApp] = useState(false);
   
   const [salons, setSalons] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
