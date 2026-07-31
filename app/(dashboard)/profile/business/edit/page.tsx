@@ -440,6 +440,8 @@ export default function BusinessEditPage() {
           hasLocation={!!(coordinates && coordinates[0] !== 0 && coordinates[1] !== 0)}
           coordinates={coordinates}
           onOpenMapModal={openMapModal}
+          cardNumber={cardNumber}
+          onCardNumberChange={setCardNumber}
         />
       )}
 
