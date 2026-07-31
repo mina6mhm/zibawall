@@ -225,7 +225,7 @@ const dailySummary = useMemo(() => {
           href="/profile/business"
           className="bg-[#824c71] text-white px-5 py-2.5 rounded-xl text-sm font-medium hover:bg-[#6e3f60] transition"
         >
-          ثبت کسب‌وکار
+          ثبت نام کسب‌وکار
         </Link>
       </div>
     );

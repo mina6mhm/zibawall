@@ -10,7 +10,7 @@ import {
   Home, Users
 } from "lucide-react";
 import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
-import StartAppointmentButton from "@/components/business/StartAppointmentButton";
+
 
 const GENDER_AUDIENCE_LABELS: Record<string, string> = {
   FEMALE: 'مخصوص خانم‌ها',
@@ -443,17 +443,16 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
   </div>
 )}
 
-      {/* دکمه‌های تماس و نوبت‌دهی آنلاین در دسکتاپ */}
+      {/* دکمه‌ی تماس در دسکتاپ */}
       <div className="hidden lg:flex flex-col gap-2.5 mt-6">
-        <StartAppointmentButton salonId={salon.id} />
         {primaryPhone && (
-            <a
-              href={`tel:${primaryPhone}`}
-              onClick={handleCallButtonClick}
-              className="w-full bg-zinc-100 hover:bg-zinc-200 text-zinc-700 font-medium py-3 rounded-xl text-center transition flex items-center justify-center"
-            >
-              تماس با سالن
-            </a>
+          <a
+            href={`tel:${primaryPhone}`}
+            onClick={handleCallButtonClick}
+            className="w-full bg-[#824c71] hover:bg-[#824c71]/90 text-white font-medium py-3 rounded-xl text-center transition flex items-center justify-center"
+          >
+            تماس با سالن
+          </a>
         )}
       </div>
     </div>
@@ -745,20 +744,16 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
 
         </div>
       </div>
-
-      {/* دکمه‌های شناور تماس و نوبت‌دهی آنلاین برای موبایل (Sticky Bottom Bar) */}
+{/* دکمه‌ی شناور تماس برای موبایل (Sticky Bottom Bar) */}
       <div className="fixed bottom-8 left-5 right-5 z-[60] lg:hidden flex gap-2.5">
-        <StartAppointmentButton
-          salonId={salon.id}
-          className="flex-1 bg-[#824c71] hover:bg-[#824c71]/90 text-white font-medium py-4 rounded-xl text-sm flex items-center justify-center gap-2 shadow-lg shadow-[#824c71]/10 active:scale-95 transition-transform disabled:opacity-60"
-        />
         {primaryPhone && (
           <a 
             href={`tel:${primaryPhone}`}
             onClick={handleCallButtonClick}
-            className="w-14 shrink-0 bg-[#824c71] text-white rounded-xl flex items-center justify-center shadow-lg active:scale-95 transition-transform"
+            className="flex-1 bg-[#824c71] hover:bg-[#824c71]/90 text-white font-medium py-4 rounded-xl text-sm flex items-center justify-center gap-2 shadow-lg shadow-[#824c71]/10 active:scale-95 transition-transform"
           >
-            <Phone className="w-5 h-5" />
+            <Phone className="w-4.5 h-4.5" />
+            تماس با سالن
           </a>
         )}
       </div>
