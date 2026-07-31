@@ -42,6 +42,9 @@ type Props = {
   hasLocation: boolean;
   coordinates: [number, number] | null;
   onOpenMapModal: () => void;
+
+  cardNumber: string;
+  onCardNumberChange: (v: string) => void;
 };
 
 export default function Step1BasicInfo({
@@ -56,6 +59,7 @@ export default function Step1BasicInfo({
   selectedNeighborhoods, onRemoveNeighborhood,
   address, onAddressChange,
   hasLocation, coordinates, onOpenMapModal,
+  cardNumber, onCardNumberChange,
 }: Props) {
   return (
     <div className="space-y-6 md:space-y-8 animate-fade-in">
@@ -154,37 +158,55 @@ export default function Step1BasicInfo({
           </div>
 
           <div className="space-y-2 md:space-y-3">
-  <label className="block text-xs md:text-sm font-medium text-zinc-700">
-    مخاطب سالن <span className="text-red-500">*</span>
-  </label>
-  <div className="flex flex-wrap gap-1.5 md:gap-2">
-    <button
-      type="button"
-      onClick={() => onToggleGenderAudience('FEMALE')}
-      className={`px-3 py-1.5 md:px-4 md:py-2 rounded-lg md:rounded-xl text-xs md:text-sm font-medium transition-colors ${
-        isFemaleSelected(genderAudience)
-          ? 'bg-[#e3c9dc]/20 text-[#824c71] border border-[#824c71]/30'
-          : 'bg-white border border-zinc-200 text-zinc-600 hover:bg-zinc-50'
-      }`}
-    >
-      بانوان
-    </button>
-    <button
-      type="button"
-      onClick={() => onToggleGenderAudience('MALE')}
-      className={`px-3 py-1.5 md:px-4 md:py-2 rounded-lg md:rounded-xl text-xs md:text-sm font-medium transition-colors ${
-        isMaleSelected(genderAudience)
-          ? 'bg-[#e3c9dc]/20 text-[#824c71] border border-[#824c71]/30'
-          : 'bg-white border border-zinc-200 text-zinc-600 hover:bg-zinc-50'
-      }`}
-    >
-      آقایون
-    </button>
-  </div>
-  <p className="text-[10px] md:text-xs text-zinc-400">
-    اگر سالن شما به هر دو گروه خدمات می‌دهد، هر دو گزینه را انتخاب کنید.
-  </p>
-</div>
+            <label className="block text-xs md:text-sm font-medium text-zinc-700">
+              مخاطب سالن <span className="text-red-500">*</span>
+            </label>
+            <div className="flex flex-wrap gap-1.5 md:gap-2">
+              <button
+                type="button"
+                onClick={() => onToggleGenderAudience('FEMALE')}
+                className={`px-3 py-1.5 md:px-4 md:py-2 rounded-lg md:rounded-xl text-xs md:text-sm font-medium transition-colors ${
+                  isFemaleSelected(genderAudience)
+                    ? 'bg-[#e3c9dc]/20 text-[#824c71] border border-[#824c71]/30'
+                    : 'bg-white border border-zinc-200 text-zinc-600 hover:bg-zinc-50'
+                }`}
+              >
+                بانوان
+              </button>
+              <button
+                type="button"
+                onClick={() => onToggleGenderAudience('MALE')}
+                className={`px-3 py-1.5 md:px-4 md:py-2 rounded-lg md:rounded-xl text-xs md:text-sm font-medium transition-colors ${
+                  isMaleSelected(genderAudience)
+                    ? 'bg-[#e3c9dc]/20 text-[#824c71] border border-[#824c71]/30'
+                    : 'bg-white border border-zinc-200 text-zinc-600 hover:bg-zinc-50'
+                }`}
+              >
+                آقایون
+              </button>
+            </div>
+            <p className="text-[10px] md:text-xs text-zinc-400">
+              اگر سالن شما به هر دو گروه خدمات می‌دهد، هر دو گزینه را انتخاب کنید.
+            </p>
+          </div>
+
+          <div className="space-y-1.5 md:space-y-2 md:col-span-2">
+            <label className="block text-xs md:text-sm font-medium text-zinc-700">
+              شماره کارت (برای واریز بیعانه) <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              inputMode="numeric"
+              maxLength={16}
+              value={cardNumber}
+              onChange={(e) => onCardNumberChange(e.target.value.replace(/\D/g, '').slice(0, 16))}
+              placeholder="۶۰۳۷۹۹۱۲۳۴۵۶۷۸۹۰"
+              className="w-full px-3 py-2.5 md:px-4 md:py-3 text-sm md:text-base rounded-lg md:rounded-xl border border-zinc-200 focus:border-zinc-300 focus:ring-1 focus:ring-zinc-300 outline-none transition-all text-left dir-ltr"
+            />
+            <p className="text-[10px] md:text-xs text-zinc-400">
+              بیعانه‌ی پرداختی مشتریان توسط تیم پشتیبانی به این شماره کارت واریز می‌شود.
+            </p>
+          </div>
 
           <div className="space-y-2 md:space-y-3 md:col-span-2 mt-1 md:mt-2">
             <label className="block text-xs md:text-sm font-medium text-zinc-700">شماره تماس‌های سالن <span className="text-red-500">*</span></label>

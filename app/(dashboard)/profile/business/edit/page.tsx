@@ -56,6 +56,7 @@ export default function BusinessEditPage() {
   const [socials, setSocials] = useState<Socials>({
     instagram: '', whatsapp: '', telegram: '', rubika: '', bale: '', website: ''
   });
+  const [cardNumber, setCardNumber] = useState('');
 
   // تابع حدس دسته‌بندی تگ‌های اختصاصی از روی کلمات
   const guessCategory = (tag: string) => {
@@ -94,6 +95,7 @@ export default function BusinessEditPage() {
             setClosedDays(salon.closedDays || []);
             setHasHomeService(!!salon.hasHomeService);
             setGenderAudience(salon.genderAudience || 'BOTH');
+            setCardNumber(salon.cardNumber || '');
 
             if (salon.tags && salon.tags.length > 0) {
               const extractedNames = salon.tags.map((t: any) => typeof t === 'string' ? t : t.name);
@@ -289,6 +291,11 @@ export default function BusinessEditPage() {
       return;
     }
 
+    if (!cardNumber || cardNumber.length < 16) {
+  alert('لطفاً شماره کارت معتبر (۱۶ رقمی) وارد کنید.');
+  return;
+}
+
     if (!coverImage && !existingCover) {
       alert('لطفا یک عکس به عنوان کاور اصلی انتخاب کنید.');
       return;
@@ -342,13 +349,13 @@ export default function BusinessEditPage() {
       });
 
       const payload = {
-        userPhone: user.phone,
-        name, workingHours, description, address, phones, closedDays,
-        hasHomeService, genderAudience,
-        tags: formattedTags, province: selectedProvince, city: selectedCity,
-        neighborhoods: selectedProvince === 'تهران' && selectedCity === 'تهران' ? selectedNeighborhoods : [],
-        coordinates, imageUrl: finalCoverUrl, portfolios: finalPortfolios, socials
-      };
+  userPhone: user.phone,
+  name, workingHours, description, address, phones, closedDays,
+  hasHomeService, genderAudience, cardNumber,
+  tags: formattedTags, province: selectedProvince, city: selectedCity,
+  neighborhoods: selectedProvince === 'تهران' && selectedCity === 'تهران' ? selectedNeighborhoods : [],
+  coordinates, imageUrl: finalCoverUrl, portfolios: finalPortfolios, socials
+};
 
       const salonRes = await fetch('/api/salon', {
         method: 'PUT',

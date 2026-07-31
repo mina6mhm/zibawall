@@ -24,6 +24,7 @@ export default function BusinessRegistrationPage() {
   const [isMapModalOpen, setIsMapModalOpen] = useState(false);
   const [isRegionModalOpen, setIsRegionModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [cardNumber, setCardNumber] = useState('');
 
   // استیت انتخاب پلن (فعلاً همیشه advanced ارسال می‌شود، مرحله انتخاب پلن موقتا غیرفعال است)
   const [selectedPlanId] = useState<string>('monthly-advanced');
@@ -150,9 +151,11 @@ export default function BusinessRegistrationPage() {
         !selectedCity ||
         !address.trim() ||
         !hasValidPhone ||
-        !genderAudience
+        !genderAudience ||
+        !cardNumber ||
+        cardNumber.length < 16
       ) {
-        alert('لطفاً تمامی کادرهای ستاره‌دار را پر کنید و مشخص کنید سالن مخصوص بانوان، آقایون یا هر دو است.');
+        alert('لطفاً تمامی کادرهای ستاره‌دار را پر کنید، مشخص کنید سالن مخصوص بانوان، آقایون یا هر دو است، و شماره کارت معتبر وارد کنید.');
         return;
       }
     }
@@ -190,6 +193,11 @@ export default function BusinessRegistrationPage() {
 
     if (!genderAudience) {
       alert('لطفاً مشخص کنید سالن شما مخصوص بانوان، آقایون یا هر دو است.');
+      return;
+    }
+
+    if (!cardNumber || cardNumber.length < 16) {
+      alert('لطفاً شماره کارت معتبر (۱۶ رقمی) وارد کنید.');
       return;
     }
 
@@ -261,6 +269,7 @@ export default function BusinessRegistrationPage() {
         closedDays,
         hasHomeService,
         genderAudience,
+        cardNumber,
         tags: formattedTags,
         description: description || 'توضیحات پیش‌فرض سالن',
         socials,
@@ -348,6 +357,7 @@ export default function BusinessRegistrationPage() {
           selectedNeighborhoods={selectedNeighborhoods} onRemoveNeighborhood={removeNeighborhood}
           address={address} onAddressChange={setAddress}
           hasLocation={locationSelected} coordinates={coordinates} onOpenMapModal={openMapModal}
+          cardNumber={cardNumber} onCardNumberChange={setCardNumber}
         />
       )}
 

@@ -121,19 +121,20 @@ if (
   );
 }
     const updatedSalon = await prisma.salon.update({
-      where: { userId: user.id },
-      data: {
-        name: body.name,
-        province: body.province,
-        city: body.city,
-        neighborhoods: body.neighborhoods || [],
-        address: body.address,
-        phones: body.phones,
-        workingHours: body.workingHours,
-        closedDays: body.closedDays,
-        hasHomeService: !!body.hasHomeService,
-        genderAudience: body.genderAudience || 'BOTH',
-        tags: body.tags,
+  where: { userId: user.id },
+  data: {
+    name: body.name,
+    province: body.province,
+    city: body.city,
+    neighborhoods: body.neighborhoods || [],
+    address: body.address,
+    phones: body.phones,
+    workingHours: body.workingHours,
+    closedDays: body.closedDays,
+    hasHomeService: !!body.hasHomeService,
+    genderAudience: body.genderAudience || 'BOTH',
+    cardNumber: body.cardNumber,
+    tags: body.tags,
         description: body.description,
         imageUrl: body.imageUrl,
         portfolios: body.portfolios || [],
