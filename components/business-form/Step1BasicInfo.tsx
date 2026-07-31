@@ -335,5 +335,7 @@ export default function Step1BasicInfo({
         )}
       </section>
     </div>
+    
   );
+
 }
