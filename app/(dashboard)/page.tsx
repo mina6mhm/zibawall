@@ -7,6 +7,7 @@ import { CATEGORIES, CATEGORY_MAPPING } from '@/lib/data';
 import RegionFilterModal from '@/components/RegionFilterModal';
 import SearchBar from '@/components/SearchBar';
 import { Home, Check, Sparkles, Eye, Hand, Scissors, Flower2, Zap, Crown, Palette, type LucideIcon } from 'lucide-react';
+import LandingScreen from '@/components/LandingScreen';
 
 // --- نگاشت دقیق آیکون مینیمال بر اساس اسم واقعی هر دسته (از lib/data.ts) ---
 const CATEGORY_ICON_MAP: Record<string, LucideIcon> = {
@@ -21,6 +22,7 @@ const CATEGORY_ICON_MAP: Record<string, LucideIcon> = {
 };
 
 const getCategoryIcon = (category: string): LucideIcon => CATEGORY_ICON_MAP[category] || Sparkles;
+const [hasEnteredApp, setHasEnteredApp] = useState(false);
 
 // --- عنوان کوتاه‌شده برای نمایش روی کارت (فقط ظاهری؛ فیلتر همچنان با اسم اصلی دسته کار می‌کند) ---
 const CATEGORY_DISPLAY_LABEL: Record<string, string> = {
@@ -299,6 +301,10 @@ export default function DashboardHomePage() {
   });
 
   const hasActiveExtraFilters = homeServiceOnly || genderFilter !== 'ALL';
+
+  if (!hasEnteredApp) {
+  return <LandingScreen onEnter={() => setHasEnteredApp(true)} />;
+}
 
   return (
     <>
