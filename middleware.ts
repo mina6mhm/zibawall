@@ -5,7 +5,7 @@ export function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname;
 
   // ۱. مسیرهایی که برای همه آزاد هستند (مثل صفحه لاگین)
-  const isPublicPath = path === '/login';
+  const isPublicPath = path === '/login' || path === '/';
 
   // ۲. دریافت توکن از کوکی‌ها
   const token = request.cookies.get('token')?.value || '';
