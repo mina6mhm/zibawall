@@ -194,7 +194,7 @@ export default function LandingScreen() {
 
           {/* گروه چپ: لوگو */}
           <Image
-            src="/logolanding.png"
+            src="/logolan.png"
             alt="زیباوال"
             width={38}
             height={38}
