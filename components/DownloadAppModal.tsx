@@ -54,7 +54,7 @@ export default function DownloadAppModal({ isOpen, onClose }: DownloadAppModalPr
           >
             <span className="w-11 h-11 rounded-xl bg-[#C98B6E]/12 flex items-center justify-center shrink-0">
               {/* آیکون کافه‌بازار — فایل /public/cafebazaar.png رو اضافه کن */}
-              <Image src="/cafebazaar.png" alt="کافه‌بازار" width={22} height={22} className="object-contain" />
+              <Image src="/cafebazaar.png" alt="کافه‌بازار" width={23} height={23} className="object-contain" />
             </span>
             <div className="text-right">
               <p className="font-bold text-sm text-zinc-900">دانلود از کافه‌بازار</p>

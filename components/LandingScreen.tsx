@@ -8,7 +8,7 @@ import Image from 'next/image';
 import { Vazirmatn } from 'next/font/google';
 import {
   Globe, Download, Store, Wallet, BellRing, Star, Menu, X,
-  Search, CalendarCheck, ChevronDown,
+  Search, CalendarCheck, ChevronDown, ShieldCheck, TrendingUp, ArrowLeft,
 } from 'lucide-react';
 import IosInstallPrompt from '@/components/IosInstallPrompt';
 import DownloadAppModal from '@/components/DownloadAppModal';
@@ -34,6 +34,28 @@ const FEATURES = [
     title: 'یادآوری نوبت مشتری‌ها',
     desc: '۲۴ ساعت قبل از هر نوبت، پیامک یادآوری خودکار برای مشتری ارسال می‌شه؛ دیگه کسی نوبتش یادش نمی‌ره.',
     tone: { bg: 'bg-[#4A2A3D]/8', text: 'text-[#4A2A3D]' },
+  },
+];
+
+// مزایای زیباوال برای صاحبان سالن — تمرکز روی مدیریت، حسابداری خودکار و امنیت دریافت بیعانه
+const BUSINESS_BENEFITS = [
+  {
+    number: '۰۱',
+    icon: TrendingUp,
+    title: 'حسابداری خودکار سالن',
+    desc: 'درآمد روزانه، سهم دقیق هر پرسنل و سود خالص سالن رو بدون دفتر و ماشین‌حساب، لحظه‌به‌لحظه ببین.',
+  },
+  {
+    number: '۰۲',
+    icon: ShieldCheck,
+    title: 'دریافت امن بیعانه',
+    desc: 'بیعانه‌ی نوبت از طریق درگاه پرداخت امن دریافت می‌شه؛ دیگه نگران نوبت‌های بی‌خبر و لغوهای آخرلحظه‌ای نباش.',
+  },
+  {
+    number: '۰۳',
+    icon: BellRing,
+    title: 'یادآوری خودکار مشتری',
+    desc: 'یادآوری پیامکی خودکار، فقط بعد از قطعی‌شدن نوبت ارسال می‌شه و مشتری رو پایبندتر به قرارش می‌کنه.',
   },
 ];
 
@@ -65,19 +87,19 @@ const FAQS = [
   },
   {
     q: 'برای رزرو نوبت باید پول واریز کنم؟',
-    a: 'بعضی سالن‌ها بیعانه می‌خوان تا نوبتت قطعی بشه؛ مبلغ دقیق همیشه قبل از پرداخت بهت نشون داده می‌شه.',
+    a: 'بعضی سالن‌ها بیعانه می‌خوان تا نوبتت قطعی بشه؛ مبلغ دقیق همیشه قبل از پرداخت بهت نشون داده می‌شه و از طریق درگاه امن پرداخت انجام می‌شه.',
   },
   {
     q: 'اگه صاحب سالن باشم چیکار می‌تونم بکنم؟',
-    a: 'می‌تونی سالنت رو ثبت کنی، نوبت‌های مشتری‌ها رو مدیریت کنی و حسابداری روزانه‌ی سالن — درآمد، سهم پرسنل و سود خالص — رو خودکار ببینی.',
+    a: 'می‌تونی سالنت رو ثبت کنی، نوبت‌های مشتری‌ها رو مدیریت کنی، بیعانه رو به‌صورت امن دریافت کنی و حسابداری روزانه‌ی سالن — درآمد، سهم پرسنل و سود خالص — رو خودکار ببینی.',
   },
   {
     q: 'یادآوری نوبت چطور ارسال می‌شه؟',
-    a: '۲۴ ساعت قبل از هر نوبت، یک پیامک یادآوری خودکار برای مشتری ارسال می‌شه؛ بدون نیاز به کار دستی.',
+    a: '۲۴ ساعت قبل از هر نوبت قطعی‌شده، یک پیامک یادآوری خودکار برای مشتری ارسال می‌شه؛ بدون نیاز به کار دستی.',
   },
   {
     q: 'استفاده از زیباوال هزینه داره؟',
-    a: 'برای مشتری‌ها جستجو و رزرو نوبت رایگانه. صاحب‌های سالن هم برای فعال‌سازی امکانات مدیریتی می‌تونن پلن مناسب خودشون رو انتخاب کنن.',
+    a: 'نه، استفاده از زیباوال کاملاً رایگانه؛ هم برای مشتری‌ها و هم برای صاحب‌های سالن، بدون هیچ هزینه‌ای.',
   },
 ];
 
@@ -141,7 +163,7 @@ export default function LandingScreen() {
 
           {/* گروه چپ: لوگو */}
           <Image
-            src="/logo.png"
+            src="/logolanding.png"
             alt="زیباوال"
             width={38}
             height={38}
@@ -264,7 +286,58 @@ export default function LandingScreen() {
           </div>
         </section>
 
-        {/* چطور کار می‌کنه (فرآیند واقعی و ترتیبی؛ شماره‌گذاری اینجا موجه است) */}
+        {/* برای صاحبان سالن: مدیریت، حسابداری خودکار و دریافت امن بیعانه — بخش با هویت بصری متمایز */}
+        <section className="pb-16 md:pb-24">
+          <div className="relative overflow-hidden rounded-[28px] md:rounded-[32px] bg-gradient-to-br from-[#3a2131] via-[#4A2A3D] to-[#824c71] px-5 py-10 md:px-14 md:py-16">
+            {/* بافت نوری پس‌زمینه برای عمق بصری */}
+            <div className="pointer-events-none absolute -top-16 -left-16 w-64 h-64 rounded-full bg-white/10 blur-3xl" />
+            <div className="pointer-events-none absolute -bottom-20 -right-10 w-72 h-72 rounded-full bg-[#C98B6E]/20 blur-3xl" />
+
+            <div className="relative">
+              <span className="inline-flex items-center gap-1.5 bg-white/10 text-white/90 text-[10.5px] font-bold px-3 py-1.5 rounded-full mb-4 backdrop-blur-sm border border-white/10">
+                <Store className="w-3 h-3" />
+                برای صاحبان سالن
+              </span>
+
+              <h2 className={`${vazir.className} text-[22px] md:text-[32px] leading-[1.4] text-white mb-3 max-w-lg`}>
+                سالنت رو بسپار به یک دستیار مدیریتی
+              </h2>
+              <p className="text-[13px] md:text-[14.5px] text-white/70 leading-relaxed max-w-xl mb-10 md:mb-14">
+                زیباوال فقط یه دفترچه نوبت نیست؛ نوبت‌ها، بیعانه و حسابداری روزانه‌ی سالنت رو
+                روی یک پلتفرم امن و کاملاً رایگان مدیریت می‌کنه.
+              </p>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
+                {BUSINESS_BENEFITS.map((b) => (
+                  <div key={b.number} className="group">
+                    <div className="flex items-center gap-3 mb-3">
+                      <span className="w-12 h-12 rounded-2xl bg-white/10 border border-white/15 backdrop-blur-sm text-white flex items-center justify-center shrink-0 group-hover:bg-white/20 group-hover:scale-105 transition-all duration-300">
+                        <b.icon className="w-5 h-5" strokeWidth={2} />
+                      </span>
+                      <span
+                        className={`${vazir.className} text-3xl md:text-4xl bg-gradient-to-b from-white/50 to-white/10 bg-clip-text text-transparent leading-none`}
+                      >
+                        {b.number}
+                      </span>
+                    </div>
+                    <h3 className="font-bold text-white text-[14px] md:text-[15px] mb-1.5">{b.title}</h3>
+                    <p className="text-[12.5px] md:text-[13px] text-white/60 leading-relaxed">{b.desc}</p>
+                  </div>
+                ))}
+              </div>
+
+              <Link
+                href="/profile/business"
+                className="mt-10 md:mt-14 inline-flex items-center gap-2 bg-white text-[#4A2A3D] rounded-xl px-5 py-3 text-[13px] font-bold hover:bg-white/90 transition-colors active:scale-[0.98] shadow-lg shadow-black/10"
+              >
+                ثبت رایگان سالن
+                <ArrowLeft className="w-4 h-4" />
+              </Link>
+            </div>
+          </div>
+        </section>
+
+        {/* چطور کار می‌کنه (فرآیند واقعی و ترتیبی برای مشتری؛ شماره‌گذاری اینجا موجه است) */}
         <section className="pb-16 md:pb-24">
           <span className={`${vazir.className} block text-center text-[11px] tracking-wide text-[#824c71] mb-2`}>
             مسیر رزرو
@@ -327,6 +400,7 @@ export default function LandingScreen() {
           </div>
         </section>
 
+        {/* نماد اعتماد + فوتر */}
         {/* نماد اعتماد + فوتر */}
         <footer className="pb-10 flex flex-col items-center gap-4">
           <a
