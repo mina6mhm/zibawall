@@ -196,9 +196,9 @@ export default function LandingScreen() {
           <Image
             src="/logolan.png"
             alt="زیباوال"
-            width={38}
-            height={38}
-            className="object-contain w-9 h-9"
+            width={56}
+            height={56}
+            className="object-contain w-14 h-14"
           />
         </div>
       </header>
