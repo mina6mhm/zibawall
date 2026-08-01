@@ -193,7 +193,7 @@ export default function LandingScreen() {
           </div>
 
           {/* گروه چپ: لوگو */}
-<img src="/logo.png" alt="زیباوال" className="h-5 md:h-6 w-auto" />
+<img src="/logo.png" alt="زیباوال" className="h-7 md:h-8 w-auto" />
         </div>
       </header>
 
