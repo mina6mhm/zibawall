@@ -193,13 +193,7 @@ export default function LandingScreen() {
           </div>
 
           {/* گروه چپ: لوگو */}
-          <Image
-            src="/logolanding.svg"
-            alt="زیباوال"
-            width={56}
-            height={56}
-            style={{ width: 'auto', height: '56px' }}
-          />
+<img src="/logolanding.svg" alt="زیباوال" className="h-9 md:h-10 w-auto" />
         </div>
       </header>
 
@@ -240,7 +234,7 @@ export default function LandingScreen() {
           </div>
 
           {/* المان تصویری سیگنیچر: کارت پیش‌نمایش نوبت + برچسب‌های شناور امکانات */}
-          <section className="relative h-[300px] md:h-[420px] max-w-sm md:max-w-md mx-auto mt-14 md:mt-0 motion-safe:animate-in motion-safe:fade-in motion-safe:duration-1000 motion-safe:delay-150">
+          <section className="relative w-full h-[300px] md:h-[420px] max-w-sm md:max-w-md mx-auto mt-14 md:mt-0 motion-safe:animate-in motion-safe:fade-in motion-safe:duration-1000 motion-safe:delay-150">
             <div className="absolute inset-x-6 md:inset-x-10 top-1/2 -translate-y-1/2 h-[220px] md:h-[280px] rounded-full bg-gradient-to-br from-[#824c71]/25 via-[#C98B6E]/15 to-transparent blur-3xl" />
 
             {/* کارت مرکزی: پیش‌نمایش نوبت‌های امروز */}
