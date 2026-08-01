@@ -8,7 +8,7 @@ import Image from 'next/image';
 import { Vazirmatn } from 'next/font/google';
 import {
   Globe, Download, Store, Wallet, BellRing, Star, Menu, X,
-  ChevronDown, ShieldCheck, TrendingUp, Users, Clock, Smartphone,
+  ChevronDown, ShieldCheck, TrendingUp, Users, Clock, Smartphone, Heart,
 } from 'lucide-react';
 import IosInstallPrompt from '@/components/IosInstallPrompt';
 import DownloadAppModal from '@/components/DownloadAppModal';
@@ -126,7 +126,7 @@ export default function LandingScreen() {
 
   return (
     <div className="min-h-[100dvh] bg-white" dir="rtl">
-      {/* ناوبری: موبایل = همبرگری (با آیتم وبلاگ) | دسکتاپ = لینک مستقیم وبلاگ، بدون همبرگری */}
+      {/* ناوبری: موبایل = همبرگری (با آیتم‌های وبلاگ/پرسش و پاسخ/درباره ما) | دسکتاپ = لینک‌های مستقیم، بدون همبرگری */}
       <header className="sticky top-0 z-30 bg-white/90 backdrop-blur-md border-b border-zinc-100">
         <div className="max-w-6xl mx-auto flex items-center justify-between px-5 md:px-10 h-16">
           {/* گروه راست: منو */}
@@ -140,18 +140,32 @@ export default function LandingScreen() {
               {isMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
 
-            {/* لینک مستقیم فقط دسکتاپ */}
-            <Link
-              href="/blog"
-              className="hidden md:inline-block text-[13px] font-bold text-zinc-700 hover:text-[#824c71] transition-colors"
-            >
-              وبلاگ
-            </Link>
+            {/* لینک‌های مستقیم فقط دسکتاپ */}
+            <div className="hidden md:flex items-center gap-5">
+              <Link
+                href="/blog"
+                className="text-[13px] font-bold text-zinc-700 hover:text-[#824c71] transition-colors"
+              >
+                وبلاگ
+              </Link>
+              <a
+                href="#faq"
+                className="text-[13px] font-bold text-zinc-700 hover:text-[#824c71] transition-colors"
+              >
+                پرسش و پاسخ
+              </a>
+              <a
+                href="#about"
+                className="text-[13px] font-bold text-zinc-700 hover:text-[#824c71] transition-colors"
+              >
+                درباره ما
+              </a>
+            </div>
 
             {isMenuOpen && (
               <>
                 <div className="fixed inset-0 z-40 md:hidden" onClick={() => setIsMenuOpen(false)} />
-                <div className="absolute top-full right-0 mt-2 z-50 bg-white border border-zinc-100 rounded-xl shadow-lg py-1.5 min-w-[140px] md:hidden">
+                <div className="absolute top-full right-0 mt-2 z-50 bg-white border border-zinc-100 rounded-xl shadow-lg py-1.5 min-w-[160px] md:hidden">
                   <Link
                     href="/blog"
                     onClick={() => setIsMenuOpen(false)}
@@ -159,6 +173,20 @@ export default function LandingScreen() {
                   >
                     وبلاگ
                   </Link>
+                  <a
+                    href="#faq"
+                    onClick={() => setIsMenuOpen(false)}
+                    className="block px-4 py-2.5 text-[13px] font-medium text-zinc-700 hover:bg-zinc-50 transition-colors"
+                  >
+                    پرسش و پاسخ
+                  </a>
+                  <a
+                    href="#about"
+                    onClick={() => setIsMenuOpen(false)}
+                    className="block px-4 py-2.5 text-[13px] font-medium text-zinc-700 hover:bg-zinc-50 transition-colors"
+                  >
+                    درباره ما
+                  </a>
                 </div>
               </>
             )}
@@ -166,7 +194,7 @@ export default function LandingScreen() {
 
           {/* گروه چپ: لوگو */}
           <Image
-            src="/logolanding.png"
+            src="/logoland.png"
             alt="زیباوال"
             width={38}
             height={38}
@@ -288,50 +316,50 @@ export default function LandingScreen() {
             ))}
           </div>
         </section>
+      </main>
 
-        {/* برای صاحبان سالن: مدیریت، حسابداری خودکار و دریافت امن بیعانه — پس‌زمینه‌ی روشن هماهنگ با پالت سایت */}
-        <section className="pb-16 md:pb-24">
-          <div className="relative overflow-hidden rounded-[28px] md:rounded-[32px] bg-gradient-to-br from-[#fdf8fb] via-[#f7edf3] to-[#f3e6ee] border border-[#824c71]/10 px-5 py-10 md:px-14 md:py-16">
-            {/* بافت نوری ملایم پس‌زمینه برای عمق بصری، بدون تیرگی */}
-            <div className="pointer-events-none absolute -top-16 -left-16 w-64 h-64 rounded-full bg-[#824c71]/8 blur-3xl" />
-            <div className="pointer-events-none absolute -bottom-20 -right-10 w-72 h-72 rounded-full bg-[#C98B6E]/12 blur-3xl" />
+      {/* برای صاحبان سالن: بک‌گراند رنگی تمام‌عرض (خارج از کادر اصلی سایت)، نه کارت */}
+      <section className="relative w-screen left-1/2 right-1/2 -mx-[50vw] bg-gradient-to-br from-[#fdf8fb] via-[#f7edf3] to-[#f3e6ee] mb-16 md:mb-24 overflow-hidden">
+        {/* بافت نوری ملایم پس‌زمینه برای عمق بصری، بدون تیرگی */}
+        <div className="pointer-events-none absolute -top-16 -left-16 w-64 h-64 rounded-full bg-[#824c71]/8 blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-20 -right-10 w-72 h-72 rounded-full bg-[#C98B6E]/12 blur-3xl" />
 
-            <div className="relative">
-              <span className="inline-flex items-center gap-1.5 bg-[#824c71]/10 text-[#824c71] text-[10.5px] font-bold px-3 py-1.5 rounded-full mb-4 border border-[#824c71]/15">
-                <Store className="w-3 h-3" />
-                برای صاحبان سالن
-              </span>
+        <div className="relative max-w-6xl mx-auto px-6 md:px-10 py-10 md:py-16">
+          <span className="inline-flex items-center gap-1.5 bg-[#824c71]/10 text-[#824c71] text-[10.5px] font-bold px-3 py-1.5 rounded-full mb-4 border border-[#824c71]/15">
+            <Store className="w-3 h-3" />
+            برای صاحبان سالن
+          </span>
 
-              <h2 className={`${vazir.className} text-[22px] md:text-[32px] leading-[1.4] text-zinc-900 mb-3 max-w-lg`}>
-                سالنت رو بسپار به یک دستیار مدیریتی
-              </h2>
-              <p className="text-[13px] md:text-[14.5px] text-zinc-500 leading-relaxed max-w-xl mb-10 md:mb-14">
-                زیباوال فقط یه دفترچه نوبت نیست؛ نوبت‌ها، بیعانه و حسابداری روزانه‌ی سالنت رو
-                روی یک پلتفرم امن و کاملاً رایگان مدیریت می‌کنه.
-              </p>
+          <h2 className={`${vazir.className} text-[22px] md:text-[32px] leading-[1.4] text-zinc-900 mb-3 max-w-lg`}>
+            سالنت رو بسپار به یک دستیار مدیریتی
+          </h2>
+          <p className="text-[13px] md:text-[14.5px] text-zinc-500 leading-relaxed max-w-xl mb-10 md:mb-14">
+            زیباوال فقط یه دفترچه نوبت نیست؛ نوبت‌ها، بیعانه و حسابداری روزانه‌ی سالنت رو
+            روی یک پلتفرم امن و کاملاً رایگان مدیریت می‌کنه.
+          </p>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
-                {BUSINESS_BENEFITS.map((b) => (
-                  <div key={b.number} className="group">
-                    <div className="flex items-center gap-3 mb-3">
-                      <span className="w-12 h-12 rounded-2xl bg-white border border-[#824c71]/12 shadow-sm text-[#824c71] flex items-center justify-center shrink-0 group-hover:bg-[#824c71]/5 group-hover:scale-105 transition-all duration-300">
-                        <b.icon className="w-5 h-5" strokeWidth={2} />
-                      </span>
-                      <span
-                        className={`${vazir.className} text-3xl md:text-4xl bg-gradient-to-b from-[#824c71]/40 to-[#824c71]/10 bg-clip-text text-transparent leading-none`}
-                      >
-                        {b.number}
-                      </span>
-                    </div>
-                    <h3 className="font-bold text-zinc-900 text-[14px] md:text-[15px] mb-1.5">{b.title}</h3>
-                    <p className="text-[12.5px] md:text-[13px] text-zinc-500 leading-relaxed">{b.desc}</p>
-                  </div>
-                ))}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
+            {BUSINESS_BENEFITS.map((b) => (
+              <div key={b.number} className="group">
+                <div className="flex items-center gap-3 mb-3">
+                  <span className="w-12 h-12 rounded-2xl bg-white border border-[#824c71]/12 shadow-sm text-[#824c71] flex items-center justify-center shrink-0 group-hover:bg-[#824c71]/5 group-hover:scale-105 transition-all duration-300">
+                    <b.icon className="w-5 h-5" strokeWidth={2} />
+                  </span>
+                  <span
+                    className={`${vazir.className} text-3xl md:text-4xl bg-gradient-to-b from-[#824c71]/40 to-[#824c71]/10 bg-clip-text text-transparent leading-none`}
+                  >
+                    {b.number}
+                  </span>
+                </div>
+                <h3 className="font-bold text-zinc-900 text-[14px] md:text-[15px] mb-1.5">{b.title}</h3>
+                <p className="text-[12.5px] md:text-[13px] text-zinc-500 leading-relaxed">{b.desc}</p>
               </div>
-            </div>
+            ))}
           </div>
-        </section>
+        </div>
+      </section>
 
+      <main className="max-w-6xl mx-auto px-5 md:px-10">
         {/* چرا زیباوال؟ — اعتمادسازی و برجسته‌کردن نقاط قوت کلی پلتفرم */}
         <section className="pb-16 md:pb-24">
           <span className={`${vazir.className} block text-center text-[11px] tracking-wide text-[#824c71] mb-2`}>
@@ -358,7 +386,7 @@ export default function LandingScreen() {
         </section>
 
         {/* پرسش و پاسخ */}
-        <section className="pb-16 md:pb-24">
+        <section id="faq" className="pb-16 md:pb-24 scroll-mt-20">
           <span className={`${vazir.className} block text-center text-[11px] tracking-wide text-[#824c71] mb-2`}>
             پرسش‌های پرتکرار
           </span>
@@ -392,6 +420,29 @@ export default function LandingScreen() {
                 </div>
               );
             })}
+          </div>
+        </section>
+
+        {/* درباره ما */}
+        <section id="about" className="pb-16 md:pb-24 scroll-mt-20">
+          <span className={`${vazir.className} block text-center text-[11px] tracking-wide text-[#824c71] mb-2`}>
+            درباره ما
+          </span>
+          <h2 className="text-center text-lg md:text-2xl font-bold text-zinc-900 mb-6 md:mb-8">
+            چرا زیباوال رو ساختیم؟
+          </h2>
+
+          <div className="max-w-2xl mx-auto bg-white border border-zinc-100 rounded-2xl p-5 md:p-8 shadow-sm shadow-zinc-200/40 text-center">
+            <span className="w-12 h-12 rounded-2xl bg-[#824c71]/8 text-[#824c71] flex items-center justify-center mx-auto mb-4">
+              <Heart className="w-5 h-5" strokeWidth={2} />
+            </span>
+            <p className="text-[13px] md:text-[14.5px] text-zinc-500 leading-relaxed">
+              زیباوال با هدف ساده‌تر کردن ارتباط بین مشتری‌ها و سالن‌های زیبایی ساخته شده.
+              از یک طرف، مشتری‌ها می‌تونن بدون تماس‌های مکرر، سالن مناسب رو پیدا کنن و نوبت
+              بگیرن؛ از طرف دیگه، صاحب‌های سالن یک ابزار مدیریتی رایگان دارن که نوبت‌دهی،
+              دریافت امن بیعانه و حسابداری روزانه‌ی سالن رو براشون ساده می‌کنه. هدف ما اینه
+              که این تجربه برای هر دو طرف سریع‌تر، شفاف‌تر و مطمئن‌تر باشه.
+            </p>
           </div>
         </section>
 
