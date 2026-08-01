@@ -194,11 +194,11 @@ export default function LandingScreen() {
 
           {/* گروه چپ: لوگو */}
           <Image
-            src="/logolan.png"
+            src="/logolanding.svg"
             alt="زیباوال"
             width={56}
             height={56}
-            className="object-contain w-14 h-14"
+            style={{ width: 'auto', height: '56px' }}
           />
         </div>
       </header>
