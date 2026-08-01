@@ -5,7 +5,7 @@ export function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname;
 
   // مسیرهای عمومی: لندینگ و صفحه‌ی ورود
-  const isPublicPath = path === '/' || path === '/login';
+  const isPublicPath = path === '/' || path === '/login' || path === '/blog' || path.startsWith('/blog/');
 
   const token = request.cookies.get('token')?.value || '';
 
