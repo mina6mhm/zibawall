@@ -12,13 +12,13 @@ const shabnam = localFont({
 });
 
 export const metadata: Metadata = {
-  title: 'zibaWall',
+  title: 'ZibaWall',
   description: 'description',
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
-    title: 'zibaWall',
+    title: 'ZibaWall',
   },
   icons: {
     apple: '/APP.png',
