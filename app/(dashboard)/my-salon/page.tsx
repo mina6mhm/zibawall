@@ -50,7 +50,7 @@ export default function MySalonPage() {
   const [editingBooking, setEditingBooking] = useState<BookingToEdit | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [isStaffModalOpen, setIsStaffModalOpen] = useState(false);
-  
+
   const [selectedDate, setSelectedDate] = useState<Date>(() => toDateOnlyAnchor(new Date()));
 
   const fetchData = useCallback(async () => {
@@ -175,37 +175,37 @@ export default function MySalonPage() {
 
   type StaffShareRow = { name: string; amount: number };
 
-const dailySummary = useMemo(() => {
-  let revenue = 0;
-  let staffShareTotal = 0;
-  const staffMap: Record<string, number> = {};
+  const dailySummary = useMemo(() => {
+    let revenue = 0;
+    let staffShareTotal = 0;
+    const staffMap: Record<string, number> = {};
 
-  dayBookings
-    .filter((b) => b.status !== 'CANCELLED')
-    .forEach((booking) => {
-      booking.services.forEach((s) => {
-        const price = s.price || 0;
-        revenue += price;
+    dayBookings
+      .filter((b) => b.status !== 'CANCELLED')
+      .forEach((booking) => {
+        booking.services.forEach((s) => {
+          const price = s.price || 0;
+          revenue += price;
 
-        if (s.staffName && s.staffPercentage) {
-          const share = Math.round((price * s.staffPercentage) / 100);
-          staffShareTotal += share;
-          staffMap[s.staffName] = (staffMap[s.staffName] || 0) + share;
-        }
+          if (s.staffName && s.staffPercentage) {
+            const share = Math.round((price * s.staffPercentage) / 100);
+            staffShareTotal += share;
+            staffMap[s.staffName] = (staffMap[s.staffName] || 0) + share;
+          }
+        });
       });
-    });
 
-  const staffBreakdown: StaffShareRow[] = Object.entries(staffMap)
-    .map(([name, amount]) => ({ name, amount }))
-    .sort((a, b) => b.amount - a.amount);
+    const staffBreakdown: StaffShareRow[] = Object.entries(staffMap)
+      .map(([name, amount]) => ({ name, amount }))
+      .sort((a, b) => b.amount - a.amount);
 
-  return {
-    revenue,
-    staffShareTotal,
-    netProfit: revenue - staffShareTotal,
-    staffBreakdown,
-  };
-}, [dayBookings]);
+    return {
+      revenue,
+      staffShareTotal,
+      netProfit: revenue - staffShareTotal,
+      staffBreakdown,
+    };
+  }, [dayBookings]);
 
   if (isLoading) {
     return (
@@ -312,7 +312,7 @@ const dailySummary = useMemo(() => {
 
   return (
     <div className="max-w-3xl mx-auto pt-8 pb-32 px-4 md:pt-10 md:px-0">
-  <div className="flex items-center justify-between mb-7">
+      <div className="flex items-center justify-between mb-7">
         <div>
           <h1 className="text-xl md:text-2xl font-bold text-zinc-900">{salonName}</h1>
           <p className="text-zinc-500 text-xs md:text-sm mt-0.5">مدیریت نوبت‌های سالن</p>
@@ -327,6 +327,7 @@ const dailySummary = useMemo(() => {
           </Link>
           <Link
             href="/profile/business/overview"
+            aria-label="تنظیمات"
             className="w-10 h-10 flex items-center justify-center rounded-xl bg-zinc-100 text-zinc-600 hover:bg-zinc-200 transition-colors"
           >
             <Settings className="w-4.5 h-4.5" />
@@ -345,8 +346,8 @@ const dailySummary = useMemo(() => {
       {/* ناوبری روز: قبل / انتخاب تاریخ (برای پرش به روزهای دور) / بعد */}
       <div className="flex items-center gap-2 mb-3 mt-1">
         <button onClick={goToNextDay} aria-label="روز بعد" className="w-11 h-11 flex items-center justify-center rounded-xl bg-zinc-100 text-zinc-600 hover:bg-zinc-200 transition shrink-0">
-  <ChevronRight className="w-5 h-5" />
-</button>
+          <ChevronRight className="w-5 h-5" />
+        </button>
 
         <DatePicker
           value={new DateObject({ date: selectedDate, calendar: persian, locale: persian_fa })}
@@ -371,8 +372,8 @@ const dailySummary = useMemo(() => {
         />
 
         <button onClick={goToPrevDay} aria-label="روز قبل" className="w-11 h-11 flex items-center justify-center rounded-xl bg-zinc-100 text-zinc-600 hover:bg-zinc-200 transition shrink-0">
-  <ChevronLeft className="w-5 h-5" />
-</button>
+          <ChevronLeft className="w-5 h-5" />
+        </button>
       </div>
 
       {!isToday && (
@@ -384,45 +385,45 @@ const dailySummary = useMemo(() => {
       )}
 
       {dayBookings.length > 0 && (
-  <div className="grid grid-cols-3 gap-2 mb-6">
-    <div className="bg-white border border-zinc-100 rounded-2xl p-3 shadow-sm shadow-zinc-200/50">
-      <div className="flex items-center gap-1.5 mb-1.5">
-        <TrendingUp className="w-3.5 h-3.5 text-emerald-600" />
-        <span className="text-[11px] font-medium text-zinc-500">درآمد کل</span>
-      </div>
-      <p className="text-sm font-bold text-zinc-800 leading-tight">
-        {formatMoney(dailySummary.revenue)}
-        <span className="text-[10px] font-medium text-zinc-400 mr-1">تومان</span>
-      </p>
-    </div>
+        <div className="grid grid-cols-3 gap-2 mb-6">
+          <div className="bg-white border border-zinc-100 rounded-2xl p-3 shadow-sm shadow-zinc-200/50">
+            <div className="flex items-center gap-1.5 mb-1.5">
+              <TrendingUp className="w-3.5 h-3.5 text-emerald-600" />
+              <span className="text-[11px] font-medium text-zinc-500">درآمد کل</span>
+            </div>
+            <p className="text-sm font-bold text-zinc-800 leading-tight">
+              {formatMoney(dailySummary.revenue)}
+              <span className="text-[10px] font-medium text-zinc-400 mr-1">تومان</span>
+            </p>
+          </div>
 
-    <button
-      type="button"
-      onClick={() => setIsStaffModalOpen(true)}
-      className="bg-white border border-zinc-100 rounded-2xl p-3 shadow-sm shadow-zinc-200/50 text-right"
-    >
-      <div className="flex items-center gap-1.5 mb-1.5">
-        <Users className="w-3.5 h-3.5 text-[#824c71]" />
-        <span className="text-[11px] font-medium text-zinc-500">سهم پرسنل</span>
-      </div>
-      <p className="text-sm font-bold text-[#824c71] leading-tight underline underline-offset-2">
-        {formatMoney(dailySummary.staffShareTotal)}
-        <span className="text-[10px] font-medium text-zinc-400 mr-1">تومان</span>
-      </p>
-    </button>
+          <button
+            type="button"
+            onClick={() => setIsStaffModalOpen(true)}
+            className="bg-white border border-zinc-100 rounded-2xl p-3 shadow-sm shadow-zinc-200/50 text-right"
+          >
+            <div className="flex items-center gap-1.5 mb-1.5">
+              <Users className="w-3.5 h-3.5 text-[#824c71]" />
+              <span className="text-[11px] font-medium text-zinc-500">سهم پرسنل</span>
+            </div>
+            <p className="text-sm font-bold text-[#824c71] leading-tight underline underline-offset-2">
+              {formatMoney(dailySummary.staffShareTotal)}
+              <span className="text-[10px] font-medium text-zinc-400 mr-1">تومان</span>
+            </p>
+          </button>
 
-    <div className="bg-white border border-zinc-100 rounded-2xl p-3 shadow-sm shadow-zinc-200/50">
-      <div className="flex items-center gap-1.5 mb-1.5">
-        <Wallet className="w-3.5 h-3.5 text-amber-600" />
-        <span className="text-[11px] font-medium text-zinc-500">سود خالص</span>
-      </div>
-      <p className="text-sm font-bold text-zinc-800 leading-tight">
-        {formatMoney(dailySummary.netProfit)}
-        <span className="text-[10px] font-medium text-zinc-400 mr-1">تومان</span>
-      </p>
-    </div>
-  </div>
-)}
+          <div className="bg-white border border-zinc-100 rounded-2xl p-3 shadow-sm shadow-zinc-200/50">
+            <div className="flex items-center gap-1.5 mb-1.5">
+              <Wallet className="w-3.5 h-3.5 text-amber-600" />
+              <span className="text-[11px] font-medium text-zinc-500">سود خالص</span>
+            </div>
+            <p className="text-sm font-bold text-zinc-800 leading-tight">
+              {formatMoney(dailySummary.netProfit)}
+              <span className="text-[10px] font-medium text-zinc-400 mr-1">تومان</span>
+            </p>
+          </div>
+        </div>
+      )}
 
       <div className="mb-8 mt-4">
         <h2 className="text-sm font-bold text-zinc-800 mb-3">
@@ -440,19 +441,19 @@ const dailySummary = useMemo(() => {
       </div>
 
       <NewBookingModal
-  isOpen={isModalOpen}
-  onClose={handleModalClose}
-  onSaved={fetchData}
-  bookingToEdit={editingBooking}
-/>
+        isOpen={isModalOpen}
+        onClose={handleModalClose}
+        onSaved={fetchData}
+        bookingToEdit={editingBooking}
+      />
 
-<StaffShareModal
-  isOpen={isStaffModalOpen}
-  onClose={() => setIsStaffModalOpen(false)}
-  staffBreakdown={dailySummary.staffBreakdown}
-  total={dailySummary.staffShareTotal}
-  dayLabel={dayLabel}
-/>
+      <StaffShareModal
+        isOpen={isStaffModalOpen}
+        onClose={() => setIsStaffModalOpen(false)}
+        staffBreakdown={dailySummary.staffBreakdown}
+        total={dailySummary.staffShareTotal}
+        dayLabel={dayLabel}
+      />
     </div>
   );
 }
