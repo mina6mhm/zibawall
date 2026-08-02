@@ -50,7 +50,6 @@ export default function MySalonPage() {
   const [editingBooking, setEditingBooking] = useState<BookingToEdit | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [isStaffModalOpen, setIsStaffModalOpen] = useState(false);
-
   const [selectedDate, setSelectedDate] = useState<Date>(() => toDateOnlyAnchor(new Date()));
 
   const fetchData = useCallback(async () => {
