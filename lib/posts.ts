@@ -9,7 +9,7 @@ export type PostMeta = {
   slug: string;
   title: string;
   description: string;
-  image?: string; 
+  image?: string;
 };
 
 export function getPostBySlug(slug: string) {
@@ -20,9 +20,12 @@ export function getPostBySlug(slug: string) {
 }
 
 export function getAllPosts(): PostMeta[] {
-  const slugs = fs.readdirSync(postsDirectory);
+  const entries = fs.readdirSync(postsDirectory);
 
-  const posts = slugs.map((slug) => {
+  // فقط فایل‌های .mdx رو در نظر بگیر — هر فایل دیگه‌ای (مثل .DS_Store) نادیده گرفته می‌شه
+  const mdxSlugs = entries.filter((entry) => entry.endsWith('.mdx'));
+
+  const posts = mdxSlugs.map((slug) => {
     const fullPath = path.join(postsDirectory, slug);
     const fileContents = fs.readFileSync(fullPath, 'utf8');
     const { data } = matter(fileContents);
@@ -31,9 +34,9 @@ export function getAllPosts(): PostMeta[] {
       slug: slug.replace(/\.mdx$/, ''),
       title: data.title,
       description: data.description,
-      image: data.image || '/images/default-blog.jpg', 
+      image: data.image || '/images/default-blog.jpg',
     } as PostMeta;
   });
-  
+
   return posts;
 }
