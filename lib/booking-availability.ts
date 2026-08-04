@@ -51,8 +51,8 @@ export function getStaffNames(services: ServiceLike[] | null | undefined): strin
 
 export type ConflictResult = { type: 'BOOKING' | 'BLOCK'; withId: string } | null;
 
-type ExistingBookingLite = { id: string; startTime: string; durationMinutes: number; staffNames: string[] };
-type ExistingBlockLite = { id: string; startTime: string; endTime: string; staffName?: string | null };
+export type ExistingBookingLite = { id: string; startTime: string; durationMinutes: number; staffNames: string[] };
+export type ExistingBlockLite = { id: string; startTime: string; endTime: string; staffName?: string | null };
 
 // بررسی می‌کند که آیا یک بازه‌ی جدید [startTime, startTime+duration) با نوبت‌ها
 // یا مسدودی‌های موجود همان روز تداخل دارد یا نه.
@@ -129,8 +129,8 @@ export function generateAvailableSlots(params: {
   openTime: string;
   closeTime: string;
   durationMinutes: number;
-  existingBookings: { startTime: string; durationMinutes: number; staffNames: string[] }[];
-  timeBlocks: { startTime: string; endTime: string; staffName?: string | null }[];
+  existingBookings: ExistingBookingLite[];
+  timeBlocks: ExistingBlockLite[];
   isToday?: boolean;
   now?: Date;
 }): string[] {
