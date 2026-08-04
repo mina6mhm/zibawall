@@ -260,7 +260,9 @@ export default function OnlineBookingModal({ isOpen, onClose, salonId, onBooked 
             <div className="mb-4">
               <DatePicker
                 value={dateObj}
-                onChange={(d) => d && setDateObj(d as DateObject)}
+                onChange={(d) => {
+                  if (d) setDateObj(d as DateObject);
+                }}
                 calendar={persian}
                 locale={persian_fa}
                 calendarPosition="bottom-center"
