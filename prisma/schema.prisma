@@ -83,6 +83,8 @@ model Salon {
   // نوبت‌دهی: کاملاً اختیاری و سمت سالن‌دار روشن/خاموش می‌شود
   bookingEnabled        Boolean     @default(false)
 
+  bookingCategories     BookingCategory[]
+
   userId                String      @unique
   user                  User        @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -339,4 +341,41 @@ model TimeBlock {
   createdAt DateTime @default(now())
 
   @@index([salonId, date])
+}
+
+// دسته‌بندی نوبت‌دهی آنلاین (مثلاً «خدمات ناخن»، «خدمات مو»)
+// کاملاً آزاد و توسط خود سالن‌دار تعریف می‌شود؛ هر سالن می‌تواند چند دسته داشته باشد.
+model BookingCategory {
+  id            String        @id @default(uuid())
+  salonId       String
+  salon         Salon         @relation(fields: [salonId], references: [id], onDelete: Cascade)
+  title         String
+  isActive      Boolean       @default(true)
+  order         Int           @default(0)
+  depositAmount Int           @default(0) // بیعانه‌ای که مشتری هنگام رزرو آنلاین این دسته پرداخت می‌کند
+
+  services      ServiceItem[]
+
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  @@index([salonId])
+}
+
+// یک خدمت داخل یک دسته (مثلاً «کاشت ناخن»، «ژلیش ناخن»)
+// durationMinutes اجباری است چون پایه‌ی محاسبه‌ی زمان‌بندی/تداخل تقویم است.
+model ServiceItem {
+  id              String          @id @default(uuid())
+  categoryId      String
+  category        BookingCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  name            String
+  durationMinutes Int
+  price           Int?
+  isActive        Boolean         @default(true)
+  order           Int             @default(0)
+
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  @@index([categoryId])
 }
