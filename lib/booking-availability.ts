@@ -119,3 +119,38 @@ export function isWithinWorkingHours(
 export function jsDateToPersianDayIndex(date: Date): number {
   return (date.getUTCDay() + 1) % 7;
 }
+
+// تولید لیست ساعات خالیِ قابل‌رزرو برای یک روز خاص — برای فرم رزرو آنلاین مشتری.
+// چون مشتری پرسنل انتخاب نمی‌کند، staffNames همیشه خالی پاس داده می‌شود؛
+// یعنی هر تداخل با هر نوبت/مسدودی (حتی مخصوص یک پرسنل خاص) کل بازه را غیرقابل‌انتخاب می‌کند.
+export const SLOT_STEP_MINUTES = 15;
+
+export function generateAvailableSlots(params: {
+  openTime: string;
+  closeTime: string;
+  durationMinutes: number;
+  existingBookings: { startTime: string; durationMinutes: number; staffNames: string[] }[];
+  timeBlocks: { startTime: string; endTime: string; staffName?: string | null }[];
+  isToday?: boolean;
+  now?: Date;
+}): string[] {
+  const { openTime, closeTime, durationMinutes, existingBookings, timeBlocks, isToday, now } = params;
+  const open = timeToMinutes(openTime);
+  const close = timeToMinutes(closeTime);
+  const nowMinutes = now ? now.getHours() * 60 + now.getMinutes() : 0;
+
+  const slots: string[] = [];
+  for (let start = open; start + durationMinutes <= close; start += SLOT_STEP_MINUTES) {
+    if (isToday && start <= nowMinutes) continue;
+
+    const conflict = findBookingConflict({
+      startTime: minutesToTime(start),
+      durationMinutes,
+      staffNames: [],
+      existingBookings,
+      timeBlocks,
+    });
+    if (!conflict) slots.push(minutesToTime(start));
+  }
+  return slots;
+}

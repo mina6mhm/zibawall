@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
   Plus, Loader2, Store, Settings, ChevronRight, ChevronLeft, CalendarDays,
-  Wallet, TrendingUp, Users, BarChart3, Clock, Ban,
+  Wallet, TrendingUp, Users, BarChart3, Clock, Ban, ListChecks,
 } from 'lucide-react';
 import DatePicker, { DateObject } from 'react-multi-date-picker';
 import persian from 'react-date-object/calendars/persian';
@@ -321,6 +321,15 @@ export default function MySalonPage() {
           <p className="text-zinc-500 text-xs md:text-sm mt-0.5">مدیریت نوبت‌های سالن</p>
         </div>
         <div className="flex items-center gap-2 shrink-0">
+
+          <Link
+  href="/my-salon/services"
+  aria-label="خدمات نوبت‌دهی آنلاین"
+  className="w-10 h-10 flex items-center justify-center rounded-xl bg-zinc-100 text-zinc-600 hover:bg-zinc-200 transition-colors"
+>
+  <ListChecks className="w-4.5 h-4.5" />
+</Link>
+
           <button
             onClick={() => setIsScheduleModalOpen(true)}
             aria-label="ساعات کاری"

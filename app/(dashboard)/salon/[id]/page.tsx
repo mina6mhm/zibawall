@@ -10,7 +10,8 @@ import {
   Home, Users
 } from "lucide-react";
 import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
-
+import OnlineBookingModal from "@/components/booking/OnlineBookingModal";
+import { CalendarCheck } from "lucide-react";
 
 const GENDER_AUDIENCE_LABELS: Record<string, string> = {
   FEMALE: 'مخصوص خانم‌ها',
@@ -41,6 +42,8 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
   const [deleteError, setDeleteError] = useState("");
   // --- کنترل مودال انتخاب شماره تماس (وقتی سالن بیش از یک شماره داشته باشد) ---
   const [showPhoneModal, setShowPhoneModal] = useState(false);
+
+  const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
 
   const toggleCategory = (category: string) => {
     setExpandedCategories(prev => 
@@ -444,17 +447,27 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
 )}
 
       {/* دکمه‌ی تماس در دسکتاپ */}
-      <div className="hidden lg:flex flex-col gap-2.5 mt-6">
-        {primaryPhone && (
-          <a
-            href={`tel:${primaryPhone}`}
-            onClick={handleCallButtonClick}
-            className="w-full bg-[#824c71] hover:bg-[#824c71]/90 text-white font-medium py-3 rounded-xl text-center transition flex items-center justify-center"
-          >
-            تماس با سالن
-          </a>
-        )}
-      </div>
+      {/* دکمه‌های تماس/رزرو در دسکتاپ */}
+<div className="hidden lg:flex flex-col gap-2.5 mt-6">
+  {salon.bookingEnabled && (
+    <button
+      onClick={() => setIsBookingModalOpen(true)}
+      className="w-full bg-[#824c71] hover:bg-[#824c71]/90 text-white font-medium py-3 rounded-xl text-center transition flex items-center justify-center gap-2"
+    >
+      <CalendarCheck className="w-4.5 h-4.5" />
+      رزرو نوبت آنلاین
+    </button>
+  )}
+  {primaryPhone && (
+    <a
+      href={`tel:${primaryPhone}`}
+      onClick={handleCallButtonClick}
+      className="w-full bg-zinc-100 hover:bg-zinc-200 text-zinc-700 font-medium py-3 rounded-xl text-center transition flex items-center justify-center"
+    >
+      تماس با سالن
+    </a>
+  )}
+</div>
     </div>
   );
 
@@ -745,18 +758,35 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
         </div>
       </div>
 {/* دکمه‌ی شناور تماس برای موبایل (Sticky Bottom Bar) */}
-      <div className="fixed bottom-8 left-5 right-5 z-[60] lg:hidden flex gap-2.5">
-        {primaryPhone && (
-          <a 
-            href={`tel:${primaryPhone}`}
-            onClick={handleCallButtonClick}
-            className="flex-1 bg-[#824c71] hover:bg-[#824c71]/90 text-white font-medium py-4 rounded-xl text-sm flex items-center justify-center gap-2 shadow-lg shadow-[#824c71]/10 active:scale-95 transition-transform"
-          >
-            <Phone className="w-4.5 h-4.5" />
-            تماس با سالن
-          </a>
-        )}
-      </div>
+      {/* دکمه‌های شناور پایین صفحه برای موبایل */}
+<div className="fixed bottom-8 left-5 right-5 z-[60] lg:hidden flex gap-2.5">
+  {salon.bookingEnabled && (
+    <button
+      onClick={() => setIsBookingModalOpen(true)}
+      className="flex-1 bg-[#824c71] hover:bg-[#824c71]/90 text-white font-medium py-4 rounded-xl text-sm flex items-center justify-center gap-2 shadow-lg shadow-[#824c71]/10 active:scale-95 transition-transform"
+    >
+      <CalendarCheck className="w-4.5 h-4.5" />
+      رزرو نوبت آنلاین
+    </button>
+  )}
+  {primaryPhone && (
+    <a
+      href={`tel:${primaryPhone}`}
+      onClick={handleCallButtonClick}
+      className={`${salon.bookingEnabled ? 'w-14 shrink-0' : 'flex-1'} bg-zinc-800 hover:bg-zinc-700 text-white font-medium py-4 rounded-xl text-sm flex items-center justify-center gap-2 shadow-lg active:scale-95 transition-transform`}
+    >
+      <Phone className="w-4.5 h-4.5" />
+      {!salon.bookingEnabled && 'تماس با سالن'}
+    </a>
+  )}
+</div>
+
+<OnlineBookingModal
+  isOpen={isBookingModalOpen}
+  onClose={() => setIsBookingModalOpen(false)}
+  salonId={salon.id}
+  onBooked={() => router.push('/appointments?bookingCreated=1')}
+/>
 
     </>
   );
