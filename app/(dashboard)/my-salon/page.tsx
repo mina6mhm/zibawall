@@ -5,27 +5,18 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
-  Plus, Loader2, Store, Settings, ChevronRight, ChevronLeft, CalendarDays,
-  Wallet, TrendingUp, Users, BarChart3, Clock, Ban, ListChecks,
+  Plus, Loader2, Calendar, Clock, Phone, User as UserIcon,
+  Scissors, Trash2, Store, Settings, Pencil, ChevronRight, ChevronLeft, CalendarDays,
+  Wallet, TrendingUp, Users, BarChart3,
 } from 'lucide-react';
 import DatePicker, { DateObject } from 'react-multi-date-picker';
 import persian from 'react-date-object/calendars/persian';
 import persian_fa from 'react-date-object/locales/persian_fa';
 import NewBookingModal, { BookingToEdit } from '@/components/booking/NewBookingModal';
 import StaffShareModal from '@/components/booking/StaffShareModal';
-import ScheduleModal from '@/components/booking/ScheduleModal';
-import BlockTimeModal from '@/components/booking/BlockTimeModal';
-import DayTimeline, { TimelineBooking, TimelineBlock } from '@/components/booking/DayTimeline';
 import { toDateOnlyAnchor } from '@/lib/dateUtils';
-import { getTotalDuration, jsDateToPersianDayIndex } from '@/lib/booking-availability';
 
-type ServiceItem = {
-  name: string;
-  price?: number;
-  staffName?: string;
-  staffPercentage?: number;
-  duration?: number;
-};
+type ServiceItem = { name: string; price?: number; staffName?: string; staffPercentage?: number };
 
 type Booking = {
   id: string;
@@ -40,13 +31,13 @@ type Booking = {
   totalAmount: number;
   status: 'PENDING_PAYMENT' | 'CONFIRMED' | 'CANCELLED';
   paymentStatus: 'PENDING' | 'SUCCESS' | 'FAILED';
-  source?: 'ONLINE' | 'MANUAL';
 };
 
-type ScheduleDay = { dayOfWeek: number; label: string; isOpen: boolean; openTime: string; closeTime: string };
-
-const DEFAULT_OPEN = '10:00';
-const DEFAULT_CLOSE = '20:00';
+const STATUS_LABELS: Record<Booking['status'], { label: string; className: string }> = {
+  PENDING_PAYMENT: { label: 'در انتظار پرداخت مشتری', className: 'bg-amber-50 text-amber-700' },
+  CONFIRMED: { label: 'قطعی شده', className: 'bg-emerald-50 text-emerald-700' },
+  CANCELLED: { label: 'لغو شده', className: 'bg-zinc-100 text-zinc-500' },
+};
 
 export default function MySalonPage() {
   const router = useRouter();
@@ -54,18 +45,11 @@ export default function MySalonPage() {
   const [hasSalon, setHasSalon] = useState<boolean | null>(null);
   const [salonName, setSalonName] = useState('');
   const [bookings, setBookings] = useState<Booking[]>([]);
-  const [scheduleDays, setScheduleDays] = useState<ScheduleDay[]>([]);
-  const [timeBlocks, setTimeBlocks] = useState<TimelineBlock[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingBooking, setEditingBooking] = useState<BookingToEdit | null>(null);
-  const [modalPrefillTime, setModalPrefillTime] = useState<string | undefined>(undefined);
-
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [isStaffModalOpen, setIsStaffModalOpen] = useState(false);
-  const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
-  const [isBlockModalOpen, setIsBlockModalOpen] = useState(false);
-  const [blockPrefillTime, setBlockPrefillTime] = useState<string | undefined>(undefined);
 
   const [selectedDate, setSelectedDate] = useState<Date>(() => toDateOnlyAnchor(new Date()));
 
@@ -98,44 +82,12 @@ export default function MySalonPage() {
     }
   }, [router]);
 
-  const fetchSchedule = useCallback(async () => {
-    try {
-      const res = await fetch('/api/salon/schedule');
-      if (res.ok) {
-        const data = await res.json();
-        setScheduleDays(data.days || []);
-      }
-    } catch (error) {
-      console.error('خطا در دریافت ساعات کاری:', error);
-    }
-  }, []);
-
-  const fetchTimeBlocks = useCallback(async (dateStr: string) => {
-    try {
-      const res = await fetch(`/api/salon/time-blocks?date=${dateStr}`);
-      if (res.ok) {
-        const data = await res.json();
-        setTimeBlocks(data.blocks || []);
-      }
-    } catch (error) {
-      console.error('خطا در دریافت مسدودی‌ها:', error);
-    }
-  }, []);
-
   useEffect(() => {
     fetchData();
-    fetchSchedule();
-  }, [fetchData, fetchSchedule]);
-
-  const selectedDateStr = selectedDate.toISOString().slice(0, 10);
-
-  useEffect(() => {
-    fetchTimeBlocks(selectedDateStr);
-  }, [selectedDateStr, fetchTimeBlocks]);
+  }, [fetchData]);
 
   const openNewBookingModal = () => {
     setEditingBooking(null);
-    setModalPrefillTime(undefined);
     setIsModalOpen(true);
   };
 
@@ -149,35 +101,34 @@ export default function MySalonPage() {
       services: booking.services,
       depositAmount: booking.depositAmount,
     });
-    setModalPrefillTime(undefined);
     setIsModalOpen(true);
   };
 
   const handleModalClose = () => {
     setIsModalOpen(false);
     setEditingBooking(null);
-    setModalPrefillTime(undefined);
   };
 
-  const handleModalSaved = () => {
-    fetchData();
-    fetchTimeBlocks(selectedDateStr);
-  };
-
-  const handleDeleteBlock = async (blockId: string) => {
-    if (!window.confirm('آیا می‌خواهید این مسدودی را لغو کنید و دوباره خالی نمایش داده شود؟')) return;
+  const handleDelete = async (id: string) => {
+    if (!window.confirm('آیا از حذف این نوبت مطمئن هستید؟')) return;
+    setDeletingId(id);
     try {
-      const res = await fetch(`/api/salon/time-blocks?id=${blockId}`, { method: 'DELETE' });
+      const res = await fetch(`/api/booking?id=${id}`, { method: 'DELETE' });
       if (res.ok) {
-        setTimeBlocks((prev) => prev.filter((b) => b.id !== blockId));
+        setBookings((prev) => prev.filter((b) => b.id !== id));
       } else {
         const data = await res.json();
-        alert(data.error || 'خطا در حذف مسدودی');
+        alert(data.error || 'خطا در حذف نوبت');
       }
     } catch {
       alert('خطای ارتباط با سرور');
+    } finally {
+      setDeletingId(null);
     }
   };
+
+  const formatDate = (isoDate: string) =>
+    new Date(isoDate).toLocaleDateString('fa-IR', { year: 'numeric', month: 'long', day: 'numeric' });
 
   const formatMoney = (amount: number) => amount.toLocaleString('fa-IR');
 
@@ -203,6 +154,7 @@ export default function MySalonPage() {
     setSelectedDate(toDateOnlyAnchor(d.toDate()));
   };
 
+  const selectedDateStr = selectedDate.toISOString().slice(0, 10);
   const todayStr = toDateOnlyAnchor(new Date()).toISOString().slice(0, 10);
   const isToday = selectedDateStr === todayStr;
 
@@ -213,14 +165,6 @@ export default function MySalonPage() {
     year: 'numeric',
   });
 
-  // ساعات کاری همین روز، بر اساس ساعات کاری هفتگی که سالن‌دار تنظیم کرده
-  const todaySchedule = useMemo(() => {
-    const dayIndex = jsDateToPersianDayIndex(selectedDate);
-    const row = scheduleDays.find((d) => d.dayOfWeek === dayIndex);
-    if (row) return row;
-    return { dayOfWeek: dayIndex, label: '', isOpen: true, openTime: DEFAULT_OPEN, closeTime: DEFAULT_CLOSE };
-  }, [scheduleDays, selectedDate]);
-
   const dayBookings = useMemo(
     () =>
       bookings
@@ -228,32 +172,6 @@ export default function MySalonPage() {
         .sort((a, b) => a.startTime.localeCompare(b.startTime)),
     [bookings, selectedDateStr]
   );
-
-  // تبدیل نوبت‌های واقعی به شکل مورد نیاز تایم‌لاین
-  const timelineBookings: TimelineBooking[] = useMemo(
-    () =>
-      dayBookings.map((b) => ({
-        id: b.id,
-        startTime: b.startTime,
-        durationMinutes: getTotalDuration(b.services),
-        title: b.customerName || 'بدون نام',
-        subtitle: b.services.map((s) => s.name).join('، '),
-        status: b.status,
-        source: b.source || 'MANUAL',
-      })),
-    [dayBookings]
-  );
-
-  const handleTimelineBookingClick = (tb: TimelineBooking) => {
-    const fullBooking = dayBookings.find((b) => b.id === tb.id);
-    if (fullBooking) openEditBookingModal(fullBooking);
-  };
-
-  const handleEmptySlotClick = (time: string) => {
-    setEditingBooking(null);
-    setModalPrefillTime(time);
-    setIsModalOpen(true);
-  };
 
   type StaffShareRow = { name: string; amount: number };
 
@@ -313,6 +231,85 @@ export default function MySalonPage() {
     );
   }
 
+  const renderBookingCard = (booking: Booking) => {
+    const statusInfo = STATUS_LABELS[booking.status];
+    return (
+      <div key={booking.id} className="bg-white border border-zinc-100 rounded-2xl p-4 shadow-sm shadow-zinc-200/50">
+        <div className="flex items-start justify-between gap-2 mb-3">
+          <div className="flex items-center gap-2 text-zinc-800">
+            <UserIcon className="w-4 h-4 text-[#824c71]" />
+            <span className="font-bold text-sm">{booking.customerName || 'بدون نام'}</span>
+          </div>
+          <span className={`text-[11px] font-medium px-2.5 py-1 rounded-lg whitespace-nowrap ${statusInfo.className}`}>
+            {statusInfo.label}
+          </span>
+        </div>
+
+        <div className="space-y-1.5 text-[13px] text-zinc-600 mb-3">
+          <div className="flex items-center gap-1.5">
+            <Phone className="w-3.5 h-3.5 text-zinc-400" />
+            <span dir="ltr">{booking.customerPhone}</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <Calendar className="w-3.5 h-3.5 text-zinc-400" />
+            <span>{formatDate(booking.date)}</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <Clock className="w-3.5 h-3.5 text-zinc-400" />
+            <span dir="ltr">{booking.startTime}</span>
+          </div>
+        </div>
+
+        <div className="bg-zinc-50 rounded-xl p-3 mb-3">
+          <div className="flex items-center gap-1.5 mb-1.5">
+            <Scissors className="w-3.5 h-3.5 text-[#824c71]" />
+            <span className="text-xs font-bold text-zinc-700">خدمات</span>
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {booking.services.map((s, idx) => (
+              <span key={idx} className="bg-white px-2 py-1 rounded-md text-[11px] text-zinc-600 border border-zinc-100">
+                {s.name}
+                {s.price ? ` · ${formatMoney(s.price)} تومان` : ''}
+                {s.staffName ? ` · ${s.staffName}` : ''}
+                {s.staffPercentage ? ` (${s.staffPercentage.toLocaleString('fa-IR')}٪)` : ''}
+              </span>
+            ))}
+          </div>
+        </div>
+
+        <div className="flex items-center justify-between text-[12px] text-zinc-500 border-t border-zinc-100 pt-2.5">
+          <span>بیعانه: {formatMoney(booking.depositAmount)} تومان</span>
+          <span>مبلغ کل: {formatMoney(booking.totalAmount)} تومان</span>
+        </div>
+
+        <div className="mt-3 flex items-center gap-2">
+          <button
+            onClick={() => openEditBookingModal(booking)}
+            className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl bg-zinc-100 text-zinc-700 text-xs font-medium hover:bg-zinc-200 transition"
+          >
+            <Pencil className="w-3.5 h-3.5" />
+            ویرایش
+          </button>
+
+          {booking.status !== 'CONFIRMED' && (
+            <button
+              onClick={() => handleDelete(booking.id)}
+              disabled={deletingId === booking.id}
+              className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl bg-red-50 text-red-600 text-xs font-medium hover:bg-red-100 transition disabled:opacity-50"
+            >
+              {deletingId === booking.id ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <Trash2 className="w-3.5 h-3.5" />
+              )}
+              حذف نوبت
+            </button>
+          )}
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="max-w-3xl mx-auto pt-8 pb-32 px-4 md:pt-10 md:px-0">
       <div className="flex items-center justify-between mb-7">
@@ -321,32 +318,6 @@ export default function MySalonPage() {
           <p className="text-zinc-500 text-xs md:text-sm mt-0.5">مدیریت نوبت‌های سالن</p>
         </div>
         <div className="flex items-center gap-2 shrink-0">
-
-          <Link
-  href="/my-salon/services"
-  aria-label="خدمات نوبت‌دهی آنلاین"
-  className="w-10 h-10 flex items-center justify-center rounded-xl bg-zinc-100 text-zinc-600 hover:bg-zinc-200 transition-colors"
->
-  <ListChecks className="w-4.5 h-4.5" />
-</Link>
-
-          <button
-            onClick={() => setIsScheduleModalOpen(true)}
-            aria-label="ساعات کاری"
-            className="w-10 h-10 flex items-center justify-center rounded-xl bg-zinc-100 text-zinc-600 hover:bg-zinc-200 transition-colors"
-          >
-            <Clock className="w-4.5 h-4.5" />
-          </button>
-          <button
-            onClick={() => {
-              setBlockPrefillTime(undefined);
-              setIsBlockModalOpen(true);
-            }}
-            aria-label="مسدود کردن بازه"
-            className="w-10 h-10 flex items-center justify-center rounded-xl bg-zinc-100 text-zinc-600 hover:bg-zinc-200 transition-colors"
-          >
-            <Ban className="w-4.5 h-4.5" />
-          </button>
           <Link
             href="/my-salon/reports"
             aria-label="گزارش درآمد"
@@ -454,34 +425,26 @@ export default function MySalonPage() {
         </div>
       )}
 
-      {/* تقویم روزانه — قلب مدیریت نوبت‌ها: دیدن، ثبت دستی با کلیک، و مسدودسازی */}
       <div className="mb-8 mt-4">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-sm font-bold text-zinc-800">
-            تقویم امروز {dayBookings.length > 0 && `(${dayBookings.length.toLocaleString('fa-IR')} نوبت)`}
-          </h2>
-          <p className="text-[11px] text-zinc-400">برای ثبت نوبت روی هر بازه‌ی خالی کلیک کنید</p>
-        </div>
-
-        <DayTimeline
-          openTime={todaySchedule.openTime}
-          closeTime={todaySchedule.closeTime}
-          isDayOpen={todaySchedule.isOpen}
-          bookings={timelineBookings}
-          blocks={timeBlocks}
-          onEmptySlotClick={handleEmptySlotClick}
-          onBookingClick={handleTimelineBookingClick}
-          onBlockClick={(block) => handleDeleteBlock(block.id)}
-        />
+        <h2 className="text-sm font-bold text-zinc-800 mb-3">
+          نوبت‌های این روز {dayBookings.length > 0 && `(${dayBookings.length.toLocaleString('fa-IR')})`}
+        </h2>
+        {dayBookings.length > 0 ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {dayBookings.map(renderBookingCard)}
+          </div>
+        ) : (
+          <div className="text-center py-10 bg-zinc-50 rounded-2xl">
+            <p className="text-zinc-400 text-sm">نوبتی برای این روز ثبت نشده است.</p>
+          </div>
+        )}
       </div>
 
       <NewBookingModal
         isOpen={isModalOpen}
         onClose={handleModalClose}
-        onSaved={handleModalSaved}
+        onSaved={fetchData}
         bookingToEdit={editingBooking}
-        prefillDate={selectedDateStr}
-        prefillStartTime={modalPrefillTime}
       />
 
       <StaffShareModal
@@ -490,21 +453,6 @@ export default function MySalonPage() {
         staffBreakdown={dailySummary.staffBreakdown}
         total={dailySummary.staffShareTotal}
         dayLabel={dayLabel}
-      />
-
-      <ScheduleModal
-        isOpen={isScheduleModalOpen}
-        onClose={() => setIsScheduleModalOpen(false)}
-        onSaved={fetchSchedule}
-      />
-
-      <BlockTimeModal
-        isOpen={isBlockModalOpen}
-        onClose={() => setIsBlockModalOpen(false)}
-        onSaved={() => fetchTimeBlocks(selectedDateStr)}
-        date={selectedDateStr}
-        dayLabel={dayLabel}
-        prefillStartTime={blockPrefillTime}
       />
     </div>
   );

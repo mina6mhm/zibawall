@@ -5,13 +5,6 @@ import jwt from 'jsonwebtoken';
 
 import { prisma } from '@/lib/prisma';
 import { BOOKING_APP_FEE } from '@/lib/constants';
-import {
-  getTotalDuration,
-  getStaffNames,
-  findBookingConflict,
-  isWithinWorkingHours,
-  jsDateToPersianDayIndex,
-} from '@/lib/booking-availability';
 
 export const dynamic = 'force-dynamic';
 
@@ -39,10 +32,9 @@ async function getOwnedSalonFromToken() {
   return { salon, decoded };
 }
 
-// پاک‌سازی و اعتبارسنجی آرایه‌ی خدمات (شامل staffName و duration هر ردیف)
-function sanitizeServices(
-  services: any
-): { name: string; price?: number; staffName?: string; staffPercentage?: number; duration?: number }[] {
+// یک تابع مشترک برای پاک‌سازی و اعتبارسنجی آرایه‌ی خدمات (شامل staffName هر ردیف)
+// قبلاً اینجا staffName نادیده گرفته می‌شد و ذخیره نمی‌شد — همین‌جا اصلاح شده
+function sanitizeServices(services: any): { name: string; price?: number; staffName?: string; staffPercentage?: number }[] {
   if (!Array.isArray(services)) return [];
 
   return services
@@ -55,70 +47,8 @@ function sanitizeServices(
         typeof s?.staffPercentage === 'number' && s.staffPercentage > 0 && s.staffPercentage <= 100
           ? s.staffPercentage
           : undefined,
-      duration:
-        typeof s?.duration === 'number' && s.duration > 0 ? Math.round(s.duration) : undefined,
     }))
     .filter((s) => s.name !== '');
-}
-
-// بررسی تداخل زمانی + ساعات کاری برای یک نوبت جدید/ویرایش‌شده.
-// اگر مشکلی بود، پیام خطا برمی‌گرداند؛ اگر همه‌چیز اوکی بود null برمی‌گرداند.
-async function checkForConflict(params: {
-  salonId: string;
-  date: Date;
-  startTime: string;
-  durationMinutes: number;
-  staffNames: string[];
-  excludeBookingId?: string;
-}): Promise<string | null> {
-  const { salonId, date, startTime, durationMinutes, staffNames, excludeBookingId } = params;
-
-  const dayIndex = jsDateToPersianDayIndex(date);
-  const schedule = await prisma.salonSchedule.findUnique({
-    where: { salonId_dayOfWeek: { salonId, dayOfWeek: dayIndex } },
-  });
-
-  if (schedule && !schedule.isOpen) {
-    return 'طبق ساعات کاری تنظیم‌شده، سالن در این روز تعطیل است';
-  }
-
-  const openTime = schedule?.openTime || '10:00';
-  const closeTime = schedule?.closeTime || '20:00';
-
-  if (!isWithinWorkingHours(startTime, durationMinutes, openTime, closeTime)) {
-    return `این ساعت خارج از بازه‌ی کاری سالن (${openTime} تا ${closeTime}) است`;
-  }
-
-  const dayBookings = await prisma.booking.findMany({
-    where: {
-      salonId,
-      date,
-      status: { not: 'CANCELLED' },
-      ...(excludeBookingId ? { id: { not: excludeBookingId } } : {}),
-    },
-  });
-
-  const existingBookings = dayBookings.map((b) => ({
-    id: b.id,
-    startTime: b.startTime,
-    durationMinutes: getTotalDuration(b.services as any),
-    staffNames: getStaffNames(b.services as any),
-  }));
-
-  const dayBlocks = await prisma.timeBlock.findMany({ where: { salonId, date } });
-  const timeBlocks = dayBlocks.map((tb) => ({
-    id: tb.id,
-    startTime: tb.startTime,
-    endTime: tb.endTime,
-    staffName: tb.staffName,
-  }));
-
-  const conflict = findBookingConflict({ startTime, durationMinutes, staffNames, existingBookings, timeBlocks });
-
-  if (conflict?.type === 'BOOKING') return 'این بازه با یک نوبت دیگر تداخل دارد';
-  if (conflict?.type === 'BLOCK') return 'این بازه توسط خودتان مسدود شده است';
-
-  return null;
 }
 
 // دریافت لیست نوبت‌های سالنِ کاربر لاگین‌شده
@@ -141,7 +71,7 @@ export async function GET(req: Request) {
   }
 }
 
-// ساخت نوبت جدید توسط سالن‌دار (ثبت دستی)
+// ساخت نوبت جدید توسط سالن‌دار
 export async function POST(req: Request) {
   try {
     const result = await getOwnedSalonFromToken();
@@ -151,7 +81,7 @@ export async function POST(req: Request) {
     const { salon } = result;
 
     const body = await req.json();
-    const { customerName, customerPhone, date, startTime, services, depositAmount, force } = body;
+    const { customerName, customerPhone, date, startTime, services, depositAmount } = body;
 
     if (!customerPhone || !mobileRegex.test(customerPhone)) {
       return NextResponse.json({ error: 'شماره موبایل مشتری معتبر نیست' }, { status: 400 });
@@ -165,23 +95,6 @@ export async function POST(req: Request) {
 
     if (cleanedServices.length === 0) {
       return NextResponse.json({ error: 'حداقل یک خدمت معتبر وارد کنید' }, { status: 400 });
-    }
-
-    const parsedDate = new Date(date);
-    const totalDuration = getTotalDuration(cleanedServices);
-    const staffNames = getStaffNames(cleanedServices);
-
-    if (!force) {
-      const conflictMessage = await checkForConflict({
-        salonId: salon.id,
-        date: parsedDate,
-        startTime,
-        durationMinutes: totalDuration,
-        staffNames,
-      });
-      if (conflictMessage) {
-        return NextResponse.json({ error: conflictMessage, conflict: true }, { status: 409 });
-      }
     }
 
     const finalDepositAmount =
@@ -199,13 +112,12 @@ export async function POST(req: Request) {
         customerId: existingCustomer?.id || null,
         customerName: customerName?.trim() || null,
         customerPhone,
-        date: parsedDate,
+        date: new Date(date),
         startTime,
         services: cleanedServices,
         depositAmount: finalDepositAmount,
         appFee: BOOKING_APP_FEE,
         totalAmount,
-        source: 'MANUAL',
       },
     });
 
@@ -239,7 +151,7 @@ export async function PUT(req: Request) {
     }
 
     const body = await req.json();
-    const { customerName, customerPhone, date, startTime, services, depositAmount, force } = body;
+    const { customerName, customerPhone, date, startTime, services, depositAmount } = body;
 
     if (!customerPhone || !mobileRegex.test(customerPhone)) {
       return NextResponse.json({ error: 'شماره موبایل مشتری معتبر نیست' }, { status: 400 });
@@ -253,24 +165,6 @@ export async function PUT(req: Request) {
 
     if (cleanedServices.length === 0) {
       return NextResponse.json({ error: 'حداقل یک خدمت معتبر وارد کنید' }, { status: 400 });
-    }
-
-    const parsedDate = new Date(date);
-    const totalDuration = getTotalDuration(cleanedServices);
-    const staffNames = getStaffNames(cleanedServices);
-
-    if (!force) {
-      const conflictMessage = await checkForConflict({
-        salonId: salon.id,
-        date: parsedDate,
-        startTime,
-        durationMinutes: totalDuration,
-        staffNames,
-        excludeBookingId: id,
-      });
-      if (conflictMessage) {
-        return NextResponse.json({ error: conflictMessage, conflict: true }, { status: 409 });
-      }
     }
 
     const finalDepositAmount =
@@ -288,7 +182,7 @@ export async function PUT(req: Request) {
         customerId: existingCustomer?.id || null,
         customerName: customerName?.trim() || null,
         customerPhone,
-        date: parsedDate,
+        date: new Date(date),
         startTime,
         services: cleanedServices,
         depositAmount: finalDepositAmount,
