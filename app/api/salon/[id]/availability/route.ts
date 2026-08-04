@@ -39,13 +39,19 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     where: { salonId, date, status: { not: 'CANCELLED' } },
   });
   const existingBookings = dayBookings.map((b) => ({
+    id: b.id,
     startTime: b.startTime,
     durationMinutes: getTotalDuration(b.services as any),
     staffNames: getStaffNames(b.services as any),
   }));
 
   const dayBlocks = await prisma.timeBlock.findMany({ where: { salonId, date } });
-  const timeBlocks = dayBlocks.map((tb) => ({ startTime: tb.startTime, endTime: tb.endTime, staffName: tb.staffName }));
+  const timeBlocks = dayBlocks.map((tb) => ({
+    id: tb.id,
+    startTime: tb.startTime,
+    endTime: tb.endTime,
+    staffName: tb.staffName,
+  }));
 
   const todayStr = toDateOnlyAnchor(new Date()).toISOString().slice(0, 10);
 
