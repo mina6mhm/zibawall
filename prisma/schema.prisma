@@ -284,7 +284,7 @@ model Booking {
 model Staff {
   id        String   @id @default(uuid())
   name      String
-  phone     String
+  phone     String?
 
   salonId   String
   salon     Salon    @relation(fields: [salonId], references: [id], onDelete: Cascade)

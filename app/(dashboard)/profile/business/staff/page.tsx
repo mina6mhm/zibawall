@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ArrowRight, Loader2, Plus, Trash2, Users, Phone } from 'lucide-react';
 
-type StaffMember = { id: string; name: string; phone: string };
+type StaffMember = { id: string; name: string; phone: string | null };
 
 const toEnglishDigits = (str: string) =>
   str
