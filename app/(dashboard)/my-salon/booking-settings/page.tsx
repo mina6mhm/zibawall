@@ -118,7 +118,7 @@ export default function BookingSettingsPage() {
               </p>
             </div>
           </div>
-          // جایگزین کردن بخش دکمه toggle با این:
+          
 <button
   onClick={handleToggle}
   disabled={isSaving}

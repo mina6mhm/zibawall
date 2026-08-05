@@ -443,11 +443,11 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
   </div>
 )}
 
-// دکمه‌های تماس و نوبت‌دهی در دسکتاپ
-<div className="hidden lg:flex flex-col gap-2.5 mt-6">
+{/*دسکتاپ*/}
+<div className="hidden lg:flex flex-row-reverse gap-2.5 mt-6">
   <a
     href={`/salon/${salon.id}/book`}
-    className="w-full bg-[#824c71] hover:bg-[#824c71]/90 text-white font-medium py-3 rounded-xl text-center transition flex items-center justify-center gap-2"
+    className="flex-1 bg-[#824c71] hover:bg-[#824c71]/90 text-white font-bold py-3 rounded-xl text-center transition flex items-center justify-center gap-2 text-sm"
   >
     <CalendarClock className="w-4 h-4" />
     نوبت‌دهی آنلاین
@@ -456,10 +456,9 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
     <a
       href={`tel:${primaryPhone}`}
       onClick={handleCallButtonClick}
-      className="w-full bg-[#824c71] hover:bg-[#824c71]/90 text-white font-medium py-3 rounded-xl text-center transition flex items-center justify-center gap-2"
+      className="w-12 h-12 flex items-center justify-center rounded-xl bg-zinc-100 text-zinc-600 hover:bg-zinc-200 transition shrink-0"
     >
-      <Phone className="w-4 h-4" />
-      تماس با سالن
+      <Phone className="w-5 h-5" />
     </a>
   )}
 </div>
@@ -752,22 +751,20 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
 
         </div>
       </div>
-
-      // جایگزین بلوک «دکمه‌های شناور موبایل»:
-<div className="fixed bottom-8 left-5 right-5 z-[60] lg:hidden flex gap-2.5">
+{/*موبایل*/}
+<div className="fixed bottom-8 left-5 right-5 z-[60] lg:hidden flex gap-2.5 items-center">
   {primaryPhone && (
     <a
       href={`tel:${primaryPhone}`}
       onClick={handleCallButtonClick}
-      className="flex-1 bg-[#824c71] text-white font-medium py-4 rounded-xl text-sm flex items-center justify-center gap-2 active:scale-95 transition-transform"
+      className="w-14 h-14 flex items-center justify-center rounded-xl bg-white border border-zinc-200 text-zinc-600 shadow-sm active:scale-95 transition-transform shrink-0"
     >
-      <Phone className="w-4 h-4" />
-      تماس
+      <Phone className="w-5 h-5" />
     </a>
   )}
   <a
     href={`/salon/${salon.id}/book`}
-    className="flex-1 bg-[#824c71] hover:bg-[#824c71]/90 text-white font-medium py-4 rounded-xl text-sm flex items-center justify-center gap-2 shadow-lg shadow-[#824c71]/10 active:scale-95 transition-transform"
+    className="flex-1 bg-[#824c71] hover:bg-[#824c71]/90 text-white font-bold py-4 rounded-xl text-sm flex items-center justify-center gap-2 shadow-lg shadow-[#824c71]/20 active:scale-95 transition-transform"
   >
     <CalendarClock className="w-4 h-4" />
     نوبت‌دهی آنلاین
