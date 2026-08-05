@@ -714,9 +714,9 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
                   
                   {reviewError && <p className="text-red-600 text-xs font-medium mb-3">{reviewError}</p>}
 
-                  <button onClick={handleReviewSubmit} className="inline-flex items-center justify-center bg-[#824c71] hover:bg-[#6e3f60] text-white px-4 py-1.5 rounded-lg text-xs font-medium transition-colors">
-                      {hasAlreadyReviewed ? "ثبت نظر" : "ثبت"}
-                  </button>
+                  <button onClick={handleReviewSubmit} className="inline-flex items-center justify-center bg-[#824c71]/[0.07] hover:bg-[#824c71]/[0.12] text-[#824c71] px-4 py-1.5 rounded-lg text-xs font-medium transition-colors">
+    {hasAlreadyReviewed ? "ثبت نظر" : "ثبت"}
+</button>
               </div>
 
               <div className="space-y-4">
@@ -752,7 +752,7 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
         </div>
       </div>
 {/*موبایل*/}
-<div className="fixed bottom-8 left-5 right-5 z-[60] lg:hidden flex flex-row-reverse gap-2.5 items-center">
+<div className="fixed bottom-8 left-5 right-5 z-[60] lg:hidden flex gap-2.5 items-center">
   <a
     href={`/salon/${salon.id}/book`}
     className="flex-1 bg-[#824c71] hover:bg-[#824c71]/90 text-white font-bold py-4 rounded-xl text-sm flex items-center justify-center gap-2 shadow-lg shadow-[#824c71]/20 active:scale-95 transition-transform"
