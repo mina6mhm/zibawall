@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { CATEGORY_MAPPING } from "@/lib/data";
 import { 
   ArrowRight, Star, MapPin, Clock, Phone,
-  CheckCircle2, CalendarOff, X, MessageCircle, ChevronDown, ChevronUp, Map, Trash2,
+  CheckCircle2, CalendarOff, X, MessageCircle, CalendarClock, ChevronDown, ChevronUp, Map, Trash2,
   Home, Users
 } from "lucide-react";
 import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
@@ -443,24 +443,26 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
   </div>
 )}
 
-{/* دکمه‌های تماس و نوبت‌دهی در دسکتاپ */}
-      <div className="hidden lg:flex flex-col gap-2.5 mt-6">
-        <a
-          href={`/salon/${salon.id}/book`}
-          className="w-full bg-[#824c71] hover:bg-[#824c71]/90 text-white font-medium py-3 rounded-xl text-center transition flex items-center justify-center"
-        >
-          نوبت‌دهی آنلاین
-        </a>
-        {primaryPhone && (
-          <a
-            href={`tel:${primaryPhone}`}
-            onClick={handleCallButtonClick}
-            className="w-full bg-zinc-100 hover:bg-zinc-200 text-zinc-800 font-medium py-3 rounded-xl text-center transition flex items-center justify-center"
-          >
-            تماس با سالن
-          </a>
-        )}
-      </div>
+// دکمه‌های تماس و نوبت‌دهی در دسکتاپ
+<div className="hidden lg:flex flex-col gap-2.5 mt-6">
+  <a
+    href={`/salon/${salon.id}/book`}
+    className="w-full bg-[#824c71] hover:bg-[#824c71]/90 text-white font-medium py-3 rounded-xl text-center transition flex items-center justify-center gap-2"
+  >
+    <CalendarClock className="w-4 h-4" />
+    نوبت‌دهی آنلاین
+  </a>
+  {primaryPhone && (
+    <a
+      href={`tel:${primaryPhone}`}
+      onClick={handleCallButtonClick}
+      className="w-full bg-[#824c71] hover:bg-[#824c71]/90 text-white font-medium py-3 rounded-xl text-center transition flex items-center justify-center gap-2"
+    >
+      <Phone className="w-4 h-4" />
+      تماس با سالن
+    </a>
+  )}
+</div>
     </div>
   );
 
@@ -751,25 +753,26 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
         </div>
       </div>
 
-      {/* دکمه‌های شناور موبایل (Sticky Bottom Bar) */}
-      <div className="fixed bottom-8 left-5 right-5 z-[60] lg:hidden flex gap-2.5">
-        {primaryPhone && (
-          <a
-            href={`tel:${primaryPhone}`}
-            onClick={handleCallButtonClick}
-            className="flex-1 bg-zinc-100 text-zinc-800 font-medium py-4 rounded-xl text-sm flex items-center justify-center gap-2 active:scale-95 transition-transform"
-          >
-            <Phone className="w-4.5 h-4.5" />
-            تماس
-          </a>
-        )}
-        <a
-          href={`/salon/${salon.id}/book`}
-          className="flex-1 bg-[#824c71] hover:bg-[#824c71]/90 text-white font-medium py-4 rounded-xl text-sm flex items-center justify-center gap-2 shadow-lg shadow-[#824c71]/10 active:scale-95 transition-transform"
-        >
-          نوبت‌دهی آنلاین
-        </a>
-      </div>
+      // جایگزین بلوک «دکمه‌های شناور موبایل»:
+<div className="fixed bottom-8 left-5 right-5 z-[60] lg:hidden flex gap-2.5">
+  {primaryPhone && (
+    <a
+      href={`tel:${primaryPhone}`}
+      onClick={handleCallButtonClick}
+      className="flex-1 bg-[#824c71] text-white font-medium py-4 rounded-xl text-sm flex items-center justify-center gap-2 active:scale-95 transition-transform"
+    >
+      <Phone className="w-4 h-4" />
+      تماس
+    </a>
+  )}
+  <a
+    href={`/salon/${salon.id}/book`}
+    className="flex-1 bg-[#824c71] hover:bg-[#824c71]/90 text-white font-medium py-4 rounded-xl text-sm flex items-center justify-center gap-2 shadow-lg shadow-[#824c71]/10 active:scale-95 transition-transform"
+  >
+    <CalendarClock className="w-4 h-4" />
+    نوبت‌دهی آنلاین
+  </a>
+</div>
 
     </>
   );

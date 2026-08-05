@@ -4,7 +4,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowRight, Loader2, Store, ToggleLeft, ToggleRight, CalendarClock, Settings2 } from 'lucide-react';
+import { ArrowRight, Loader2, Store, CalendarClock, Settings2 } from 'lucide-react';
 
 export default function BookingSettingsPage() {
   const router = useRouter();
@@ -118,20 +118,25 @@ export default function BookingSettingsPage() {
               </p>
             </div>
           </div>
-          <button
-            onClick={handleToggle}
-            disabled={isSaving}
-            className="shrink-0 disabled:opacity-50 transition-opacity"
-            aria-label={bookingEnabled ? 'غیرفعال کردن نوبت‌دهی' : 'فعال کردن نوبت‌دهی'}
-          >
-            {isSaving ? (
-              <Loader2 className="w-8 h-8 text-[#824c71] animate-spin" />
-            ) : bookingEnabled ? (
-              <ToggleRight className="w-12 h-12 text-[#824c71]" strokeWidth={1.5} />
-            ) : (
-              <ToggleLeft className="w-12 h-12 text-zinc-300" strokeWidth={1.5} />
-            )}
-          </button>
+          // جایگزین کردن بخش دکمه toggle با این:
+<button
+  onClick={handleToggle}
+  disabled={isSaving}
+  className="shrink-0 disabled:opacity-50"
+  aria-label={bookingEnabled ? 'غیرفعال کردن نوبت‌دهی' : 'فعال کردن نوبت‌دهی'}
+>
+  {isSaving ? (
+    <Loader2 className="w-5 h-5 text-[#824c71] animate-spin" />
+  ) : (
+    <div className={`relative w-14 h-7 rounded-full transition-colors duration-300 ${
+      bookingEnabled ? 'bg-[#824c71]' : 'bg-zinc-200'
+    }`}>
+      <div className={`absolute top-1 w-5 h-5 bg-white rounded-full shadow-sm transition-all duration-300 ${
+        bookingEnabled ? 'right-1' : 'right-8'
+      }`} />
+    </div>
+  )}
+</button>
         </div>
 
         {bookingEnabled && (

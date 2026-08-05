@@ -2,7 +2,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Store, Edit, Trash2, ArrowRight, Loader2, MapPin, ChevronLeft, Users } from 'lucide-react';
+import { Store, Edit, Trash2, ArrowRight, Loader2, MapPin, ChevronLeft, Users, CalendarClock } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
@@ -66,31 +66,31 @@ export default function BusinessOverviewPage() {
   if (!salonData) return null;
 
   const actions = [
-    {
-      key: 'staff',
-      label: 'پرسنل سالن',
-      description: 'مدیریت لیست پرسنل برای ثبت نوبت',
-      icon: Users,
-      href: '/profile/business/staff',
-      variant: 'default' as const,
-    },
-    {
-      key: 'edit',
-      label: 'ویرایش اطلاعات',
-      description: 'خدمات، تصاویر و مشخصات سالن',
-      icon: Edit,
-      href: '/profile/business/edit',
-      variant: 'default' as const,
-    },
-    {
-      key: 'delete',
-      label: 'حذف کسب‌وکار',
-      description: 'این عمل غیرقابل بازگشت است',
-      icon: Trash2,
-      onClick: handleDeleteBusiness,
-      variant: 'danger' as const,
-    },
-  ];
+  {
+    key: 'booking',
+    label: 'تنظیمات نوبت‌دهی آنلاین',
+    description: 'فعال‌سازی و مدیریت نوبت‌دهی',
+    icon: CalendarClock,
+    href: '/my-salon/booking-settings',
+    variant: 'default' as const,
+  },
+  {
+    key: 'edit',
+    label: 'ویرایش اطلاعات',
+    description: 'خدمات، تصاویر و مشخصات سالن',
+    icon: Edit,
+    href: '/profile/business/edit',
+    variant: 'default' as const,
+  },
+  {
+    key: 'delete',
+    label: 'حذف کسب‌وکار',
+    description: 'این عمل غیرقابل بازگشت است',
+    icon: Trash2,
+    onClick: handleDeleteBusiness,
+    variant: 'danger' as const,
+  },
+];
 
   return (
     <div className="flex flex-col min-h-screen bg-white pb-24">

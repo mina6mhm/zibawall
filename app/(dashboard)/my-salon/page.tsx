@@ -349,14 +349,9 @@ export default function MySalonPage() {
   }`}
 >
   <div className="flex items-center gap-2.5">
-    <CalendarClock className="w-4.5 h-4.5 shrink-0" />
-    <div className="text-right">
-      <p className="text-sm font-bold">نوبت‌دهی آنلاین</p>
-      <p className="text-[11px] mt-0.5 opacity-70">
-        {bookingEnabled ? 'فعال است — کلیک برای تنظیمات' : 'غیرفعال — کلیک برای فعال‌سازی'}
-      </p>
-    </div>
-  </div>
+  <CalendarClock className="w-4.5 h-4.5 shrink-0" />
+  <p className="text-sm font-bold">نوبت‌دهی آنلاین</p>
+</div>
   <span className={`text-[11px] font-bold px-2.5 py-1 rounded-lg shrink-0 ${
     bookingEnabled ? 'bg-emerald-50 text-emerald-600' : 'bg-zinc-100 text-zinc-400'
   }`}>
