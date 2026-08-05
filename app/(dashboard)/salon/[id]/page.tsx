@@ -443,13 +443,19 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
   </div>
 )}
 
-      {/* دکمه‌ی تماس در دسکتاپ */}
+{/* دکمه‌های تماس و نوبت‌دهی در دسکتاپ */}
       <div className="hidden lg:flex flex-col gap-2.5 mt-6">
+        <a
+          href={`/salon/${salon.id}/book`}
+          className="w-full bg-[#824c71] hover:bg-[#824c71]/90 text-white font-medium py-3 rounded-xl text-center transition flex items-center justify-center"
+        >
+          نوبت‌دهی آنلاین
+        </a>
         {primaryPhone && (
           <a
             href={`tel:${primaryPhone}`}
             onClick={handleCallButtonClick}
-            className="w-full bg-[#824c71] hover:bg-[#824c71]/90 text-white font-medium py-3 rounded-xl text-center transition flex items-center justify-center"
+            className="w-full bg-zinc-100 hover:bg-zinc-200 text-zinc-800 font-medium py-3 rounded-xl text-center transition flex items-center justify-center"
           >
             تماس با سالن
           </a>
@@ -744,18 +750,25 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
 
         </div>
       </div>
-{/* دکمه‌ی شناور تماس برای موبایل (Sticky Bottom Bar) */}
+
+      {/* دکمه‌های شناور موبایل (Sticky Bottom Bar) */}
       <div className="fixed bottom-8 left-5 right-5 z-[60] lg:hidden flex gap-2.5">
         {primaryPhone && (
-          <a 
+          <a
             href={`tel:${primaryPhone}`}
             onClick={handleCallButtonClick}
-            className="flex-1 bg-[#824c71] hover:bg-[#824c71]/90 text-white font-medium py-4 rounded-xl text-sm flex items-center justify-center gap-2 shadow-lg shadow-[#824c71]/10 active:scale-95 transition-transform"
+            className="flex-1 bg-zinc-100 text-zinc-800 font-medium py-4 rounded-xl text-sm flex items-center justify-center gap-2 active:scale-95 transition-transform"
           >
             <Phone className="w-4.5 h-4.5" />
-            تماس با سالن
+            تماس
           </a>
         )}
+        <a
+          href={`/salon/${salon.id}/book`}
+          className="flex-1 bg-[#824c71] hover:bg-[#824c71]/90 text-white font-medium py-4 rounded-xl text-sm flex items-center justify-center gap-2 shadow-lg shadow-[#824c71]/10 active:scale-95 transition-transform"
+        >
+          نوبت‌دهی آنلاین
+        </a>
       </div>
 
     </>

@@ -284,6 +284,7 @@ model Booking {
 model Staff {
   id        String   @id @default(uuid())
   name      String
+  phone     String
 
   salonId   String
   salon     Salon    @relation(fields: [salonId], references: [id], onDelete: Cascade)
@@ -291,5 +292,6 @@ model Staff {
   createdAt DateTime @default(now())
 
   @@unique([salonId, name])
+  @@unique([salonId, phone])
   @@index([salonId])
 }

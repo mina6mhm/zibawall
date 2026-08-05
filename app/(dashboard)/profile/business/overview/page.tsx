@@ -2,7 +2,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Store, Eye, Edit, Trash2, ArrowRight, Loader2, MapPin, ChevronLeft, Users } from 'lucide-react';
+import { Store, Edit, Trash2, ArrowRight, Loader2, MapPin, ChevronLeft, Users } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
@@ -67,12 +67,12 @@ export default function BusinessOverviewPage() {
 
   const actions = [
     {
-      key: 'view',
-      label: 'مشاهده صفحه عمومی',
-      description: 'همان چیزی که مشتری‌ها می‌بینند',
-      icon: Eye,
-      href: `/salon/${salonData.id}`,
-      variant: 'primary' as const,
+      key: 'staff',
+      label: 'پرسنل سالن',
+      description: 'مدیریت لیست پرسنل برای ثبت نوبت',
+      icon: Users,
+      href: '/profile/business/staff',
+      variant: 'default' as const,
     },
     {
       key: 'edit',
@@ -80,14 +80,6 @@ export default function BusinessOverviewPage() {
       description: 'خدمات، تصاویر و مشخصات سالن',
       icon: Edit,
       href: '/profile/business/edit',
-      variant: 'default' as const,
-    },
-    {
-      key: 'staff',
-      label: 'پرسنل سالن',
-      description: 'مدیریت لیست پرسنل برای ثبت نوبت',
-      icon: Users,
-      href: '/profile/business/staff',
       variant: 'default' as const,
     },
     {
@@ -104,12 +96,15 @@ export default function BusinessOverviewPage() {
     <div className="flex flex-col min-h-screen bg-white pb-24">
       <div className="max-w-lg mx-auto w-full px-4 pt-6">
 
-        <Link href="/profile" className="inline-flex items-center gap-1.5 text-sm text-zinc-500 hover:text-zinc-700 transition-colors mb-5">
+        <Link href="/my-salon" className="inline-flex items-center gap-1.5 text-sm text-zinc-500 hover:text-zinc-700 transition-colors mb-5">
           <ArrowRight className="w-4 h-4" /> بازگشت
         </Link>
 
-        {/* کارت سالن */}
-        <div className="bg-gradient-to-br from-[#824c71] to-[#6d3f5e] rounded-3xl p-5 shadow-lg shadow-[#824c71]/20 mb-5">
+        {/* کارت سالن — با زدن روی آن، صفحه عمومی سالن باز می‌شود */}
+        <Link
+          href={`/salon/${salonData.id}`}
+          className="block bg-gradient-to-br from-[#824c71] to-[#6d3f5e] rounded-3xl p-5 shadow-lg shadow-[#824c71]/20 mb-5 active:opacity-90 transition-opacity"
+        >
           <div className="flex items-center gap-4">
             <div className="w-14 h-14 bg-white/15 backdrop-blur rounded-2xl flex items-center justify-center shrink-0 border border-white/20">
               <Store className="w-6 h-6 text-white" strokeWidth={1.5} />
@@ -121,8 +116,9 @@ export default function BusinessOverviewPage() {
                 {salonData.province}، {salonData.city}
               </p>
             </div>
+            <ChevronLeft className="w-4.5 h-4.5 text-white/60 shrink-0" />
           </div>
-        </div>
+        </Link>
 
         {/* اکشن‌ها */}
         <div className="space-y-2.5">
@@ -132,9 +128,7 @@ export default function BusinessOverviewPage() {
             const iconBox = (
               <div
                 className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
-                  action.variant === 'primary'
-                    ? 'bg-[#824c71]/10 text-[#824c71]'
-                    : action.variant === 'danger'
+                  action.variant === 'danger'
                     ? 'bg-red-50 text-red-500'
                     : 'bg-zinc-100 text-zinc-600'
                 }`}

@@ -5,6 +5,8 @@ import jwt from 'jsonwebtoken';
 
 import { prisma } from '@/lib/prisma';
 
+const mobileRegex = /^09\d{9}$/;
+
 // گرفتن سالن متعلق به کاربر لاگین‌شده از روی توکن
 async function getOwnedSalonFromToken() {
   const cookieStore = await cookies();
@@ -48,7 +50,7 @@ export async function GET() {
   }
 }
 
-// افزودن پرسنل جدید
+// افزودن پرسنل جدید (اسم + شماره موبایل)
 export async function POST(req: Request) {
   try {
     const result = await getOwnedSalonFromToken();
@@ -58,21 +60,34 @@ export async function POST(req: Request) {
 
     const body = await req.json();
     const name = typeof body?.name === 'string' ? body.name.trim() : '';
+    const phone = typeof body?.phone === 'string' ? body.phone.trim() : '';
 
     if (!name) {
       return NextResponse.json({ error: 'نام پرسنل را وارد کنید' }, { status: 400 });
     }
 
-    const existing = await prisma.staff.findUnique({
+    if (!mobileRegex.test(phone)) {
+      return NextResponse.json({ error: 'شماره موبایل پرسنل معتبر نیست' }, { status: 400 });
+    }
+
+    const existingName = await prisma.staff.findUnique({
       where: { salonId_name: { salonId: result.salon.id, name } },
     });
 
-    if (existing) {
+    if (existingName) {
       return NextResponse.json({ error: 'این پرسنل قبلاً ثبت شده است' }, { status: 400 });
     }
 
+    const existingPhone = await prisma.staff.findUnique({
+      where: { salonId_phone: { salonId: result.salon.id, phone } },
+    });
+
+    if (existingPhone) {
+      return NextResponse.json({ error: 'این شماره موبایل قبلاً برای پرسنل دیگری ثبت شده است' }, { status: 400 });
+    }
+
     const staff = await prisma.staff.create({
-      data: { salonId: result.salon.id, name },
+      data: { salonId: result.salon.id, name, phone },
     });
 
     return NextResponse.json({ success: true, staff }, { status: 201 });
