@@ -15,6 +15,7 @@ import persian_fa from 'react-date-object/locales/persian_fa';
 import NewBookingModal, { BookingToEdit } from '@/components/booking/NewBookingModal';
 import StaffShareModal from '@/components/booking/StaffShareModal';
 import { toDateOnlyAnchor } from '@/lib/dateUtils';
+import { CalendarClock } from 'lucide-react';
 
 type ServiceItem = { name: string; price?: number; staffName?: string; staffPercentage?: number };
 
@@ -53,6 +54,8 @@ export default function MySalonPage() {
 
   const [selectedDate, setSelectedDate] = useState<Date>(() => toDateOnlyAnchor(new Date()));
 
+  const [bookingEnabled, setBookingEnabled] = useState(false);
+
   const fetchData = useCallback(async () => {
     try {
       const profileRes = await fetch('/api/user/profile');
@@ -69,6 +72,8 @@ export default function MySalonPage() {
 
       setHasSalon(true);
       setSalonName(profileData.salon.name);
+
+      setBookingEnabled(!!profileData.salon.bookingEnabled);
 
       const bookingsRes = await fetch('/api/booking');
       if (bookingsRes.ok) {
@@ -335,13 +340,29 @@ export default function MySalonPage() {
         </div>
       </div>
 
-      <button
-        onClick={openNewBookingModal}
-        className="w-full flex items-center justify-center gap-2 bg-[#824c71] hover:bg-[#6e3f60] text-white py-3.5 rounded-xl font-medium text-sm transition-colors shadow-lg shadow-[#e3c9dc]/40 mb-6"
-      >
-        <Plus className="w-4.5 h-4.5" />
-        ثبت نوبت جدید
-      </button>
+      <Link
+  href="/my-salon/booking-settings"
+  className={`w-full flex items-center justify-between gap-3 px-4 py-3.5 rounded-xl border transition-colors mb-6 ${
+    bookingEnabled
+      ? 'bg-[#824c71]/5 border-[#824c71]/30 text-[#824c71]'
+      : 'bg-white border-zinc-200 text-zinc-700'
+  }`}
+>
+  <div className="flex items-center gap-2.5">
+    <CalendarClock className="w-4.5 h-4.5 shrink-0" />
+    <div className="text-right">
+      <p className="text-sm font-bold">نوبت‌دهی آنلاین</p>
+      <p className="text-[11px] mt-0.5 opacity-70">
+        {bookingEnabled ? 'فعال است — کلیک برای تنظیمات' : 'غیرفعال — کلیک برای فعال‌سازی'}
+      </p>
+    </div>
+  </div>
+  <span className={`text-[11px] font-bold px-2.5 py-1 rounded-lg shrink-0 ${
+    bookingEnabled ? 'bg-emerald-50 text-emerald-600' : 'bg-zinc-100 text-zinc-400'
+  }`}>
+    {bookingEnabled ? 'فعال' : 'غیرفعال'}
+  </span>
+</Link>
 
       {/* ناوبری روز: قبل / انتخاب تاریخ (برای پرش به روزهای دور) / بعد */}
       <div className="flex items-center gap-2 mb-3 mt-1">
