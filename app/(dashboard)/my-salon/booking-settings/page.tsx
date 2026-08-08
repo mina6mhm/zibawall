@@ -83,23 +83,20 @@ function TabBar({
   hasServices: boolean;
   hasStaff: boolean;
 }) {
-  const tabs = ['خدمات', 'پرسنل', 'برنامه هفتگی'];
+  const tabs = ['خدمات', 'پرسنل', 'برنامه سالن', 'برنامه پرسنل'];
   return (
     <div className="flex bg-zinc-100 rounded-xl p-1 mb-6 gap-1">
       {tabs.map((t, i) => (
         <button
           key={t}
           onClick={() => onChange(i)}
-          className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all ${
+          className={`flex-1 py-2 rounded-lg text-[11px] font-bold transition-all ${
             active === i
               ? 'bg-white text-[#824c71] shadow-sm'
               : 'text-zinc-500 hover:text-zinc-700'
           }`}
         >
           {t}
-          {i === 1 && !hasServices && (
-            <span className="mr-1 text-[10px] text-zinc-400">(ابتدا خدمات)</span>
-          )}
         </button>
       ))}
     </div>

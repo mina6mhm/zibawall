@@ -38,9 +38,9 @@ export async function POST(req: Request) {
   const body = await req.json();
   const { name, durationMin, price, depositAmount } = body;
 
-  if (!name?.trim()) return NextResponse.json({ error: 'نام خدمت الزامی است' }, { status: 400 });
+  if (!name?.trim()) return NextResponse.json({ error: 'نام خدمات الزامی است' }, { status: 400 });
   if (!durationMin || durationMin < 1) return NextResponse.json({ error: 'مدت زمان نامعتبر است' }, { status: 400 });
-  if (!price || price < 0) return NextResponse.json({ error: 'قیمت نامعتبر است' }, { status: 400 });
+  // قیمت اختیاریه — اگه نبود 0 ذخیره می‌شه
 
   const service = await prisma.bookingService.create({
     data: {
