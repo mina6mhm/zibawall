@@ -39,9 +39,10 @@ export async function GET() {
     }
 
     const staff = await prisma.staff.findMany({
-      where: { salonId: result.salon.id },
-      orderBy: { name: 'asc' },
-    });
+  where: { salonId: result.salon.id },
+  include: { bookingServices: true },  // ← اضافه کن
+  orderBy: { name: 'asc' },
+});
 
     return NextResponse.json({ staff }, { status: 200 });
   } catch (error) {

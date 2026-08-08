@@ -509,7 +509,7 @@ function StaffTab({
       )}
 
       {staff.map((s) => {
-        const assignedIds = new Set(s.bookingServices.map((b) => b.bookingServiceId));
+        const assignedIds = new Set((s.bookingServices ?? []).map((b) => b.bookingServiceId));
         const isOpen = expanded === s.id;
 
         return (
@@ -907,7 +907,7 @@ export default function BookingSettingsPage() {
 
   const handleToggle = async () => {
     const hasServices = services.some((s) => s.isActive);
-    const hasStaff = staff.some((s) => s.bookingServices.length > 0);
+    const hasStaff = staff.some((s) => (s.bookingServices ?? []).length > 0);
 
     if (!bookingEnabled && (!hasServices || !hasStaff)) {
       alert('برای فعال‌سازی ابتدا حداقل یک خدمت و یک پرسنل با خدمت تخصیص‌یافته تعریف کنید.');
@@ -956,7 +956,7 @@ export default function BookingSettingsPage() {
     );
   }
 
-  const canEnable = services.some((s) => s.isActive) && staff.some((s) => s.bookingServices.length > 0);
+  const canEnable = services.some((s) => s.isActive) && staff.some((s) => (s.bookingServices ?? []).length > 0);
 
   return (
     <div className="max-w-2xl mx-auto pt-8 pb-32 px-4 md:pt-10 md:px-0">
