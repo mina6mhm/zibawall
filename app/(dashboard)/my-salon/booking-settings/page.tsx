@@ -85,6 +85,63 @@ const displayNumber = (raw: string) => {
   return n.toLocaleString('en-US');
 };
 
+// تبدیل ارقام فارسی/عربی به انگلیسی در کل متن (بدون حذف بقیه کاراکترها)
+const toEnglishDigitsInText = (str: string) =>
+  str
+    .replace(/[۰-۹]/g, (d) => String(d.charCodeAt(0) - '۰'.charCodeAt(0)))
+    .replace(/[٠-٩]/g, (d) => String(d.charCodeAt(0) - '٠'.charCodeAt(0)));
+
+// تلاش برای استخراج ساعت شروع/پایان از متن آزاد ثبت‌نام، مثل «۱۰ صبح تا ۸ شب»
+// اگر نتواند تشخیص دهد null برمی‌گرداند تا مقدار پیش‌فرض ۹ تا ۲۰ جایگزین شود
+function parseWorkingHoursToTimes(raw: string | null | undefined): { start: string; end: string } | null {
+  if (!raw) return null;
+  const text = toEnglishDigitsInText(raw);
+
+  const matches = [...text.matchAll(/(\d{1,2})(?::(\d{2}))?\s*(صبح|ظهر|بعد\s?از\s?ظهر|عصر|شب)?/g)].filter(
+    (m) => m[1] !== undefined
+  );
+
+  if (matches.length < 2) return null;
+
+  const toParts = (m: RegExpMatchArray) => {
+    let h = parseInt(m[1], 10);
+    const minute = m[2] ? parseInt(m[2], 10) : 0;
+    const period = m[3] || '';
+    const isPm = period.includes('عصر') || period.includes('شب') || period.includes('بعد');
+    const isNoon = period === 'ظهر';
+    if ((isPm || isNoon) && h < 12) h += 12;
+    if (h > 23) h = 23;
+    return { h, minute };
+  };
+
+  const startInfo = toParts(matches[0]);
+  const endInfo = toParts(matches[matches.length - 1]);
+
+  const fmt = (h: number, m: number) => `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+
+  return { start: fmt(startInfo.h, startInfo.minute), end: fmt(endInfo.h, endInfo.minute) };
+}
+
+// ساخت برنامه‌ی هفتگی پیش‌فرض بر اساس اطلاعات همان ثبت‌نام اولیه‌ی سالن
+function buildDefaultScheduleFromProfile(salon: {
+  closedDays?: string[] | null;
+  workingHours?: string | null;
+}): WeeklySchedule {
+  const closedDays = salon.closedDays ?? [];
+  const parsedHours = parseWorkingHoursToTimes(salon.workingHours);
+
+  return Object.fromEntries(
+    WEEK_DAYS.map((d) => [
+      d,
+      {
+        open: !closedDays.includes(d),
+        start: parsedHours?.start ?? '09:00',
+        end: parsedHours?.end ?? '20:00',
+      },
+    ])
+  );
+}
+
 // ─── Sub-components ──────────────────────────────────────────────────────────
 
 function TabBar({
@@ -811,18 +868,20 @@ function StaffScheduleTab({ staff }: { staff: StaffMember[] }) {
                 <label className="block text-xs font-medium text-zinc-500 mb-1">شروع</label>
                 <input
                   type="time"
+                  dir="ltr"
                   value={editStart}
                   onChange={(e) => setEditStart(e.target.value)}
-                  className="w-full border border-zinc-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:border-[#824c71]"
+                  className="w-full border border-zinc-200 rounded-lg px-3 py-2 text-sm bg-white text-center focus:outline-none focus:border-[#824c71]"
                 />
               </div>
               <div>
                 <label className="block text-xs font-medium text-zinc-500 mb-1">پایان</label>
                 <input
                   type="time"
+                  dir="ltr"
                   value={editEnd}
                   onChange={(e) => setEditEnd(e.target.value)}
-                  className="w-full border border-zinc-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:border-[#824c71]"
+                  className="w-full border border-zinc-200 rounded-lg px-3 py-2 text-sm bg-white text-center focus:outline-none focus:border-[#824c71]"
                 />
               </div>
             </div>
@@ -978,9 +1037,12 @@ function ScheduleTab({
               </span>
 
               {d.open ? (
-                <div className="flex items-center gap-2 flex-1" dir="ltr">
+                // بدون dir="ltr" روی کل ردیف: چینش طبیعی راست‌به‌چپ صفحه باعث می‌شه
+                // عدد کوچیک‌تر (شروع) سمت راست و عدد بزرگ‌تر (پایان) سمت چپ بیفته، مطابق «۹ تا ۲۰»
+                <div className="flex items-center gap-2 flex-1">
                   <input
                     type="time"
+                    dir="ltr"
                     value={d.start}
                     onChange={(e) => setTime(day, 'start', e.target.value)}
                     className="flex-1 border border-zinc-200 rounded-lg px-2 py-1.5 text-xs text-center focus:outline-none focus:border-[#824c71]"
@@ -988,6 +1050,7 @@ function ScheduleTab({
                   <span className="text-zinc-400 text-xs shrink-0">تا</span>
                   <input
                     type="time"
+                    dir="ltr"
                     value={d.end}
                     onChange={(e) => setTime(day, 'end', e.target.value)}
                     className="flex-1 border border-zinc-200 rounded-lg px-2 py-1.5 text-xs text-center focus:outline-none focus:border-[#824c71]"
@@ -1057,10 +1120,19 @@ export default function BookingSettingsPage() {
 
       if (svcRes.ok) setServices((await svcRes.json()).services ?? []);
       if (staffRes.ok) setStaff((await staffRes.json()).staff ?? []);
+
       if (schedRes.ok) {
         const s = await schedRes.json();
-        if (s.weeklySchedule) setSchedule(s.weeklySchedule);
+        if (s.weeklySchedule) {
+          // برنامه‌ی قبلاً ذخیره‌شده توسط خود سالن‌دار — دست نمی‌زنیم
+          setSchedule(s.weeklySchedule);
+        } else {
+          // هنوز برنامه‌ای ذخیره نشده: پیش‌فرض رو از اطلاعات ثبت‌نام سالن می‌سازیم
+          setSchedule(buildDefaultScheduleFromProfile(profileData.salon));
+        }
         if (s.gridMinutes) setGrid(s.gridMinutes);
+      } else {
+        setSchedule(buildDefaultScheduleFromProfile(profileData.salon));
       }
     } catch (e) {
       console.error(e);
