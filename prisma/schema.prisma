@@ -57,6 +57,8 @@ model Salon {
   workingHours          String
   closedDays            String[]
   cardNumber            String
+  schedule              SalonSchedule?
+  bookingServices       BookingService[]
 
   hasHomeService         Boolean        @default(false)
   genderAudience         GenderAudience @default(BOTH)
@@ -286,6 +288,9 @@ model Staff {
   name      String
   phone     String?
 
+  scheduleOverrides  StaffScheduleOverride[]
+  bookingServices    StaffBookingService[]
+
   salonId   String
   salon     Salon    @relation(fields: [salonId], references: [id], onDelete: Cascade)
 
@@ -294,4 +299,65 @@ model Staff {
   @@unique([salonId, name])
   @@unique([salonId, phone])
   @@index([salonId])
+}
+
+model BookingService {
+  id            String   @id @default(uuid())
+  salonId       String
+  salon         Salon    @relation(fields: [salonId], references: [id], onDelete: Cascade)
+  name          String
+  durationMin   Int      // مدت به دقیقه، مثلاً 90
+  price         Int      // قیمت کل
+  depositAmount Int?     // بیعانه — null یعنی بیعانه ندارد
+  isActive      Boolean  @default(true)
+  staffMembers  StaffBookingService[]
+  createdAt     DateTime @default(now())
+
+  @@index([salonId])
+}
+
+// رابطه چند به چند: هر پرسنل چه خدماتی انجام می‌دهد
+model StaffBookingService {
+  staffId           String
+  staff             Staff          @relation(fields: [staffId], references: [id], onDelete: Cascade)
+  bookingServiceId  String
+  bookingService    BookingService @relation(fields: [bookingServiceId], references: [id], onDelete: Cascade)
+
+  @@id([staffId, bookingServiceId])
+}
+
+// برنامه هفتگی پیش‌فرض سالن + تنظیمات Grid
+model SalonSchedule {
+  id            String   @id @default(uuid())
+  salonId       String   @unique
+  salon         Salon    @relation(fields: [salonId], references: [id], onDelete: Cascade)
+  
+  // هر روز هفته: آیا کاری است و ساعت شروع/پایان
+  // ذخیره به صورت JSON: { "شنبه": { open: true, start: "09:00", end: "20:00" }, ... }
+  weeklySchedule Json    @default("{}")
+  
+  gridMinutes   Int      @default(30) // فاصله شروع نوبت‌ها: 15، 30، یا 60
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+// override دستی برای یک پرسنل در یک تاریخ مشخص
+model StaffScheduleOverride {
+  id        String   @id @default(uuid())
+  staffId   String
+  staff     Staff    @relation(fields: [staffId], references: [id], onDelete: Cascade)
+  
+  date      String   // "2025-08-15" — تاریخ میلادی
+  
+  isDayOff  Boolean  @default(false)  // مرخصی کامل
+  start     String?  // ساعت شروع اختصاصی، مثلاً "10:00"
+  end       String?  // ساعت پایان اختصاصی
+  note      String?  // دلیل: مرخصی، بیماری، ...
+  
+  createdAt DateTime @default(now())
+
+  @@unique([staffId, date])
+  @@index([staffId])
+  @@index([date])
 }
