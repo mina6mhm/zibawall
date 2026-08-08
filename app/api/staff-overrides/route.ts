@@ -16,6 +16,40 @@ async function getSalonFromToken() {
   }
 }
 
+// GET: دریافت override های ثبت‌شده — یا برای یک پرسنل خاص (staffId) یا همه‌ی پرسنل سالن
+export async function GET(req: Request) {
+  const salon = await getSalonFromToken();
+  if (!salon) return NextResponse.json({ error: 'دسترسی ندارید' }, { status: 401 });
+
+  const { searchParams } = new URL(req.url);
+  const staffId = searchParams.get('staffId');
+
+  if (staffId) {
+    const staffMember = await prisma.staff.findUnique({ where: { id: staffId } });
+    if (!staffMember || staffMember.salonId !== salon.id)
+      return NextResponse.json({ error: 'پرسنل یافت نشد' }, { status: 404 });
+
+    const overrides = await prisma.staffScheduleOverride.findMany({
+      where: { staffId },
+      orderBy: { date: 'asc' },
+    });
+
+    return NextResponse.json({ overrides });
+  }
+
+  const salonStaff = await prisma.staff.findMany({
+    where: { salonId: salon.id },
+    select: { id: true },
+  });
+
+  const overrides = await prisma.staffScheduleOverride.findMany({
+    where: { staffId: { in: salonStaff.map((s) => s.id) } },
+    orderBy: { date: 'asc' },
+  });
+
+  return NextResponse.json({ overrides });
+}
+
 // POST: ثبت یا بروزرسانی override ساعت کاری پرسنل در یک تاریخ خاص
 export async function POST(req: Request) {
   const salon = await getSalonFromToken();
@@ -27,7 +61,6 @@ export async function POST(req: Request) {
   if (!staffId || !date)
     return NextResponse.json({ error: 'staffId و date الزامی است' }, { status: 400 });
 
-  // بررسی تعلق پرسنل به همین سالن
   const staffMember = await prisma.staff.findUnique({ where: { id: staffId } });
   if (!staffMember || staffMember.salonId !== salon.id)
     return NextResponse.json({ error: 'پرسنل یافت نشد' }, { status: 404 });
