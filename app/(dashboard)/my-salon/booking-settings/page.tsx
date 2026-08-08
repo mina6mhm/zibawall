@@ -45,11 +45,30 @@ const minToDuration = (min: number) => {
 };
 
 const durationToMin = (val: string): number => {
-  const [h, m] = val.split(':').map(Number);
+  const normalized = val
+    .replace(/[۰-۹]/g, (d) => String(d.charCodeAt(0) - '۰'.charCodeAt(0)))
+    .replace(/[٠-٩]/g, (d) => String(d.charCodeAt(0) - '٠'.charCodeAt(0)));
+  const [h, m] = normalized.split(':').map(Number);
   return (h || 0) * 60 + (m || 0);
 };
 
+// تبدیل ورودی عددی: فارسی/عربی → انگلیسی، حذف غیر عدد
+const toEnglishDigits = (str: string) =>
+  str
+    .replace(/[۰-۹]/g, (d) => String(d.charCodeAt(0) - '۰'.charCodeAt(0)))
+    .replace(/[٠-٩]/g, (d) => String(d.charCodeAt(0) - '٠'.charCodeAt(0)))
+    .replace(/[^0-9]/g, '');
+
+// نمایش با جداکننده سه‌رقمی فارسی
 const formatPrice = (n: number) => n.toLocaleString('fa-IR');
+
+// نمایش مقدار خام در input: سه‌رقم سه‌رقم بدون تبدیل به فارسی
+const displayNumber = (raw: string) => {
+  if (!raw) return '';
+  const n = Number(raw);
+  if (isNaN(n)) return raw;
+  return n.toLocaleString('en-US');
+};
 
 // ─── Sub-components ──────────────────────────────────────────────────────────
 
@@ -100,28 +119,30 @@ function ServiceFormModal({ initial, onSave, onClose }: ServiceFormProps) {
   const [duration, setDuration] = useState(
     initial?.durationMin ? minToDuration(initial.durationMin) : '1:00'
   );
-  const [price, setPrice] = useState(initial?.price ? String(initial.price) : '');
+  // raw: فقط ارقام انگلیسی برای محاسبه، display: با جداکننده
+  const [priceRaw, setPriceRaw] = useState(initial?.price ? String(initial.price) : '');
   const [hasDeposit, setHasDeposit] = useState(initial?.depositAmount != null);
-  const [deposit, setDeposit] = useState(
+  const [depositRaw, setDepositRaw] = useState(
     initial?.depositAmount ? String(initial.depositAmount) : ''
   );
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState('');
 
+  const handlePriceChange = (val: string) => setPriceRaw(toEnglishDigits(val));
+  const handleDepositChange = (val: string) => setDepositRaw(toEnglishDigits(val));
+
   const handleSave = async () => {
-    if (!name.trim()) return setErr('نام خدمت الزامی است');
+    if (!name.trim()) return setErr('نام خدمات الزامی است');
     const dMin = durationToMin(duration);
     if (!dMin) return setErr('مدت زمان معتبر وارد کنید (مثلاً ۱:۳۰)');
-    const priceN = Number(price.replace(/,/g, ''));
-    if (!priceN) return setErr('قیمت الزامی است');
     setErr('');
     setSaving(true);
     try {
       await onSave({
         name: name.trim(),
         durationMin: dMin,
-        price: priceN,
-        depositAmount: hasDeposit ? Number(deposit.replace(/,/g, '')) || 0 : null,
+        price: priceRaw ? Number(priceRaw) : 0,
+        depositAmount: hasDeposit ? Number(depositRaw) || 0 : null,
       });
       onClose();
     } catch (e: any) {
@@ -136,7 +157,7 @@ function ServiceFormModal({ initial, onSave, onClose }: ServiceFormProps) {
       <div className="bg-white w-full sm:max-w-md rounded-t-2xl sm:rounded-2xl p-5 pb-8 sm:pb-5" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-5">
           <h3 className="text-base font-bold text-zinc-900">
-            {initial?.id ? 'ویرایش خدمت' : 'افزودن خدمت'}
+            {initial?.id ? 'ویرایش خدمات' : 'افزودن خدمات'}
           </h3>
           <button onClick={onClose} className="p-1.5 text-zinc-400 bg-zinc-50 rounded-full">
             <X className="w-4 h-4" />
@@ -146,7 +167,7 @@ function ServiceFormModal({ initial, onSave, onClose }: ServiceFormProps) {
         <div className="space-y-4">
           <div>
             <label className="block text-xs font-medium text-zinc-600 mb-1.5">
-              نام خدمت <span className="text-red-500">*</span>
+              نام خدمات <span className="text-red-500">*</span>
             </label>
             <input
               value={name}
@@ -172,13 +193,15 @@ function ServiceFormModal({ initial, onSave, onClose }: ServiceFormProps) {
             </div>
             <div>
               <label className="block text-xs font-medium text-zinc-600 mb-1.5">
-                قیمت (تومان) <span className="text-red-500">*</span>
+                قیمت (تومان)
+                <span className="text-zinc-400 font-normal mr-1">اختیاری</span>
               </label>
               <input
-                value={price}
-                onChange={(e) => setPrice(e.target.value.replace(/\D/g, ''))}
-                placeholder="۰"
+                value={displayNumber(priceRaw)}
+                onChange={(e) => handlePriceChange(e.target.value)}
+                placeholder="مثلاً 500,000"
                 dir="ltr"
+                inputMode="numeric"
                 className="w-full border border-zinc-200 rounded-xl px-3.5 py-2.5 text-sm text-left focus:outline-none focus:border-[#824c71] focus:ring-1 focus:ring-[#824c71]/20"
               />
             </div>
@@ -191,10 +214,7 @@ function ServiceFormModal({ initial, onSave, onClose }: ServiceFormProps) {
                 <p className="text-sm font-medium text-zinc-800">دریافت بیعانه</p>
                 <p className="text-[11px] text-zinc-400 mt-0.5">اگر نمی‌خواهید بیعانه بگیرید خاموش باشد</p>
               </div>
-              <button
-                onClick={() => setHasDeposit((p) => !p)}
-                className="shrink-0"
-              >
+              <button onClick={() => setHasDeposit((p) => !p)} className="shrink-0">
                 <div className={`relative w-11 h-6 rounded-full transition-colors duration-200 ${hasDeposit ? 'bg-[#824c71]' : 'bg-zinc-200'}`}>
                   <div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-all duration-200 ${hasDeposit ? 'right-0.5' : 'right-5'}`} />
                 </div>
@@ -202,10 +222,11 @@ function ServiceFormModal({ initial, onSave, onClose }: ServiceFormProps) {
             </div>
             {hasDeposit && (
               <input
-                value={deposit}
-                onChange={(e) => setDeposit(e.target.value.replace(/\D/g, ''))}
-                placeholder="مبلغ بیعانه (تومان)"
+                value={displayNumber(depositRaw)}
+                onChange={(e) => handleDepositChange(e.target.value)}
+                placeholder="مثلاً 50,000"
                 dir="ltr"
+                inputMode="numeric"
                 className="w-full border border-zinc-200 rounded-lg px-3 py-2 text-sm text-left focus:outline-none focus:border-[#824c71]"
               />
             )}
@@ -219,7 +240,7 @@ function ServiceFormModal({ initial, onSave, onClose }: ServiceFormProps) {
             className="w-full bg-[#824c71] text-white rounded-xl py-3 text-sm font-bold disabled:opacity-60 flex items-center justify-center gap-2"
           >
             {saving && <Loader2 className="w-4 h-4 animate-spin" />}
-            {saving ? 'در حال ذخیره...' : 'ذخیره خدمت'}
+            {saving ? 'در حال ذخیره...' : 'ذخیره خدمات'}
           </button>
         </div>
       </div>
@@ -303,8 +324,8 @@ function ServicesTab({
                   </div>
                   <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-[12px] text-zinc-500">
                     <span>⏱ {minToDuration(s.durationMin)}</span>
-                    <span>💰 {formatPrice(s.price)} تومان</span>
-                    {s.depositAmount != null && (
+                    {s.price > 0 && <span>💰 {formatPrice(s.price)} تومان</span>}
+                    {s.depositAmount != null && s.depositAmount > 0 && (
                       <span>🔒 بیعانه {formatPrice(s.depositAmount)} تومان</span>
                     )}
                     {s.depositAmount == null && (
@@ -353,7 +374,7 @@ function ServicesTab({
         className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border-2 border-dashed border-zinc-200 text-zinc-500 text-sm font-medium hover:border-[#824c71]/40 hover:text-[#824c71] transition-colors"
       >
         <Plus className="w-4 h-4" />
-        افزودن خدمت جدید
+        افزودن خدمات جدید
       </button>
 
       {showForm && (
@@ -369,6 +390,14 @@ function ServicesTab({
 
 // ─── Staff Tab ────────────────────────────────────────────────────────────────
 
+const mobileRegex = /^09\d{9}$/;
+
+const toEnglishDigitsPhone = (str: string) =>
+  str
+    .replace(/[۰-۹]/g, (d) => String(d.charCodeAt(0) - '۰'.charCodeAt(0)))
+    .replace(/[٠-٩]/g, (d) => String(d.charCodeAt(0) - '٠'.charCodeAt(0)))
+    .replace(/[^0-9]/g, '');
+
 function StaffTab({
   staff,
   services,
@@ -381,6 +410,14 @@ function StaffTab({
   const [expanded, setExpanded] = useState<string | null>(null);
   const [saving, setSaving] = useState<string | null>(null);
 
+  // افزودن پرسنل inline
+  const [showAddStaff, setShowAddStaff] = useState(false);
+  const [newName, setNewName] = useState('');
+  const [newPhone, setNewPhone] = useState('');
+  const [addingStaff, setAddingStaff] = useState(false);
+  const [addStaffErr, setAddStaffErr] = useState('');
+  const [deletingStaffId, setDeletingStaffId] = useState<string | null>(null);
+
   // override modal
   const [overrideStaff, setOverrideStaff] = useState<StaffMember | null>(null);
   const [overrideDate, setOverrideDate] = useState('');
@@ -389,6 +426,38 @@ function StaffTab({
   const [overrideEnd, setOverrideEnd] = useState('');
   const [overrideNote, setOverrideNote] = useState('');
   const [savingOverride, setSavingOverride] = useState(false);
+
+  const handleAddStaff = async () => {
+    const name = newName.trim();
+    if (!name) return setAddStaffErr('نام پرسنل الزامی است');
+    const phone = toEnglishDigitsPhone(newPhone);
+    if (!mobileRegex.test(phone)) return setAddStaffErr('شماره موبایل معتبر نیست');
+    setAddStaffErr('');
+    setAddingStaff(true);
+    try {
+      const res = await fetch('/api/staff', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, phone }),
+      });
+      const data = await res.json();
+      if (!res.ok) return setAddStaffErr(data.error || 'خطا در ثبت پرسنل');
+      setNewName('');
+      setNewPhone('');
+      setShowAddStaff(false);
+      onRefresh();
+    } finally {
+      setAddingStaff(false);
+    }
+  };
+
+  const handleDeleteStaff = async (id: string) => {
+    if (!confirm('حذف این پرسنل؟')) return;
+    setDeletingStaffId(id);
+    await fetch(`/api/staff?id=${id}`, { method: 'DELETE' });
+    onRefresh();
+    setDeletingStaffId(null);
+  };
 
   const toggleService = async (staffId: string, serviceId: string, has: boolean) => {
     setSaving(staffId + serviceId);
@@ -429,24 +498,16 @@ function StaffTab({
     );
   }
 
-  if (staff.length === 0) {
-    return (
-      <div className="text-center py-12 bg-zinc-50 rounded-2xl">
-        <Users className="w-8 h-8 text-zinc-300 mx-auto mb-2" />
-        <p className="text-zinc-500 text-sm font-medium">هنوز پرسنلی ثبت نشده</p>
-        <p className="text-zinc-400 text-xs mt-1">
-          ابتدا از{' '}
-          <Link href="/profile/business/staff" className="text-[#824c71] underline">
-            مدیریت پرسنل
-          </Link>{' '}
-          پرسنل اضافه کنید
-        </p>
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-2.5">
+      {staff.length === 0 && !showAddStaff && (
+        <div className="text-center py-10 bg-zinc-50 rounded-2xl mb-2">
+          <Users className="w-8 h-8 text-zinc-300 mx-auto mb-2" />
+          <p className="text-zinc-500 text-sm font-medium">هنوز پرسنلی ثبت نشده</p>
+          <p className="text-zinc-400 text-xs mt-1">پرسنل خود را از همین‌جا اضافه کنید</p>
+        </div>
+      )}
+
       {staff.map((s) => {
         const assignedIds = new Set(s.bookingServices.map((b) => b.bookingServiceId));
         const isOpen = expanded === s.id;
@@ -464,11 +525,11 @@ function StaffTab({
                 <div>
                   <p className="text-sm font-bold text-zinc-800">{s.name}</p>
                   <p className="text-[11px] text-zinc-400">
-                    {assignedIds.size} خدمت تخصیص‌یافته
+                    {assignedIds.size} خدمات تخصیص‌یافته
                   </p>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5">
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
@@ -483,13 +544,22 @@ function StaffTab({
                 >
                   تغییر ساعت
                 </button>
+                <button
+                  onClick={(e) => { e.stopPropagation(); handleDeleteStaff(s.id); }}
+                  disabled={deletingStaffId === s.id}
+                  className="w-7 h-7 flex items-center justify-center rounded-lg bg-red-50 text-red-400 disabled:opacity-40"
+                >
+                  {deletingStaffId === s.id
+                    ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    : <Trash2 className="w-3.5 h-3.5" />}
+                </button>
                 <ChevronDown className={`w-4 h-4 text-zinc-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
               </div>
             </button>
 
             {isOpen && (
               <div className="px-4 pb-4 border-t border-zinc-50">
-                <p className="text-[11px] text-zinc-400 mt-3 mb-2">خدماتی که این پرسنل انجام می‌دهد:</p>
+                <p className="text-[11px] text-zinc-400 mt-3 mb-2">خدمات این پرسنل:</p>
                 <div className="grid grid-cols-1 gap-1.5">
                   {services.map((svc) => {
                     const has = assignedIds.has(svc.id);
@@ -523,6 +593,54 @@ function StaffTab({
           </div>
         );
       })}
+
+      {/* افزودن پرسنل inline */}
+      {showAddStaff ? (
+        <div className="border border-zinc-200 rounded-2xl p-4 bg-zinc-50/40">
+          <p className="text-xs font-bold text-zinc-700 mb-3">افزودن پرسنل جدید</p>
+          <div className="space-y-2.5">
+            <input
+              value={newName}
+              onChange={(e) => setNewName(e.target.value)}
+              placeholder="نام پرسنل"
+              className="w-full border border-zinc-200 rounded-xl px-3.5 py-2.5 text-sm bg-white focus:outline-none focus:border-[#824c71]"
+            />
+            <input
+              value={newPhone}
+              onChange={(e) => setNewPhone(toEnglishDigitsPhone(e.target.value).slice(0, 11))}
+              placeholder="شماره موبایل (مثلاً ۰۹۱۲...)"
+              dir="ltr"
+              inputMode="numeric"
+              className="w-full border border-zinc-200 rounded-xl px-3.5 py-2.5 text-sm bg-white text-left focus:outline-none focus:border-[#824c71]"
+            />
+            {addStaffErr && <p className="text-red-500 text-xs">{addStaffErr}</p>}
+            <div className="flex gap-2">
+              <button
+                onClick={handleAddStaff}
+                disabled={addingStaff}
+                className="flex-1 bg-[#824c71] text-white rounded-xl py-2.5 text-xs font-bold disabled:opacity-60 flex items-center justify-center gap-1.5"
+              >
+                {addingStaff && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                ثبت پرسنل
+              </button>
+              <button
+                onClick={() => { setShowAddStaff(false); setNewName(''); setNewPhone(''); setAddStaffErr(''); }}
+                className="px-4 rounded-xl bg-zinc-100 text-zinc-600 text-xs font-medium"
+              >
+                انصراف
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <button
+          onClick={() => setShowAddStaff(true)}
+          className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border-2 border-dashed border-zinc-200 text-zinc-500 text-sm font-medium hover:border-[#824c71]/40 hover:text-[#824c71] transition-colors"
+        >
+          <Plus className="w-4 h-4" />
+          افزودن پرسنل جدید
+        </button>
+      )}
 
       {/* Override Modal */}
       {overrideStaff && (
