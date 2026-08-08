@@ -8,7 +8,8 @@ import {
   ArrowRight, Loader2, Store, CalendarClock, Settings2,
   Plus, Trash2, Pencil, X, Check, ChevronDown, Users, Clock,
 } from 'lucide-react';
-import { DateObject, Calendar } from 'react-multi-date-picker';
+import { DateObject } from 'react-multi-date-picker';
+import PersianCalendar, { CalendarDayMarker } from '@/components/ui/PersianCalendar';
 import persian from 'react-date-object/calendars/persian';
 import persian_fa from 'react-date-object/locales/persian_fa';
 import { toDateOnlyAnchor } from '@/lib/dateUtils';
@@ -612,15 +613,12 @@ function StaffTab({
   );
 }
 
-// ─── Staff Schedule Tab (برنامه پرسنل — تقویم شمسی، بدون مدال) ────────────────
+// ─── Staff Schedule Tab (برنامه پرسنل — تقویم شمسی سفارشی، بدون مدال) ────────
 
 function StaffScheduleTab({ staff }: { staff: StaffMember[] }) {
   const [selectedStaffId, setSelectedStaffId] = useState<string>(staff[0]?.id ?? '');
   const [overrides, setOverrides] = useState<StaffOverride[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [calendarValue, setCalendarValue] = useState<DateObject>(
-    () => new DateObject({ calendar: persian, locale: persian_fa })
-  );
   const [selectedDateStr, setSelectedDateStr] = useState<string | null>(null);
   const [editIsDayOff, setEditIsDayOff] = useState(false);
   const [editStart, setEditStart] = useState('');
@@ -670,6 +668,16 @@ function StaffScheduleTab({ staff }: { staff: StaffMember[] }) {
     [overrides]
   );
 
+  const markers = useMemo(() => {
+    const map: Record<string, CalendarDayMarker> = {};
+    overrides.forEach((o) => {
+      map[o.date] = o.isDayOff
+        ? { className: 'bg-red-50 text-red-500', dotClassName: 'bg-red-400' }
+        : { className: 'bg-[#824c71]/10 text-[#824c71]', dotClassName: 'bg-[#824c71]' };
+    });
+    return map;
+  }, [overrides]);
+
   const openDay = (dateStr: string) => {
     setSelectedDateStr(dateStr);
     const existing = overrideMap[dateStr];
@@ -677,13 +685,6 @@ function StaffScheduleTab({ staff }: { staff: StaffMember[] }) {
     setEditStart(existing?.start ?? '');
     setEditEnd(existing?.end ?? '');
     setEditNote(existing?.note ?? '');
-  };
-
-  const handleCalendarChange = (d: DateObject | null) => {
-    if (!d) return;
-    setCalendarValue(d);
-    const gregorian = toDateOnlyAnchor(d.toDate()).toISOString().slice(0, 10);
-    openDay(gregorian);
   };
 
   const handleSave = async () => {
@@ -757,39 +758,27 @@ function StaffScheduleTab({ staff }: { staff: StaffMember[] }) {
         ))}
       </div>
 
-      {/* تقویم شمسی — بدون مدال، همینجا */}
-      <div className="bg-white border border-zinc-100 rounded-2xl p-3 mb-3 relative">
+      {/* تقویم سفارشی */}
+      <div className="relative mb-3">
         {isLoading && (
           <div className="absolute inset-0 bg-white/60 flex items-center justify-center rounded-2xl z-10">
             <Loader2 className="w-5 h-5 text-[#824c71] animate-spin" />
           </div>
         )}
-        <Calendar
-          value={calendarValue}
-          onChange={handleCalendarChange}
-          calendar={persian}
-          locale={persian_fa}
-          className="salon-staff-calendar w-full"
-          mapDays={({ date }: any) => {
-            const gregorian = toDateOnlyAnchor(date.toDate()).toISOString().slice(0, 10);
-            const ov = overrideMap[gregorian];
-            if (!ov) return {};
-            return {
-              style: ov.isDayOff
-                ? { backgroundColor: '#fee2e2', color: '#dc2626', borderRadius: 10, fontWeight: 700 }
-                : { backgroundColor: 'rgba(130,76,113,0.12)', color: '#824c71', borderRadius: 10, fontWeight: 700 },
-            };
-          }}
+        <PersianCalendar
+          selectedDate={selectedDateStr}
+          onSelectDate={(dateStr) => openDay(dateStr)}
+          markers={markers}
         />
       </div>
 
       <div className="flex items-center gap-4 mb-5 px-1 text-[11px] text-zinc-500">
         <span className="flex items-center gap-1.5">
-          <span className="w-3 h-3 rounded-md bg-red-100 border border-red-300" />
+          <span className="w-3 h-3 rounded-md bg-red-50 border border-red-200" />
           مرخصی کامل
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="w-3 h-3 rounded-md bg-[#824c71]/15 border border-[#824c71]/30" />
+          <span className="w-3 h-3 rounded-md bg-[#824c71]/10 border border-[#824c71]/25" />
           ساعت اختصاصی
         </span>
       </div>
