@@ -670,11 +670,20 @@ function StaffTab({
     </div>
   );
 }
-
-// ─── Staff Schedule Tab (برنامه پرسنل) ────────────────────────────────────────
-// دو بخش کاملاً مجزا:
-// ۱) روزهای ثابت تعطیل — همیشگی، از روی الگوی هفتگی (offDays روی خود پرسنل)
-// ۲) تقویم شمسی — فقط برای یک تاریخ خاص، مرخصی موقت یا تغییر ساعت (StaffScheduleOverride)
+// ═══════════════════════════════════════════════════════════════════════════
+// StaffScheduleTab (تب «برنامه پرسنل»)
+// این تابع دقیقاً دو بخش کاملاً مجزا دارد — هر دو با هم، هیچکدام حذف نشده:
+//
+//   بخش شماره ۱ — «روزهای ثابت تعطیل» (همیشگی)
+//     منبع داده: فیلد offDays روی خود Staff (مثلاً همیشه جمعه‌ها تعطیل)
+//     API: PATCH /api/staff/[id]  با body: { offDays: string[] }
+//
+//   بخش شماره ۲ — «مرخصی / تغییر ساعت برای یک روز خاص» (موقت)
+//     منبع داده: جدول StaffScheduleOverride (فقط همون یک تاریخ خاص)
+//     API: POST/DELETE /api/staff-overrides
+//
+// این دو بخش به هم ربطی ندارند و مستقل از هم کار می‌کنند.
+// ═══════════════════════════════════════════════════════════════════════════
 
 function StaffScheduleTab({
   staff,
@@ -685,19 +694,19 @@ function StaffScheduleTab({
 }) {
   const [selectedStaffId, setSelectedStaffId] = useState<string>(staff[0]?.id ?? '');
 
-  // بخش ۱: روزهای ثابت تعطیل
+  // ── state مربوط به بخش ۱ (روزهای ثابت تعطیل) ──
   const [savingOffDay, setSavingOffDay] = useState<string | null>(null);
 
-  // بخش ۲: override تاریخ خاص
+  // ── state مربوط به بخش ۲ (تقویم / override تاریخ خاص) ──
   const [overrides, setOverrides] = useState<StaffOverride[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingOverrides, setIsLoadingOverrides] = useState(false);
   const [selectedDateStr, setSelectedDateStr] = useState<string | null>(null);
   const [editIsDayOff, setEditIsDayOff] = useState(false);
   const [editStart, setEditStart] = useState('');
   const [editEnd, setEditEnd] = useState('');
   const [editNote, setEditNote] = useState('');
-  const [saving, setSaving] = useState(false);
-  const [deleting, setDeleting] = useState(false);
+  const [savingOverride, setSavingOverride] = useState(false);
+  const [deletingOverride, setDeletingOverride] = useState(false);
 
   useEffect(() => {
     if (staff.length === 0) {
@@ -714,7 +723,7 @@ function StaffScheduleTab({
 
   const fetchOverrides = useCallback(async () => {
     if (!selectedStaffId) { setOverrides([]); return; }
-    setIsLoading(true);
+    setIsLoadingOverrides(true);
     try {
       const res = await fetch(`/api/staff-overrides?staffId=${selectedStaffId}`);
       if (res.ok) {
@@ -722,7 +731,7 @@ function StaffScheduleTab({
         setOverrides(data.overrides ?? []);
       }
     } finally {
-      setIsLoading(false);
+      setIsLoadingOverrides(false);
     }
   }, [selectedStaffId]);
 
@@ -742,7 +751,7 @@ function StaffScheduleTab({
     [overrides]
   );
 
-  const markers = useMemo(() => {
+  const calendarMarkers = useMemo(() => {
     const map: Record<string, CalendarDayMarker> = {};
     overrides.forEach((o) => {
       map[o.date] = o.isDayOff
@@ -752,7 +761,7 @@ function StaffScheduleTab({
     return map;
   }, [overrides]);
 
-  // ── بخش ۱: تعطیلی ثابت هفتگی ──
+  // ── اکشن بخش ۱: تعطیلی ثابت هفتگی ──
   const toggleOffDay = async (day: string) => {
     if (!currentStaff) return;
     const current = currentStaff.offDays ?? [];
@@ -773,7 +782,7 @@ function StaffScheduleTab({
     }
   };
 
-  // ── بخش ۲: override تاریخ خاص ──
+  // ── اکشن بخش ۲: override تاریخ خاص ──
   const openDay = (dateStr: string) => {
     setSelectedDateStr(dateStr);
     const existing = overrideMap[dateStr];
@@ -783,9 +792,9 @@ function StaffScheduleTab({
     setEditNote(existing?.note ?? '');
   };
 
-  const handleSave = async () => {
+  const handleSaveOverride = async () => {
     if (!selectedDateStr || !selectedStaffId) return;
-    setSaving(true);
+    setSavingOverride(true);
     try {
       await fetch('/api/staff-overrides', {
         method: 'POST',
@@ -801,14 +810,14 @@ function StaffScheduleTab({
       });
       await fetchOverrides();
     } finally {
-      setSaving(false);
+      setSavingOverride(false);
     }
   };
 
-  const handleDeleteDate = async (dateStr: string) => {
+  const handleDeleteOverride = async (dateStr: string) => {
     if (!selectedStaffId) return;
     if (!confirm('این مورد حذف شود؟')) return;
-    setDeleting(true);
+    setDeletingOverride(true);
     try {
       await fetch('/api/staff-overrides', {
         method: 'DELETE',
@@ -818,7 +827,7 @@ function StaffScheduleTab({
       if (selectedDateStr === dateStr) setSelectedDateStr(null);
       await fetchOverrides();
     } finally {
-      setDeleting(false);
+      setDeletingOverride(false);
     }
   };
 
@@ -856,7 +865,9 @@ function StaffScheduleTab({
 
       {currentStaff && (
         <>
-          {/* ═══ بخش ۱: تعطیلی ثابت هفتگی (همیشگی) ═══ */}
+          {/* ┌─────────────────────────────────────────────────────────────┐
+              │  بخش ۱ / ۲ — روزهای ثابت تعطیل (همیشگی)                     │
+              └─────────────────────────────────────────────────────────────┘ */}
           <div className="bg-white border border-zinc-100 rounded-2xl p-4 mb-3">
             <div className="flex items-center gap-2 mb-1">
               <CalendarOff className="w-4 h-4 text-zinc-400" />
@@ -904,7 +915,9 @@ function StaffScheduleTab({
             )}
           </div>
 
-          {/* ═══ بخش ۲: مرخصی / تغییر ساعت در یک تاریخ خاص (موقت) ═══ */}
+          {/* ┌─────────────────────────────────────────────────────────────┐
+              │  بخش ۲ / ۲ — مرخصی یا تغییر ساعت در یک روز خاص (موقت)       │
+              └─────────────────────────────────────────────────────────────┘ */}
           <div className="mb-2 px-1">
             <div className="flex items-center gap-2 mb-1">
               <CalendarClock className="w-4 h-4 text-zinc-400" />
@@ -914,12 +927,12 @@ function StaffScheduleTab({
               </span>
             </div>
             <p className="text-[11px] text-zinc-400 mb-3 leading-relaxed">
-              فقط همون تاریخی که از تقویم انتخاب می‌کنید تغییر می‌کند؛ باقی روزها طبق برنامه‌ی معمول {currentStaff.name} می‌ماند.
+              فقط همون تاریخی که از تقویم زیر انتخاب می‌کنید تغییر می‌کند؛ باقی روزها طبق برنامه‌ی معمول {currentStaff.name} می‌ماند.
             </p>
           </div>
 
           <div className="relative mb-3">
-            {isLoading && (
+            {isLoadingOverrides && (
               <div className="absolute inset-0 bg-white/60 flex items-center justify-center rounded-2xl z-10">
                 <Loader2 className="w-5 h-5 text-[#824c71] animate-spin" />
               </div>
@@ -927,7 +940,7 @@ function StaffScheduleTab({
             <PersianCalendar
               selectedDate={selectedDateStr}
               onSelectDate={(dateStr) => openDay(dateStr)}
-              markers={markers}
+              markers={calendarMarkers}
             />
           </div>
 
@@ -1001,27 +1014,27 @@ function StaffScheduleTab({
 
               <div className="flex gap-2">
                 <button
-                  onClick={handleSave}
-                  disabled={saving}
+                  onClick={handleSaveOverride}
+                  disabled={savingOverride}
                   className="flex-1 bg-[#824c71] text-white rounded-xl py-2.5 text-xs font-bold disabled:opacity-60 flex items-center justify-center gap-1.5"
                 >
-                  {saving && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                  {savingOverride && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
                   ذخیره
                 </button>
                 {overrideMap[selectedDateStr] && (
                   <button
-                    onClick={() => handleDeleteDate(selectedDateStr)}
-                    disabled={deleting}
+                    onClick={() => handleDeleteOverride(selectedDateStr)}
+                    disabled={deletingOverride}
                     className="px-4 rounded-xl bg-red-50 text-red-500 text-xs font-bold disabled:opacity-50"
                   >
-                    {deleting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'حذف'}
+                    {deletingOverride ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'حذف'}
                   </button>
                 )}
               </div>
             </div>
           )}
 
-          {/* لیست موارد ثبت‌شده — برای دسترسی و ویرایش سریع */}
+          {/* لیست موارد موقت ثبت‌شده — برای دسترسی و ویرایش سریع */}
           <div>
             <p className="text-xs font-bold text-zinc-500 mb-2 px-1">موارد موقت ثبت‌شده برای این پرسنل</p>
             {sortedOverrides.length === 0 ? (
@@ -1049,7 +1062,7 @@ function StaffScheduleTab({
                       </div>
                     </button>
                     <button
-                      onClick={() => handleDeleteDate(o.date)}
+                      onClick={() => handleDeleteOverride(o.date)}
                       className="w-7 h-7 flex items-center justify-center rounded-lg bg-red-50 text-red-400 shrink-0"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
