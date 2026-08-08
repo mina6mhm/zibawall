@@ -1,7 +1,7 @@
 // components/ui/PersianCalendar.tsx
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { ChevronRight, ChevronLeft } from 'lucide-react';
 import { DateObject } from 'react-multi-date-picker';
 import persian from 'react-date-object/calendars/persian';
@@ -28,7 +28,12 @@ const PERSIAN_MONTHS = [
   'مهر', 'آبان', 'آذر', 'دی', 'بهمن', 'اسفند',
 ];
 
+const YEARS_PER_PAGE = 12;
+
 type Cell = { dayNumber: number | null; dateStr: string | null; dateObject: DateObject | null };
+
+// حالت نمایش هدر/بدنه
+type ViewMode = 'calendar' | 'month' | 'year';
 
 export default function PersianCalendar({
   selectedDate,
@@ -41,31 +46,61 @@ export default function PersianCalendar({
     () => initialMonth ?? new DateObject({ calendar: persian, locale: persian_fa })
   );
 
-  // پنل انتخاب سریع ماه/سال
-  const [showPicker, setShowPicker] = useState(false);
+  // حالت نمایش: تقویم روزها / انتخاب ماه / انتخاب سال
+  const [mode, setMode] = useState<ViewMode>('calendar');
+
+  // سالی که در حالت "انتخاب ماه" روش کار می‌کنیم (لزوماً هنوز اعمال نشده روی viewMonth)
   const [pickerYear, setPickerYear] = useState<number>(() => viewMonth.year);
 
+  // ابتدای بازه‌ی سال‌ها در حالت "انتخاب سال"
+  const [yearRangeStart, setYearRangeStart] = useState<number>(
+    () => viewMonth.year - Math.floor(YEARS_PER_PAGE / 2)
+  );
+
   const todayStr = useMemo(() => toDateOnlyAnchor(new Date()).toISOString().slice(0, 10), []);
-
-  const monthLabel = `${viewMonth.month.name} ${viewMonth.year.toLocaleString('fa-IR')}`;
-
-  const goToPrevMonth = () => setViewMonth((p) => new DateObject(p).subtract(1, 'month'));
-  const goToNextMonth = () => setViewMonth((p) => new DateObject(p).add(1, 'month'));
-  const goToToday = () => setViewMonth(new DateObject({ calendar: persian, locale: persian_fa }));
 
   const isCurrentMonth = useMemo(() => {
     const now = new DateObject({ calendar: persian, locale: persian_fa });
     return viewMonth.month.number === now.month.number && viewMonth.year === now.year;
   }, [viewMonth]);
 
-  const openPicker = () => {
+  // --- ناوبری تقویم اصلی ---
+  const goToPrevMonth = () => setViewMonth((p) => new DateObject(p).subtract(1, 'month'));
+  const goToNextMonth = () => setViewMonth((p) => new DateObject(p).add(1, 'month'));
+  const goToToday = () => setViewMonth(new DateObject({ calendar: persian, locale: persian_fa }));
+
+  // --- باز کردن پنل‌ها ---
+  const openMonthPicker = () => {
     setPickerYear(viewMonth.year);
-    setShowPicker(true);
+    setMode('month');
+  };
+  const openYearPicker = () => {
+    setYearRangeStart(viewMonth.year - Math.floor(YEARS_PER_PAGE / 2));
+    setMode('year');
   };
 
-  const selectMonthFromPicker = (monthNumber: number) => {
+  // انتخاب سال → می‌ریم سراغ انتخاب ماهِ همون سال
+  const selectYear = (year: number) => {
+    setPickerYear(year);
+    setMode('month');
+  };
+
+  // انتخاب ماه → اعمال روی تقویم و بازگشت
+  const selectMonth = (monthNumber: number) => {
     setViewMonth(new DateObject({ calendar: persian, locale: persian_fa, year: pickerYear, month: monthNumber, day: 1 }));
-    setShowPicker(false);
+    setMode('calendar');
+  };
+
+  // --- یک ردیف فلش که کارکردش بسته به حالت عوض می‌شه ---
+  const handleNext = () => {
+    if (mode === 'calendar') goToNextMonth();
+    else if (mode === 'month') setPickerYear((y) => y + 1);
+    else setYearRangeStart((y) => y + YEARS_PER_PAGE);
+  };
+  const handlePrev = () => {
+    if (mode === 'calendar') goToPrevMonth();
+    else if (mode === 'month') setPickerYear((y) => y - 1);
+    else setYearRangeStart((y) => y - YEARS_PER_PAGE);
   };
 
   const weeks = useMemo(() => {
@@ -91,35 +126,65 @@ export default function PersianCalendar({
     return rows;
   }, [viewMonth]);
 
+  const yearsInRange = useMemo(
+    () => Array.from({ length: YEARS_PER_PAGE }, (_, i) => yearRangeStart + i),
+    [yearRangeStart]
+  );
+
   return (
     <div className={`bg-white border border-zinc-100 rounded-2xl p-4 relative ${className}`}>
-      {/* هدر: ماه/سال + ناوبری */}
+      {/* هدر: یک ردیف فلش که بسته به حالت، ماه/سال/بازه رو جابه‌جا می‌کنه */}
       <div className="flex items-center justify-between mb-4">
         <button
-          onClick={goToNextMonth}
-          aria-label="ماه بعد"
+          onClick={handleNext}
+          aria-label="بعدی"
           className="w-9 h-9 flex items-center justify-center rounded-xl bg-zinc-100 text-zinc-600 hover:bg-zinc-200 transition-colors shrink-0"
         >
           <ChevronRight className="w-4.5 h-4.5" />
         </button>
 
-        <button
-          onClick={openPicker}
-          className={`text-sm font-bold transition-colors px-2 py-1 rounded-lg hover:bg-zinc-50 ${isCurrentMonth ? 'text-zinc-800' : 'text-[#824c71]'}`}
-        >
-          {monthLabel}
-        </button>
+        {mode === 'calendar' && (
+          <div className="flex items-center gap-1">
+            <button
+              onClick={openMonthPicker}
+              className={`text-sm font-bold transition-colors px-2 py-1 rounded-lg hover:bg-zinc-50 ${isCurrentMonth ? 'text-zinc-800' : 'text-[#824c71]'}`}
+            >
+              {viewMonth.month.name}
+            </button>
+            <button
+              onClick={openYearPicker}
+              className={`text-sm font-bold transition-colors px-2 py-1 rounded-lg hover:bg-zinc-50 ${isCurrentMonth ? 'text-zinc-800' : 'text-[#824c71]'}`}
+            >
+              {viewMonth.year.toLocaleString('fa-IR')}
+            </button>
+          </div>
+        )}
+
+        {mode === 'month' && (
+          <button
+            onClick={openYearPicker}
+            className="text-sm font-bold text-[#824c71] px-2 py-1 rounded-lg hover:bg-zinc-50 transition-colors"
+          >
+            {pickerYear.toLocaleString('fa-IR')}
+          </button>
+        )}
+
+        {mode === 'year' && (
+          <span className="text-sm font-bold text-zinc-800 px-2 py-1">
+            {yearRangeStart.toLocaleString('fa-IR')} - {(yearRangeStart + YEARS_PER_PAGE - 1).toLocaleString('fa-IR')}
+          </span>
+        )}
 
         <button
-          onClick={goToPrevMonth}
-          aria-label="ماه قبل"
+          onClick={handlePrev}
+          aria-label="قبلی"
           className="w-9 h-9 flex items-center justify-center rounded-xl bg-zinc-100 text-zinc-600 hover:bg-zinc-200 transition-colors shrink-0"
         >
           <ChevronLeft className="w-4.5 h-4.5" />
         </button>
       </div>
 
-      {!isCurrentMonth && !showPicker && (
+      {mode === 'calendar' && !isCurrentMonth && (
         <div className="flex justify-center mb-3 -mt-1">
           <button onClick={goToToday} className="text-[11px] font-medium text-[#824c71] underline underline-offset-2">
             بازگشت به امروز
@@ -127,29 +192,8 @@ export default function PersianCalendar({
         </div>
       )}
 
-      {showPicker ? (
-        // پنل انتخاب سریع سال + ماه
+      {mode === 'month' && (
         <div>
-          <div className="flex items-center justify-between mb-4 px-1">
-            <button
-              onClick={() => setPickerYear((y) => y + 1)}
-              aria-label="سال بعد"
-              className="w-8 h-8 flex items-center justify-center rounded-lg bg-zinc-100 text-zinc-600 hover:bg-zinc-200 transition-colors"
-            >
-              <ChevronRight className="w-4 h-4" />
-            </button>
-
-            <span className="text-sm font-bold text-zinc-800">{pickerYear.toLocaleString('fa-IR')}</span>
-
-            <button
-              onClick={() => setPickerYear((y) => y - 1)}
-              aria-label="سال قبل"
-              className="w-8 h-8 flex items-center justify-center rounded-lg bg-zinc-100 text-zinc-600 hover:bg-zinc-200 transition-colors"
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </button>
-          </div>
-
           <div className="grid grid-cols-3 gap-2 mb-1">
             {PERSIAN_MONTHS.map((label, idx) => {
               const monthNumber = idx + 1;
@@ -157,7 +201,7 @@ export default function PersianCalendar({
               return (
                 <button
                   key={label}
-                  onClick={() => selectMonthFromPicker(monthNumber)}
+                  onClick={() => selectMonth(monthNumber)}
                   className={`py-2.5 rounded-xl text-xs font-bold transition-colors ${
                     isActive
                       ? 'bg-[#824c71] text-white'
@@ -171,13 +215,45 @@ export default function PersianCalendar({
           </div>
 
           <button
-            onClick={() => setShowPicker(false)}
+            onClick={() => setMode('calendar')}
             className="w-full mt-3 py-2 rounded-xl text-xs font-medium text-zinc-500 hover:bg-zinc-50 transition-colors"
           >
             بازگشت به تقویم
           </button>
         </div>
-      ) : (
+      )}
+
+      {mode === 'year' && (
+        <div>
+          <div className="grid grid-cols-3 gap-2 mb-1">
+            {yearsInRange.map((year) => {
+              const isActive = year === viewMonth.year;
+              return (
+                <button
+                  key={year}
+                  onClick={() => selectYear(year)}
+                  className={`py-2.5 rounded-xl text-xs font-bold transition-colors ${
+                    isActive
+                      ? 'bg-[#824c71] text-white'
+                      : 'bg-zinc-50 text-zinc-600 hover:bg-zinc-100'
+                  }`}
+                >
+                  {year.toLocaleString('fa-IR')}
+                </button>
+              );
+            })}
+          </div>
+
+          <button
+            onClick={() => setMode('calendar')}
+            className="w-full mt-3 py-2 rounded-xl text-xs font-medium text-zinc-500 hover:bg-zinc-50 transition-colors"
+          >
+            بازگشت به تقویم
+          </button>
+        </div>
+      )}
+
+      {mode === 'calendar' && (
         <>
           {/* هدر روزهای هفته */}
           <div className="grid grid-cols-7 mb-1">
