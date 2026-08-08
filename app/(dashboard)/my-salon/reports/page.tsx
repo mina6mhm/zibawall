@@ -5,13 +5,14 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
-  Loader2, ArrowRight, ChevronRight, ChevronLeft, CalendarDays,
+  Loader2, ArrowRight, ChevronRight, ChevronLeft,
   TrendingUp, Wallet, Users, Trophy, Store,
 } from 'lucide-react';
-import DatePicker, { DateObject } from 'react-multi-date-picker';
+import { DateObject } from 'react-multi-date-picker';
 import persian from 'react-date-object/calendars/persian';
 import persian_fa from 'react-date-object/locales/persian_fa';
 import StaffShareModal from '@/components/booking/StaffShareModal';
+import PersianMonthYearPicker from '@/components/ui/PersianMonthYearPicker';
 import { toDateOnlyAnchor } from '@/lib/dateUtils';
 
 type ServiceItem = { name: string; price?: number; staffName?: string; staffPercentage?: number };
@@ -194,33 +195,13 @@ export default function SalonReportsPage() {
         </div>
       </div>
 
-      {/* ناوبری ماه: قبل / انتخاب ماه / بعد */}
+      {/* ناوبری ماه: قبل / انتخاب ماه یا سال / بعد */}
       <div className="flex items-center gap-2 mb-3 mt-1">
         <button onClick={goToNextMonth} aria-label="ماه بعد" className="w-11 h-11 flex items-center justify-center rounded-xl bg-zinc-100 text-zinc-600 hover:bg-zinc-200 transition shrink-0">
           <ChevronRight className="w-5 h-5" />
         </button>
 
-        <DatePicker
-          value={selectedMonth}
-          onChange={(d) => {
-            if (d) handleJumpToMonth(d as DateObject);
-          }}
-          calendar={persian}
-          locale={persian_fa}
-          onlyMonthPicker
-          calendarPosition="bottom-center"
-          containerClassName="flex-1"
-          render={(_value, openCalendar) => (
-            <button
-              type="button"
-              onClick={openCalendar}
-              className="w-full h-11 flex items-center justify-center gap-2 rounded-xl bg-white border border-zinc-200 px-2"
-            >
-              <CalendarDays className="w-4 h-4 text-[#824c71] shrink-0" />
-              <span className="text-xs sm:text-sm font-bold text-zinc-800 truncate">{monthLabel}</span>
-            </button>
-          )}
-        />
+        <PersianMonthYearPicker value={selectedMonth} onChange={handleJumpToMonth} className="flex-1" />
 
         <button onClick={goToPrevMonth} aria-label="ماه قبل" className="w-11 h-11 flex items-center justify-center rounded-xl bg-zinc-100 text-zinc-600 hover:bg-zinc-200 transition shrink-0">
           <ChevronLeft className="w-5 h-5" />

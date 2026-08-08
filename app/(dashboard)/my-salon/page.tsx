@@ -1,7 +1,7 @@
 // app/(dashboard)/my-salon/page.tsx
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -9,11 +9,12 @@ import {
   Scissors, Trash2, Store, Settings, Pencil, ChevronRight, ChevronLeft, CalendarDays,
   Wallet, TrendingUp, Users, BarChart3,
 } from 'lucide-react';
-import DatePicker, { DateObject } from 'react-multi-date-picker';
+import { DateObject } from 'react-multi-date-picker';
 import persian from 'react-date-object/calendars/persian';
 import persian_fa from 'react-date-object/locales/persian_fa';
 import NewBookingModal, { BookingToEdit } from '@/components/booking/NewBookingModal';
 import StaffShareModal from '@/components/booking/StaffShareModal';
+import PersianCalendar from '@/components/ui/PersianCalendar';
 import { toDateOnlyAnchor } from '@/lib/dateUtils';
 import { CalendarClock } from 'lucide-react';
 
@@ -56,6 +57,10 @@ export default function MySalonPage() {
 
   const [bookingEnabled, setBookingEnabled] = useState(false);
 
+  // پاپ‌آور انتخاب تاریخ (تقویم کامل روز/ماه/سال)
+  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
+  const datePickerRef = useRef<HTMLDivElement>(null);
+
   const fetchData = useCallback(async () => {
     try {
       const profileRes = await fetch('/api/user/profile');
@@ -90,6 +95,17 @@ export default function MySalonPage() {
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+  useEffect(() => {
+    if (!isDatePickerOpen) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (datePickerRef.current && !datePickerRef.current.contains(e.target as Node)) {
+        setIsDatePickerOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isDatePickerOpen]);
 
   const openNewBookingModal = () => {
     setEditingBooking(null);
@@ -154,10 +170,6 @@ export default function MySalonPage() {
   };
 
   const goToToday = () => setSelectedDate(toDateOnlyAnchor(new Date()));
-
-  const handleJumpToDate = (d: DateObject) => {
-    setSelectedDate(toDateOnlyAnchor(d.toDate()));
-  };
 
   const selectedDateStr = selectedDate.toISOString().slice(0, 10);
   const todayStr = toDateOnlyAnchor(new Date()).toISOString().slice(0, 10);
@@ -365,27 +377,30 @@ export default function MySalonPage() {
           <ChevronRight className="w-5 h-5" />
         </button>
 
-        <DatePicker
-          value={new DateObject({ date: selectedDate, calendar: persian, locale: persian_fa })}
-          onChange={(d) => {
-            if (d) handleJumpToDate(d as DateObject);
-          }}
-          calendar={persian}
-          locale={persian_fa}
-          calendarPosition="bottom-center"
-          className="salon-datepicker"
-          containerClassName="flex-1"
-          render={(_value, openCalendar) => (
-            <button
-              type="button"
-              onClick={openCalendar}
-              className="w-full h-11 flex items-center justify-center gap-2 rounded-xl bg-white border border-zinc-200 px-2"
-            >
-              <CalendarDays className="w-4 h-4 text-[#824c71] shrink-0" />
-              <span className="text-xs sm:text-sm font-bold text-zinc-800 truncate">{dayLabel}</span>
-            </button>
+        <div ref={datePickerRef} className="relative flex-1">
+          <button
+            type="button"
+            onClick={() => setIsDatePickerOpen((o) => !o)}
+            className="w-full h-11 flex items-center justify-center gap-2 rounded-xl bg-white border border-zinc-200 px-2"
+          >
+            <CalendarDays className="w-4 h-4 text-[#824c71] shrink-0" />
+            <span className="text-xs sm:text-sm font-bold text-zinc-800 truncate">{dayLabel}</span>
+          </button>
+
+          {isDatePickerOpen && (
+            <div className="absolute z-50 top-full mt-2 left-1/2 -translate-x-1/2 w-80">
+              <PersianCalendar
+                selectedDate={selectedDateStr}
+                initialMonth={new DateObject({ date: selectedDate, calendar: persian, locale: persian_fa })}
+                onSelectDate={(dateStr) => {
+                  setSelectedDate(toDateOnlyAnchor(new Date(dateStr)));
+                  setIsDatePickerOpen(false);
+                }}
+                className="shadow-lg shadow-zinc-200/60"
+              />
+            </div>
           )}
-        />
+        </div>
 
         <button onClick={goToPrevDay} aria-label="روز قبل" className="w-11 h-11 flex items-center justify-center rounded-xl bg-zinc-100 text-zinc-600 hover:bg-zinc-200 transition shrink-0">
           <ChevronLeft className="w-5 h-5" />
