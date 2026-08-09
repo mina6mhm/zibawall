@@ -486,6 +486,13 @@ function StaffTab({
   const [addStaffErr, setAddStaffErr] = useState('');
   const [deletingStaffId, setDeletingStaffId] = useState<string | null>(null);
 
+  // ویرایش نام/شماره پرسنل موجود — inline، مستقل از بخش افزودن پرسنل جدید
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editName, setEditName] = useState('');
+  const [editPhone, setEditPhone] = useState('');
+  const [editError, setEditError] = useState('');
+  const [savingEdit, setSavingEdit] = useState(false);
+
   const handleAddStaff = async () => {
     const name = newName.trim();
     if (!name) return setAddStaffErr('نام پرسنل الزامی است');
@@ -516,6 +523,36 @@ function StaffTab({
     await fetch(`/api/staff?id=${id}`, { method: 'DELETE' });
     onRefresh();
     setDeletingStaffId(null);
+  };
+
+  // ── باز کردن فرم ویرایش نام/شماره یک پرسنل ──
+  const openEditStaff = (s: StaffMember) => {
+    setEditingId(s.id);
+    setEditName(s.name);
+    setEditPhone(s.phone ?? '');
+    setEditError('');
+  };
+
+  const handleSaveEditStaff = async (staffId: string) => {
+    const name = editName.trim();
+    if (!name) return setEditError('نام پرسنل الزامی است');
+    const phone = toEnglishDigitsPhone(editPhone);
+    if (!mobileRegex.test(phone)) return setEditError('شماره موبایل معتبر نیست');
+    setEditError('');
+    setSavingEdit(true);
+    try {
+      const res = await fetch(`/api/staff/${staffId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, phone }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setEditError(data.error || 'خطا در ذخیره تغییرات'); return; }
+      setEditingId(null);
+      onRefresh();
+    } finally {
+      setSavingEdit(false);
+    }
   };
 
   const toggleService = async (staffId: string, serviceId: string, has: boolean) => {
@@ -551,6 +588,7 @@ function StaffTab({
       {staff.map((s) => {
         const assignedIds = new Set((s.bookingServices ?? []).map((b) => b.bookingServiceId));
         const isOpen = expanded === s.id;
+        const isEditing = editingId === s.id;
 
         return (
           <div key={s.id} className="border border-zinc-100 rounded-2xl overflow-hidden bg-white">
@@ -571,6 +609,12 @@ function StaffTab({
               </div>
               <div className="flex items-center gap-1.5">
                 <button
+                  onClick={(e) => { e.stopPropagation(); openEditStaff(s); }}
+                  className="w-7 h-7 flex items-center justify-center rounded-lg bg-zinc-100 text-zinc-500"
+                >
+                  <Pencil className="w-3.5 h-3.5" />
+                </button>
+                <button
                   onClick={(e) => { e.stopPropagation(); handleDeleteStaff(s.id); }}
                   disabled={deletingStaffId === s.id}
                   className="w-7 h-7 flex items-center justify-center rounded-lg bg-red-50 text-red-400 disabled:opacity-40"
@@ -582,6 +626,46 @@ function StaffTab({
                 <ChevronDown className={`w-4 h-4 text-zinc-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
               </div>
             </button>
+
+            {isEditing && (
+              <div className="px-4 pb-4 pt-1 border-t border-zinc-50 space-y-2.5" onClick={(e) => e.stopPropagation()}>
+                <div>
+                  <label className="block text-[11px] font-medium text-zinc-500 mb-1">نام پرسنل</label>
+                  <input
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                    className="w-full border border-zinc-200 rounded-xl px-3.5 py-2.5 text-sm bg-white focus:outline-none focus:border-[#824c71]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-medium text-zinc-500 mb-1">شماره موبایل</label>
+                  <input
+                    value={editPhone}
+                    onChange={(e) => setEditPhone(toEnglishDigitsPhone(e.target.value).slice(0, 11))}
+                    dir="ltr"
+                    inputMode="numeric"
+                    className="w-full border border-zinc-200 rounded-xl px-3.5 py-2.5 text-sm bg-white text-left focus:outline-none focus:border-[#824c71]"
+                  />
+                </div>
+                {editError && <p className="text-red-500 text-xs">{editError}</p>}
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => handleSaveEditStaff(s.id)}
+                    disabled={savingEdit}
+                    className="flex-1 bg-[#824c71] text-white rounded-xl py-2.5 text-xs font-bold disabled:opacity-60 flex items-center justify-center gap-1.5"
+                  >
+                    {savingEdit && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                    ذخیره
+                  </button>
+                  <button
+                    onClick={() => setEditingId(null)}
+                    className="px-4 rounded-xl bg-zinc-100 text-zinc-600 text-xs font-medium"
+                  >
+                    انصراف
+                  </button>
+                </div>
+              </div>
+            )}
 
             {isOpen && (
               <div className="px-4 pb-4 border-t border-zinc-50">

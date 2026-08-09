@@ -5,14 +5,14 @@ import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
-  Plus, Loader2, Calendar, Clock, Phone, User as UserIcon,
+  Loader2, Calendar, Clock, Phone, User as UserIcon,
   Scissors, Trash2, Store, Settings, Pencil, ChevronRight, ChevronLeft, CalendarDays,
   Wallet, TrendingUp, Users, BarChart3,
 } from 'lucide-react';
 import { DateObject } from 'react-multi-date-picker';
 import persian from 'react-date-object/calendars/persian';
 import persian_fa from 'react-date-object/locales/persian_fa';
-import NewBookingModal, { BookingToEdit } from '@/components/booking/NewBookingModal';
+import EditBookingModal from '@/components/booking/EditBookingModal';
 import StaffShareModal from '@/components/booking/StaffShareModal';
 import PersianCalendar from '@/components/ui/PersianCalendar';
 import { toDateOnlyAnchor } from '@/lib/dateUtils';
@@ -20,6 +20,8 @@ import { CalendarClock } from 'lucide-react';
 
 type ServiceItem = { name: string; price?: number; staffName?: string; staffPercentage?: number };
 
+// نوبت‌ها همیشه از مسیر رزرو آنلاین مشتری ثبت می‌شن — این صفحه فقط نمایش‌شون می‌ده
+// و اجازه‌ی ویرایش محدود به خدمات/پرسنل/قیمت رو می‌ده (نه اطلاعات مشتری/زمان/بیعانه)
 type Booking = {
   id: string;
   customerName: string | null;
@@ -49,7 +51,7 @@ export default function MySalonPage() {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingBooking, setEditingBooking] = useState<BookingToEdit | null>(null);
+  const [editingBooking, setEditingBooking] = useState<Booking | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [isStaffModalOpen, setIsStaffModalOpen] = useState(false);
 
@@ -107,21 +109,8 @@ export default function MySalonPage() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isDatePickerOpen]);
 
-  const openNewBookingModal = () => {
-    setEditingBooking(null);
-    setIsModalOpen(true);
-  };
-
   const openEditBookingModal = (booking: Booking) => {
-    setEditingBooking({
-      id: booking.id,
-      customerName: booking.customerName,
-      customerPhone: booking.customerPhone,
-      date: booking.date,
-      startTime: booking.startTime,
-      services: booking.services,
-      depositAmount: booking.depositAmount,
-    });
+    setEditingBooking(booking);
     setIsModalOpen(true);
   };
 
@@ -305,7 +294,7 @@ export default function MySalonPage() {
             className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl bg-zinc-100 text-zinc-700 text-xs font-medium hover:bg-zinc-200 transition"
           >
             <Pencil className="w-3.5 h-3.5" />
-            ویرایش
+            ویرایش خدمات
           </button>
 
           {booking.status !== 'CONFIRMED' && (
@@ -471,11 +460,11 @@ export default function MySalonPage() {
         )}
       </div>
 
-      <NewBookingModal
+      <EditBookingModal
         isOpen={isModalOpen}
         onClose={handleModalClose}
         onSaved={fetchData}
-        bookingToEdit={editingBooking}
+        booking={editingBooking}
       />
 
       <StaffShareModal
