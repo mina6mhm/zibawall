@@ -587,7 +587,7 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
       <div className="max-w-5xl mx-auto pb-36 sm:pb-24 px-3 sm:px-6 mt-4 sm:mt-8">
         
         <div className="flex justify-between items-center mb-4 sm:mb-8 px-1">
-          <button onClick={() => router.back()} className="flex items-center text-sm sm:text-base text-zinc-600 font-medium">
+          <button onClick={() => router.push('/')} className="flex items-center text-sm sm:text-base text-zinc-600 font-medium">
             <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 ml-1.5" />
             بازگشت
           </button>
