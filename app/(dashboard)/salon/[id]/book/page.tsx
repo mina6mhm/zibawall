@@ -5,8 +5,8 @@ import { useState, useEffect, use, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
-  ArrowRight, Loader2, CalendarClock, Clock, Check,
-  ChevronLeft, Plus, Trash2, CreditCard, User, Users, Shuffle,
+  ArrowRight, ArrowLeft, Loader2, CalendarClock, Clock, Check,
+  ChevronLeft, Plus, Trash2, CreditCard, User, Shuffle,
 } from 'lucide-react';
 import { DateObject } from 'react-multi-date-picker';
 import PersianCalendar, { CalendarDayMarker } from '@/components/ui/PersianCalendar';
@@ -37,8 +37,8 @@ type CartItem = {
   durationMin: number;
   price: number;
   depositAmount: number | null;
-  date: string;        // "YYYY-MM-DD"
-  startTime: string;   // "HH:MM"
+  date: string;
+  startTime: string;
   staffId: string;
   staffName: string;
 };
@@ -52,9 +52,9 @@ const STEP_LABELS: Record<Step, string> = {
   confirm:  'تأیید و پرداخت',
 };
 
-const formatPrice = (n: number) => n.toLocaleString('fa-IR');
+const stepOrder: Step[] = ['service', 'staff', 'schedule', 'confirm'];
 
-// تبدیل ارقام انگلیسی به فارسی — برای هماهنگی ظاهری ساعت‌ها با بقیه‌ی صفحه (که با تقویم فارسی‌عدد است)
+const formatPrice = (n: number) => n.toLocaleString('fa-IR');
 const toPersianDigits = (str: string) => str.replace(/[0-9]/g, (d) => '۰۱۲۳۴۵۶۷۸۹'[Number(d)]);
 
 const formatPersianDate = (dateStr: string) =>
@@ -67,36 +67,90 @@ const formatDuration = (durationMin: number) => {
   return `${h > 0 ? `${h} ساعت ` : ''}${m > 0 ? `${m} دقیقه` : ''}`.trim();
 };
 
-// روزهای هفته میلادی → شمسی (برای تشخیص روزهای تعطیل سالن در تقویم)
 const GREGORIAN_TO_PERSIAN_DAY: Record<number, string> = {
-  6: 'شنبه',
-  0: 'یکشنبه',
-  1: 'دوشنبه',
-  2: 'سه‌شنبه',
-  3: 'چهارشنبه',
-  4: 'پنجشنبه',
-  5: 'جمعه',
+  6: 'شنبه', 0: 'یکشنبه', 1: 'دوشنبه',
+  2: 'سه‌شنبه', 3: 'چهارشنبه', 4: 'پنجشنبه', 5: 'جمعه',
 };
 
-// برای یک بازه‌ی زمانی رو به جلو (یک سال آینده)، تاریخ‌هایی که روی
-// یکی از روزهای هفته‌ی تعطیل سالن می‌افتند را به‌صورت marker قرمز می‌سازد
 function buildClosedDayMarkers(closedDays: string[]): Record<string, CalendarDayMarker> {
   if (closedDays.length === 0) return {};
-
   const markers: Record<string, CalendarDayMarker> = {};
   const today = toDateOnlyAnchor(new Date());
-
   for (let i = 0; i < 365; i++) {
     const d = new Date(today);
     d.setUTCDate(d.getUTCDate() + i);
-    const persianDayName = GREGORIAN_TO_PERSIAN_DAY[d.getUTCDay()];
-    if (closedDays.includes(persianDayName)) {
-      const dateStr = d.toISOString().slice(0, 10);
-      markers[dateStr] = { className: 'bg-red-50 text-red-400' };
+    const name = GREGORIAN_TO_PERSIAN_DAY[d.getUTCDay()];
+    if (closedDays.includes(name)) {
+      markers[d.toISOString().slice(0, 10)] = { className: 'bg-red-50 text-red-400' };
     }
   }
-
   return markers;
+}
+
+// ─── Nav Bar ─────────────────────────────────────────────────────────────────
+
+function StepNav({
+  step,
+  canGoBack,
+  canGoNext,
+  onBack,
+  onNext,
+}: {
+  step: Step;
+  canGoBack: boolean;
+  canGoNext: boolean;
+  onBack: () => void;
+  onNext: () => void;
+}) {
+  const currentIdx = stepOrder.indexOf(step);
+
+  return (
+    <div className="flex items-center justify-between mb-5">
+      {/* دکمه قبلی */}
+      <button
+        onClick={onBack}
+        disabled={!canGoBack}
+        className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium transition-all ${
+          canGoBack
+            ? 'bg-zinc-100 text-zinc-700 hover:bg-zinc-200 active:scale-95'
+            : 'opacity-0 pointer-events-none'
+        }`}
+      >
+        <ArrowRight className="w-4 h-4" />
+        قبلی
+      </button>
+
+      {/* نشانگر مرحله */}
+      <div className="flex items-center gap-1.5">
+        {stepOrder.map((s, i) => (
+          <div
+            key={s}
+            className={`h-1.5 rounded-full transition-all ${
+              i === currentIdx
+                ? 'w-6 bg-[#824c71]'
+                : i < currentIdx
+                ? 'w-3 bg-[#824c71]/40'
+                : 'w-3 bg-zinc-200'
+            }`}
+          />
+        ))}
+      </div>
+
+      {/* دکمه بعدی */}
+      <button
+        onClick={onNext}
+        disabled={!canGoNext}
+        className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium transition-all ${
+          canGoNext
+            ? 'bg-zinc-100 text-zinc-700 hover:bg-zinc-200 active:scale-95'
+            : 'opacity-0 pointer-events-none'
+        }`}
+      >
+        بعدی
+        <ArrowLeft className="w-4 h-4" />
+      </button>
+    </div>
+  );
 }
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
@@ -111,30 +165,24 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
   const [loadServicesError, setLoadServicesError] = useState('');
   const [closedDays, setClosedDays] = useState<string[]>([]);
 
-  // جریان رزرو
   const [step, setStep] = useState<Step>('service');
   const [selectedService, setSelectedService] = useState<BookingService | null>(null);
 
-  // مرحله‌ی انتخاب پرسنل (قبل از تاریخ/ساعت)
   const [staffOptions, setStaffOptions] = useState<StaffOption[]>([]);
   const [isLoadingStaffOptions, setIsLoadingStaffOptions] = useState(false);
-  const [selectedStaffId, setSelectedStaffId] = useState<string | null>(null); // null = تفاوتی ندارد
+  const [selectedStaffId, setSelectedStaffId] = useState<string | null>(null);
 
-  // تاریخ + ساعت
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [slots, setSlots] = useState<TimeSlot[]>([]);
   const [isLoadingSlots, setIsLoadingSlots] = useState(false);
   const [slotsError, setSlotsError] = useState('');
   const [selectedSlot, setSelectedSlot] = useState<TimeSlot | null>(null);
 
-  // سبد رزرو
   const [cart, setCart] = useState<CartItem[]>([]);
-
-  // ثبت نهایی
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
 
-  // ── بارگذاری اطلاعات سالن و خدمات ──────────────────────────────────────
+  // ── بارگذاری سالن ───────────────────────────────────────────────────────
   useEffect(() => {
     const load = async () => {
       try {
@@ -143,18 +191,14 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
           const d = await salonRes.json();
           setSalonName(d.name);
           setClosedDays(d.closedDays ?? []);
-          if (!d.bookingEnabled) {
-            router.replace(`/salon/${salonId}`);
-            return;
-          }
+          if (!d.bookingEnabled) { router.replace(`/salon/${salonId}`); return; }
         }
-
         const svcRes = await fetch(`/api/booking-services/public?salonId=${salonId}`);
         if (svcRes.ok) {
           const d = await svcRes.json();
           setServices(d.services ?? []);
         } else {
-          setLoadServicesError('خطا در دریافت خدمات این سالن');
+          setLoadServicesError('خطا در دریافت خدمات');
         }
       } catch {
         setLoadServicesError('خطای ارتباط با سرور');
@@ -165,7 +209,7 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
     load();
   }, [salonId, router]);
 
-  // ── بارگذاری پرسنل واجد شرایط برای خدمت انتخاب‌شده ─────────────────────
+  // ── بارگذاری پرسنل ──────────────────────────────────────────────────────
   const loadStaffOptions = useCallback(async () => {
     if (!selectedService) return;
     setIsLoadingStaffOptions(true);
@@ -173,10 +217,7 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
       const res = await fetch(
         `/api/booking-online/eligible-staff?salonId=${salonId}&serviceId=${selectedService.id}`
       );
-      if (res.ok) {
-        const d = await res.json();
-        setStaffOptions(d.staff ?? []);
-      }
+      if (res.ok) setStaffOptions((await res.json()).staff ?? []);
     } finally {
       setIsLoadingStaffOptions(false);
     }
@@ -186,7 +227,7 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
     if (step === 'staff') loadStaffOptions();
   }, [step, loadStaffOptions]);
 
-  // ── بارگذاری ساعت‌های آزاد برای تاریخ انتخاب‌شده ───────────────────────
+  // ── بارگذاری اسلات‌ها ───────────────────────────────────────────────────
   const loadSlots = useCallback(async () => {
     if (!selectedService || !selectedDate) return;
     setIsLoadingSlots(true);
@@ -201,12 +242,8 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
         ...(selectedStaffId ? { staffId: selectedStaffId } : {}),
       });
       const res = await fetch(`/api/booking-online/available-slots?${qs}`);
-      if (res.ok) {
-        const d = await res.json();
-        setSlots(d.slots ?? []);
-      } else {
-        setSlotsError('خطا در دریافت ساعت‌های آزاد');
-      }
+      if (res.ok) setSlots((await res.json()).slots ?? []);
+      else setSlotsError('خطا در دریافت ساعت‌های آزاد');
     } catch {
       setSlotsError('خطای ارتباط با سرور');
     } finally {
@@ -218,7 +255,56 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
     if (step === 'schedule' && selectedDate) loadSlots();
   }, [step, selectedDate, loadSlots]);
 
-  // ── اکشن‌ها ─────────────────────────────────────────────────────────────
+  // وقتی پرسنل تغییر می‌کند و در مرحله schedule هستیم، اسلات‌ها reload می‌شن
+  useEffect(() => {
+    if (step === 'schedule' && selectedDate) loadSlots();
+  }, [selectedStaffId]); // eslint-disable-line
+
+  // ── منطق ناوبری قبل/بعد ─────────────────────────────────────────────────
+  const currentIdx = stepOrder.indexOf(step);
+
+  // آیا می‌توان به مرحله بعد رفت؟
+  const canGoNext = useMemo(() => {
+    if (step === 'service') return !!selectedService;
+    if (step === 'staff')   return true; // انتخاب پرسنل همیشه اختیاریه
+    if (step === 'schedule') return !!selectedSlot;
+    return false; // در confirm دکمه بعدی نداریم
+  }, [step, selectedService, selectedSlot]);
+
+  const canGoBack = currentIdx > 0;
+
+  const goBack = () => {
+    const prev = stepOrder[currentIdx - 1];
+    if (!prev) return;
+
+    // reset کردن state های مرحله‌های بعدی از جایی که برمی‌گردیم
+    if (prev === 'service') {
+      // برمی‌گردیم به انتخاب خدمات → همه چیز reset
+      setSelectedService(null);
+      setSelectedStaffId(null);
+      setSelectedDate(null);
+      setSlots([]);
+      setSelectedSlot(null);
+    } else if (prev === 'staff') {
+      // برمی‌گردیم به انتخاب پرسنل → تاریخ و ساعت reset
+      setSelectedDate(null);
+      setSlots([]);
+      setSelectedSlot(null);
+    } else if (prev === 'schedule') {
+      // برمی‌گردیم به تاریخ/ساعت → فقط اسلات انتخابی reset
+      setSelectedSlot(null);
+    }
+
+    setStep(prev);
+  };
+
+  const goNext = () => {
+    const next = stepOrder[currentIdx + 1];
+    if (!next || !canGoNext) return;
+    setStep(next);
+  };
+
+  // ── اکشن‌های انتخاب ─────────────────────────────────────────────────────
   const startNewBookingFlow = () => {
     setSelectedService(null);
     setSelectedStaffId(null);
@@ -237,52 +323,39 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
     setStep('staff');
   };
 
-  const confirmStaffChoice = () => {
-    setSelectedDate(null);
-    setSlots([]);
-    setSelectedSlot(null);
-    setStep('schedule');
-  };
-
   const selectDate = (dateStr: string) => {
+    // اگه تاریخ عوض شد، اسلات قبلی reset
+    if (dateStr !== selectedDate) {
+      setSelectedSlot(null);
+    }
     setSelectedDate(dateStr);
-    setSelectedSlot(null);
-  };
-
-  const selectSlot = (slot: TimeSlot) => {
-    setSelectedSlot(slot);
   };
 
   const addToCart = () => {
     if (!selectedService || !selectedDate || !selectedSlot) return;
 
-    const finalStaffId = selectedStaffId ?? selectedSlot.availableStaff[0]?.id ?? '';
+    const finalStaffId   = selectedStaffId ?? selectedSlot.availableStaff[0]?.id ?? '';
     const finalStaffName = selectedStaffId
       ? staffOptions.find((s) => s.id === selectedStaffId)?.name ?? ''
       : selectedSlot.availableStaff[0]?.name ?? 'انتخاب خودکار';
 
-    const item: CartItem = {
-      serviceId:     selectedService.id,
-      serviceName:   selectedService.name,
-      durationMin:   selectedService.durationMin,
-      price:         selectedService.price,
-      depositAmount: selectedService.depositAmount,
-      date:          selectedDate,
-      startTime:     selectedSlot.time,
-      staffId:       finalStaffId,
-      staffName:     finalStaffName,
-    };
+    setCart((prev) => [
+      ...prev,
+      {
+        serviceId:     selectedService.id,
+        serviceName:   selectedService.name,
+        durationMin:   selectedService.durationMin,
+        price:         selectedService.price,
+        depositAmount: selectedService.depositAmount,
+        date:          selectedDate,
+        startTime:     selectedSlot.time,
+        staffId:       finalStaffId,
+        staffName:     finalStaffName,
+      },
+    ]);
 
-    setCart((prev) => [...prev, item]);
-
-    // بعد از افزودن به سبد، مستقیم به مرحله‌ی تأیید و پرداخت می‌رویم؛
-    // اگر مشتری بخواهد نوبت دیگری هم رزرو کند، از همان صفحه‌ی تأیید
-    // روی «افزودن نوبت دیگر» می‌زند (که از نو از انتخاب خدمات شروع می‌شود)
-    setSelectedService(null);
-    setSelectedStaffId(null);
-    setSelectedDate(null);
-    setSlots([]);
-    setSelectedSlot(null);
+    // بعد از افزودن به سبد → صفحه تأیید
+    startNewBookingFlow();
     setStep('confirm');
   };
 
@@ -294,7 +367,6 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
     if (cart.length === 0) return;
     setIsSubmitting(true);
     setSubmitError('');
-
     try {
       const results = await Promise.all(
         cart.map((item) =>
@@ -313,19 +385,13 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
       );
 
       const failed = results.find((r) => r.error);
-      if (failed) {
-        setSubmitError(failed.error);
-        return;
-      }
+      if (failed) { setSubmitError(failed.error); return; }
 
-      const firstBookingId = results[0]?.booking?.id;
-      if (firstBookingId && cart.some((c) => (c.depositAmount ?? 0) > 0)) {
-        const payRes = await fetch(`/api/booking/${firstBookingId}/pay`, { method: 'POST' });
+      const firstId = results[0]?.booking?.id;
+      if (firstId && cart.some((c) => (c.depositAmount ?? 0) > 0)) {
+        const payRes = await fetch(`/api/booking/${firstId}/pay`, { method: 'POST' });
         const payData = await payRes.json();
-        if (payData.paymentUrl) {
-          window.location.href = payData.paymentUrl;
-          return;
-        }
+        if (payData.paymentUrl) { window.location.href = payData.paymentUrl; return; }
       }
 
       router.push('/appointments?bookingSuccess=1');
@@ -336,14 +402,10 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
     }
   };
 
-  // ── محاسبه جمع سبد ──────────────────────────────────────────────────────
+  // ── محاسبه ──────────────────────────────────────────────────────────────
   const totalDeposit = cart.reduce((acc, c) => acc + (c.depositAmount ?? 0), 0);
   const appFee       = cart.length > 0 ? 20000 : 0;
   const totalPayable = totalDeposit + appFee;
-
-  const stepOrder: Step[] = ['service', 'staff', 'schedule', 'confirm'];
-
-  // markers برای تقویم: روزهایی که روی یکی از روزهای هفته‌ی تعطیل سالن می‌افتند
   const closedDayMarkers = useMemo(() => buildClosedDayMarkers(closedDays), [closedDays]);
 
   // ── Render ───────────────────────────────────────────────────────────────
@@ -351,7 +413,6 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh]">
         <Loader2 className="w-10 h-10 text-[#824c71] animate-spin mb-4" />
-        <p className="text-zinc-500 text-sm">در حال بارگذاری...</p>
       </div>
     );
   }
@@ -359,7 +420,7 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
   return (
     <div className="max-w-lg mx-auto pt-6 pb-32 px-4">
       {/* هدر */}
-      <div className="flex items-center gap-3 mb-6">
+      <div className="flex items-center gap-3 mb-5">
         <Link
           href={`/salon/${salonId}`}
           className="w-10 h-10 flex items-center justify-center rounded-xl bg-zinc-100 text-zinc-600 shrink-0"
@@ -372,25 +433,21 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
         </div>
       </div>
 
-      {/* نوار مرحله‌ها */}
-      <div className="flex items-center gap-1.5 mb-6 overflow-x-auto pb-1">
-        {stepOrder.map((s, i) => (
-          <div key={s} className="flex items-center gap-1.5 shrink-0">
-            <div className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-bold transition-colors ${
-              step === s
-                ? 'bg-[#824c71] text-white'
-                : i < stepOrder.indexOf(step)
-                ? 'bg-emerald-50 text-emerald-600'
-                : 'bg-zinc-100 text-zinc-400'
-            }`}>
-              {STEP_LABELS[s]}
-            </div>
-            {i < stepOrder.length - 1 && <ChevronLeft className="w-3 h-3 text-zinc-300 shrink-0" />}
-          </div>
-        ))}
-      </div>
+      {/* ناوبری قبل/بعد + نشانگر مرحله */}
+      {step !== 'confirm' && (
+        <StepNav
+          step={step}
+          canGoBack={canGoBack && step !== 'service'}
+          canGoNext={canGoNext && step !== 'schedule'}
+          onBack={goBack}
+          onNext={goNext}
+        />
+      )}
 
-      {/* ─── سبد رزرو (نمایش بالای صفحه اگه محتوا داشته باشه) ─── */}
+      {/* عنوان مرحله */}
+      <p className="text-sm font-bold text-zinc-500 mb-4">{STEP_LABELS[step]}</p>
+
+      {/* سبد رزرو — بالای صفحه در مراحل غیر confirm */}
       {cart.length > 0 && step !== 'confirm' && (
         <div className="bg-[#824c71]/5 border border-[#824c71]/20 rounded-2xl p-4 mb-5">
           <div className="flex items-center justify-between mb-3">
@@ -408,7 +465,9 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
                 <div className="flex-1 min-w-0">
                   <span className="font-medium text-zinc-800">{item.serviceName}</span>
                   <span className="text-zinc-400 mr-1">·</span>
-                  <span className="text-zinc-500">{formatPersianDate(item.date)} ساعت {toPersianDigits(item.startTime)}</span>
+                  <span className="text-zinc-500">
+                    {formatPersianDate(item.date)} ساعت {toPersianDigits(item.startTime)}
+                  </span>
                 </div>
                 <button onClick={() => removeFromCart(idx)} className="text-red-400 shrink-0">
                   <Trash2 className="w-3.5 h-3.5" />
@@ -422,7 +481,6 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
       {/* ─── مرحله ۱: انتخاب خدمات ─── */}
       {step === 'service' && (
         <div>
-          <p className="text-sm font-bold text-zinc-800 mb-4">چه خدماتی می‌خواهید؟</p>
           {loadServicesError ? (
             <div className="text-center py-12 bg-red-50 rounded-2xl">
               <p className="text-red-500 text-sm">{loadServicesError}</p>
@@ -437,18 +495,25 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
                 <button
                   key={svc.id}
                   onClick={() => selectService(svc)}
-                  className="w-full flex items-center justify-between gap-3 bg-white border border-zinc-100 rounded-2xl p-4 text-right hover:border-[#824c71]/30 hover:bg-[#824c71]/[0.02] transition-all active:scale-[0.99]"
+                  className={`w-full flex items-center justify-between gap-3 bg-white border rounded-2xl p-4 text-right transition-all active:scale-[0.99] ${
+                    selectedService?.id === svc.id
+                      ? 'border-[#824c71] bg-[#824c71]/5'
+                      : 'border-zinc-100 hover:border-zinc-200'
+                  }`}
                 >
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-bold text-zinc-900">{svc.name}</p>
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm font-bold text-zinc-900">{svc.name}</p>
+                      {selectedService?.id === svc.id && (
+                        <Check className="w-4 h-4 text-[#824c71]" />
+                      )}
+                    </div>
                     <div className="flex items-center gap-3 mt-1 text-[12px] text-zinc-500">
                       <span className="flex items-center gap-1">
                         <Clock className="w-3 h-3" />
                         {formatDuration(svc.durationMin)}
                       </span>
-                      {svc.price > 0 && (
-                        <span>{formatPrice(svc.price)} تومان</span>
-                      )}
+                      {svc.price > 0 && <span>{formatPrice(svc.price)} تومان</span>}
                     </div>
                     {svc.depositAmount != null && svc.depositAmount > 0 ? (
                       <p className="text-[11px] text-[#824c71] mt-1">
@@ -469,10 +534,7 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
       {/* ─── مرحله ۲: انتخاب پرسنل ─── */}
       {step === 'staff' && selectedService && (
         <div>
-          <button onClick={() => setStep('service')} className="flex items-center gap-1.5 text-xs text-zinc-400 mb-4">
-            <ArrowRight className="w-3.5 h-3.5" /> بازگشت
-          </button>
-
+          {/* خلاصه خدمت انتخابی */}
           <div className="bg-white border border-zinc-100 rounded-2xl p-3.5 mb-4 flex items-center justify-between">
             <div>
               <p className="text-sm font-bold text-zinc-900">{selectedService.name}</p>
@@ -483,16 +545,13 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
             )}
           </div>
 
-          <p className="text-sm font-bold text-zinc-800 mb-1">توسط چه کسی؟</p>
-          <p className="text-xs text-zinc-400 mb-4">پرسنل مورد نظرتان را انتخاب کنید</p>
-
           {isLoadingStaffOptions ? (
             <div className="flex items-center justify-center py-16">
               <Loader2 className="w-7 h-7 text-[#824c71] animate-spin" />
             </div>
           ) : (
             <div className="space-y-2.5">
-              {/* گزینه‌ی تفاوتی ندارد */}
+              {/* گزینه تفاوتی ندارد */}
               <button
                 onClick={() => setSelectedStaffId(null)}
                 className={`w-full flex items-center gap-3 bg-white border rounded-2xl p-4 text-right transition-all ${
@@ -507,13 +566,12 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
                 <div className="flex-1 text-right">
                   <p className="text-sm font-bold text-zinc-900">تفاوتی ندارد</p>
                   <p className="text-[11px] text-zinc-400 mt-0.5">
-                    ساعت‌های آزاد همه‌ی پرسنل این خدمت با هم نمایش داده می‌شود
+                    ساعت‌های آزاد همه‌ی پرسنل نمایش داده می‌شود
                   </p>
                 </div>
                 {selectedStaffId === null && <Check className="w-4 h-4 text-[#824c71] shrink-0" />}
               </button>
 
-              {/* لیست پرسنل واجد شرایط */}
               {staffOptions.map((s) => (
                 <button
                   key={s.id}
@@ -536,12 +594,13 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
 
               {staffOptions.length === 0 && (
                 <p className="text-center text-xs text-zinc-400 py-4">
-                  پرسنل مشخصی برای این خدمت ثبت نشده — با «تفاوتی ندارد» ادامه دهید
+                  پرسنل مشخصی ثبت نشده — با «تفاوتی ندارد» ادامه دهید
                 </p>
               )}
 
+              {/* دکمه ادامه در پایین مرحله پرسنل */}
               <button
-                onClick={confirmStaffChoice}
+                onClick={goNext}
                 className="w-full bg-[#824c71] text-white rounded-xl py-3 text-sm font-bold mt-2"
               >
                 ادامه
@@ -551,13 +610,10 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
         </div>
       )}
 
-      {/* ─── مرحله ۳: تاریخ + ساعت با هم ─── */}
+      {/* ─── مرحله ۳: تاریخ + ساعت ─── */}
       {step === 'schedule' && selectedService && (
         <div>
-          <button onClick={() => setStep('staff')} className="flex items-center gap-1.5 text-xs text-zinc-400 mb-4">
-            <ArrowRight className="w-3.5 h-3.5" /> بازگشت
-          </button>
-
+          {/* خلاصه انتخاب‌های قبلی */}
           <div className="bg-white border border-zinc-100 rounded-2xl p-3.5 mb-4 flex items-center justify-between">
             <div>
               <p className="text-sm font-bold text-zinc-900">{selectedService.name}</p>
@@ -573,11 +629,11 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
             )}
           </div>
 
-          {/* تقویم — انتخاب تاریخ، روزهای تعطیل سالن قرمز مشخص شده‌اند */}
+          {/* تقویم */}
           <p className="text-sm font-bold text-zinc-800 mb-2">چه روزی؟</p>
           <PersianCalendar
             selectedDate={selectedDate}
-            onSelectDate={(dateStr) => selectDate(dateStr)}
+            onSelectDate={selectDate}
             initialMonth={new DateObject({ calendar: persian, locale: persian_fa })}
             markers={closedDayMarkers}
           />
@@ -589,7 +645,7 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
             </div>
           )}
 
-          {/* ساعت‌های آزاد همون تاریخ، دقیقاً زیر تقویم */}
+          {/* ساعت‌های آزاد */}
           {selectedDate && (
             <div className="mt-5">
               <div className="flex items-center justify-between mb-3">
@@ -609,7 +665,7 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
                 <div className="text-center py-10 bg-zinc-50 rounded-2xl">
                   <CalendarClock className="w-7 h-7 text-zinc-300 mx-auto mb-2" />
                   <p className="text-zinc-500 text-sm font-medium">ساعت آزادی در این روز وجود ندارد</p>
-                  <p className="text-zinc-400 text-xs mt-1">یک تاریخ دیگر از تقویم بالا انتخاب کنید</p>
+                  <p className="text-zinc-400 text-xs mt-1">تاریخ دیگری انتخاب کنید</p>
                 </div>
               ) : (
                 <>
@@ -617,7 +673,7 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
                     {slots.map((slot) => (
                       <button
                         key={slot.time}
-                        onClick={() => selectSlot(slot)}
+                        onClick={() => setSelectedSlot(slot)}
                         className={`py-3 rounded-xl text-sm font-bold border transition-all ${
                           selectedSlot?.time === slot.time
                             ? 'bg-[#824c71] text-white border-[#824c71] shadow-sm shadow-[#824c71]/30'
@@ -648,14 +704,11 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
       {/* ─── مرحله ۴: تأیید و پرداخت ─── */}
       {step === 'confirm' && (
         <div>
-          <button onClick={startNewBookingFlow} className="flex items-center gap-1.5 text-xs text-zinc-400 mb-4">
-            <ArrowRight className="w-3.5 h-3.5" /> بازگشت
-          </button>
           <p className="text-sm font-bold text-zinc-800 mb-4">تأیید نوبت‌ها</p>
 
           {cart.length === 0 ? (
             <div className="text-center py-12 bg-zinc-50 rounded-2xl">
-              <p className="text-zinc-400 text-sm">سبد رزرو شما خالی است</p>
+              <p className="text-zinc-400 text-sm">سبد رزرو خالی است</p>
               <button
                 onClick={startNewBookingFlow}
                 className="mt-3 text-[#824c71] text-xs font-medium underline"
@@ -669,7 +722,14 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
                 {cart.map((item, idx) => (
                   <div key={idx} className="bg-white border border-zinc-100 rounded-2xl p-4">
                     <div className="flex items-start justify-between gap-2 mb-3">
-                      <p className="text-sm font-bold text-zinc-900">{item.serviceName}</p>
+                      <div>
+                        <p className="text-sm font-bold text-zinc-900">{item.serviceName}</p>
+                        {/* مدت زمان خدمت */}
+                        <p className="text-[11px] text-zinc-400 mt-0.5 flex items-center gap-1">
+                          <Clock className="w-3 h-3" />
+                          {formatDuration(item.durationMin)}
+                        </p>
+                      </div>
                       <button
                         onClick={() => removeFromCart(idx)}
                         className="w-7 h-7 flex items-center justify-center rounded-lg bg-red-50 text-red-400 shrink-0"
@@ -677,16 +737,20 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
                     </div>
-                    <div className="space-y-1 text-[12px] text-zinc-500">
+
+                    <div className="space-y-1.5 text-[12px] text-zinc-500">
                       <div className="flex items-center gap-2">
                         <CalendarClock className="w-3.5 h-3.5 text-zinc-400" />
-                        <span>{formatPersianDate(item.date)} — ساعت {toPersianDigits(item.startTime)}</span>
+                        <span>
+                          {formatPersianDate(item.date)} — ساعت {toPersianDigits(item.startTime)}
+                        </span>
                       </div>
                       <div className="flex items-center gap-2">
                         <User className="w-3.5 h-3.5 text-zinc-400" />
                         <span>{item.staffName}</span>
                       </div>
                     </div>
+
                     {item.depositAmount != null && item.depositAmount > 0 && (
                       <div className="mt-3 pt-3 border-t border-zinc-50 flex items-center justify-between text-[12px]">
                         <span className="text-zinc-500">بیعانه</span>
