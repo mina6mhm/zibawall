@@ -90,11 +90,15 @@ export async function POST(req: Request) {
 
     // بررسی تداخل با نوبت‌های موجود + تداخل بین آیتم‌های همین سبد
     const dates = Array.from(new Set(prepared.map((p) => p.item.date)));
+    const now = new Date();
     const existingBookings = await prisma.booking.findMany({
       where: {
         salonId,
-        status: { in: ['CONFIRMED', 'PENDING_PAYMENT'] },
         date: { in: dates.map((d) => new Date(d + 'T00:00:00Z')) },
+        OR: [
+          { status: 'CONFIRMED' },
+          { status: 'PENDING_PAYMENT', expiresAt: { gt: now } },
+        ],
       },
     });
 
@@ -133,6 +137,8 @@ export async function POST(req: Request) {
     const appFee = BOOKING_APP_FEE;
     const totalAmount = totalDeposit + appFee;
 
+   const holdExpiresAt = totalAmount > 0 ? new Date(Date.now() + 10 * 60 * 1000) : null;
+
     const group = await prisma.$transaction(async (tx) => {
       const createdGroup = await tx.bookingGroup.create({
         data: {
@@ -144,6 +150,7 @@ export async function POST(req: Request) {
           appFee,
           totalAmount,
           paymentStatus: totalAmount > 0 ? 'PENDING' : 'SUCCESS',
+          expiresAt: holdExpiresAt,
         },
       });
 
@@ -171,6 +178,7 @@ export async function POST(req: Request) {
             status: totalAmount > 0 ? 'PENDING_PAYMENT' : 'CONFIRMED',
             paymentStatus: totalAmount > 0 ? 'PENDING' : 'SUCCESS',
             bookingGroupId: createdGroup.id,
+            expiresAt: holdExpiresAt,
           },
         });
       }

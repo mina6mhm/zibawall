@@ -60,7 +60,7 @@ export async function GET(req: Request) {
     }
 
     const bookings = await prisma.booking.findMany({
-      where: { salonId: result.salon.id },
+      where: { salonId: result.salon.id, status: 'CONFIRMED' },
       orderBy: [{ date: 'asc' }, { startTime: 'asc' }],
     });
 

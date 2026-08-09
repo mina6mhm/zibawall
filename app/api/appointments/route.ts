@@ -18,7 +18,7 @@ export async function GET() {
     }
 
     const groups = await prisma.bookingGroup.findMany({
-      where: { customerId: decoded.userId },
+      where: { customerId: decoded.userId, paymentStatus: 'SUCCESS' },
       orderBy: { createdAt: 'desc' },
       include: {
         salon: { select: { id: true, name: true, imageUrl: true, address: true } },
@@ -26,9 +26,9 @@ export async function GET() {
       },
     });
 
-    // نوبت‌های قدیمی که گروه ندارند (قبل از این تغییر ثبت شده‌اند)
+    // نوبت‌های قدیمی که گروه ندارند (قبل از این تغییر ثبت شده‌اند) — فقط قطعی‌شده‌ها
     const ungroupedBookings = await prisma.booking.findMany({
-      where: { customerId: decoded.userId, bookingGroupId: null },
+      where: { customerId: decoded.userId, bookingGroupId: null, status: 'CONFIRMED' },
       orderBy: [{ date: 'asc' }, { startTime: 'asc' }],
       include: { salon: { select: { id: true, name: true, imageUrl: true, address: true } } },
     });

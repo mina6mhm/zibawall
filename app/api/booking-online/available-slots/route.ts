@@ -164,11 +164,15 @@ export async function GET(req: Request) {
   }
 
   // ── ۴. نوبت‌های تأییدشده/در انتظار پرداخت برای همین تاریخ ──────────────
+  const now = new Date();
   const existingBookings = await prisma.booking.findMany({
     where: {
       salonId,
       date: { gte: new Date(dateStr + 'T00:00:00Z'), lt: new Date(dateStr + 'T23:59:59Z') },
-      status: { in: ['CONFIRMED', 'PENDING_PAYMENT'] },
+      OR: [
+        { status: 'CONFIRMED' },
+        { status: 'PENDING_PAYMENT', expiresAt: { gt: now } },
+      ],
     },
   });
 

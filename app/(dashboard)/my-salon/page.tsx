@@ -120,16 +120,16 @@ export default function MySalonPage() {
     setEditingBooking(null);
   };
 
-  const handleDelete = async (id: string) => {
-    if (!window.confirm('آیا از حذف این نوبت مطمئن هستید؟')) return;
+  const handleCancel = async (id: string) => {
+    if (!window.confirm('آیا از لغو این نوبت مطمئن هستید؟ بعد از لغو، این ساعت دوباره برای رزرو آزاد می‌شود.')) return;
     setDeletingId(id);
     try {
-      const res = await fetch(`/api/booking?id=${id}`, { method: 'DELETE' });
+      const res = await fetch(`/api/booking/${id}/cancel`, { method: 'POST' });
       if (res.ok) {
         setBookings((prev) => prev.filter((b) => b.id !== id));
       } else {
         const data = await res.json();
-        alert(data.error || 'خطا در حذف نوبت');
+        alert(data.error || 'خطا در لغو نوبت');
       }
     } catch {
       alert('خطای ارتباط با سرور');
@@ -295,16 +295,14 @@ export default function MySalonPage() {
                   >
                     <Pencil className="w-3 h-3" />
                   </button>
-                  {booking.status !== 'CONFIRMED' && (
-                    <button
-                      onClick={() => handleDelete(booking.id)}
-                      disabled={deletingId === booking.id}
-                      className="w-7 h-7 flex items-center justify-center rounded-lg bg-red-50 text-red-500 disabled:opacity-50"
-                      title="حذف این خدمت"
-                    >
-                      {deletingId === booking.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3 h-3" />}
-                    </button>
-                  )}
+                  <button
+                    onClick={() => handleCancel(booking.id)}
+                    disabled={deletingId === booking.id}
+                    className="w-7 h-7 flex items-center justify-center rounded-lg bg-red-50 text-red-500 disabled:opacity-50"
+                    title="لغو این نوبت"
+                  >
+                    {deletingId === booking.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3 h-3" />}
+                  </button>
                 </div>
               </div>
               <div className="flex flex-wrap gap-1.5">
