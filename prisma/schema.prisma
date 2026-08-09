@@ -258,6 +258,7 @@ model BookingGroup {
   totalAmount   Int
 
   paymentStatus PaymentStatus @default(PENDING)
+  expiresAt     DateTime?
   authority     String?       @unique
   refId         String?
 
