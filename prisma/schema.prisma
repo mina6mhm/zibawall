@@ -88,6 +88,7 @@ model Salon {
   visits                Visit[]
 
   bookings              Booking[]
+  bookingGroups         BookingGroup[]
   staff                 Staff[]
 
   createdAt             DateTime    @default(now())
@@ -142,6 +143,7 @@ model User {
 
   supportMessages SupportMessage[]
   bookings        Booking[]
+  bookingGroups   BookingGroup[]
 
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
@@ -238,6 +240,36 @@ model Visit {
   @@index([paymentStatus])
 }
 
+// یک گروه از رزروهای آنلاینی که مشتری در یک سبد با هم ثبت کرده — پرداخت
+// بیعانه‌ها و هزینه‌ی پلتفرم فقط یک‌بار، روی کل گروه انجام می‌شود
+model BookingGroup {
+  id            String        @id @default(uuid())
+
+  salonId       String
+  salon         Salon         @relation(fields: [salonId], references: [id], onDelete: Cascade)
+
+  customerId    String?
+  customer      User?         @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  customerPhone String
+  customerName  String?
+
+  totalDeposit  Int           @default(0)
+  appFee        Int           @default(20000)
+  totalAmount   Int
+
+  paymentStatus PaymentStatus @default(PENDING)
+  authority     String?       @unique
+  refId         String?
+
+  bookings      Booking[]
+
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  @@index([salonId])
+  @@index([customerId])
+}
+
 // یک نوبت دستی که سالن‌دار پس از توافق تلفنی/واتساپ/تلگرام با مشتری ثبت می‌کند
 model Booking {
   id            String        @id @default(uuid())
@@ -272,6 +304,11 @@ model Booking {
 
   reminderSentAt DateTime?    // برای جلوگیری از ارسال تکراری پیامک یادآوری ۲۴ ساعته
 
+  // اگر این نوبت بخشی از یک سبد چند-خدمتی رزرو آنلاین باشد، به گروهش وصل می‌شود
+  // null یعنی نوبت تکی یا نوبت‌های قدیمی قبل از این تغییر
+  bookingGroupId String?
+  bookingGroup   BookingGroup? @relation(fields: [bookingGroupId], references: [id], onDelete: SetNull)
+
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
 
@@ -280,6 +317,7 @@ model Booking {
   @@index([salonId, date])
   @@index([paymentStatus])
   @@index([status])
+  @@index([bookingGroupId])
 }
 
 model Staff {

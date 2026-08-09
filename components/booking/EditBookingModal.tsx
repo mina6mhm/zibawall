@@ -35,7 +35,7 @@ type EditBookingModalProps = {
 };
 
 const emptyService = (): ServiceRow => ({ name: '', priceDigits: '', staffName: '', staffPercentageDigits: '' });
-
+const toPersianDigits = (str: string) => str.replace(/[0-9]/g, (d) => '۰۱۲۳۴۵۶۷۸۹'[Number(d)]);
 const toEnglishDigits = (str: string) =>
   str
     .replace(/[۰-۹]/g, (d) => String(d.charCodeAt(0) - '۰'.charCodeAt(0)))
@@ -194,7 +194,7 @@ export default function EditBookingModal({ isOpen, onClose, onSaved, booking }: 
           <div className="bg-zinc-50 border border-zinc-100 rounded-xl p-3.5">
             <div className="flex items-center gap-1.5 mb-2.5 text-zinc-400">
               <Lock className="w-3.5 h-3.5" />
-              <span className="text-[11px] font-medium">اطلاعات ثبت‌شده هنگام رزرو — غیرقابل ویرایش</span>
+              <span className="text-[11px] font-medium">اطلاعات رزرو</span>
             </div>
             <div className="grid grid-cols-2 gap-x-3 gap-y-2 text-[13px]">
               <div>
@@ -301,7 +301,7 @@ export default function EditBookingModal({ isOpen, onClose, onSaved, booking }: 
                         <input
                           type="text"
                           inputMode="numeric"
-                          value={service.staffPercentageDigits}
+                          value={toPersianDigits(service.staffPercentageDigits)}
                           onChange={(e) => handleServicePercentageChange(index, e.target.value)}
                           className={`${fillInputClass} pl-1`}
                           placeholder="۰"

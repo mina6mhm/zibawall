@@ -368,30 +368,32 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
     setIsSubmitting(true);
     setSubmitError('');
     try {
-      const results = await Promise.all(
-        cart.map((item) =>
-          fetch('/api/booking-online/reserve', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              salonId,
-              serviceId: item.serviceId,
-              staffId:   item.staffId || undefined,
-              date:      item.date,
-              startTime: item.startTime,
-            }),
-          }).then((r) => r.json())
-        )
-      );
+      const res = await fetch('/api/booking-online/reserve', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          salonId,
+          items: cart.map((item) => ({
+            serviceId: item.serviceId,
+            staffId:   item.staffId || undefined,
+            date:      item.date,
+            startTime: item.startTime,
+          })),
+        }),
+      });
+      const data = await res.json();
 
-      const failed = results.find((r) => r.error);
-      if (failed) { setSubmitError(failed.error); return; }
+      if (!res.ok) { setSubmitError(data.error || 'خطا در ثبت نوبت'); return; }
 
-      const firstId = results[0]?.booking?.id;
-      if (firstId && cart.some((c) => (c.depositAmount ?? 0) > 0)) {
-        const payRes = await fetch(`/api/booking/${firstId}/pay`, { method: 'POST' });
+      const groupId = data.group?.id;
+      const totalAmount = data.group?.totalAmount ?? 0;
+
+      if (groupId && totalAmount > 0) {
+        const payRes = await fetch(`/api/booking-group/${groupId}/pay`, { method: 'POST' });
         const payData = await payRes.json();
         if (payData.paymentUrl) { window.location.href = payData.paymentUrl; return; }
+        setSubmitError(payData.error || 'خطا در اتصال به درگاه پرداخت');
+        return;
       }
 
       router.push('/appointments?bookingSuccess=1');

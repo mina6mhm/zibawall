@@ -17,29 +17,60 @@ export async function GET() {
       return NextResponse.json({ error: 'توکن نامعتبر است' }, { status: 401 });
     }
 
-    const bookings = await prisma.booking.findMany({
+    const groups = await prisma.bookingGroup.findMany({
       where: { customerId: decoded.userId },
-      orderBy: [{ date: 'asc' }, { startTime: 'asc' }],
+      orderBy: { createdAt: 'desc' },
       include: {
         salon: { select: { id: true, name: true, imageUrl: true, address: true } },
+        bookings: { orderBy: [{ date: 'asc' }, { startTime: 'asc' }] },
       },
     });
 
-    // درصد پرسنل (staffPercentage) عمداً حذف می‌شود؛ مشتری فقط اسم پرسنل و خدمات را می‌بیند
-    const appointments = bookings.map((b) => ({
+    // نوبت‌های قدیمی که گروه ندارند (قبل از این تغییر ثبت شده‌اند)
+    const ungroupedBookings = await prisma.booking.findMany({
+      where: { customerId: decoded.userId, bookingGroupId: null },
+      orderBy: [{ date: 'asc' }, { startTime: 'asc' }],
+      include: { salon: { select: { id: true, name: true, imageUrl: true, address: true } } },
+    });
+
+    const mapItem = (b: any) => ({
       id: b.id,
       date: b.date,
       startTime: b.startTime,
       services: Array.isArray(b.services)
         ? (b.services as any[]).map((s) => ({ name: s.name, price: s.price, staffName: s.staffName }))
         : [],
-      depositAmount: b.depositAmount,
-      appFee: b.appFee,
-      totalAmount: b.totalAmount,
+    });
+
+    const groupedAppointments = groups.map((g) => ({
+      id: g.id,
+      isGroup: true,
+      salon: g.salon,
+      status: g.bookings[0]?.status ?? 'PENDING_PAYMENT',
+      paymentStatus: g.paymentStatus,
+      totalDeposit: g.totalDeposit,
+      appFee: g.appFee,
+      totalAmount: g.totalAmount,
+      items: g.bookings.map(mapItem),
+    }));
+
+    const singleAppointments = ungroupedBookings.map((b) => ({
+      id: b.id,
+      isGroup: false,
+      salon: b.salon,
       status: b.status,
       paymentStatus: b.paymentStatus,
-      salon: b.salon,
+      totalDeposit: b.depositAmount,
+      appFee: b.appFee,
+      totalAmount: b.totalAmount,
+      items: [mapItem(b)],
     }));
+
+    const appointments = [...groupedAppointments, ...singleAppointments].sort((a, b) => {
+      const aDate = a.items[0]?.date ?? '';
+      const bDate = b.items[0]?.date ?? '';
+      return new Date(bDate as any).getTime() - new Date(aDate as any).getTime();
+    });
 
     return NextResponse.json({ appointments }, { status: 200 });
   } catch (error) {
