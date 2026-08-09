@@ -54,6 +54,9 @@ const STEP_LABELS: Record<Step, string> = {
 
 const formatPrice = (n: number) => n.toLocaleString('fa-IR');
 
+// تبدیل ارقام انگلیسی به فارسی — برای هماهنگی ظاهری ساعت‌ها با بقیه‌ی صفحه (که با تقویم فارسی‌عدد است)
+const toPersianDigits = (str: string) => str.replace(/[0-9]/g, (d) => '۰۱۲۳۴۵۶۷۸۹'[Number(d)]);
+
 const formatPersianDate = (dateStr: string) =>
   new DateObject({ date: new Date(dateStr), calendar: persian, locale: persian_fa })
     .format('D MMMM YYYY');
@@ -216,6 +219,15 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
   }, [step, selectedDate, loadSlots]);
 
   // ── اکشن‌ها ─────────────────────────────────────────────────────────────
+  const startNewBookingFlow = () => {
+    setSelectedService(null);
+    setSelectedStaffId(null);
+    setSelectedDate(null);
+    setSlots([]);
+    setSelectedSlot(null);
+    setStep('service');
+  };
+
   const selectService = (svc: BookingService) => {
     setSelectedService(svc);
     setSelectedStaffId(null);
@@ -263,13 +275,15 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
 
     setCart((prev) => [...prev, item]);
 
-    // بازگشت به انتخاب خدمات برای رزرو بعدی
+    // بعد از افزودن به سبد، مستقیم به مرحله‌ی تأیید و پرداخت می‌رویم؛
+    // اگر مشتری بخواهد نوبت دیگری هم رزرو کند، از همان صفحه‌ی تأیید
+    // روی «افزودن نوبت دیگر» می‌زند (که از نو از انتخاب خدمات شروع می‌شود)
     setSelectedService(null);
     setSelectedStaffId(null);
     setSelectedDate(null);
     setSlots([]);
     setSelectedSlot(null);
-    setStep('service');
+    setStep('confirm');
   };
 
   const removeFromCart = (idx: number) => {
@@ -394,7 +408,7 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
                 <div className="flex-1 min-w-0">
                   <span className="font-medium text-zinc-800">{item.serviceName}</span>
                   <span className="text-zinc-400 mr-1">·</span>
-                  <span className="text-zinc-500">{formatPersianDate(item.date)} ساعت {item.startTime}</span>
+                  <span className="text-zinc-500">{formatPersianDate(item.date)} ساعت {toPersianDigits(item.startTime)}</span>
                 </div>
                 <button onClick={() => removeFromCart(idx)} className="text-red-400 shrink-0">
                   <Trash2 className="w-3.5 h-3.5" />
@@ -609,9 +623,8 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
                             ? 'bg-[#824c71] text-white border-[#824c71] shadow-sm shadow-[#824c71]/30'
                             : 'bg-white text-zinc-700 border-zinc-100 hover:border-zinc-200'
                         }`}
-                        dir="ltr"
                       >
-                        {slot.time}
+                        {toPersianDigits(slot.time)}
                       </button>
                     ))}
                   </div>
@@ -635,7 +648,7 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
       {/* ─── مرحله ۴: تأیید و پرداخت ─── */}
       {step === 'confirm' && (
         <div>
-          <button onClick={() => setStep('service')} className="flex items-center gap-1.5 text-xs text-zinc-400 mb-4">
+          <button onClick={startNewBookingFlow} className="flex items-center gap-1.5 text-xs text-zinc-400 mb-4">
             <ArrowRight className="w-3.5 h-3.5" /> بازگشت
           </button>
           <p className="text-sm font-bold text-zinc-800 mb-4">تأیید نوبت‌ها</p>
@@ -644,7 +657,7 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
             <div className="text-center py-12 bg-zinc-50 rounded-2xl">
               <p className="text-zinc-400 text-sm">سبد رزرو شما خالی است</p>
               <button
-                onClick={() => setStep('service')}
+                onClick={startNewBookingFlow}
                 className="mt-3 text-[#824c71] text-xs font-medium underline"
               >
                 افزودن نوبت
@@ -667,7 +680,7 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
                     <div className="space-y-1 text-[12px] text-zinc-500">
                       <div className="flex items-center gap-2">
                         <CalendarClock className="w-3.5 h-3.5 text-zinc-400" />
-                        <span>{formatPersianDate(item.date)} — ساعت {item.startTime}</span>
+                        <span>{formatPersianDate(item.date)} — ساعت {toPersianDigits(item.startTime)}</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <User className="w-3.5 h-3.5 text-zinc-400" />
@@ -685,7 +698,7 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
               </div>
 
               <button
-                onClick={() => setStep('service')}
+                onClick={startNewBookingFlow}
                 className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border-2 border-dashed border-zinc-200 text-zinc-500 text-sm font-medium mb-5"
               >
                 <Plus className="w-4 h-4" />
