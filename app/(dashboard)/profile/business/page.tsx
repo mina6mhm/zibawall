@@ -162,10 +162,9 @@ export default function BusinessRegistrationPage() {
         !address.trim() ||
         !hasValidPhone ||
         !genderAudience ||
-        !cardNumber ||
-        cardNumber.length < 16
+        (cardNumber.length > 0 && cardNumber.length !== 16)
       ) {
-        alert('لطفاً تمامی کادرهای ستاره‌دار را پر کنید، مشخص کنید سالن مخصوص بانوان، آقایون یا هر دو است، و شماره کارت معتبر وارد کنید.');
+        alert('لطفاً تمامی کادرهای ستاره‌دار را پر کنید، مشخص کنید سالن مخصوص بانوان، آقایون یا هر دو است. اگر شماره کارت وارد کرده‌اید باید دقیقاً ۱۶ رقم باشد.');
         return;
       }
     }
@@ -206,8 +205,8 @@ export default function BusinessRegistrationPage() {
       return;
     }
 
-    if (!cardNumber || cardNumber.length < 16) {
-      alert('لطفاً شماره کارت معتبر (۱۶ رقمی) وارد کنید.');
+    if (cardNumber.length > 0 && cardNumber.length !== 16) {
+      alert('اگر شماره کارت وارد می‌کنید، باید دقیقاً ۱۶ رقم باشد.');
       return;
     }
 

@@ -192,7 +192,8 @@ export default function Step1BasicInfo({
 
           <div className="space-y-1.5 md:space-y-2 md:col-span-2">
             <label className="block text-xs md:text-sm font-medium text-zinc-700">
-              شماره کارت (برای واریز بیعانه) <span className="text-red-500">*</span>
+              شماره کارت (برای واریز بیعانه)
+              <span className="text-zinc-400 font-normal mr-1 text-[10px] md:text-xs">اختیاری</span>
             </label>
             <input
               type="text"

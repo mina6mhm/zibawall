@@ -39,8 +39,8 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'حداقل یک شماره تماس الزامی است' }, { status: 400 });
     }
 
-    if (!cardNumber || !/^\d{16}$/.test(cardNumber)) {
-      return NextResponse.json({ error: 'شماره کارت باید دقیقاً ۱۶ رقم باشد' }, { status: 400 });
+    if (cardNumber && !/^\d{16}$/.test(cardNumber)) {
+      return NextResponse.json({ error: 'اگر شماره کارت وارد می‌کنید، باید دقیقاً ۱۶ رقم باشد' }, { status: 400 });
     }
 
     if (!imageUrl) {
@@ -68,7 +68,7 @@ export async function POST(req: Request) {
         closedDays: closedDays || [],
         hasHomeService: !!hasHomeService,
         genderAudience: genderAudience || 'BOTH',
-        cardNumber,
+        cardNumber: cardNumber || '',
         tags: tags || [],
         imageUrl,
         description: description || 'توضیحات پیش‌فرض سالن',

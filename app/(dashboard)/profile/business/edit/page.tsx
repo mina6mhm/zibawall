@@ -297,10 +297,10 @@ export default function BusinessEditPage() {
       return;
     }
 
-    if (!cardNumber || cardNumber.length < 16) {
-  alert('لطفاً شماره کارت معتبر (۱۶ رقمی) وارد کنید.');
-  return;
-}
+    if (cardNumber.length > 0 && cardNumber.length !== 16) {
+      alert('اگر شماره کارت وارد می‌کنید، باید دقیقاً ۱۶ رقم باشد.');
+      return;
+    }
 
     if (!coverImage && !existingCover) {
       alert('لطفا یک عکس به عنوان کاور اصلی انتخاب کنید.');
