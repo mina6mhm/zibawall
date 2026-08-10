@@ -197,12 +197,14 @@ export default function Step1BasicInfo({
             <input
               type="text"
               inputMode="numeric"
-              maxLength={16}
               value={cardNumber}
-              onChange={(e) => onCardNumberChange(e.target.value.replace(/\D/g, '').slice(0, 16))}
+              onChange={(e) => onCardNumberChange(e.target.value)}
               placeholder="۶۰۳۷۹۹۱۲۳۴۵۶۷۸۹۰"
               className="w-full px-3 py-2.5 md:px-4 md:py-3 text-sm md:text-base rounded-lg md:rounded-xl border border-zinc-200 focus:border-zinc-300 focus:ring-1 focus:ring-zinc-300 outline-none transition-all text-left dir-ltr"
             />
+            {cardNumber.length > 0 && cardNumber.length !== 16 && (
+              <p className="text-[10px] md:text-xs text-red-500">شماره کارت باید دقیقاً ۱۶ رقم باشد ({cardNumber.length.toLocaleString('fa-IR')} رقم وارد شده)</p>
+            )}
             <p className="text-[10px] md:text-xs text-zinc-400">
               بیعانه‌ی پرداختی مشتریان توسط تیم پشتیبانی به این شماره کارت واریز می‌شود.
             </p>

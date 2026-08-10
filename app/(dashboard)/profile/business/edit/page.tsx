@@ -18,7 +18,7 @@ import MapPickerModal from '@/components/business-form/MapPickerModal';
 export default function BusinessEditPage() {
   const router = useRouter();
   const [userPlan, setUserPlan] = useState<'normal' | 'advanced'>('normal');
-  const [maxPortfolios, setMaxPortfolios] = useState<number>(10);
+  const [maxPortfolios, setMaxPortfolios] = useState<number>(15);
 
   const [step, setStep] = useState(1);
   const [isLoadingData, setIsLoadingData] = useState(true);
@@ -70,6 +70,16 @@ export default function BusinessEditPage() {
     if (/(لیزر|اپیلاسیون|وکس|بند|موزدایی)/.test(lowerTag)) return 'موزدایی و بدن';
     if (/(ماساژ|اسپا)/.test(lowerTag)) return 'خدمات ماساژ و اسپا';
     return 'سایر خدمات';
+  };
+
+  const toEnglishDigitsCard = (str: string) =>
+    str
+      .replace(/[۰-۹]/g, (d) => String(d.charCodeAt(0) - '۰'.charCodeAt(0)))
+      .replace(/[٠-٩]/g, (d) => String(d.charCodeAt(0) - '٠'.charCodeAt(0)))
+      .replace(/[^0-9]/g, '');
+
+  const handleCardNumberChange = (value: string) => {
+    setCardNumber(toEnglishDigitsCard(value).slice(0, 16));
   };
 
   useEffect(() => {
@@ -153,11 +163,7 @@ export default function BusinessEditPage() {
             if (salon.portfolios && Array.isArray(salon.portfolios)) {
               setExistingPortfolios(salon.portfolios);
             }
-            if (salon.planId === 'monthly-advanced') {
-              setMaxPortfolios(30);
-            } else {
-              setMaxPortfolios(10);
-            }
+            setMaxPortfolios(15);
           } else {
             router.push('/profile/business');
           }
@@ -441,7 +447,7 @@ export default function BusinessEditPage() {
           coordinates={coordinates}
           onOpenMapModal={openMapModal}
           cardNumber={cardNumber}
-          onCardNumberChange={setCardNumber}
+          onCardNumberChange={handleCardNumberChange}
         />
       )}
 

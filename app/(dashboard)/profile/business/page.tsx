@@ -29,12 +29,22 @@ export default function BusinessRegistrationPage() {
   // استیت انتخاب پلن (فعلاً همیشه advanced ارسال می‌شود، مرحله انتخاب پلن موقتا غیرفعال است)
   const [selectedPlanId] = useState<string>('monthly-advanced');
 
-  const maxPortfolios = 10; // سقف پیش‌فرض برای همه در مرحله ساخت کسب‌وکار
+  const maxPortfolios = 15; // سقف پیش‌فرض برای همه در مرحله ساخت کسب‌وکار
 
   const [name, setName] = useState('');
   const [workingHours, setWorkingHours] = useState('');
   const [description, setDescription] = useState('');
   const [address, setAddress] = useState('');
+
+  const toEnglishDigitsCard = (str: string) =>
+    str
+      .replace(/[۰-۹]/g, (d) => String(d.charCodeAt(0) - '۰'.charCodeAt(0)))
+      .replace(/[٠-٩]/g, (d) => String(d.charCodeAt(0) - '٠'.charCodeAt(0)))
+      .replace(/[^0-9]/g, '');
+
+  const handleCardNumberChange = (value: string) => {
+    setCardNumber(toEnglishDigitsCard(value).slice(0, 16));
+  };
 
   const [customServices, setCustomServices] = useState<Record<string, string[]>>({});
   const [newTagInputs, setNewTagInputs] = useState<Record<string, string>>({});
@@ -275,7 +285,6 @@ export default function BusinessRegistrationPage() {
         socials,
         imageUrl: uploadedCoverUrl,
         portfolios: uploadedPortfolioUrls,
-        planId: selectedPlanId,
       };
 
       const response = await fetch('/api/business/create-pending', {
@@ -290,15 +299,8 @@ export default function BusinessRegistrationPage() {
         throw new Error(data.message || data.error || 'خطا در ارتباط با سرور');
       }
 
-      if (data.success) {
-        alert('کسب‌وکار شما با موفقیت ثبت و فعال شد!');
-        router.push('/');
-      } else if (data.paymentUrl) {
-        window.location.href = data.paymentUrl;
-      } else {
-        alert('کسب‌وکار شما با موفقیت ثبت شد!');
-        router.push('/');
-      }
+      alert('کسب‌وکار شما با موفقیت ثبت و فعال شد!');
+      router.push('/');
 
     } catch (error: any) {
       console.error(error);
@@ -357,7 +359,7 @@ export default function BusinessRegistrationPage() {
           selectedNeighborhoods={selectedNeighborhoods} onRemoveNeighborhood={removeNeighborhood}
           address={address} onAddressChange={setAddress}
           hasLocation={locationSelected} coordinates={coordinates} onOpenMapModal={openMapModal}
-          cardNumber={cardNumber} onCardNumberChange={setCardNumber}
+          cardNumber={cardNumber} onCardNumberChange={handleCardNumberChange}
         />
       )}
 
@@ -430,7 +432,7 @@ export default function BusinessRegistrationPage() {
             {isSubmitting ? (
               <div className="w-4 h-4 md:w-5 md:h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
             ) : (
-              'ثبت و پرداخت'
+              'ثبت کسب‌وکار'
             )}
           </button>
         )}
