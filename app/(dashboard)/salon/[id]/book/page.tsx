@@ -5,9 +5,8 @@ import { useState, useEffect, use, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
-  ArrowRight, ArrowLeft, Loader2, CalendarClock, Clock, Check,
-  ChevronLeft, Plus, Trash2, CreditCard, User, Shuffle, Scissors,
-  CalendarX, AlertCircle, Wallet,
+  ArrowRight, ArrowLeft, Loader2, Clock, Check,
+  ChevronLeft, Plus, Trash2, CreditCard, Shuffle,
 } from 'lucide-react';
 import { DateObject } from 'react-multi-date-picker';
 import PersianCalendar, { CalendarDayMarker } from '@/components/ui/PersianCalendar';
@@ -51,13 +50,6 @@ const STEP_LABELS: Record<Step, string> = {
   staff:    'انتخاب پرسنل',
   schedule: 'تاریخ و ساعت',
   confirm:  'تأیید و پرداخت',
-};
-
-const STEP_ICONS: Record<Step, React.ElementType> = {
-  service: Scissors,
-  staff: User,
-  schedule: CalendarClock,
-  confirm: CreditCard,
 };
 
 const stepOrder: Step[] = ['service', 'staff', 'schedule', 'confirm'];
@@ -113,49 +105,31 @@ function StepNav({
   const currentIdx = stepOrder.indexOf(step);
 
   return (
-    <div className="flex items-center justify-between mb-6">
-      {/* دکمه قبلی */}
+    <div className="flex items-center justify-between mb-1">
       <button
         onClick={onBack}
         disabled={!canGoBack}
-        className={`flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl text-sm font-bold transition-all ${
-          canGoBack
-            ? 'bg-zinc-100 text-zinc-700 hover:bg-zinc-200 active:scale-95'
-            : 'opacity-0 pointer-events-none'
+        className={`flex items-center gap-1 text-xs font-medium transition-colors ${
+          canGoBack ? 'text-zinc-500 hover:text-zinc-800' : 'opacity-0 pointer-events-none'
         }`}
       >
-        <ArrowRight className="w-4 h-4" />
+        <ArrowRight className="w-3.5 h-3.5" />
         قبلی
       </button>
 
-      {/* نشانگر مرحله */}
-      <div className="flex items-center gap-1.5">
-        {stepOrder.map((s, i) => (
-          <div
-            key={s}
-            className={`h-1.5 rounded-full transition-all duration-300 ${
-              i === currentIdx
-                ? 'w-7 bg-[#824c71]'
-                : i < currentIdx
-                ? 'w-3 bg-[#824c71]/50'
-                : 'w-3 bg-zinc-200'
-            }`}
-          />
-        ))}
-      </div>
+      <span className="text-[11px] text-zinc-400">
+        مرحله {(currentIdx + 1).toLocaleString('fa-IR')} از {stepOrder.length.toLocaleString('fa-IR')}
+      </span>
 
-      {/* دکمه بعدی */}
       <button
         onClick={onNext}
         disabled={!canGoNext}
-        className={`flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl text-sm font-bold transition-all ${
-          canGoNext
-            ? 'bg-[#824c71] text-white hover:bg-[#6d3f5e] active:scale-95 shadow-sm shadow-[#824c71]/25'
-            : 'opacity-0 pointer-events-none'
+        className={`flex items-center gap-1 text-xs font-medium transition-colors ${
+          canGoNext ? 'text-[#824c71] hover:text-[#6d3f5e]' : 'opacity-0 pointer-events-none'
         }`}
       >
         بعدی
-        <ArrowLeft className="w-4 h-4" />
+        <ArrowLeft className="w-3.5 h-3.5" />
       </button>
     </div>
   );
@@ -428,81 +402,69 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
   if (isLoadingSalon) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh]">
-        <Loader2 className="w-10 h-10 text-[#824c71] animate-spin mb-4" />
+        <Loader2 className="w-8 h-8 text-[#824c71] animate-spin" />
       </div>
     );
   }
 
-  const StepIcon = STEP_ICONS[step];
-
   return (
-    <div className="max-w-lg mx-auto pt-6 pb-32 px-4">
+    <div className="max-w-lg mx-auto pt-6 pb-32 px-4 bg-white">
       {/* هدر */}
       <div className="flex items-center gap-3 mb-6">
         <Link
           href={`/salon/${salonId}`}
-          className="w-10 h-10 flex items-center justify-center rounded-xl bg-white border border-zinc-200 text-zinc-600 shrink-0 shadow-sm shadow-zinc-200/60 hover:bg-zinc-50 transition-colors"
+          className="w-9 h-9 flex items-center justify-center rounded-full text-zinc-500 hover:bg-zinc-50 transition-colors shrink-0"
         >
-          <ArrowRight className="w-4 h-4" />
+          <ArrowRight className="w-4.5 h-4.5" />
         </Link>
-        <div className="flex items-center gap-3 flex-1 min-w-0">
-          <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-[#824c71] to-[#6d3f5e] flex items-center justify-center shrink-0 shadow-md shadow-[#824c71]/25">
-            <CalendarClock className="w-5 h-5 text-white" />
-          </div>
-          <div className="min-w-0">
-            <h1 className="text-lg font-bold text-zinc-900 truncate">نوبت‌دهی آنلاین</h1>
-            <p className="text-xs text-zinc-500 truncate">{salonName}</p>
-          </div>
+        <div className="min-w-0">
+          <h1 className="text-base font-bold text-zinc-900 truncate">نوبت‌دهی آنلاین</h1>
+          <p className="text-xs text-zinc-400 truncate">{salonName}</p>
         </div>
       </div>
 
-      {/* ناوبری قبل/بعد + نشانگر مرحله */}
+      {/* ناوبری قبل/بعد + شماره مرحله */}
       {step !== 'confirm' && (
-        <StepNav
-          step={step}
-          canGoBack={canGoBack && step !== 'service'}
-          canGoNext={canGoNext && step !== 'schedule'}
-          onBack={goBack}
-          onNext={goNext}
-        />
+        <>
+          <StepNav
+            step={step}
+            canGoBack={canGoBack && step !== 'service'}
+            canGoNext={canGoNext && step !== 'schedule'}
+            onBack={goBack}
+            onNext={goNext}
+          />
+          <div className="h-px bg-zinc-100 my-4" />
+        </>
       )}
 
       {/* عنوان مرحله */}
-      <div className="flex items-center gap-2.5 mb-5">
-        <div className="w-8 h-8 rounded-lg bg-[#824c71]/10 flex items-center justify-center shrink-0">
-          <StepIcon className="w-4 h-4 text-[#824c71]" />
-        </div>
-        <p className="text-sm font-bold text-zinc-800">{STEP_LABELS[step]}</p>
-      </div>
+      <h2 className="text-[15px] font-bold text-zinc-900 mb-4">{STEP_LABELS[step]}</h2>
 
       {/* سبد رزرو — بالای صفحه در مراحل غیر confirm */}
       {cart.length > 0 && step !== 'confirm' && (
-        <div className="bg-white border border-[#824c71]/25 rounded-2xl p-4 mb-5 shadow-sm shadow-[#824c71]/10">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <div className="w-6 h-6 rounded-full bg-[#824c71] text-white text-[11px] font-bold flex items-center justify-center shrink-0">
-                {cart.length.toLocaleString('fa-IR')}
-              </div>
-              <p className="text-xs font-bold text-zinc-700">سبد رزرو</p>
-            </div>
+        <div className="border border-zinc-150 rounded-xl p-3.5 mb-5" style={{ borderColor: '#e4e4e7' }}>
+          <div className="flex items-center justify-between mb-2.5">
+            <p className="text-xs font-medium text-zinc-600">
+              {cart.length.toLocaleString('fa-IR')} نوبت در سبد
+            </p>
             <button
               onClick={() => setStep('confirm')}
-              className="text-[11px] font-bold text-white bg-[#824c71] px-3 py-1.5 rounded-lg hover:bg-[#6d3f5e] transition-colors"
+              className="text-[11px] font-bold text-[#824c71]"
             >
-              تأیید و پرداخت
+              مشاهده و پرداخت
             </button>
           </div>
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             {cart.map((item, idx) => (
-              <div key={idx} className="flex items-center justify-between gap-2 text-xs bg-zinc-50 rounded-xl px-3 py-2.5">
-                <div className="flex-1 min-w-0">
-                  <span className="font-bold text-zinc-800">{item.serviceName}</span>
-                  <span className="text-zinc-400 mr-1">·</span>
-                  <span className="text-zinc-500">
-                    {formatPersianDate(item.date)} ساعت {toPersianDigits(item.startTime)}
+              <div key={idx} className="flex items-center justify-between gap-2 text-xs">
+                <div className="flex-1 min-w-0 truncate">
+                  <span className="font-medium text-zinc-700">{item.serviceName}</span>
+                  <span className="text-zinc-300 mx-1">·</span>
+                  <span className="text-zinc-400">
+                    {formatPersianDate(item.date)} {toPersianDigits(item.startTime)}
                   </span>
                 </div>
-                <button onClick={() => removeFromCart(idx)} className="w-6 h-6 rounded-lg bg-red-50 text-red-400 flex items-center justify-center shrink-0 hover:bg-red-100 transition-colors">
+                <button onClick={() => removeFromCart(idx)} className="text-zinc-300 hover:text-red-400 shrink-0 transition-colors">
                   <Trash2 className="w-3.5 h-3.5" />
                 </button>
               </div>
@@ -515,53 +477,36 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
       {step === 'service' && (
         <div>
           {loadServicesError ? (
-            <div className="text-center py-14 bg-red-50 rounded-2xl border border-red-100">
-              <AlertCircle className="w-8 h-8 text-red-300 mx-auto mb-2.5" />
-              <p className="text-red-500 text-sm font-medium">{loadServicesError}</p>
-            </div>
+            <p className="text-center text-red-400 text-sm py-10">{loadServicesError}</p>
           ) : services.length === 0 ? (
-            <div className="text-center py-14 bg-zinc-50 rounded-2xl border border-zinc-100">
-              <Scissors className="w-8 h-8 text-zinc-300 mx-auto mb-2.5" />
-              <p className="text-zinc-500 text-sm font-medium">خدماتی برای نوبت‌دهی تعریف نشده</p>
-            </div>
+            <p className="text-center text-zinc-400 text-sm py-10">خدماتی برای نوبت‌دهی تعریف نشده</p>
           ) : (
-            <div className="space-y-2.5">
+            <div className="divide-y divide-zinc-100 border-t border-b border-zinc-100">
               {services.map((svc) => {
                 const isSelected = selectedService?.id === svc.id;
                 return (
                   <button
                     key={svc.id}
                     onClick={() => selectService(svc)}
-                    className={`w-full flex items-center gap-3.5 bg-white border rounded-2xl p-4 text-right transition-all active:scale-[0.99] ${
-                      isSelected
-                        ? 'border-[#824c71] shadow-md shadow-[#824c71]/10'
-                        : 'border-zinc-100 shadow-sm shadow-zinc-200/50 hover:border-zinc-200 hover:shadow-md hover:shadow-zinc-200/60'
-                    }`}
+                    className="w-full flex items-center gap-3 py-4 text-right transition-colors hover:bg-zinc-50/60"
                   >
-                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
-                      isSelected ? 'bg-[#824c71] text-white' : 'bg-[#824c71]/10 text-[#824c71]'
+                    <div className={`w-4 h-4 rounded-full border shrink-0 flex items-center justify-center transition-colors ${
+                      isSelected ? 'border-[#824c71] bg-[#824c71]' : 'border-zinc-300'
                     }`}>
-                      <Scissors className="w-5 h-5" />
+                      {isSelected && <Check className="w-2.5 h-2.5 text-white" strokeWidth={3} />}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <p className="text-sm font-bold text-zinc-900">{svc.name}</p>
-                        {isSelected && <Check className="w-4 h-4 text-[#824c71] shrink-0" />}
-                      </div>
-                      <div className="flex items-center gap-3 mt-1 text-[12px] text-zinc-500">
+                      <p className="text-sm font-bold text-zinc-900">{svc.name}</p>
+                      <div className="flex items-center gap-2.5 mt-1 text-[12px] text-zinc-400">
                         <span className="flex items-center gap-1">
                           <Clock className="w-3 h-3" />
                           {formatDuration(svc.durationMin)}
                         </span>
-                        {svc.price > 0 && <span className="font-medium text-zinc-600">{formatPrice(svc.price)} تومان</span>}
+                        {svc.price > 0 && <span>{formatPrice(svc.price)} تومان</span>}
+                        {svc.depositAmount != null && svc.depositAmount > 0 && (
+                          <span className="text-[#824c71]">بیعانه {formatPrice(svc.depositAmount)}</span>
+                        )}
                       </div>
-                      {svc.depositAmount != null && svc.depositAmount > 0 ? (
-                        <p className="text-[11px] text-[#824c71] mt-1.5 font-bold bg-[#824c71]/5 inline-block px-2 py-0.5 rounded-md">
-                          بیعانه: {formatPrice(svc.depositAmount)} تومان
-                        </p>
-                      ) : (
-                        <p className="text-[11px] text-emerald-600 mt-1.5 font-bold bg-emerald-50 inline-block px-2 py-0.5 rounded-md">بدون بیعانه</p>
-                      )}
                     </div>
                     <ChevronLeft className="w-4 h-4 text-zinc-300 shrink-0" />
                   </button>
@@ -576,83 +521,63 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
       {step === 'staff' && selectedService && (
         <div>
           {/* خلاصه خدمت انتخابی */}
-          <div className="bg-[#824c71]/[0.04] border border-[#824c71]/15 rounded-2xl p-3.5 mb-4 flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center shrink-0 shadow-sm shadow-zinc-200/60">
-              <Scissors className="w-4.5 h-4.5 text-[#824c71]" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-bold text-zinc-900">{selectedService.name}</p>
-              <p className="text-[11px] text-zinc-400 mt-0.5">{formatDuration(selectedService.durationMin)}</p>
-            </div>
-            {selectedService.price > 0 && (
-              <span className="text-xs font-bold text-[#824c71] shrink-0">{formatPrice(selectedService.price)} تومان</span>
-            )}
+          <div className="flex items-center justify-between text-xs text-zinc-500 mb-4 pb-4 border-b border-zinc-100">
+            <span className="font-medium text-zinc-700">{selectedService.name}</span>
+            <span>{formatDuration(selectedService.durationMin)}</span>
           </div>
 
           {isLoadingStaffOptions ? (
             <div className="flex items-center justify-center py-16">
-              <Loader2 className="w-7 h-7 text-[#824c71] animate-spin" />
+              <Loader2 className="w-6 h-6 text-[#824c71] animate-spin" />
             </div>
           ) : (
-            <div className="space-y-2.5">
-              {/* گزینه تفاوتی ندارد */}
-              <button
-                onClick={() => setSelectedStaffId(null)}
-                className={`w-full flex items-center gap-3 bg-white border rounded-2xl p-4 text-right transition-all ${
-                  selectedStaffId === null
-                    ? 'border-[#824c71] shadow-md shadow-[#824c71]/10'
-                    : 'border-zinc-100 shadow-sm shadow-zinc-200/50 hover:border-zinc-200'
-                }`}
-              >
-                <div className="w-11 h-11 rounded-full bg-gradient-to-br from-[#824c71] to-[#6d3f5e] flex items-center justify-center shrink-0 shadow-sm shadow-[#824c71]/20">
-                  <Shuffle className="w-5 h-5 text-white" />
-                </div>
-                <div className="flex-1 text-right">
-                  <p className="text-sm font-bold text-zinc-900">تفاوتی ندارد</p>
-                  <p className="text-[11px] text-zinc-400 mt-0.5">
-                    ساعت‌های آزاد همه‌ی پرسنل نمایش داده می‌شود
-                  </p>
-                </div>
-                {selectedStaffId === null && <Check className="w-4 h-4 text-[#824c71] shrink-0" />}
-              </button>
+            <div>
+              <div className="divide-y divide-zinc-100 border-t border-b border-zinc-100">
+                {/* گزینه تفاوتی ندارد */}
+                <button
+                  onClick={() => setSelectedStaffId(null)}
+                  className="w-full flex items-center gap-3 py-4 text-right transition-colors hover:bg-zinc-50/60"
+                >
+                  <div className={`w-4 h-4 rounded-full border shrink-0 flex items-center justify-center transition-colors ${
+                    selectedStaffId === null ? 'border-[#824c71] bg-[#824c71]' : 'border-zinc-300'
+                  }`}>
+                    {selectedStaffId === null && <Check className="w-2.5 h-2.5 text-white" strokeWidth={3} />}
+                  </div>
+                  <Shuffle className="w-4 h-4 text-zinc-400 shrink-0" />
+                  <div className="flex-1 text-right">
+                    <p className="text-sm font-bold text-zinc-900">تفاوتی ندارد</p>
+                    <p className="text-[11px] text-zinc-400 mt-0.5">ساعت‌های آزاد همه‌ی پرسنل نمایش داده می‌شود</p>
+                  </div>
+                </button>
 
-              {staffOptions.map((s) => {
-                const isSelected = selectedStaffId === s.id;
-                return (
-                  <button
-                    key={s.id}
-                    onClick={() => setSelectedStaffId(s.id)}
-                    className={`w-full flex items-center gap-3 bg-white border rounded-2xl p-4 text-right transition-all ${
-                      isSelected
-                        ? 'border-[#824c71] shadow-md shadow-[#824c71]/10'
-                        : 'border-zinc-100 shadow-sm shadow-zinc-200/50 hover:border-zinc-200'
-                    }`}
-                  >
-                    <div className={`w-11 h-11 rounded-full flex items-center justify-center text-sm font-bold shrink-0 transition-colors ${
-                      isSelected ? 'bg-[#824c71] text-white' : 'bg-[#824c71]/10 text-[#824c71]'
-                    }`}>
-                      {s.name.slice(0, 1)}
-                    </div>
-                    <div className="flex-1 text-right">
-                      <p className="text-sm font-bold text-zinc-900">{s.name}</p>
-                    </div>
-                    {isSelected && <Check className="w-4 h-4 text-[#824c71] shrink-0" />}
-                  </button>
-                );
-              })}
+                {staffOptions.map((s) => {
+                  const isSelected = selectedStaffId === s.id;
+                  return (
+                    <button
+                      key={s.id}
+                      onClick={() => setSelectedStaffId(s.id)}
+                      className="w-full flex items-center gap-3 py-4 text-right transition-colors hover:bg-zinc-50/60"
+                    >
+                      <div className={`w-4 h-4 rounded-full border shrink-0 flex items-center justify-center transition-colors ${
+                        isSelected ? 'border-[#824c71] bg-[#824c71]' : 'border-zinc-300'
+                      }`}>
+                        {isSelected && <Check className="w-2.5 h-2.5 text-white" strokeWidth={3} />}
+                      </div>
+                      <p className="text-sm font-bold text-zinc-900 flex-1 text-right">{s.name}</p>
+                    </button>
+                  );
+                })}
+              </div>
 
               {staffOptions.length === 0 && (
-                <div className="text-center py-6 bg-zinc-50 rounded-2xl border border-zinc-100">
-                  <p className="text-xs text-zinc-400">
-                    پرسنل مشخصی ثبت نشده — با «تفاوتی ندارد» ادامه دهید
-                  </p>
-                </div>
+                <p className="text-center text-xs text-zinc-400 py-4">
+                  پرسنل مشخصی ثبت نشده — با «تفاوتی ندارد» ادامه دهید
+                </p>
               )}
 
-              {/* دکمه ادامه در پایین مرحله پرسنل */}
               <button
                 onClick={goNext}
-                className="w-full bg-[#824c71] text-white rounded-xl py-3.5 text-sm font-bold mt-2 hover:bg-[#6d3f5e] transition-colors shadow-sm shadow-[#824c71]/25"
+                className="w-full bg-[#824c71] text-white rounded-xl py-3.5 text-sm font-bold mt-5 hover:bg-[#6d3f5e] transition-colors"
               >
                 ادامه
               </button>
@@ -665,78 +590,63 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
       {step === 'schedule' && selectedService && (
         <div>
           {/* خلاصه انتخاب‌های قبلی */}
-          <div className="bg-[#824c71]/[0.04] border border-[#824c71]/15 rounded-2xl p-3.5 mb-4 flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center shrink-0 shadow-sm shadow-zinc-200/60">
-              <Scissors className="w-4.5 h-4.5 text-[#824c71]" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-bold text-zinc-900">{selectedService.name}</p>
-              <p className="text-[11px] text-zinc-400 mt-0.5 flex items-center gap-1">
-                <User className="w-3 h-3" />
-                {selectedStaffId
-                  ? staffOptions.find((s) => s.id === selectedStaffId)?.name
-                  : 'تفاوتی ندارد'}
-              </p>
-            </div>
-            {selectedService.price > 0 && (
-              <span className="text-xs font-bold text-[#824c71] shrink-0">{formatPrice(selectedService.price)} تومان</span>
-            )}
+          <div className="flex items-center justify-between text-xs text-zinc-500 mb-4 pb-4 border-b border-zinc-100">
+            <span className="font-medium text-zinc-700">{selectedService.name}</span>
+            <span>
+              {selectedStaffId
+                ? staffOptions.find((s) => s.id === selectedStaffId)?.name
+                : 'تفاوتی ندارد'}
+            </span>
           </div>
 
           {/* تقویم */}
-          <div className="bg-white border border-zinc-100 rounded-2xl p-3.5 shadow-sm shadow-zinc-200/50">
-            <p className="text-sm font-bold text-zinc-800 mb-3">چه روزی؟</p>
-            <PersianCalendar
-              selectedDate={selectedDate}
-              onSelectDate={selectDate}
-              initialMonth={new DateObject({ calendar: persian, locale: persian_fa })}
-              markers={closedDayMarkers}
-            />
-          </div>
+          <p className="text-xs font-medium text-zinc-500 mb-2">چه روزی؟</p>
+          <PersianCalendar
+            selectedDate={selectedDate}
+            onSelectDate={selectDate}
+            initialMonth={new DateObject({ calendar: persian, locale: persian_fa })}
+            markers={closedDayMarkers}
+          />
 
           {closedDays.length > 0 && (
-            <div className="flex items-center gap-1.5 mt-3 px-1 text-[11px] text-zinc-500">
-              <span className="w-3 h-3 rounded-md bg-red-50 border border-red-200" />
+            <div className="flex items-center gap-1.5 mt-3 px-1 text-[11px] text-zinc-400">
+              <span className="w-2.5 h-2.5 rounded-sm bg-red-50 border border-red-200" />
               روزهای تعطیل سالن
             </div>
           )}
 
           {/* ساعت‌های آزاد */}
           {selectedDate && (
-            <div className="mt-5">
+            <div className="mt-6">
               <div className="flex items-center justify-between mb-3">
-                <p className="text-sm font-bold text-zinc-800">ساعت‌های آزاد</p>
-                <span className="text-xs text-zinc-500 bg-zinc-100 px-2.5 py-1 rounded-lg font-medium">{formatPersianDate(selectedDate)}</span>
+                <p className="text-xs font-medium text-zinc-500">ساعت‌های آزاد</p>
+                <span className="text-xs text-zinc-400">{formatPersianDate(selectedDate)}</span>
               </div>
 
               {isLoadingSlots ? (
-                <div className="flex items-center justify-center py-12">
-                  <Loader2 className="w-7 h-7 text-[#824c71] animate-spin" />
+                <div className="flex items-center justify-center py-10">
+                  <Loader2 className="w-6 h-6 text-[#824c71] animate-spin" />
                 </div>
               ) : slotsError ? (
-                <div className="text-center py-10 bg-red-50 rounded-2xl border border-red-100">
-                  <AlertCircle className="w-7 h-7 text-red-300 mx-auto mb-2" />
-                  <p className="text-red-500 text-sm font-medium">{slotsError}</p>
-                </div>
+                <p className="text-center text-red-400 text-sm py-8">{slotsError}</p>
               ) : slots.length === 0 ? (
-                <div className="text-center py-10 bg-zinc-50 rounded-2xl border border-zinc-100">
-                  <CalendarX className="w-7 h-7 text-zinc-300 mx-auto mb-2" />
+                <div className="text-center py-8">
                   <p className="text-zinc-500 text-sm font-medium">ساعت آزادی در این روز وجود ندارد</p>
                   <p className="text-zinc-400 text-xs mt-1">تاریخ دیگری انتخاب کنید</p>
                 </div>
               ) : (
                 <>
-                  <div className="grid grid-cols-3 gap-2.5">
+                  <div className="grid grid-cols-4 gap-2">
                     {slots.map((slot) => {
                       const isSelected = selectedSlot?.time === slot.time;
                       return (
                         <button
                           key={slot.time}
                           onClick={() => setSelectedSlot(slot)}
-                          className={`py-3 rounded-xl text-sm font-bold border transition-all ${
+                          className={`py-2.5 rounded-lg text-[13px] font-bold border transition-colors ${
                             isSelected
-                              ? 'bg-[#824c71] text-white border-[#824c71] shadow-md shadow-[#824c71]/25'
-                              : 'bg-white text-zinc-700 border-zinc-100 shadow-sm shadow-zinc-200/40 hover:border-[#824c71]/30 hover:bg-[#824c71]/[0.03]'
+                              ? 'bg-[#824c71] text-white border-[#824c71]'
+                              : 'bg-white text-zinc-600 border-zinc-200 hover:border-zinc-300'
                           }`}
                         >
                           {toPersianDigits(slot.time)}
@@ -748,7 +658,7 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
                   {selectedSlot && (
                     <button
                       onClick={addToCart}
-                      className="w-full mt-5 bg-[#824c71] text-white rounded-xl py-3.5 text-sm font-bold flex items-center justify-center gap-2 shadow-lg shadow-[#824c71]/25 hover:bg-[#6d3f5e] transition-colors"
+                      className="w-full mt-6 bg-[#824c71] text-white rounded-xl py-3.5 text-sm font-bold flex items-center justify-center gap-2 hover:bg-[#6d3f5e] transition-colors"
                     >
                       <Plus className="w-4 h-4" />
                       افزودن به سبد رزرو
@@ -765,9 +675,8 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
       {step === 'confirm' && (
         <div>
           {cart.length === 0 ? (
-            <div className="text-center py-14 bg-zinc-50 rounded-2xl border border-zinc-100">
-              <CalendarX className="w-8 h-8 text-zinc-300 mx-auto mb-2.5" />
-              <p className="text-zinc-400 text-sm font-medium">سبد رزرو خالی است</p>
+            <div className="text-center py-12">
+              <p className="text-zinc-400 text-sm">سبد رزرو خالی است</p>
               <button
                 onClick={startNewBookingFlow}
                 className="mt-3 text-[#824c71] text-xs font-bold underline underline-offset-2"
@@ -777,46 +686,32 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
             </div>
           ) : (
             <>
-              <div className="space-y-3 mb-5">
+              <div className="divide-y divide-zinc-100 border-t border-b border-zinc-100 mb-5">
                 {cart.map((item, idx) => (
-                  <div key={idx} className="bg-white border border-zinc-100 rounded-2xl p-4 shadow-sm shadow-zinc-200/50">
-                    <div className="flex items-start gap-3 mb-3">
-                      <div className="w-10 h-10 rounded-xl bg-[#824c71]/10 flex items-center justify-center shrink-0">
-                        <Scissors className="w-4.5 h-4.5 text-[#824c71]" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-bold text-zinc-900">{item.serviceName}</p>
-                        <p className="text-[11px] text-zinc-400 mt-0.5 flex items-center gap-1">
-                          <Clock className="w-3 h-3" />
-                          {formatDuration(item.durationMin)}
-                        </p>
-                      </div>
+                  <div key={idx} className="py-4">
+                    <div className="flex items-start justify-between gap-2 mb-2">
+                      <p className="text-sm font-bold text-zinc-900">{item.serviceName}</p>
                       <button
                         onClick={() => removeFromCart(idx)}
-                        className="w-7 h-7 flex items-center justify-center rounded-lg bg-red-50 text-red-400 shrink-0 hover:bg-red-100 transition-colors"
+                        className="text-zinc-300 hover:text-red-400 shrink-0 transition-colors"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
                     </div>
 
-                    <div className="space-y-1.5 text-[12px] text-zinc-500 bg-zinc-50 rounded-xl p-2.5">
-                      <div className="flex items-center gap-2">
-                        <CalendarClock className="w-3.5 h-3.5 text-zinc-400 shrink-0" />
-                        <span>
-                          {formatPersianDate(item.date)} — ساعت {toPersianDigits(item.startTime)}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <User className="w-3.5 h-3.5 text-zinc-400 shrink-0" />
-                        <span>{item.staffName}</span>
-                      </div>
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px] text-zinc-400">
+                      <span className="flex items-center gap-1">
+                        <Clock className="w-3 h-3" />
+                        {formatDuration(item.durationMin)}
+                      </span>
+                      <span>{formatPersianDate(item.date)} — ساعت {toPersianDigits(item.startTime)}</span>
+                      <span>{item.staffName}</span>
                     </div>
 
                     {item.depositAmount != null && item.depositAmount > 0 && (
-                      <div className="mt-3 pt-3 border-t border-zinc-100 flex items-center justify-between text-[12px]">
-                        <span className="text-zinc-500">بیعانه</span>
-                        <span className="font-bold text-[#824c71]">{formatPrice(item.depositAmount)} تومان</span>
-                      </div>
+                      <p className="text-[12px] text-zinc-500 mt-1.5">
+                        بیعانه: <span className="font-bold text-[#824c71]">{formatPrice(item.depositAmount)} تومان</span>
+                      </p>
                     )}
                   </div>
                 ))}
@@ -824,49 +719,38 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
 
               <button
                 onClick={startNewBookingFlow}
-                className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border-2 border-dashed border-zinc-200 text-zinc-500 text-sm font-bold mb-5 hover:border-[#824c71]/30 hover:text-[#824c71] hover:bg-[#824c71]/[0.02] transition-colors"
+                className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border border-dashed border-zinc-200 text-zinc-500 text-xs font-medium mb-6 hover:border-zinc-300 hover:text-zinc-700 transition-colors"
               >
-                <Plus className="w-4 h-4" />
+                <Plus className="w-3.5 h-3.5" />
                 افزودن نوبت دیگر
               </button>
 
               {/* خلاصه مالی */}
-              <div className="bg-white border border-zinc-100 rounded-2xl p-4 mb-5 shadow-sm shadow-zinc-200/50">
-                <div className="flex items-center gap-2 mb-3">
-                  <div className="w-7 h-7 rounded-lg bg-[#824c71]/10 flex items-center justify-center shrink-0">
-                    <Wallet className="w-3.5 h-3.5 text-[#824c71]" />
-                  </div>
-                  <p className="text-xs font-bold text-zinc-700">خلاصه پرداخت</p>
-                </div>
-                <div className="space-y-2 text-[13px]">
-                  {totalDeposit > 0 && (
-                    <div className="flex items-center justify-between">
-                      <span className="text-zinc-500">جمع بیعانه‌ها</span>
-                      <span className="font-medium text-zinc-800">{formatPrice(totalDeposit)} تومان</span>
-                    </div>
-                  )}
+              <div className="space-y-2 text-[13px] mb-6">
+                {totalDeposit > 0 && (
                   <div className="flex items-center justify-between">
-                    <span className="text-zinc-500">هزینه خدمات پلتفرم</span>
-                    <span className="font-medium text-zinc-800">{formatPrice(appFee)} تومان</span>
+                    <span className="text-zinc-500">جمع بیعانه‌ها</span>
+                    <span className="font-medium text-zinc-700">{formatPrice(totalDeposit)} تومان</span>
                   </div>
-                  <div className="flex items-center justify-between pt-2.5 border-t border-zinc-100">
-                    <span className="font-bold text-zinc-800">مبلغ قابل پرداخت</span>
-                    <span className="font-bold text-[#824c71] text-base">{formatPrice(totalPayable)} تومان</span>
-                  </div>
+                )}
+                <div className="flex items-center justify-between">
+                  <span className="text-zinc-500">هزینه خدمات پلتفرم</span>
+                  <span className="font-medium text-zinc-700">{formatPrice(appFee)} تومان</span>
+                </div>
+                <div className="flex items-center justify-between pt-2.5 border-t border-zinc-100">
+                  <span className="font-bold text-zinc-900">مبلغ قابل پرداخت</span>
+                  <span className="font-bold text-[#824c71] text-base">{formatPrice(totalPayable)} تومان</span>
                 </div>
               </div>
 
               {submitError && (
-                <div className="flex items-center gap-2 bg-red-50 border border-red-100 rounded-xl px-3.5 py-2.5 mb-4">
-                  <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />
-                  <p className="text-red-500 text-xs font-medium">{submitError}</p>
-                </div>
+                <p className="text-red-400 text-xs font-medium mb-4 text-center">{submitError}</p>
               )}
 
               <button
                 onClick={handleSubmit}
                 disabled={isSubmitting}
-                className="w-full bg-[#824c71] text-white rounded-xl py-4 text-sm font-bold flex items-center justify-center gap-2 shadow-lg shadow-[#824c71]/25 hover:bg-[#6d3f5e] transition-colors disabled:opacity-60"
+                className="w-full bg-[#824c71] text-white rounded-xl py-4 text-sm font-bold flex items-center justify-center gap-2 hover:bg-[#6d3f5e] transition-colors disabled:opacity-60"
               >
                 {isSubmitting
                   ? <><Loader2 className="w-4 h-4 animate-spin" /> در حال ثبت...</>
