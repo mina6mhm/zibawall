@@ -3,7 +3,6 @@
 
 import { useState, useEffect, use, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
 import {
   ArrowRight, ArrowLeft, Loader2, Clock, Check,
   ChevronLeft, Plus, Trash2, CreditCard, Shuffle, User,
@@ -105,12 +104,14 @@ function StepNav({
   const currentIdx = stepOrder.indexOf(step);
 
   return (
-    <div className="flex items-center justify-between mb-5">
+    <div className="flex items-center justify-between">
       <button
         onClick={onBack}
         disabled={!canGoBack}
-        className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold transition-colors ${
-          canGoBack ? 'text-zinc-500 hover:bg-zinc-100' : 'opacity-0 pointer-events-none'
+        className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold border transition-colors ${
+          canGoBack
+            ? 'border-zinc-200 text-zinc-600 hover:border-zinc-300 hover:bg-zinc-50'
+            : 'opacity-0 pointer-events-none border-transparent'
         }`}
       >
         <ArrowRight className="w-3.5 h-3.5" />
@@ -123,7 +124,7 @@ function StepNav({
             key={s}
             className={`rounded-full transition-all duration-300 ${
               i === currentIdx
-                ? 'w-5 h-1.5 bg-[#824c71]'
+                ? 'w-6 h-1.5 bg-[#824c71]'
                 : i < currentIdx
                 ? 'w-1.5 h-1.5 bg-[#824c71]/40'
                 : 'w-1.5 h-1.5 bg-zinc-200'
@@ -135,8 +136,10 @@ function StepNav({
       <button
         onClick={onNext}
         disabled={!canGoNext}
-        className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold transition-colors ${
-          canGoNext ? 'text-[#824c71] hover:bg-[#824c71]/[0.06]' : 'opacity-0 pointer-events-none'
+        className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold border transition-colors ${
+          canGoNext
+            ? 'border-[#824c71]/30 text-[#824c71] hover:bg-[#824c71]/5'
+            : 'opacity-0 pointer-events-none border-transparent'
         }`}
       >
         بعدی
@@ -419,38 +422,24 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
   }
 
   return (
-    <div className="max-w-lg mx-auto pt-6 pb-32 px-4 bg-white">
-      {/* هدر */}
-      <div className="flex items-center gap-3 mb-6">
-        <Link
-          href={`/salon/${salonId}`}
-          className="w-9 h-9 flex items-center justify-center rounded-full text-zinc-500 hover:bg-zinc-100 transition-colors shrink-0"
-        >
-          <ArrowRight className="w-4.5 h-4.5" />
-        </Link>
-        <div className="min-w-0">
-          <h1 className="text-base font-bold text-zinc-900 truncate">نوبت‌دهی آنلاین</h1>
-          <p className="text-xs text-zinc-400 truncate">{salonName}</p>
-        </div>
+    <div className="max-w-lg mx-auto pt-8 pb-32 px-4 bg-white">
+      {/* عنوان مرحله + ناوبری قبل/بعد */}
+      <div className="mb-6">
+        <h1 className="text-xl font-bold text-zinc-900 mb-4">{STEP_LABELS[step]}</h1>
+        {step !== 'confirm' && (
+          <StepNav
+            step={step}
+            canGoBack={canGoBack && step !== 'service'}
+            canGoNext={canGoNext && step !== 'schedule'}
+            onBack={goBack}
+            onNext={goNext}
+          />
+        )}
       </div>
-
-      {/* ناوبری قبل/بعد + نشانگر مرحله */}
-      {step !== 'confirm' && (
-        <StepNav
-          step={step}
-          canGoBack={canGoBack && step !== 'service'}
-          canGoNext={canGoNext && step !== 'schedule'}
-          onBack={goBack}
-          onNext={goNext}
-        />
-      )}
-
-      {/* عنوان مرحله */}
-      <h2 className="text-base font-bold text-zinc-900 mb-4">{STEP_LABELS[step]}</h2>
 
       {/* سبد رزرو — بالای صفحه در مراحل غیر confirm */}
       {cart.length > 0 && step !== 'confirm' && (
-        <div className="bg-[#824c71]/[0.05] rounded-2xl p-4 mb-5">
+        <div className="bg-[#824c71]/[0.05] border border-[#824c71]/15 rounded-2xl p-4 mb-5">
           <div className="flex items-center justify-between mb-3">
             <p className="text-xs font-bold text-[#824c71]">
               {cart.length.toLocaleString('fa-IR')} نوبت در سبد رزرو
@@ -464,13 +453,22 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
           </div>
           <div className="space-y-1.5">
             {cart.map((item, idx) => (
-              <div key={idx} className="flex items-center justify-between gap-2 bg-white rounded-xl px-3 py-2.5">
+              <div
+                key={idx}
+                className="flex items-center justify-between gap-2 bg-white shadow-sm shadow-zinc-100/70 border-r-4 border-[#824c71]/40 rounded-xl px-3 py-2.5"
+              >
                 <div className="flex-1 min-w-0 text-xs">
-                  <span className="font-bold text-zinc-800">{item.serviceName}</span>
-                  <span className="text-zinc-300 mx-1">·</span>
-                  <span className="text-zinc-500">
-                    {formatPersianDate(item.date)} {toPersianDigits(item.startTime)}
-                  </span>
+                  <div className="flex items-center gap-1.5">
+                    <span className="font-bold text-zinc-800">{item.serviceName}</span>
+                    <span className="text-zinc-300">·</span>
+                    <span className="text-zinc-500 flex items-center gap-1">
+                      <Clock className="w-3 h-3" />
+                      {formatDuration(item.durationMin)}
+                    </span>
+                  </div>
+                  <p className="text-zinc-400 mt-0.5">
+                    {formatPersianDate(item.date)} — ساعت {toPersianDigits(item.startTime)}
+                  </p>
                 </div>
                 <button onClick={() => removeFromCart(idx)} className="text-zinc-300 hover:text-red-400 shrink-0 transition-colors">
                   <Trash2 className="w-3.5 h-3.5" />
@@ -496,10 +494,10 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
                   <button
                     key={svc.id}
                     onClick={() => selectService(svc)}
-                    className={`w-full flex items-center gap-3 rounded-2xl p-4 text-right transition-all active:scale-[0.99] ${
+                    className={`w-full flex items-center gap-3 rounded-2xl p-4 text-right transition-all active:scale-[0.99] border ${
                       isSelected
-                        ? 'bg-[#824c71]/[0.06] ring-1 ring-[#824c71]/30'
-                        : 'bg-zinc-50 hover:bg-zinc-100/70'
+                        ? 'bg-[#824c71]/[0.06] border-[#824c71]'
+                        : 'bg-white border-zinc-100 hover:border-zinc-200'
                     }`}
                   >
                     <div className={`w-5 h-5 rounded-full border-2 shrink-0 flex items-center justify-center transition-colors ${
@@ -535,9 +533,17 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
       {step === 'staff' && selectedService && (
         <div>
           {/* خلاصه خدمت انتخابی */}
-          <div className="bg-zinc-50 rounded-2xl px-4 py-3 mb-5 flex items-center justify-between">
-            <span className="text-sm font-bold text-zinc-800">{selectedService.name}</span>
-            <span className="text-xs text-zinc-500">{formatDuration(selectedService.durationMin)}</span>
+          <div className="bg-white rounded-2xl px-4 py-3.5 mb-5 shadow-sm shadow-zinc-100/70 border-r-4 border-[#824c71]/70">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-bold text-zinc-800">{selectedService.name}</span>
+              {selectedService.price > 0 && (
+                <span className="text-xs font-bold text-zinc-600">{formatPrice(selectedService.price)} تومان</span>
+              )}
+            </div>
+            <span className="text-xs text-zinc-400 flex items-center gap-1 mt-1.5">
+              <Clock className="w-3 h-3" />
+              {formatDuration(selectedService.durationMin)}
+            </span>
           </div>
 
           {isLoadingStaffOptions ? (
@@ -549,13 +555,13 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
               {/* گزینه تفاوتی ندارد */}
               <button
                 onClick={() => setSelectedStaffId(null)}
-                className={`w-full flex items-center gap-3 rounded-2xl p-4 text-right transition-all ${
+                className={`w-full flex items-center gap-3 rounded-2xl p-4 text-right transition-all border ${
                   selectedStaffId === null
-                    ? 'bg-[#824c71]/[0.06] ring-1 ring-[#824c71]/30'
-                    : 'bg-zinc-50 hover:bg-zinc-100/70'
+                    ? 'bg-[#824c71]/[0.06] border-[#824c71]'
+                    : 'bg-white border-zinc-100 hover:border-zinc-200'
                 }`}
               >
-                <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shrink-0">
+                <div className="w-10 h-10 rounded-full bg-zinc-100 flex items-center justify-center shrink-0">
                   <Shuffle className="w-4.5 h-4.5 text-zinc-400" />
                 </div>
                 <div className="flex-1 text-right">
@@ -575,13 +581,13 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
                   <button
                     key={s.id}
                     onClick={() => setSelectedStaffId(s.id)}
-                    className={`w-full flex items-center gap-3 rounded-2xl p-4 text-right transition-all ${
+                    className={`w-full flex items-center gap-3 rounded-2xl p-4 text-right transition-all border ${
                       isSelected
-                        ? 'bg-[#824c71]/[0.06] ring-1 ring-[#824c71]/30'
-                        : 'bg-zinc-50 hover:bg-zinc-100/70'
+                        ? 'bg-[#824c71]/[0.06] border-[#824c71]'
+                        : 'bg-white border-zinc-100 hover:border-zinc-200'
                     }`}
                   >
-                    <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center text-sm font-bold text-zinc-600 shrink-0">
+                    <div className="w-10 h-10 rounded-full bg-zinc-100 flex items-center justify-center text-sm font-bold text-zinc-600 shrink-0">
                       {s.name.slice(0, 1)}
                     </div>
                     <p className="text-sm font-bold text-zinc-900 flex-1 text-right">{s.name}</p>
@@ -615,26 +621,35 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
       {step === 'schedule' && selectedService && (
         <div>
           {/* خلاصه انتخاب‌های قبلی */}
-          <div className="bg-zinc-50 rounded-2xl px-4 py-3 mb-5 flex items-center justify-between">
-            <span className="text-sm font-bold text-zinc-800">{selectedService.name}</span>
-            <span className="text-xs text-zinc-500 flex items-center gap-1">
-              <User className="w-3 h-3" />
-              {selectedStaffId
-                ? staffOptions.find((s) => s.id === selectedStaffId)?.name
-                : 'تفاوتی ندارد'}
-            </span>
+          <div className="bg-white rounded-2xl px-4 py-3.5 mb-5 shadow-sm shadow-zinc-100/70 border-r-4 border-[#824c71]/70">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-bold text-zinc-800">{selectedService.name}</span>
+              {selectedService.price > 0 && (
+                <span className="text-xs font-bold text-zinc-600">{formatPrice(selectedService.price)} تومان</span>
+              )}
+            </div>
+            <div className="flex items-center gap-3 mt-1.5 text-xs text-zinc-400">
+              <span className="flex items-center gap-1">
+                <Clock className="w-3 h-3" />
+                {formatDuration(selectedService.durationMin)}
+              </span>
+              <span className="flex items-center gap-1">
+                <User className="w-3 h-3" />
+                {selectedStaffId
+                  ? staffOptions.find((s) => s.id === selectedStaffId)?.name
+                  : 'تفاوتی ندارد'}
+              </span>
+            </div>
           </div>
 
           {/* تقویم */}
-          <div className="bg-zinc-50 rounded-2xl p-4">
-            <p className="text-sm font-bold text-zinc-800 mb-3">چه روزی؟</p>
-            <PersianCalendar
-              selectedDate={selectedDate}
-              onSelectDate={selectDate}
-              initialMonth={new DateObject({ calendar: persian, locale: persian_fa })}
-              markers={closedDayMarkers}
-            />
-          </div>
+          <p className="text-sm font-bold text-zinc-800 mb-3">چه روزی؟</p>
+          <PersianCalendar
+            selectedDate={selectedDate}
+            onSelectDate={selectDate}
+            initialMonth={new DateObject({ calendar: persian, locale: persian_fa })}
+            markers={closedDayMarkers}
+          />
 
           {closedDays.length > 0 && (
             <div className="flex items-center gap-1.5 mt-3 px-1 text-[11px] text-zinc-400">
@@ -648,7 +663,9 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
             <div className="mt-5">
               <div className="flex items-center justify-between mb-3">
                 <p className="text-sm font-bold text-zinc-800">ساعت‌های آزاد</p>
-                <span className="text-xs text-zinc-500 bg-zinc-100 px-2.5 py-1 rounded-lg">{formatPersianDate(selectedDate)}</span>
+                <span className="text-xs font-medium text-[#824c71] bg-[#824c71]/[0.06] px-2.5 py-1 rounded-lg">
+                  {formatPersianDate(selectedDate)}
+                </span>
               </div>
 
               {isLoadingSlots ? (
@@ -658,7 +675,7 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
               ) : slotsError ? (
                 <p className="text-center text-red-400 text-sm py-8">{slotsError}</p>
               ) : slots.length === 0 ? (
-                <div className="text-center py-8 bg-zinc-50 rounded-2xl">
+                <div className="text-center py-8 rounded-2xl border border-dashed border-zinc-200">
                   <p className="text-zinc-500 text-sm font-medium">ساعت آزادی در این روز وجود ندارد</p>
                   <p className="text-zinc-400 text-xs mt-1">تاریخ دیگری انتخاب کنید</p>
                 </div>
@@ -671,10 +688,10 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
                         <button
                           key={slot.time}
                           onClick={() => setSelectedSlot(slot)}
-                          className={`py-2.5 rounded-xl text-[13px] font-bold transition-all ${
+                          className={`py-2.5 rounded-xl text-[13px] font-bold border transition-all ${
                             isSelected
-                              ? 'bg-[#824c71] text-white'
-                              : 'bg-zinc-50 text-zinc-700 hover:bg-zinc-100'
+                              ? 'bg-[#824c71] text-white border-[#824c71]'
+                              : 'bg-white text-zinc-700 border-zinc-100 hover:border-zinc-200'
                           }`}
                         >
                           {toPersianDigits(slot.time)}
@@ -703,7 +720,7 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
       {step === 'confirm' && (
         <div>
           {cart.length === 0 ? (
-            <div className="text-center py-12 bg-zinc-50 rounded-2xl">
+            <div className="text-center py-12 rounded-2xl border border-dashed border-zinc-200">
               <p className="text-zinc-400 text-sm">سبد رزرو خالی است</p>
               <button
                 onClick={startNewBookingFlow}
@@ -714,9 +731,13 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
             </div>
           ) : (
             <>
+              {/* کارت‌های خدمات انتخاب‌شده — سفید با نوار رنگی، متمایز از جعبه‌ی هزینه پایین */}
               <div className="space-y-2.5 mb-5">
                 {cart.map((item, idx) => (
-                  <div key={idx} className="bg-zinc-50 rounded-2xl p-4">
+                  <div
+                    key={idx}
+                    className="bg-white rounded-2xl p-4 shadow-sm shadow-zinc-100/70 border-r-4 border-[#824c71]/70"
+                  >
                     <div className="flex items-start justify-between gap-2 mb-2.5">
                       <p className="text-sm font-bold text-zinc-900">{item.serviceName}</p>
                       <button
@@ -737,7 +758,7 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
                     </div>
 
                     {item.depositAmount != null && item.depositAmount > 0 && (
-                      <div className="mt-2.5 pt-2.5 border-t border-zinc-200/60 flex items-center justify-between text-[12px]">
+                      <div className="mt-2.5 pt-2.5 border-t border-zinc-100 flex items-center justify-between text-[12px]">
                         <span className="text-zinc-500">بیعانه</span>
                         <span className="font-bold text-[#824c71]">{formatPrice(item.depositAmount)} تومان</span>
                       </div>
@@ -754,8 +775,8 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
                 افزودن نوبت دیگر
               </button>
 
-              {/* خلاصه مالی */}
-              <div className="bg-zinc-50 rounded-2xl p-4 mb-5">
+              {/* خلاصه مالی — پس‌زمینه‌ی رنگی ملایم، کاملاً متمایز از کارت‌های سفید بالا */}
+              <div className="bg-[#824c71]/[0.04] border border-[#824c71]/15 rounded-2xl p-4 mb-5">
                 <div className="space-y-2 text-[13px]">
                   {totalDeposit > 0 && (
                     <div className="flex items-center justify-between">
@@ -767,7 +788,7 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
                     <span className="text-zinc-500">هزینه خدمات پلتفرم</span>
                     <span className="font-medium text-zinc-800">{formatPrice(appFee)} تومان</span>
                   </div>
-                  <div className="flex items-center justify-between pt-2.5 border-t border-zinc-200/60">
+                  <div className="flex items-center justify-between pt-2.5 border-t border-[#824c71]/15">
                     <span className="font-bold text-zinc-900">مبلغ قابل پرداخت</span>
                     <span className="font-bold text-[#824c71] text-base">{formatPrice(totalPayable)} تومان</span>
                   </div>
