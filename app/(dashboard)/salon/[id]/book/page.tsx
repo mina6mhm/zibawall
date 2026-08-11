@@ -3,8 +3,9 @@
 
 import { useState, useEffect, use, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import {
-  ArrowRight, ArrowLeft, Loader2, Clock, Check,
+  ArrowRight, Loader2, Clock, Check, Calendar, Scissors,
   ChevronLeft, Plus, Trash2, CreditCard, Shuffle, User,
 } from 'lucide-react';
 import { DateObject } from 'react-multi-date-picker';
@@ -63,7 +64,9 @@ const formatPersianDate = (dateStr: string) =>
 const formatDuration = (durationMin: number) => {
   const h = Math.floor(durationMin / 60);
   const m = durationMin % 60;
-  return `${h > 0 ? `${h} ساعت ` : ''}${m > 0 ? `${m} دقیقه` : ''}`.trim();
+  const hStr = h > 0 ? `${toPersianDigits(String(h))} ساعت ` : '';
+  const mStr = m > 0 ? `${toPersianDigits(String(m))} دقیقه` : '';
+  return `${hStr}${mStr}`.trim();
 };
 
 const GREGORIAN_TO_PERSIAN_DAY: Record<number, string> = {
@@ -87,38 +90,38 @@ function buildClosedDayMarkers(closedDays: string[]): Record<string, CalendarDay
 }
 
 // ─── Nav Bar ─────────────────────────────────────────────────────────────────
+// فقط دکمه‌ی «قبلی» + نشانگر مرحله؛ دکمه‌ی «بعدی» حذف شده چون هر مرحله الان
+// دکمه‌ی «ادامه»‌ی مخصوص خودش رو داره (مثل مرحله‌ی پرسنل)
 
 function StepNav({
   step,
   canGoBack,
-  canGoNext,
   onBack,
-  onNext,
 }: {
   step: Step;
   canGoBack: boolean;
-  canGoNext: boolean;
   onBack: () => void;
-  onNext: () => void;
 }) {
   const currentIdx = stepOrder.indexOf(step);
 
   return (
-    <div className="flex items-center justify-between">
-      <button
-        onClick={onBack}
-        disabled={!canGoBack}
-        className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold border transition-colors ${
-          canGoBack
-            ? 'border-zinc-200 text-zinc-600 hover:border-zinc-300 hover:bg-zinc-50'
-            : 'opacity-0 pointer-events-none border-transparent'
-        }`}
-      >
-        <ArrowRight className="w-3.5 h-3.5" />
-        قبلی
-      </button>
+    <div className="grid grid-cols-3 items-center">
+      <div className="justify-self-start">
+        <button
+          onClick={onBack}
+          disabled={!canGoBack}
+          className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold border transition-colors ${
+            canGoBack
+              ? 'border-zinc-200 text-zinc-600 hover:border-zinc-300 hover:bg-zinc-50'
+              : 'opacity-0 pointer-events-none border-transparent'
+          }`}
+        >
+          <ArrowRight className="w-3.5 h-3.5" />
+          قبلی
+        </button>
+      </div>
 
-      <div className="flex items-center gap-1.5">
+      <div className="flex items-center gap-1.5 justify-self-center">
         {stepOrder.map((s, i) => (
           <div
             key={s}
@@ -133,18 +136,7 @@ function StepNav({
         ))}
       </div>
 
-      <button
-        onClick={onNext}
-        disabled={!canGoNext}
-        className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold border transition-colors ${
-          canGoNext
-            ? 'border-[#824c71]/30 text-[#824c71] hover:bg-[#824c71]/5'
-            : 'opacity-0 pointer-events-none border-transparent'
-        }`}
-      >
-        بعدی
-        <ArrowLeft className="w-3.5 h-3.5" />
-      </button>
+      <div />
     </div>
   );
 }
@@ -316,13 +308,13 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
     setStep('service');
   };
 
+  // انتخاب خدمت فقط state رو ست می‌کنه — رفتن به مرحله بعد با دکمه‌ی «ادامه»‌ست
   const selectService = (svc: BookingService) => {
     setSelectedService(svc);
     setSelectedStaffId(null);
     setSelectedDate(null);
     setSlots([]);
     setSelectedSlot(null);
-    setStep('staff');
   };
 
   const selectDate = (dateStr: string) => {
@@ -423,19 +415,28 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
 
   return (
     <div className="max-w-lg mx-auto pt-8 pb-32 px-4 bg-white">
-      {/* عنوان مرحله + ناوبری قبل/بعد */}
-      <div className="mb-6">
-        <h1 className="text-xl font-bold text-zinc-900 mb-4">{STEP_LABELS[step]}</h1>
-        {step !== 'confirm' && (
+      {/* عنوان مرحله + دکمه‌ی برگشت به صفحه‌ی سالن */}
+      <div className="flex items-center justify-between mb-4">
+        <h1 className="text-xl font-bold text-zinc-900">{STEP_LABELS[step]}</h1>
+        <Link
+          href={`/salon/${salonId}`}
+          aria-label="بازگشت به صفحه سالن"
+          className="w-9 h-9 flex items-center justify-center rounded-full text-zinc-500 hover:bg-zinc-100 transition-colors shrink-0"
+        >
+          <ArrowRight className="w-4.5 h-4.5" />
+        </Link>
+      </div>
+
+      {/* ناوبری: فقط قبلی + نشانگر مرحله */}
+      {step !== 'confirm' && (
+        <div className="mb-6">
           <StepNav
             step={step}
             canGoBack={canGoBack && step !== 'service'}
-            canGoNext={canGoNext && step !== 'schedule'}
             onBack={goBack}
-            onNext={goNext}
           />
-        )}
-      </div>
+        </div>
+      )}
 
       {/* سبد رزرو — بالای صفحه در مراحل غیر confirm */}
       {cart.length > 0 && step !== 'confirm' && (
@@ -524,6 +525,15 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
                   </button>
                 );
               })}
+
+              {selectedService && (
+                <button
+                  onClick={goNext}
+                  className="w-full bg-[#824c71] text-white rounded-xl py-3.5 text-sm font-bold mt-2 hover:bg-[#6d3f5e] transition-colors"
+                >
+                  ادامه
+                </button>
+              )}
             </div>
           )}
         </div>
@@ -533,17 +543,21 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
       {step === 'staff' && selectedService && (
         <div>
           {/* خلاصه خدمت انتخابی */}
-          <div className="bg-white rounded-2xl px-4 py-3.5 mb-5 shadow-sm shadow-zinc-100/70 border-r-4 border-[#824c71]/70">
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-bold text-zinc-800">{selectedService.name}</span>
-              {selectedService.price > 0 && (
-                <span className="text-xs font-bold text-zinc-600">{formatPrice(selectedService.price)} تومان</span>
-              )}
+          <div className="mb-5">
+            <div className="bg-white rounded-2xl px-4 py-3.5 shadow-sm shadow-zinc-100/70 border-r-4 border-[#824c71]/70">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-bold text-zinc-800">{selectedService.name}</span>
+                {selectedService.price > 0 && (
+                  <span className="text-xs font-bold text-zinc-600">{formatPrice(selectedService.price)} تومان</span>
+                )}
+              </div>
+              <span className="text-xs text-zinc-400 flex items-center gap-1 mt-1.5">
+                <Clock className="w-3 h-3" />
+                {formatDuration(selectedService.durationMin)}
+              </span>
             </div>
-            <span className="text-xs text-zinc-400 flex items-center gap-1 mt-1.5">
-              <Clock className="w-3 h-3" />
-              {formatDuration(selectedService.durationMin)}
-            </span>
+            {/* خط جداکننده — تا این کارت خلاصه از کارت‌های قابل‌انتخاب زیرش جدا دیده بشه */}
+            <div className="h-px bg-zinc-100 mt-5" />
           </div>
 
           {isLoadingStaffOptions ? (
@@ -621,25 +635,29 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
       {step === 'schedule' && selectedService && (
         <div>
           {/* خلاصه انتخاب‌های قبلی */}
-          <div className="bg-white rounded-2xl px-4 py-3.5 mb-5 shadow-sm shadow-zinc-100/70 border-r-4 border-[#824c71]/70">
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-bold text-zinc-800">{selectedService.name}</span>
-              {selectedService.price > 0 && (
-                <span className="text-xs font-bold text-zinc-600">{formatPrice(selectedService.price)} تومان</span>
-              )}
+          <div className="mb-5">
+            <div className="bg-white rounded-2xl px-4 py-3.5 shadow-sm shadow-zinc-100/70 border-r-4 border-[#824c71]/70">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-bold text-zinc-800">{selectedService.name}</span>
+                {selectedService.price > 0 && (
+                  <span className="text-xs font-bold text-zinc-600">{formatPrice(selectedService.price)} تومان</span>
+                )}
+              </div>
+              <div className="flex items-center gap-3 mt-1.5 text-xs text-zinc-400">
+                <span className="flex items-center gap-1">
+                  <Clock className="w-3 h-3" />
+                  {formatDuration(selectedService.durationMin)}
+                </span>
+                <span className="flex items-center gap-1">
+                  <User className="w-3 h-3" />
+                  {selectedStaffId
+                    ? staffOptions.find((s) => s.id === selectedStaffId)?.name
+                    : 'تفاوتی ندارد'}
+                </span>
+              </div>
             </div>
-            <div className="flex items-center gap-3 mt-1.5 text-xs text-zinc-400">
-              <span className="flex items-center gap-1">
-                <Clock className="w-3 h-3" />
-                {formatDuration(selectedService.durationMin)}
-              </span>
-              <span className="flex items-center gap-1">
-                <User className="w-3 h-3" />
-                {selectedStaffId
-                  ? staffOptions.find((s) => s.id === selectedStaffId)?.name
-                  : 'تفاوتی ندارد'}
-              </span>
-            </div>
+            {/* خط جداکننده — تا این کارت خلاصه از تقویم/ساعت‌های زیرش جدا دیده بشه */}
+            <div className="h-px bg-zinc-100 mt-5" />
           </div>
 
           {/* تقویم */}
@@ -731,34 +749,46 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
             </div>
           ) : (
             <>
-              {/* کارت‌های خدمات انتخاب‌شده — سفید با نوار رنگی، متمایز از جعبه‌ی هزینه پایین */}
+              {/* کارت‌های خدمات انتخاب‌شده — هم‌زبان با کارت‌های صفحه‌ی «نوبت‌های من» */}
               <div className="space-y-2.5 mb-5">
                 {cart.map((item, idx) => (
                   <div
                     key={idx}
-                    className="bg-white rounded-2xl p-4 shadow-sm shadow-zinc-100/70 border-r-4 border-[#824c71]/70"
+                    className="bg-white border border-zinc-100 rounded-2xl p-4 shadow-sm shadow-zinc-200/50"
                   >
-                    <div className="flex items-start justify-between gap-2 mb-2.5">
-                      <p className="text-sm font-bold text-zinc-900">{item.serviceName}</p>
+                    <div className="flex items-start justify-between gap-2 mb-3">
+                      <span className="font-bold text-sm text-zinc-900">{item.serviceName}</span>
                       <button
                         onClick={() => removeFromCart(idx)}
-                        className="text-zinc-300 hover:text-red-400 shrink-0 transition-colors"
+                        className="w-7 h-7 flex items-center justify-center rounded-lg bg-red-50 text-red-500 shrink-0"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
                     </div>
 
-                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px] text-zinc-500">
-                      <span className="flex items-center gap-1">
-                        <Clock className="w-3 h-3" />
-                        {formatDuration(item.durationMin)}
-                      </span>
-                      <span>{formatPersianDate(item.date)} — ساعت {toPersianDigits(item.startTime)}</span>
-                      <span>{item.staffName}</span>
+                    <div className="bg-zinc-50 rounded-xl p-3">
+                      <div className="flex items-center gap-1.5 text-[12px] text-zinc-600 mb-1.5">
+                        <Calendar className="w-3.5 h-3.5 text-zinc-400" />
+                        <span>{formatPersianDate(item.date)}</span>
+                        <span className="text-zinc-300">·</span>
+                        <Clock className="w-3.5 h-3.5 text-zinc-400" />
+                        <span dir="ltr">{toPersianDigits(item.startTime)}</span>
+                      </div>
+                      <div className="flex flex-wrap gap-1.5">
+                        <span className="bg-white px-2 py-1 rounded-md text-[11px] text-zinc-600 border border-zinc-100 flex items-center gap-1">
+                          <Scissors className="w-3 h-3 text-[#824c71]" />
+                          {formatDuration(item.durationMin)}
+                          {item.price > 0 ? ` · ${formatPrice(item.price)} تومان` : ''}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1.5 mt-1.5 text-[11px] text-zinc-500">
+                        <User className="w-3 h-3" />
+                        {item.staffName}
+                      </div>
                     </div>
 
                     {item.depositAmount != null && item.depositAmount > 0 && (
-                      <div className="mt-2.5 pt-2.5 border-t border-zinc-100 flex items-center justify-between text-[12px]">
+                      <div className="mt-3 pt-3 border-t border-zinc-100 flex items-center justify-between text-[12px]">
                         <span className="text-zinc-500">بیعانه</span>
                         <span className="font-bold text-[#824c71]">{formatPrice(item.depositAmount)} تومان</span>
                       </div>
