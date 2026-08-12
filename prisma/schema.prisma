@@ -348,7 +348,6 @@ model BookingService {
   name          String
   durationMin   Int      // مدت به دقیقه، مثلاً 90
   price         Int      // قیمت کل
-  depositAmount Int?     // بیعانه — null یعنی بیعانه ندارد
   isActive      Boolean  @default(true)
   staffMembers  StaffBookingService[]
   createdAt     DateTime @default(now())

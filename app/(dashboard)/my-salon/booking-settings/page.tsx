@@ -21,7 +21,6 @@ type BookingService = {
   name: string;
   durationMin: number;
   price: number;
-  depositAmount: number | null;
   isActive: boolean;
 };
 
@@ -190,15 +189,10 @@ function ServiceFormModal({ initial, onSave, onClose }: ServiceFormProps) {
     initial?.durationMin ? minToDuration(initial.durationMin) : '1:00'
   );
   const [priceRaw, setPriceRaw] = useState(initial?.price ? String(initial.price) : '');
-  const [hasDeposit, setHasDeposit] = useState(initial?.depositAmount != null);
-  const [depositRaw, setDepositRaw] = useState(
-    initial?.depositAmount ? String(initial.depositAmount) : ''
-  );
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState('');
 
   const handlePriceChange = (val: string) => setPriceRaw(toEnglishDigits(val));
-  const handleDepositChange = (val: string) => setDepositRaw(toEnglishDigits(val));
 
   const handleSave = async () => {
     if (!name.trim()) return setErr('نام خدمات الزامی است');
@@ -211,7 +205,6 @@ function ServiceFormModal({ initial, onSave, onClose }: ServiceFormProps) {
         name: name.trim(),
         durationMin: dMin,
         price: priceRaw ? Number(priceRaw) : 0,
-        depositAmount: hasDeposit ? Number(depositRaw) || 0 : null,
       });
       onClose();
     } catch (e: any) {
@@ -274,30 +267,6 @@ function ServiceFormModal({ initial, onSave, onClose }: ServiceFormProps) {
                 className="w-full border border-zinc-200 rounded-xl px-3.5 py-2.5 text-sm text-left focus:outline-none focus:border-[#824c71] focus:ring-1 focus:ring-[#824c71]/20"
               />
             </div>
-          </div>
-
-          <div className="border border-zinc-100 rounded-xl p-3.5">
-            <div className="flex items-center justify-between mb-3">
-              <div>
-                <p className="text-sm font-medium text-zinc-800">دریافت بیعانه</p>
-                <p className="text-[11px] text-zinc-400 mt-0.5">اگر نمی‌خواهید بیعانه بگیرید خاموش باشد</p>
-              </div>
-              <button onClick={() => setHasDeposit((p) => !p)} className="shrink-0">
-                <div className={`relative w-11 h-6 rounded-full transition-colors duration-200 ${hasDeposit ? 'bg-[#824c71]' : 'bg-zinc-200'}`}>
-                  <div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-all duration-200 ${hasDeposit ? 'right-0.5' : 'right-5'}`} />
-                </div>
-              </button>
-            </div>
-            {hasDeposit && (
-              <input
-                value={displayNumber(depositRaw)}
-                onChange={(e) => handleDepositChange(e.target.value)}
-                placeholder="مثلاً 50,000"
-                dir="ltr"
-                inputMode="numeric"
-                className="w-full border border-zinc-200 rounded-lg px-3 py-2 text-sm text-left focus:outline-none focus:border-[#824c71]"
-              />
-            )}
           </div>
 
           {err && <p className="text-red-500 text-xs font-medium">{err}</p>}
@@ -393,12 +362,6 @@ function ServicesTab({
                   <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-[12px] text-zinc-500">
                     <span>⏱ {minToDuration(s.durationMin)}</span>
                     {s.price > 0 && <span>💰 {formatPrice(s.price)} تومان</span>}
-                    {s.depositAmount != null && s.depositAmount > 0 && (
-                      <span>🔒 بیعانه {formatPrice(s.depositAmount)} تومان</span>
-                    )}
-                    {s.depositAmount == null && (
-                      <span className="text-zinc-400">بدون بیعانه</span>
-                    )}
                   </div>
                 </div>
                 <div className="flex items-center gap-1.5 shrink-0">

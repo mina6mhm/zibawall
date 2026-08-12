@@ -36,19 +36,17 @@ export async function POST(req: Request) {
   if (!salon) return NextResponse.json({ error: 'دسترسی ندارید' }, { status: 401 });
 
   const body = await req.json();
-  const { name, durationMin, price, depositAmount } = body;
+  const { name, durationMin, price } = body;
 
   if (!name?.trim()) return NextResponse.json({ error: 'نام خدمات الزامی است' }, { status: 400 });
   if (!durationMin || durationMin < 1) return NextResponse.json({ error: 'مدت زمان نامعتبر است' }, { status: 400 });
-  // قیمت اختیاریه — اگه نبود 0 ذخیره می‌شه
 
   const service = await prisma.bookingService.create({
     data: {
       salonId: salon.id,
       name: name.trim(),
       durationMin: Number(durationMin),
-      price: Number(price),
-      depositAmount: depositAmount != null ? Number(depositAmount) : null,
+      price: price ? Number(price) : 0,
     },
   });
 
