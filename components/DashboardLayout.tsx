@@ -1,7 +1,7 @@
 // components/DashboardLayout.tsx
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
@@ -33,6 +33,14 @@ const MySalonIcon = ({ isActive, className }: { isActive: boolean, className?: s
   </svg>
 );
 
+const StaffScheduleIcon = ({ isActive, className }: { isActive: boolean, className?: string }) => (
+  <svg viewBox="0 0 24 24" className={className} fill={isActive ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="3" y="4" width="18" height="17" rx="2" />
+    <path d="M3 9h18" stroke={isActive ? "#fff" : "currentColor"} />
+    <path d="M8 2v4M16 2v4" stroke={isActive ? "#fff" : "currentColor"} />
+  </svg>
+);
+
 const ProfileIcon = ({ isActive, className }: { isActive: boolean, className?: string }) => (
   <svg viewBox="0 0 24 24" className={className} fill={isActive ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
     <circle cx="12" cy="7" r="3.5" />
@@ -40,17 +48,56 @@ const ProfileIcon = ({ isActive, className }: { isActive: boolean, className?: s
   </svg>
 );
 
-const navItems = [
-  { name: 'پیشخوان', href: '/dashboard', icon: DashboardIcon },
-  { name: 'نشان‌ها', href: '/bookmarks', icon: BookmarkIcon },
-  { name: 'نوبت‌های من', href: '/appointments', icon: AppointmentsIcon },
-  { name: 'سالن من', href: '/my-salon', icon: MySalonIcon },
-  { name: 'پروفایل', href: '/profile', icon: ProfileIcon },
+const baseNavItems = [
+  { key: 'dashboard', name: 'پیشخوان', href: '/dashboard', icon: DashboardIcon },
+  { key: 'bookmarks', name: 'نشان‌ها', href: '/bookmarks', icon: BookmarkIcon },
+  { key: 'appointments', name: 'نوبت‌های من', href: '/appointments', icon: AppointmentsIcon },
+  { key: 'my-salon', name: 'سالن من', href: '/my-salon', icon: MySalonIcon },
+  { key: 'profile', name: 'پروفایل', href: '/profile', icon: ProfileIcon },
 ];
+
+// آیتم منوی مخصوص پرسنل — فقط وقتی کاربر واقعاً در یک سالن پرسنل باشد به لیست اضافه می‌شود
+const staffNavItem = {
+  key: 'staff-schedule',
+  name: 'برنامه پرسنلی',
+  href: '/staff-schedule',
+  icon: StaffScheduleIcon,
+};
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const isSalonPage = pathname?.startsWith('/salon/');
+
+  const [isStaffSomewhere, setIsStaffSomewhere] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const checkStaffStatus = async () => {
+      try {
+        const res = await fetch('/api/staff/my-salons');
+        if (!res.ok) return; // 401 یعنی لاگین نیست؛ فقط منوی پرسنل نمایش داده نمی‌شود
+        const data = await res.json();
+        if (!cancelled) {
+          setIsStaffSomewhere(Array.isArray(data.salons) && data.salons.length > 0);
+        }
+      } catch {
+        // خطای شبکه؛ صرفاً منوی پرسنل نشون داده نمیشه، بقیه‌ی اپ کار می‌کنه
+      }
+    };
+
+    checkStaffStatus();
+    return () => { cancelled = true; };
+  }, []);
+
+  // آیتم پرسنل درست بعد از «سالن من» اضافه می‌شود، فقط اگر کاربر پرسنل جایی باشد
+  const navItems = isStaffSomewhere
+    ? [
+        ...baseNavItems.slice(0, 4),
+        staffNavItem,
+        ...baseNavItems.slice(4),
+      ]
+    : baseNavItems;
 
   return (
     <div className="flex h-screen bg-white text-zinc-900 dir-rtl font-sans selection:bg-zinc-200">
@@ -63,7 +110,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             const isActive = pathname?.startsWith(item.href);
             return (
               <Link
-                key={item.name}
+                key={item.key}
                 href={item.href}
                 className={`flex items-center gap-3 px-3 py-3 rounded-lg transition-colors duration-200 text-[13px] ${
                   isActive ? 'bg-zinc-50 text-[#824c71] font-semibold' : 'text-zinc-500 hover:text-[#824c71]'
@@ -93,7 +140,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               const isActive = pathname?.startsWith(item.href);
               return (
                 <Link
-                  key={item.name}
+                  key={item.key}
                   href={item.href}
                   className="flex flex-1 flex-col items-center justify-center h-full gap-1.5 transition-transform active:scale-95"
                 >

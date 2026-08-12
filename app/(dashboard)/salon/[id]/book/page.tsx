@@ -599,7 +599,7 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
                 >
                   {isSubmitting
                     ? <><Loader2 className="w-4 h-4 animate-spin" /> در حال ثبت...</>
-                    : <><CreditCard className="w-4 h-4" /> پرداخت {toPersian(formatPrice(totalPayable))} تومان و ثبت نوبت</>
+                    : <><CreditCard className="w-4 h-4" />پرداخت و ثبت نوبت</>
                   }
                 </button>
               </>
