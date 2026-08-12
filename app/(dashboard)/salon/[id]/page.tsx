@@ -42,6 +42,9 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
   // --- کنترل مودال انتخاب شماره تماس (وقتی سالن بیش از یک شماره داشته باشد) ---
   const [showPhoneModal, setShowPhoneModal] = useState(false);
 
+  // --- کنترل پاپ‌آپ هشدار وقتی نوبت‌دهی آنلاین سالن غیرفعاله ---
+  const [showBookingAlert, setShowBookingAlert] = useState(false);
+
   const toggleCategory = (category: string) => {
     setExpandedCategories(prev => 
       prev.includes(category) 
@@ -246,6 +249,15 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
     }
   };
 
+  // --- کلیک روی دکمه‌ی نوبت‌دهی: اگر فعال باشه می‌ره به صفحه‌ی رزرو، وگرنه پاپ‌آپ هشدار باز می‌شه ---
+  const handleBookingButtonClick = () => {
+    if (salon.bookingEnabled) {
+      router.push(`/salon/${salon.id}/book`);
+    } else {
+      setShowBookingAlert(true);
+    }
+  };
+
   const primaryPhone = salon.phones && salon.phones.length > 0 ? salon.phones[0] : null;
 
   const salonInfoCard = (
@@ -355,7 +367,7 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
     <img
       src="/web.png"
       alt="وب‌سایت"
-      className="w-5 h-5 object-contain" // حذف grayscale و opacity
+      className="w-5 h-5 object-contain"
     />
   </a>
 )}
@@ -445,20 +457,14 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
 
 {/*دسکتاپ*/}
 <div className="hidden lg:flex flex-row-reverse gap-2.5 mt-6">
-  {salon.bookingEnabled ? (
-  <a
-    href={`/salon/${salon.id}/book`}
+  {/* هر دو حالت (فعال/غیرفعال) ظاهر یکسان دارن — کلیک روی حالت غیرفعال پاپ‌آپ هشدار رو باز می‌کنه */}
+  <button
+    onClick={handleBookingButtonClick}
     className="flex-1 bg-[#824c71] hover:bg-[#824c71]/90 text-white font-bold py-3 rounded-xl text-center transition flex items-center justify-center gap-2 text-sm"
   >
     <CalendarClock className="w-4 h-4" />
     نوبت‌دهی آنلاین
-  </a>
-) : (
-  <div className="flex-1 bg-zinc-100 text-zinc-400 font-medium py-3 rounded-xl text-sm flex items-center justify-center gap-2 cursor-default">
-    <CalendarClock className="w-4 h-4" />
-    نوبت‌دهی فعلاً غیرفعال است
-  </div>
-)}
+  </button>
   {primaryPhone && (
     <a
       href={`tel:${primaryPhone}`}
@@ -585,6 +591,36 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
                 {isDeleting ? "در حال حذف..." : "بله، حذف شود"}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* پاپ‌آپ هشدار — وقتی نوبت‌دهی آنلاین سالن غیرفعاله و کاربر روی دکمه‌ی نوبت‌دهی می‌زنه */}
+      {showBookingAlert && (
+        <div
+          className="fixed inset-0 z-[200] flex items-center justify-center bg-black/40 backdrop-blur-sm px-5"
+          onClick={() => setShowBookingAlert(false)}
+        >
+          <div
+            className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="w-12 h-12 bg-amber-50 rounded-2xl flex items-center justify-center mb-4 mx-auto">
+              <CalendarClock className="w-6 h-6 text-amber-500" />
+            </div>
+            <h3 className="text-base font-bold text-zinc-900 text-center mb-2">
+              نوبت‌دهی آنلاین فعال نیست
+            </h3>
+            <p className="text-sm text-zinc-500 text-center leading-relaxed mb-5">
+              این سالن هنوز سیستم نوبت‌دهی آنلاین را فعال نکرده است.
+              برای رزرو وقت با سالن تماس بگیرید.
+            </p>
+            <button
+              onClick={() => setShowBookingAlert(false)}
+              className="w-full bg-zinc-900 text-white rounded-xl py-3 text-sm font-semibold"
+            >
+              متوجه شدم
+            </button>
           </div>
         </div>
       )}
@@ -760,20 +796,14 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
       </div>
 {/*موبایل*/}
 <div className="fixed bottom-8 left-5 right-5 z-[60] lg:hidden flex gap-2.5 items-center">
-    {salon.bookingEnabled ? (
-  <a
-    href={`/salon/${salon.id}/book`}
+  {/* هر دو حالت (فعال/غیرفعال) ظاهر یکسان دارن — کلیک روی حالت غیرفعال پاپ‌آپ هشدار رو باز می‌کنه */}
+  <button
+    onClick={handleBookingButtonClick}
     className="flex-1 bg-[#824c71] hover:bg-[#824c71]/90 text-white font-bold py-4 rounded-xl text-sm flex items-center justify-center gap-2 shadow-lg shadow-[#824c71]/20 active:scale-95 transition-transform"
   >
     <CalendarClock className="w-4 h-4" />
     نوبت‌دهی آنلاین
-  </a>
-) : (
-  <div className="flex-1 bg-zinc-100 text-zinc-400 font-medium py-4 rounded-xl text-sm flex items-center justify-center gap-2">
-    <CalendarClock className="w-4 h-4" />
-    نوبت‌دهی غیرفعال
-  </div>
-)}
+  </button>
   {primaryPhone && (
     <a
       href={`tel:${primaryPhone}`}

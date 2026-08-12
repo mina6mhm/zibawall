@@ -262,6 +262,13 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
       );
       const failed = results.find((r) => r.error);
       if (failed) { setSubmitError(failed.error); return; }
+
+      const firstId = results[0]?.booking?.id;
+      if (firstId) {
+        const payData = await fetch(`/api/booking/${firstId}/pay`, { method: 'POST' }).then((r) => r.json());
+        if (payData.paymentUrl) { window.location.href = payData.paymentUrl; return; }
+      }
+
       router.push('/appointments?bookingSuccess=1');
     } catch { setSubmitError('خطای ارتباط با سرور'); }
     finally { setIsSubmitting(false); }
@@ -592,7 +599,7 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
                 >
                   {isSubmitting
                     ? <><Loader2 className="w-4 h-4 animate-spin" /> در حال ثبت...</>
-                    : <><Check className="w-4 h-4" /> ثبت نوبت</>
+                    : <><CreditCard className="w-4 h-4" /> پرداخت {toPersian(formatPrice(totalPayable))} تومان و ثبت نوبت</>
                   }
                 </button>
               </>
