@@ -79,7 +79,7 @@ function buildClosedDayMarkers(closedDays: string[]): Record<string, CalendarDay
     d.setUTCDate(d.getUTCDate() + i);
     const name = GREGORIAN_TO_PERSIAN_DAY[d.getUTCDay()];
     if (closedDays.includes(name))
-      markers[d.toISOString().slice(0, 10)] = { className: 'text-red-400 opacity-40 line-through pointer-events-none cursor-not-allowed' };
+      markers[d.toISOString().slice(0, 10)] = { className: 'bg-red-50 text-red-400 pointer-events-none' };
   }
   return markers;
 }
@@ -285,11 +285,10 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
       <div className="max-w-md mx-auto px-5 pt-6 pb-36">
 
         {/* هدر */}
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-sm font-bold text-zinc-700">{salonName}</h2>
+        <div className="flex items-center mb-6">
           <Link
             href={`/salon/${salonId}`}
-            className="flex items-center gap-1.5 text-sm font-medium text-zinc-600 hover:text-zinc-900 transition-colors bg-zinc-100 hover:bg-zinc-200 px-3 py-2 rounded-xl"
+            className="flex items-center gap-1 text-sm font-medium text-zinc-600 hover:text-zinc-900 transition-colors"
           >
             <ArrowRight className="w-4 h-4" />
             بازگشت
@@ -310,7 +309,7 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
           <div className="mb-5 space-y-2">
             <p className="text-xs font-bold text-zinc-400 px-1">نوبت‌های ثبت‌شده</p>
             {cart.map((item, idx) => (
-              <div key={idx} className="bg-white border border-zinc-100 rounded-2xl p-4">
+              <div key={idx} className="bg-zinc-50 border border-zinc-100 rounded-2xl p-4">
                 <div className="flex items-start justify-between gap-2 mb-3">
                   <div>
                     <p className="text-sm font-bold text-zinc-900">{item.serviceName}</p>
@@ -321,23 +320,22 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
                   </div>
                   <button
                     onClick={() => setCart((p) => p.filter((_, i) => i !== idx))}
-                    className="p-1 text-zinc-200 hover:text-red-400 transition-colors shrink-0"
+                    className="p-1 text-red-300 hover:text-red-500 transition-colors shrink-0"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
                 </div>
-                <div className="flex items-center gap-2 flex-wrap text-[11px] text-zinc-500">
-                  <span className="flex items-center gap-1 bg-zinc-50 rounded-lg px-2 py-1">
-                    <CalendarClock className="w-3 h-3 text-[#824c71]/50" />
-                    {formatPersianDate(item.date)}
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="flex items-center gap-1 bg-white rounded-lg px-2.5 py-1.5 border border-zinc-100 text-[11px] text-zinc-500">
+                    <CalendarClock className="w-3.5 h-3.5 text-[#824c71]/60" />
+                    {formatPersianDate(item.date)} — {toPersian(item.startTime)}
                   </span>
-                  <span className="bg-zinc-50 rounded-lg px-2 py-1">{toPersian(item.startTime)}</span>
-                  <span className="flex items-center gap-1 bg-zinc-50 rounded-lg px-2 py-1">
-                    <User className="w-3 h-3 text-zinc-300" />
+                  <span className="flex items-center gap-1 bg-white rounded-lg px-2.5 py-1.5 border border-zinc-100 text-[11px] text-zinc-500">
+                    <User className="w-3.5 h-3.5 text-zinc-300" />
                     {item.staffName}
                   </span>
                 </div>
-                <div className="mt-3 pt-3 border-t border-zinc-50 flex justify-end">
+                <div className="mt-3 pt-3 border-t border-zinc-100 flex justify-end">
                   <button
                     onClick={() => setStep('confirm')}
                     className="text-xs font-bold text-[#824c71] flex items-center gap-1"
@@ -550,23 +548,23 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
                           <p className="text-sm font-bold text-zinc-900">{item.serviceName}</p>
                           <p className="text-xs text-zinc-400 mt-0.5 flex items-center gap-1">
                             <Clock className="w-3 h-3" />
-                            {formatDuration(item.durationMin)}
+                            {toPersian(formatDuration(item.durationMin))}
                           </p>
                         </div>
                         <button
                           onClick={() => setCart((p) => p.filter((_, i) => i !== idx))}
-                          className="p-1.5 text-zinc-300 hover:text-red-400 transition-colors"
+                          className="p-1.5 text-red-300 hover:text-red-500 transition-colors"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
                       </div>
-                      <div className="flex items-center gap-3 flex-wrap">
-                        <span className="flex items-center gap-1 text-xs text-zinc-500 bg-white rounded-lg px-2.5 py-1.5 border border-zinc-100">
-                          <CalendarClock className="w-3.5 h-3.5 text-[#824c71]" />
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="flex items-center gap-1 text-[11px] text-zinc-500 bg-white rounded-lg px-2.5 py-1.5 border border-zinc-100">
+                          <CalendarClock className="w-3.5 h-3.5 text-[#824c71]/60" />
                           {formatPersianDate(item.date)} — {toPersian(item.startTime)}
                         </span>
-                        <span className="flex items-center gap-1 text-xs text-zinc-500 bg-white rounded-lg px-2.5 py-1.5 border border-zinc-100">
-                          <User className="w-3.5 h-3.5 text-[#824c71]" />
+                        <span className="flex items-center gap-1 text-[11px] text-zinc-500 bg-white rounded-lg px-2.5 py-1.5 border border-zinc-100">
+                          <User className="w-3.5 h-3.5 text-zinc-300" />
                           {item.staffName}
                         </span>
                       </div>
