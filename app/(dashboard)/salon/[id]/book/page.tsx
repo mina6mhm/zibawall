@@ -581,18 +581,6 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
                   افزودن نوبت دیگر
                 </button>
 
-                {/* خلاصه مالی */}
-                <div className="border border-zinc-100 rounded-2xl p-4 mb-6">
-                  <div className="flex justify-between text-sm mb-3">
-                    <span className="text-zinc-400">کارمزد پلتفرم</span>
-                    <span className="text-zinc-700">{formatPrice(appFee)} تومان</span>
-                  </div>
-                  <div className="flex justify-between text-base font-bold pt-3 border-t border-zinc-100">
-                    <span className="text-zinc-900">مبلغ قابل پرداخت</span>
-                    <span className="text-zinc-900">{formatPrice(totalPayable)} تومان</span>
-                  </div>
-                </div>
-
                 {submitError && (
                   <p className="text-center text-xs text-red-400 mb-4">{submitError}</p>
                 )}
@@ -604,8 +592,6 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
                 >
                   {isSubmitting
                     ? <><Loader2 className="w-4 h-4 animate-spin" /> در حال ثبت...</>
-                    : totalPayable > 0
-                    ? <><CreditCard className="w-4 h-4" /> پرداخت و ثبت نوبت</>
                     : <><Check className="w-4 h-4" /> ثبت نوبت</>
                   }
                 </button>

@@ -445,6 +445,7 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
 
 {/*دسکتاپ*/}
 <div className="hidden lg:flex flex-row-reverse gap-2.5 mt-6">
+  {salon.bookingEnabled ? (
   <a
     href={`/salon/${salon.id}/book`}
     className="flex-1 bg-[#824c71] hover:bg-[#824c71]/90 text-white font-bold py-3 rounded-xl text-center transition flex items-center justify-center gap-2 text-sm"
@@ -452,6 +453,12 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
     <CalendarClock className="w-4 h-4" />
     نوبت‌دهی آنلاین
   </a>
+) : (
+  <div className="flex-1 bg-zinc-100 text-zinc-400 font-medium py-3 rounded-xl text-sm flex items-center justify-center gap-2 cursor-default">
+    <CalendarClock className="w-4 h-4" />
+    نوبت‌دهی فعلاً غیرفعال است
+  </div>
+)}
   {primaryPhone && (
     <a
       href={`tel:${primaryPhone}`}
@@ -753,6 +760,7 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
       </div>
 {/*موبایل*/}
 <div className="fixed bottom-8 left-5 right-5 z-[60] lg:hidden flex gap-2.5 items-center">
+    {salon.bookingEnabled ? (
   <a
     href={`/salon/${salon.id}/book`}
     className="flex-1 bg-[#824c71] hover:bg-[#824c71]/90 text-white font-bold py-4 rounded-xl text-sm flex items-center justify-center gap-2 shadow-lg shadow-[#824c71]/20 active:scale-95 transition-transform"
@@ -760,6 +768,12 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
     <CalendarClock className="w-4 h-4" />
     نوبت‌دهی آنلاین
   </a>
+) : (
+  <div className="flex-1 bg-zinc-100 text-zinc-400 font-medium py-4 rounded-xl text-sm flex items-center justify-center gap-2">
+    <CalendarClock className="w-4 h-4" />
+    نوبت‌دهی غیرفعال
+  </div>
+)}
   {primaryPhone && (
     <a
       href={`tel:${primaryPhone}`}
