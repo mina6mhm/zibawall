@@ -79,7 +79,7 @@ function buildClosedDayMarkers(closedDays: string[]): Record<string, CalendarDay
     d.setUTCDate(d.getUTCDate() + i);
     const name = GREGORIAN_TO_PERSIAN_DAY[d.getUTCDay()];
     if (closedDays.includes(name))
-      markers[d.toISOString().slice(0, 10)] = { className: 'opacity-30 line-through pointer-events-none' };
+      markers[d.toISOString().slice(0, 10)] = { className: 'text-red-400 opacity-40 line-through pointer-events-none cursor-not-allowed' };
   }
   return markers;
 }
@@ -128,7 +128,7 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
   const [salonName, setSalonName] = useState('');
   const [services, setServices] = useState<BookingService[]>([]);
   const [isLoadingSalon, setIsLoadingSalon] = useState(true);
-  const [closedDays, setClosedDays] = useState<string[]>([]);
+  const [closedWeekDays, setClosedWeekDays] = useState<string[]>([]); // روزهایی که open:false هستن در weeklySchedule
 
   const [step, setStep] = useState<Step>('service');
   const [selectedService, setSelectedService] = useState<BookingService | null>(null);
@@ -152,20 +152,29 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
   // ── بارگذاری ────────────────────────────────────────────────────────────
   useEffect(() => {
     (async () => {
-      const [salonRes, svcRes] = await Promise.all([
+      const [salonRes, svcRes, schedRes] = await Promise.all([
         fetch(`/api/salon/${salonId}`),
         fetch(`/api/booking-services/public?salonId=${salonId}`),
+        fetch(`/api/salon/schedule?salonId=${salonId}`),
       ]);
       if (salonRes.ok) {
         const d = await salonRes.json();
         setSalonName(d.name);
-        setClosedDays(d.closedDays ?? []);
         if (!d.bookingEnabled) { router.replace(`/salon/${salonId}`); return; }
       }
       if (svcRes.ok) {
         const svcs = (await svcRes.json()).services ?? [];
         setServices(svcs);
         if (svcs.length > 0) setSelectedService(svcs[0]);
+      }
+      if (schedRes.ok) {
+        const d = await schedRes.json();
+        if (d.weeklySchedule) {
+          const closed = Object.entries(d.weeklySchedule)
+            .filter(([, v]: [string, any]) => !v.open)
+            .map(([day]) => day);
+          setClosedWeekDays(closed);
+        }
       }
       setIsLoadingSalon(false);
     })();
@@ -253,7 +262,6 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
       );
       const failed = results.find((r) => r.error);
       if (failed) { setSubmitError(failed.error); return; }
-      const firstId = results[0]?.booking?.id;
       router.push('/appointments?bookingSuccess=1');
     } catch { setSubmitError('خطای ارتباط با سرور'); }
     finally { setIsSubmitting(false); }
@@ -261,7 +269,7 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
 
   const appFee       = cart.length > 0 ? 20000 : 0;
   const totalPayable = appFee;
-  const closedMarkers = useMemo(() => buildClosedDayMarkers(closedDays), [closedDays]);
+  const closedMarkers = useMemo(() => buildClosedDayMarkers(closedWeekDays), [closedWeekDays]);
 
   // ── Render ───────────────────────────────────────────────────────────────
   if (isLoadingSalon) return (
@@ -277,10 +285,14 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
       <div className="max-w-md mx-auto px-5 pt-6 pb-36">
 
         {/* هدر */}
-        <div className="flex items-center justify-end mb-6">
-          <Link href={`/salon/${salonId}`} className="flex items-center gap-1 text-sm text-zinc-400 hover:text-zinc-600 transition-colors">
-            <span>بازگشت</span>
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-sm font-bold text-zinc-700">{salonName}</h2>
+          <Link
+            href={`/salon/${salonId}`}
+            className="flex items-center gap-1.5 text-sm font-medium text-zinc-600 hover:text-zinc-900 transition-colors bg-zinc-100 hover:bg-zinc-200 px-3 py-2 rounded-xl"
+          >
             <ArrowRight className="w-4 h-4" />
+            بازگشت
           </Link>
         </div>
 
@@ -293,65 +305,55 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
           <p className="text-xs text-zinc-400 mt-1">{sub}</p>
         </div>
 
-        {/* سبد کوچک بالا */}
+        {/* ─── کارت نوبت‌های ثبت‌شده — در همه مراحل غیر از confirm ─── */}
         {cart.length > 0 && step !== 'confirm' && (
-          <button
-            onClick={() => setStep('confirm')}
-            className="w-full flex items-center justify-between bg-[#824c71]/5 border border-[#824c71]/15 rounded-2xl px-4 py-3 mb-5"
-          >
-            <div className="flex items-center gap-2 text-sm text-[#824c71] font-medium">
-              <div className="w-5 h-5 bg-[#824c71] text-white rounded-full flex items-center justify-center text-[10px] font-bold shrink-0">
-                {toPersian(String(cart.length))}
+          <div className="mb-5 space-y-2">
+            <p className="text-xs font-bold text-zinc-400 px-1">نوبت‌های ثبت‌شده</p>
+            {cart.map((item, idx) => (
+              <div key={idx} className="bg-white border border-zinc-100 rounded-2xl p-4">
+                <div className="flex items-start justify-between gap-2 mb-3">
+                  <div>
+                    <p className="text-sm font-bold text-zinc-900">{item.serviceName}</p>
+                    <p className="text-[11px] text-zinc-400 mt-0.5 flex items-center gap-1">
+                      <Clock className="w-3 h-3" />
+                      {toPersian(formatDuration(item.durationMin))}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setCart((p) => p.filter((_, i) => i !== idx))}
+                    className="p-1 text-zinc-200 hover:text-red-400 transition-colors shrink-0"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+                <div className="flex items-center gap-2 flex-wrap text-[11px] text-zinc-500">
+                  <span className="flex items-center gap-1 bg-zinc-50 rounded-lg px-2 py-1">
+                    <CalendarClock className="w-3 h-3 text-[#824c71]/50" />
+                    {formatPersianDate(item.date)}
+                  </span>
+                  <span className="bg-zinc-50 rounded-lg px-2 py-1">{toPersian(item.startTime)}</span>
+                  <span className="flex items-center gap-1 bg-zinc-50 rounded-lg px-2 py-1">
+                    <User className="w-3 h-3 text-zinc-300" />
+                    {item.staffName}
+                  </span>
+                </div>
+                <div className="mt-3 pt-3 border-t border-zinc-50 flex justify-end">
+                  <button
+                    onClick={() => setStep('confirm')}
+                    className="text-xs font-bold text-[#824c71] flex items-center gap-1"
+                  >
+                    تأیید و پرداخت
+                    <ArrowLeft className="w-3 h-3" />
+                  </button>
+                </div>
               </div>
-              نوبت در سبد
-            </div>
-            <span className="text-xs text-[#824c71]/70 flex items-center gap-1">
-              تأیید و پرداخت <ArrowLeft className="w-3 h-3" />
-            </span>
-          </button>
+            ))}
+          </div>
         )}
 
         {/* ─── مرحله ۱: خدمات ─── */}
         {step === 'service' && (
           <div className="space-y-2">
-            {/* خلاصه نوبت‌های قبلی */}
-            {cart.length > 0 && (
-              <div className="mb-5">
-                <p className="text-xs font-bold text-zinc-400 mb-2.5 px-1">نوبت‌های ثبت‌شده در این جلسه</p>
-                <div className="space-y-2">
-                  {cart.map((item, idx) => (
-                    <div key={idx} className="bg-white border border-zinc-100 rounded-2xl px-4 py-3 flex items-center gap-3">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between gap-2">
-                          <p className="text-sm font-bold text-zinc-900 truncate">{item.serviceName}</p>
-                          <span className="text-[11px] text-zinc-400 shrink-0">{formatDuration(item.durationMin)}</span>
-                        </div>
-                        <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-                          <span className="text-[11px] text-zinc-500 flex items-center gap-1">
-                            <CalendarClock className="w-3 h-3 text-[#824c71]/60" />
-                            {formatPersianDate(item.date)}
-                          </span>
-                          <span className="text-zinc-200">·</span>
-                          <span className="text-[11px] text-zinc-500">{toPersian(item.startTime)}</span>
-                          <span className="text-zinc-200">·</span>
-                          <span className="text-[11px] text-zinc-500 flex items-center gap-1">
-                            <User className="w-3 h-3 text-zinc-300" />
-                            {item.staffName}
-                          </span>
-                        </div>
-                      </div>
-                      <button
-                        onClick={() => setCart((p) => p.filter((_, i) => i !== idx))}
-                        className="text-zinc-200 hover:text-red-400 transition-colors shrink-0 p-1"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
             {services.length === 0 ? (
               <p className="text-center text-zinc-400 text-sm py-16">خدماتی تعریف نشده</p>
             ) : services.map((svc) => (
@@ -366,17 +368,22 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
               >
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold text-zinc-900">{svc.name}</p>
-                  <div className="flex items-center gap-3 mt-1">
-                    <span className="text-[12px] text-zinc-400 flex items-center gap-1">
-                      <Clock className="w-3 h-3" /> {formatDuration(svc.durationMin)}
-                    </span>
-                    {svc.price > 0 && <span className="text-[12px] text-zinc-400">{formatPrice(svc.price)} تومان</span>}
-                  </div>
+                  <span className="text-[12px] text-zinc-400 flex items-center gap-1 mt-1">
+                    <Clock className="w-3 h-3" />
+                    {toPersian(formatDuration(svc.durationMin))}
+                  </span>
                 </div>
-                <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-all ${
-                  selectedService?.id === svc.id ? 'bg-[#824c71] border-[#824c71]' : 'border-zinc-200'
-                }`}>
-                  {selectedService?.id === svc.id && <Check className="w-3 h-3 text-white" />}
+                <div className="flex items-center gap-3 shrink-0">
+                  {svc.price > 0 && (
+                    <span className="text-sm font-bold text-[#824c71]">
+                      {toPersian(formatPrice(svc.price))} تومان
+                    </span>
+                  )}
+                  <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-all ${
+                    selectedService?.id === svc.id ? 'bg-[#824c71] border-[#824c71]' : 'border-zinc-200'
+                  }`}>
+                    {selectedService?.id === svc.id && <Check className="w-3 h-3 text-white" />}
+                  </div>
                 </div>
               </button>
             ))}
@@ -619,10 +626,10 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
             <button
               onClick={goBack}
               disabled={currentIdx === 0}
-              className={`flex items-center gap-1 text-sm transition-colors px-3 py-2 rounded-xl ${
+              className={`flex items-center gap-1.5 text-sm font-medium transition-colors px-3 py-2 rounded-xl ${
                 currentIdx === 0
                   ? 'text-zinc-200 pointer-events-none'
-                  : 'text-zinc-400 hover:text-zinc-700'
+                  : 'text-zinc-600 hover:text-zinc-900 bg-zinc-100 hover:bg-zinc-200'
               }`}
             >
               <ArrowRight className="w-4 h-4" />
