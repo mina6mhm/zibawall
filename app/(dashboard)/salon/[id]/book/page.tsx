@@ -249,29 +249,67 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
     setStep('confirm');
   };
 
+  // ─── اصلاح‌شده: کل سبد در یک درخواست با فرمت { salonId, items } ارسال می‌شود
+  // (API فقط این فرمت را می‌پذیرد؛ قبلاً به‌ازای هر آیتم یک درخواست جدا با
+  // فیلدهای مسطح serviceId/date/startTime فرستاده می‌شد که با هیچ‌کدام از دو
+  // شرط اعتبارسنجی سرور مطابقت نداشت و همیشه با «اطلاعات ناقص است» رد می‌شد).
+  // بعد از ثبت موفق، از روی group.id مسیر پرداخت گروهی صدا زده می‌شود
+  // (نه booking/[id]/pay که مخصوص نوبت‌های تکی/دستی سالن‌دار است).
   const handleSubmit = async () => {
     if (!cart.length) return;
-    setIsSubmitting(true); setSubmitError('');
-    try {
-      const results = await Promise.all(
-        cart.map((item) => fetch('/api/booking-online/reserve', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ salonId, serviceId: item.serviceId, staffId: item.staffId || undefined, date: item.date, startTime: item.startTime }),
-        }).then((r) => r.json()))
-      );
-      const failed = results.find((r) => r.error);
-      if (failed) { setSubmitError(failed.error); return; }
+    setIsSubmitting(true);
+    setSubmitError('');
 
-      const firstId = results[0]?.booking?.id;
-      if (firstId) {
-        const payData = await fetch(`/api/booking/${firstId}/pay`, { method: 'POST' }).then((r) => r.json());
-        if (payData.paymentUrl) { window.location.href = payData.paymentUrl; return; }
+    try {
+      const reserveRes = await fetch('/api/booking-online/reserve', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          salonId,
+          items: cart.map((item) => ({
+            serviceId: item.serviceId,
+            staffId: item.staffId || undefined,
+            date: item.date,
+            startTime: item.startTime,
+          })),
+        }),
+      });
+
+      const reserveData = await reserveRes.json();
+
+      if (!reserveRes.ok) {
+        setSubmitError(reserveData.error || 'خطا در ثبت نوبت');
+        return;
       }
 
-      router.push('/appointments?bookingSuccess=1');
-    } catch { setSubmitError('خطای ارتباط با سرور'); }
-    finally { setIsSubmitting(false); }
+      const groupId = reserveData.group?.id;
+      if (!groupId) {
+        setSubmitError('خطا در ثبت نوبت');
+        return;
+      }
+
+      // اگر مبلغ قابل پرداخت صفر باشد، reserve از قبل paymentStatus را SUCCESS
+      // گذاشته و دیگر نیازی به درگاه نیست؛ در غیر این صورت وارد درگاه می‌شویم.
+      const payRes = await fetch(`/api/booking-group/${groupId}/pay`, { method: 'POST' });
+      const payData = await payRes.json();
+
+      if (payRes.ok && payData.paymentUrl) {
+        window.location.href = payData.paymentUrl;
+        return;
+      }
+
+      if (!payRes.ok) {
+        // پرداخت لازم نبوده (مثلاً مبلغ صفر) یا رزرو از قبل تسویه شده — نوبت را قطعی در نظر می‌گیریم
+        router.push('/appointments?paymentSuccess=1');
+        return;
+      }
+
+      setSubmitError(payData.error || 'خطا در اتصال به درگاه پرداخت');
+    } catch {
+      setSubmitError('خطای ارتباط با سرور');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const appFee       = cart.length > 0 ? 20000 : 0;
@@ -398,7 +436,6 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
         {/* ─── مرحله ۲: پرسنل ─── */}
         {step === 'staff' && selectedService && (
           <div>
-            {/* خلاصه خدمت */}
             {isLoadingStaff ? (
               <div className="flex justify-center py-12"><Loader2 className="w-5 h-5 text-zinc-300 animate-spin" /></div>
             ) : (
@@ -450,7 +487,6 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
         {/* ─── مرحله ۳: تاریخ + ساعت ─── */}
         {step === 'schedule' && selectedService && (
           <div>
-            {/* تقویم */}
             <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-3">تاریخ</p>
             <PersianCalendar
               selectedDate={selectedDate}
@@ -459,7 +495,6 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
               markers={closedMarkers}
             />
 
-            {/* ساعت‌ها */}
             {selectedDate && (
               <div className="mt-7">
                 <div className="flex items-center justify-between mb-4">
@@ -478,7 +513,6 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
                   </div>
                 ) : (
                   <>
-                    {/* انتخاب پرسنل از روی اسلات‌ها */}
                     {staffOptions.length > 1 && (
                       <div className="flex gap-2 overflow-x-auto pb-2 mb-4">
                         <button
@@ -525,7 +559,7 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
                     </div>
 
                     {selectedSlot && (
-                      <div className="h-6" /> // فضا برای دکمه پایین صفحه
+                      <div className="h-6" />
                     )}
                   </>
                 )}
@@ -546,7 +580,6 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
               </div>
             ) : (
               <>
-                {/* کارت‌های نوبت */}
                 <div className="space-y-3 mb-6">
                   {cart.map((item, idx) => (
                     <div key={idx} className="bg-zinc-50 rounded-2xl p-4 border border-zinc-100">
@@ -579,7 +612,6 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
                   ))}
                 </div>
 
-                {/* افزودن نوبت دیگر */}
                 <button
                   onClick={startNew}
                   className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl border border-dashed border-zinc-200 text-sm text-zinc-400 hover:text-zinc-600 hover:border-zinc-300 transition-all mb-6"
@@ -608,12 +640,12 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
         )}
 
         {/* ناوبری قبل/ادامه — پایین صفحه */}
+        
         {step !== 'confirm' && (
           <div
             className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md px-5 py-3.5 flex items-center justify-between"
             style={{ paddingBottom: 'calc(0.875rem + env(safe-area-inset-bottom, 0px))' }}
           >
-            {/* قبلی */}
             <button
               onClick={goBack}
               disabled={currentIdx === 0}
@@ -627,9 +659,7 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
               قبلی
             </button>
 
-            {/* ادامه */}
             {step === 'schedule' ? (
-              // در مرحله schedule، ادامه = افزودن به سبد
               <button
                 onClick={addToCart}
                 disabled={!selectedSlot}
@@ -663,3 +693,4 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
     </div>
   );
 }
+
