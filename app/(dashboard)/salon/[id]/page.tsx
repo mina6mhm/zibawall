@@ -617,7 +617,7 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
             </p>
             <button
               onClick={() => setShowBookingAlert(false)}
-              className="w-full bg-zinc-900 text-white rounded-xl py-3 text-sm font-semibold"
+              className="w-full bg-[#824c71]/[0.07] hover:bg-[#824c71]/[0.12] text-[#824c71] rounded-xl py-3 text-sm font-semibold"
             >
               متوجه شدم
             </button>
