@@ -249,68 +249,61 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
     setStep('confirm');
   };
 
-  // ─── اصلاح‌شده: کل سبد در یک درخواست با فرمت { salonId, items } ارسال می‌شود
-  // (API فقط این فرمت را می‌پذیرد؛ قبلاً به‌ازای هر آیتم یک درخواست جدا با
-  // فیلدهای مسطح serviceId/date/startTime فرستاده می‌شد که با هیچ‌کدام از دو
-  // شرط اعتبارسنجی سرور مطابقت نداشت و همیشه با «اطلاعات ناقص است» رد می‌شد).
-  // بعد از ثبت موفق، از روی group.id مسیر پرداخت گروهی صدا زده می‌شود
-  // (نه booking/[id]/pay که مخصوص نوبت‌های تکی/دستی سالن‌دار است).
   const handleSubmit = async () => {
-    if (!cart.length) return;
-    setIsSubmitting(true);
-    setSubmitError('');
+  if (!cart.length) return;
+  setIsSubmitting(true);
+  setSubmitError('');
 
-    try {
-      const reserveRes = await fetch('/api/booking-online/reserve', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          salonId,
-          items: cart.map((item) => ({
-            serviceId: item.serviceId,
-            staffId: item.staffId || undefined,
-            date: item.date,
-            startTime: item.startTime,
-          })),
-        }),
-      });
+  try {
+    const reserveRes = await fetch('/api/booking-online/reserve', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        salonId,
+        items: cart.map((item) => ({
+          serviceId: item.serviceId,
+          staffId: item.staffId || undefined,
+          date: item.date,
+          startTime: item.startTime,
+        })),
+      }),
+    });
 
-      const reserveData = await reserveRes.json();
+    const reserveData = await reserveRes.json();
 
-      if (!reserveRes.ok) {
-        setSubmitError(reserveData.error || 'خطا در ثبت نوبت');
-        return;
-      }
-
-      const groupId = reserveData.group?.id;
-      if (!groupId) {
-        setSubmitError('خطا در ثبت نوبت');
-        return;
-      }
-
-      // اگر مبلغ قابل پرداخت صفر باشد، reserve از قبل paymentStatus را SUCCESS
-      // گذاشته و دیگر نیازی به درگاه نیست؛ در غیر این صورت وارد درگاه می‌شویم.
-      const payRes = await fetch(`/api/booking-group/${groupId}/pay`, { method: 'POST' });
-      const payData = await payRes.json();
-
-      if (payRes.ok && payData.paymentUrl) {
-        window.location.href = payData.paymentUrl;
-        return;
-      }
-
-      if (!payRes.ok) {
-        // پرداخت لازم نبوده (مثلاً مبلغ صفر) یا رزرو از قبل تسویه شده — نوبت را قطعی در نظر می‌گیریم
-        router.push('/appointments?paymentSuccess=1');
-        return;
-      }
-
-      setSubmitError(payData.error || 'خطا در اتصال به درگاه پرداخت');
-    } catch {
-      setSubmitError('خطای ارتباط با سرور');
-    } finally {
-      setIsSubmitting(false);
+    if (!reserveRes.ok) {
+      setSubmitError(reserveData.error || 'خطا در ثبت نوبت');
+      return;
     }
-  };
+
+    const groupId = reserveData.group?.id;
+    if (!groupId) {
+      setSubmitError('خطا در ثبت نوبت');
+      return;
+    }
+
+    const payRes = await fetch(`/api/booking-group/${groupId}/pay`, { method: 'POST' });
+    const payData = await payRes.json();
+
+    // فقط وقتی paymentUrl واقعاً برگشته باشه به درگاه می‌ریم.
+    // هر حالت دیگه (چه ۴۰۰ چه ۵۰۰ چه پاسخ ناقص) یعنی پرداخت شروع نشده —
+    // هیچ‌وقت نباید اینو معادل موفقیت در نظر بگیریم، چون status نوبت
+    // همچنان PENDING_PAYMENT می‌مونه و باید کاربر واقعاً پرداخت کنه.
+    if (payRes.ok && payData.paymentUrl) {
+      window.location.href = payData.paymentUrl;
+      return;
+    }
+
+    setSubmitError(
+      payData.error ||
+        'اتصال به درگاه پرداخت با خطا مواجه شد. نوبت شما به‌صورت موقت رزرو شده — لطفاً دوباره تلاش کنید یا از صفحه «نوبت‌های من» پرداخت را کامل کنید.'
+    );
+  } catch {
+    setSubmitError('خطای ارتباط با سرور');
+  } finally {
+    setIsSubmitting(false);
+  }
+};
 
   const appFee       = cart.length > 0 ? 20000 : 0;
   const totalPayable = appFee;
