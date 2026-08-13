@@ -7,6 +7,8 @@ import Link from 'next/link';
 import {
   ArrowRight, ArrowLeft, Loader2, CalendarClock, Clock,
   Check, Plus, Trash2, CreditCard, User,
+  Hand, Footprints, Eye, Scissors, Sparkles, Palette, Crown, Zap, Flower2,
+  type LucideIcon,
 } from 'lucide-react';
 import { DateObject } from 'react-multi-date-picker';
 import PersianCalendar, { CalendarDayMarker } from '@/components/ui/PersianCalendar';
@@ -82,6 +84,29 @@ function buildClosedDayMarkers(closedDays: string[]): Record<string, CalendarDay
       markers[d.toISOString().slice(0, 10)] = { className: 'bg-red-50 text-red-400 pointer-events-none' };
   }
   return markers;
+}
+
+// ─── تشخیص آیکون خدمت بر اساس کلمات کلیدی در اسم آن ────────────────────────
+// همون منطقی که دسته‌بندی‌های صفحه‌ی اصلی دارن، اینجا روی تک‌تک خدمات اعمال می‌شه
+
+const SERVICE_ICON_RULES: { keywords: string[]; icon: LucideIcon }[] = [
+  { keywords: ['پا', 'پدیکور'], icon: Footprints },
+  { keywords: ['ناخن', 'دست', 'مانیکور', 'کاشت ناخن', 'ژلیش'], icon: Hand },
+  { keywords: ['ابرو', 'مژه', 'میکروبلیدینگ', 'لیفت مژه'], icon: Eye },
+  { keywords: ['عروس', 'فرمالیته'], icon: Crown },
+  { keywords: ['میکاپ', 'آرایش', 'گریم'], icon: Palette },
+  { keywords: ['اپیلاسیون', 'لیزر', 'موزدایی', 'وکس', 'اصلاح'], icon: Zap },
+  { keywords: ['ماساژ', 'اسپا'], icon: Flower2 },
+  { keywords: ['پوست', 'فیشیال', 'پاکسازی', 'میکرودرم', 'مزوتراپی'], icon: Sparkles },
+  { keywords: ['مو', 'کراتین', 'رنگ', 'شینیون', 'شنیون', 'بافت', 'براشینگ', 'کوتاهی', 'احیا'], icon: Scissors },
+];
+
+function getServiceIcon(name: string): LucideIcon {
+  const normalized = name.toLowerCase();
+  for (const rule of SERVICE_ICON_RULES) {
+    if (rule.keywords.some((kw) => normalized.includes(kw))) return rule.icon;
+  }
+  return Sparkles;
 }
 
 // ─── Breadcrumb ───────────────────────────────────────────────────────────────
@@ -250,60 +275,60 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
   };
 
   const handleSubmit = async () => {
-  if (!cart.length) return;
-  setIsSubmitting(true);
-  setSubmitError('');
+    if (!cart.length) return;
+    setIsSubmitting(true);
+    setSubmitError('');
 
-  try {
-    const reserveRes = await fetch('/api/booking-online/reserve', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        salonId,
-        items: cart.map((item) => ({
-          serviceId: item.serviceId,
-          staffId: item.staffId || undefined,
-          date: item.date,
-          startTime: item.startTime,
-        })),
-      }),
-    });
+    try {
+      const reserveRes = await fetch('/api/booking-online/reserve', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          salonId,
+          items: cart.map((item) => ({
+            serviceId: item.serviceId,
+            staffId: item.staffId || undefined,
+            date: item.date,
+            startTime: item.startTime,
+          })),
+        }),
+      });
 
-    const reserveData = await reserveRes.json();
+      const reserveData = await reserveRes.json();
 
-    if (!reserveRes.ok) {
-      setSubmitError(reserveData.error || 'خطا در ثبت نوبت');
-      return;
+      if (!reserveRes.ok) {
+        setSubmitError(reserveData.error || 'خطا در ثبت نوبت');
+        return;
+      }
+
+      const groupId = reserveData.group?.id;
+      if (!groupId) {
+        setSubmitError('خطا در ثبت نوبت');
+        return;
+      }
+
+      const payRes = await fetch(`/api/booking-group/${groupId}/pay`, { method: 'POST' });
+      const payData = await payRes.json();
+
+      // فقط وقتی paymentUrl واقعاً برگشته باشه به درگاه می‌ریم.
+      // هر حالت دیگه (چه ۴۰۰ چه ۵۰۰ چه پاسخ ناقص) یعنی پرداخت شروع نشده —
+      // هیچ‌وقت نباید اینو معادل موفقیت در نظر بگیریم، چون status نوبت
+      // همچنان PENDING_PAYMENT می‌مونه و باید کاربر واقعاً پرداخت کنه.
+      if (payRes.ok && payData.paymentUrl) {
+        window.location.href = payData.paymentUrl;
+        return;
+      }
+
+      setSubmitError(
+        payData.error ||
+          'اتصال به درگاه پرداخت با خطا مواجه شد. نوبت شما به‌صورت موقت رزرو شده — لطفاً دوباره تلاش کنید یا از صفحه «نوبت‌های من» پرداخت را کامل کنید.'
+      );
+    } catch {
+      setSubmitError('خطای ارتباط با سرور');
+    } finally {
+      setIsSubmitting(false);
     }
-
-    const groupId = reserveData.group?.id;
-    if (!groupId) {
-      setSubmitError('خطا در ثبت نوبت');
-      return;
-    }
-
-    const payRes = await fetch(`/api/booking-group/${groupId}/pay`, { method: 'POST' });
-    const payData = await payRes.json();
-
-    // فقط وقتی paymentUrl واقعاً برگشته باشه به درگاه می‌ریم.
-    // هر حالت دیگه (چه ۴۰۰ چه ۵۰۰ چه پاسخ ناقص) یعنی پرداخت شروع نشده —
-    // هیچ‌وقت نباید اینو معادل موفقیت در نظر بگیریم، چون status نوبت
-    // همچنان PENDING_PAYMENT می‌مونه و باید کاربر واقعاً پرداخت کنه.
-    if (payRes.ok && payData.paymentUrl) {
-      window.location.href = payData.paymentUrl;
-      return;
-    }
-
-    setSubmitError(
-      payData.error ||
-        'اتصال به درگاه پرداخت با خطا مواجه شد. نوبت شما به‌صورت موقت رزرو شده — لطفاً دوباره تلاش کنید یا از صفحه «نوبت‌های من» پرداخت را کامل کنید.'
-    );
-  } catch {
-    setSubmitError('خطای ارتباط با سرور');
-  } finally {
-    setIsSubmitting(false);
-  }
-};
+  };
 
   const appFee       = cart.length > 0 ? 20000 : 0;
   const totalPayable = appFee;
@@ -387,91 +412,123 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
           </div>
         )}
 
-        {/* ─── مرحله ۱: خدمات ─── */}
+        {/* ─── مرحله ۱: خدمات — کارت‌ها به سبک دسته‌بندی صفحه‌ی اصلی، با آیکون تشخیصی ─── */}
         {step === 'service' && (
-          <div className="space-y-2">
+          <div className="space-y-2.5">
             {services.length === 0 ? (
               <p className="text-center text-zinc-400 text-sm py-16">خدماتی تعریف نشده</p>
-            ) : services.map((svc) => (
-              <button
-                key={svc.id}
-                onClick={() => setSelectedService(svc)}
-                className={`w-full flex items-center justify-between gap-4 p-4 rounded-2xl border text-right transition-all active:scale-[0.99] ${
-                  selectedService?.id === svc.id
-                    ? 'border-[#824c71]/40 bg-[#824c71]/5'
-                    : 'border-zinc-100 hover:border-zinc-200 bg-white'
-                }`}
-              >
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-zinc-900">{svc.name}</p>
-                  <span className="text-[12px] text-zinc-400 flex items-center gap-1 mt-1">
-                    <Clock className="w-3 h-3" />
-                    {toPersian(formatDuration(svc.durationMin))}
+            ) : services.map((svc) => {
+              const Icon = getServiceIcon(svc.name);
+              const isSelected = selectedService?.id === svc.id;
+              return (
+                <button
+                  key={svc.id}
+                  onClick={() => setSelectedService(svc)}
+                  className={`w-full flex items-center gap-3.5 p-3.5 rounded-2xl border text-right transition-all active:scale-[0.99] ${
+                    isSelected
+                      ? 'border-2 border-[#824c71] bg-[#824c71]/[0.06]'
+                      : 'border border-zinc-100 bg-[#824c71]/[0.025] hover:bg-[#824c71]/[0.05]'
+                  }`}
+                >
+                  <span
+                    className={`w-11 h-11 rounded-full flex items-center justify-center shrink-0 transition-colors ${
+                      isSelected ? 'bg-[#824c71]/15' : 'bg-[#824c71]/[0.08]'
+                    }`}
+                  >
+                    <Icon
+                      className={`w-5 h-5 ${isSelected ? 'text-[#824c71]' : 'text-[#824c71]/75'}`}
+                      strokeWidth={1.75}
+                    />
                   </span>
-                </div>
-                <div className="flex items-center gap-3 shrink-0">
-                  {svc.price > 0 && (
-                    <span className="text-sm font-bold text-[#824c71]">
-                      {toPersian(formatPrice(svc.price))} تومان
+
+                  <div className="flex-1 min-w-0">
+                    <p className={`text-sm font-semibold ${isSelected ? 'text-[#824c71]' : 'text-zinc-900'}`}>
+                      {svc.name}
+                    </p>
+                    <span className="text-[12px] text-zinc-400 flex items-center gap-1 mt-1">
+                      <Clock className="w-3 h-3" />
+                      {toPersian(formatDuration(svc.durationMin))}
                     </span>
-                  )}
-                  <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-all ${
-                    selectedService?.id === svc.id ? 'bg-[#824c71] border-[#824c71]' : 'border-zinc-200'
-                  }`}>
-                    {selectedService?.id === svc.id && <Check className="w-3 h-3 text-white" />}
                   </div>
-                </div>
-              </button>
-            ))}
+
+                  <div className="flex items-center gap-2.5 shrink-0">
+                    {svc.price > 0 && (
+                      <span className="text-sm font-bold text-[#824c71]">
+                        {toPersian(formatPrice(svc.price))} تومان
+                      </span>
+                    )}
+                    {isSelected && (
+                      <span className="w-5 h-5 rounded-full bg-[#824c71] flex items-center justify-center shrink-0">
+                        <Check className="w-3 h-3 text-white" />
+                      </span>
+                    )}
+                  </div>
+                </button>
+              );
+            })}
           </div>
         )}
 
-        {/* ─── مرحله ۲: پرسنل ─── */}
+        {/* ─── مرحله ۲: پرسنل — همون سبک کارت ─── */}
         {step === 'staff' && selectedService && (
           <div>
             {isLoadingStaff ? (
               <div className="flex justify-center py-12"><Loader2 className="w-5 h-5 text-zinc-300 animate-spin" /></div>
             ) : (
-              <div className="space-y-2">
+              <div className="space-y-2.5">
                 {/* تفاوتی ندارد */}
                 <button
                   onClick={() => setSelectedStaffId(null)}
-                  className={`w-full flex items-center gap-3 p-4 rounded-2xl border text-right transition-all ${
+                  className={`w-full flex items-center gap-3.5 p-3.5 rounded-2xl border text-right transition-all ${
                     selectedStaffId === null
-                      ? 'border-[#824c71]/40 bg-[#824c71]/5'
-                      : 'border-zinc-100 hover:border-zinc-200 bg-white'
+                      ? 'border-2 border-[#824c71] bg-[#824c71]/[0.06]'
+                      : 'border border-zinc-100 bg-[#824c71]/[0.025] hover:bg-[#824c71]/[0.05]'
                   }`}
                 >
-                  <div className="w-9 h-9 rounded-full bg-zinc-100 flex items-center justify-center shrink-0">
-                    <User className="w-4 h-4 text-zinc-400" />
-                  </div>
+                  <span className={`w-11 h-11 rounded-full flex items-center justify-center shrink-0 ${
+                    selectedStaffId === null ? 'bg-[#824c71]/15' : 'bg-[#824c71]/[0.08]'
+                  }`}>
+                    <User className={`w-5 h-5 ${selectedStaffId === null ? 'text-[#824c71]' : 'text-[#824c71]/75'}`} strokeWidth={1.75} />
+                  </span>
                   <div className="flex-1">
-                    <p className="text-sm font-semibold text-zinc-800">تفاوتی ندارد</p>
+                    <p className={`text-sm font-semibold ${selectedStaffId === null ? 'text-[#824c71]' : 'text-zinc-900'}`}>تفاوتی ندارد</p>
                     <p className="text-[11px] text-zinc-400 mt-0.5">اولین پرسنل آزاد انتخاب می‌شود</p>
                   </div>
-                  {selectedStaffId === null && <Check className="w-4 h-4 text-[#824c71] shrink-0" />}
+                  {selectedStaffId === null && (
+                    <span className="w-5 h-5 rounded-full bg-[#824c71] flex items-center justify-center shrink-0">
+                      <Check className="w-3 h-3 text-white" />
+                    </span>
+                  )}
                 </button>
 
-                {staffOptions.map((s) => (
-                  <button
-                    key={s.id}
-                    onClick={() => setSelectedStaffId(s.id)}
-                    className={`w-full flex items-center gap-3 p-4 rounded-2xl border text-right transition-all ${
-                      selectedStaffId === s.id
-                        ? 'border-[#824c71]/40 bg-[#824c71]/5'
-                        : 'border-zinc-100 hover:border-zinc-200 bg-white'
-                    }`}
-                  >
-                    <div className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold shrink-0 ${
-                      selectedStaffId === s.id ? 'bg-[#824c71]/10 text-[#824c71]' : 'bg-zinc-100 text-zinc-500'
-                    }`}>
-                      {s.name.slice(0, 1)}
-                    </div>
-                    <p className="flex-1 text-sm font-semibold text-zinc-800 text-right">{s.name}</p>
-                    {selectedStaffId === s.id && <Check className="w-4 h-4 text-[#824c71] shrink-0" />}
-                  </button>
-                ))}
-
+                {staffOptions.map((s) => {
+                  const isSelected = selectedStaffId === s.id;
+                  return (
+                    <button
+                      key={s.id}
+                      onClick={() => setSelectedStaffId(s.id)}
+                      className={`w-full flex items-center gap-3.5 p-3.5 rounded-2xl border text-right transition-all ${
+                        isSelected
+                          ? 'border-2 border-[#824c71] bg-[#824c71]/[0.06]'
+                          : 'border border-zinc-100 bg-[#824c71]/[0.025] hover:bg-[#824c71]/[0.05]'
+                      }`}
+                    >
+                      <span className={`w-11 h-11 rounded-full flex items-center justify-center text-sm font-bold shrink-0 ${
+                        isSelected ? 'bg-[#824c71]/15 text-[#824c71]' : 'bg-[#824c71]/[0.08] text-[#824c71]/75'
+                      }`}>
+                        {s.name.slice(0, 1)}
+                      </span>
+                      <p className={`flex-1 text-sm font-semibold text-right ${isSelected ? 'text-[#824c71]' : 'text-zinc-900'}`}>
+                        {s.name}
+                      </p>
+                      {isSelected && (
+                        <span className="w-5 h-5 rounded-full bg-[#824c71] flex items-center justify-center shrink-0">
+                          <Check className="w-3 h-3 text-white" />
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
               </div>
             )}
           </div>
@@ -633,7 +690,6 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
         )}
 
         {/* ناوبری قبل/ادامه — پایین صفحه */}
-        
         {step !== 'confirm' && (
           <div
             className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md px-5 py-3.5 flex items-center justify-between"
@@ -686,4 +742,3 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
     </div>
   );
 }
-
