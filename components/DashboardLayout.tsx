@@ -33,11 +33,12 @@ const MySalonIcon = ({ isActive, className }: { isActive: boolean, className?: s
   </svg>
 );
 
+// آیکون برنامه پرسنلی — بازطراحی‌شده هم‌سبک بقیه (خطوط ساده، بدون جزئیات اضافه)
 const StaffScheduleIcon = ({ isActive, className }: { isActive: boolean, className?: string }) => (
   <svg viewBox="0 0 24 24" className={className} fill={isActive ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-    <rect x="3" y="4" width="18" height="17" rx="2" />
-    <path d="M3 9h18" stroke={isActive ? "#fff" : "currentColor"} />
-    <path d="M8 2v4M16 2v4" stroke={isActive ? "#fff" : "currentColor"} />
+    <circle cx="9" cy="7" r="3" />
+    <path d="M3.5 20v-1a5.5 5.5 0 0 1 5.5-5.5h0" />
+    <path d="M15 13.5h6M15 17h6M15 20h4" stroke={isActive ? "#fff" : "currentColor"} />
   </svg>
 );
 
@@ -99,6 +100,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       ]
     : baseNavItems;
 
+  // در حالت ۶ تبی (وقتی کاربر پرسنل جایی هم هست)، آیکون و فونت نوار پایین موبایل
+  // کمی کوچیک‌تر می‌شود تا فضا خلوت‌تر دیده شود؛ حالت ۵ تبی دست‌نخورده می‌ماند.
+  const isDenseMobileNav = navItems.length >= 6;
+  const mobileIconSize = isDenseMobileNav ? 'w-[19px] h-[19px]' : 'w-[22px] h-[22px]';
+  const mobileLabelSize = isDenseMobileNav ? 'text-[9px]' : 'text-[10px]';
+  const mobileItemGap = isDenseMobileNav ? 'gap-1' : 'gap-1.5';
+
   return (
     <div className="flex h-screen bg-white text-zinc-900 dir-rtl font-sans selection:bg-zinc-200">
       <aside className="hidden md:flex flex-col w-64 bg-white border-l border-zinc-100 shadow-[0_0_40px_rgba(0,0,0,0.02)] z-20">
@@ -142,13 +150,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 <Link
                   key={item.key}
                   href={item.href}
-                  className="flex flex-1 flex-col items-center justify-center h-full gap-1.5 transition-transform active:scale-95"
+                  className={`flex flex-1 flex-col items-center justify-center h-full ${mobileItemGap} transition-transform active:scale-95`}
                 >
                   <item.icon
-                    className={`w-[22px] h-[22px] transition-colors duration-300 ${isActive ? 'text-[#824c71]' : 'text-zinc-400'}`}
+                    className={`${mobileIconSize} transition-colors duration-300 ${isActive ? 'text-[#824c71]' : 'text-zinc-400'}`}
                     isActive={isActive}
                   />
-                  <span className={`text-[10px] tracking-tight transition-colors duration-300 ${isActive ? 'text-[#824c71] font-bold' : 'text-zinc-500 font-medium'}`}>
+                  <span className={`${mobileLabelSize} tracking-tight transition-colors duration-300 ${isActive ? 'text-[#824c71] font-bold' : 'text-zinc-500 font-medium'}`}>
                     {item.name}
                   </span>
                 </Link>
