@@ -679,7 +679,7 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
                 <button
                   onClick={handleSubmit}
                   disabled={isSubmitting}
-                  className="w-full bg-stone-900 hover:bg-stone-800 text-white rounded-2xl py-4 text-sm font-semibold flex items-center justify-center gap-2 disabled:opacity-60 transition-colors"
+                  className="w-full bg-[#824c71] hover:bg-[#6d3f5e] text-white rounded-2xl py-4 text-sm font-semibold flex items-center justify-center gap-2 disabled:opacity-60 transition-colors"
                 >
                   {isSubmitting
                     ? <><Loader2 className="w-4 h-4 animate-spin" /> در حال ثبت...</>
@@ -691,7 +691,7 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
           </div>
         )}
 
-        {/* ناوبری قبل/ادامه — پایین صفحه */}
+        {/* ناوبری قبل/ادامه — پایین صفحه، بدون بک‌گراند، فقط نوشته با رنگ مشکی */}
         {step !== 'confirm' && (
           <div
             className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md px-5 py-3.5 flex items-center justify-between"
@@ -700,10 +700,10 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
             <button
               onClick={goBack}
               disabled={currentIdx === 0}
-              className={`flex items-center gap-1.5 text-sm font-medium transition-colors px-3 py-2 rounded-xl ${
+              className={`flex items-center gap-1.5 text-sm font-medium transition-colors px-3 py-2 ${
                 currentIdx === 0
-                  ? 'text-stone-200 pointer-events-none'
-                  : 'text-stone-600 hover:text-stone-900 bg-stone-100 hover:bg-stone-200'
+                  ? 'text-stone-300 pointer-events-none'
+                  : 'text-black hover:opacity-70'
               }`}
             >
               <ArrowRight className="w-4 h-4" />
@@ -714,10 +714,10 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
               <button
                 onClick={addToCart}
                 disabled={!selectedSlot}
-                className={`flex items-center gap-1.5 text-sm font-bold px-5 py-2.5 rounded-xl transition-all ${
+                className={`flex items-center gap-1.5 text-sm font-bold px-3 py-2 transition-colors ${
                   selectedSlot
-                    ? 'bg-stone-900 hover:bg-stone-800 text-white'
-                    : 'bg-stone-100 text-stone-300 pointer-events-none'
+                    ? 'text-black hover:opacity-70'
+                    : 'text-stone-300 pointer-events-none'
                 }`}
               >
                 ادامه
@@ -727,10 +727,10 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
               <button
                 onClick={goNext}
                 disabled={!canGoNext}
-                className={`flex items-center gap-1.5 text-sm font-bold px-5 py-2.5 rounded-xl transition-all ${
+                className={`flex items-center gap-1.5 text-sm font-bold px-3 py-2 transition-colors ${
                   canGoNext
-                    ? 'bg-stone-900 hover:bg-stone-800 text-white'
-                    : 'bg-stone-100 text-stone-300 pointer-events-none'
+                    ? 'text-black hover:opacity-70'
+                    : 'text-stone-300 pointer-events-none'
                 }`}
               >
                 ادامه
