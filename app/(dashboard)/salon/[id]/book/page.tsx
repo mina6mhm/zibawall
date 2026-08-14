@@ -124,11 +124,11 @@ function Breadcrumb({ step, currentIdx }: { step: Step; currentIdx: number }) {
             i === currentIdx
               ? 'bg-[#824c71]/8 text-[#824c71] font-bold'
               : i < currentIdx
-              ? 'text-emerald-600/70'
+              ? 'text-zinc-400'
               : 'text-zinc-300'
           }`}>
             {i < currentIdx
-              ? <Check className="w-3 h-3 text-emerald-500 shrink-0" />
+              ? <Check className="w-3 h-3 text-[#824c71]/60 shrink-0" />
               : <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] shrink-0 ${
                   i === currentIdx ? 'bg-[#824c71] text-white' : 'bg-zinc-100 text-zinc-400'
                 }`}>{toPersian(String(i + 1))}</span>
@@ -136,7 +136,7 @@ function Breadcrumb({ step, currentIdx }: { step: Step; currentIdx: number }) {
             {STEP_SHORT[s]}
           </div>
           {i < stepOrder.length - 1 && (
-            <div className={`w-4 h-px ${i < currentIdx ? 'bg-emerald-200' : 'bg-zinc-100'}`} />
+            <div className={`w-4 h-px ${i < currentIdx ? 'bg-[#824c71]/20' : 'bg-zinc-100'}`} />
           )}
         </div>
       ))}
@@ -389,12 +389,12 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
                   </button>
                 </div>
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="flex items-center gap-1 bg-white rounded-lg px-2.5 py-1.5 border border-[#824c71]/15 text-[11px] text-zinc-600">
-                    <CalendarClock className="w-3.5 h-3.5 text-[#824c71]" />
+                  <span className="flex items-center gap-1 bg-white rounded-lg px-2.5 py-1.5 border border-zinc-100 text-[11px] text-zinc-500">
+                    <CalendarClock className="w-3.5 h-3.5 text-[#824c71]/60" />
                     {formatPersianDate(item.date)} — {toPersian(item.startTime)}
                   </span>
-                  <span className="flex items-center gap-1 bg-white rounded-lg px-2.5 py-1.5 border border-amber-200/60 text-[11px] text-zinc-600">
-                    <User className="w-3.5 h-3.5 text-amber-500" />
+                  <span className="flex items-center gap-1 bg-white rounded-lg px-2.5 py-1.5 border border-zinc-100 text-[11px] text-zinc-500">
+                    <User className="w-3.5 h-3.5 text-zinc-300" />
                     {item.staffName}
                   </span>
                 </div>
@@ -453,7 +453,7 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
 
                   <div className="flex items-center gap-2.5 shrink-0">
                     {svc.price > 0 && (
-                      <span className="text-sm font-bold text-emerald-600">
+                      <span className="text-sm font-bold text-[#824c71]">
                         {toPersian(formatPrice(svc.price))} تومان
                       </span>
                     )}
@@ -469,7 +469,7 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
           </div>
         )}
 
-        {/* ─── مرحله ۲: پرسنل — پالت کهربایی برای هویت پرسنل ─── */}
+        {/* ─── مرحله ۲: پرسنل — همون سبک کارت ─── */}
         {step === 'staff' && selectedService && (
           <div>
             {isLoadingStaff ? (
@@ -482,13 +482,13 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
                   className={`w-full flex items-center gap-3.5 p-3.5 rounded-2xl border text-right transition-all ${
                     selectedStaffId === null
                       ? 'border-2 border-[#824c71] bg-[#824c71]/[0.06]'
-                      : 'border border-zinc-100 bg-amber-50/40 hover:bg-amber-50/70'
+                      : 'border border-zinc-100 bg-[#824c71]/[0.025] hover:bg-[#824c71]/[0.05]'
                   }`}
                 >
                   <span className={`w-11 h-11 rounded-full flex items-center justify-center shrink-0 ${
-                    selectedStaffId === null ? 'bg-[#824c71]/15' : 'bg-amber-100/70'
+                    selectedStaffId === null ? 'bg-[#824c71]/15' : 'bg-[#824c71]/[0.08]'
                   }`}>
-                    <User className={`w-5 h-5 ${selectedStaffId === null ? 'text-[#824c71]' : 'text-amber-600'}`} strokeWidth={1.75} />
+                    <User className={`w-5 h-5 ${selectedStaffId === null ? 'text-[#824c71]' : 'text-[#824c71]/75'}`} strokeWidth={1.75} />
                   </span>
                   <div className="flex-1">
                     <p className={`text-sm font-semibold ${selectedStaffId === null ? 'text-[#824c71]' : 'text-zinc-900'}`}>تفاوتی ندارد</p>
@@ -510,11 +510,11 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
                       className={`w-full flex items-center gap-3.5 p-3.5 rounded-2xl border text-right transition-all ${
                         isSelected
                           ? 'border-2 border-[#824c71] bg-[#824c71]/[0.06]'
-                          : 'border border-zinc-100 bg-amber-50/40 hover:bg-amber-50/70'
+                          : 'border border-zinc-100 bg-[#824c71]/[0.025] hover:bg-[#824c71]/[0.05]'
                       }`}
                     >
                       <span className={`w-11 h-11 rounded-full flex items-center justify-center text-sm font-bold shrink-0 ${
-                        isSelected ? 'bg-[#824c71]/15 text-[#824c71]' : 'bg-amber-100/70 text-amber-700'
+                        isSelected ? 'bg-[#824c71]/15 text-[#824c71]' : 'bg-[#824c71]/[0.08] text-[#824c71]/75'
                       }`}>
                         {s.name.slice(0, 1)}
                       </span>
@@ -570,7 +570,7 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
                           className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-medium border transition-all ${
                             selectedStaffId === null
                               ? 'border-[#824c71] bg-[#824c71] text-white'
-                              : 'border-amber-200 text-amber-700 bg-amber-50/50 hover:border-amber-300'
+                              : 'border-zinc-200 text-zinc-500 hover:border-zinc-300'
                           }`}
                         >
                           همه
@@ -582,7 +582,7 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
                             className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-medium border transition-all ${
                               selectedStaffId === s.id
                                 ? 'border-[#824c71] bg-[#824c71] text-white'
-                                : 'border-amber-200 text-amber-700 bg-amber-50/50 hover:border-amber-300'
+                                : 'border-zinc-200 text-zinc-500 hover:border-zinc-300'
                             }`}
                           >
                             {s.name}
@@ -649,19 +649,14 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
                         </button>
                       </div>
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="flex items-center gap-1 text-[11px] text-zinc-600 bg-white rounded-lg px-2.5 py-1.5 border border-[#824c71]/15">
-                          <CalendarClock className="w-3.5 h-3.5 text-[#824c71]" />
+                        <span className="flex items-center gap-1 text-[11px] text-zinc-500 bg-white rounded-lg px-2.5 py-1.5 border border-zinc-100">
+                          <CalendarClock className="w-3.5 h-3.5 text-[#824c71]/60" />
                           {formatPersianDate(item.date)} — {toPersian(item.startTime)}
                         </span>
-                        <span className="flex items-center gap-1 text-[11px] text-zinc-600 bg-white rounded-lg px-2.5 py-1.5 border border-amber-200/60">
-                          <User className="w-3.5 h-3.5 text-amber-500" />
+                        <span className="flex items-center gap-1 text-[11px] text-zinc-500 bg-white rounded-lg px-2.5 py-1.5 border border-zinc-100">
+                          <User className="w-3.5 h-3.5 text-zinc-300" />
                           {item.staffName}
                         </span>
-                        {item.price > 0 && (
-                          <span className="flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 rounded-lg px-2.5 py-1.5 border border-emerald-100">
-                            {toPersian(formatPrice(item.price))} تومان
-                          </span>
-                        )}
                       </div>
                     </div>
                   ))}
