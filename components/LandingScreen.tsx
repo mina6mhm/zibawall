@@ -4,11 +4,11 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import Image from 'next/image';
 import { Vazirmatn } from 'next/font/google';
 import {
   Globe, Download, Store, Wallet, BellRing, Star, Menu, X,
   ChevronDown, ShieldCheck, TrendingUp, Users, Clock, Smartphone, Heart,
+  CalendarCheck, CalendarClock,
 } from 'lucide-react';
 import IosInstallPrompt from '@/components/IosInstallPrompt';
 import DownloadAppModal from '@/components/DownloadAppModal';
@@ -18,32 +18,32 @@ const vazir = Vazirmatn({ subsets: ['arabic'], weight: '800', display: 'swap' })
 
 const FEATURES = [
   {
+    icon: CalendarCheck,
+    title: 'رزرو نوبت آنلاین',
+    desc: 'بدون تماس تلفنی و معطلی، ساعت خالی سالن رو ببین و همون لحظه نوبتت رو آنلاین رزرو کن.',
+    tone: { bg: 'bg-[#824c71]/8', text: 'text-[#824c71]' },
+  },
+  {
     icon: Store,
     title: 'دایرکتوری سالن‌های زیبایی',
     desc: 'سالن‌های نزدیک خودت رو با یک جستجوی ساده پیدا کن، خدمات و قیمت‌ها رو ببین و مستقیم نوبت بگیر.',
-    tone: { bg: 'bg-[#824c71]/8', text: 'text-[#824c71]' },
+    tone: { bg: 'bg-[#C98B6E]/12', text: 'text-[#C98B6E]' },
   },
   {
     icon: Wallet,
     title: 'حسابداری ساده‌ی سالن',
     desc: 'درآمد هر روز، سهم هر پرسنل و سود خالص سالن رو بدون دفتر و ماشین‌حساب، خودکار محاسبه کن.',
-    tone: { bg: 'bg-[#C98B6E]/12', text: 'text-[#C98B6E]' },
-  },
-  {
-    icon: BellRing,
-    title: 'یادآوری نوبت مشتری‌ها',
-    desc: '۲۴ ساعت قبل از هر نوبت، پیامک یادآوری خودکار برای مشتری ارسال می‌شه؛ دیگه کسی نوبتش یادش نمی‌ره.',
     tone: { bg: 'bg-[#4A2A3D]/8', text: 'text-[#4A2A3D]' },
   },
 ];
 
-// مزایای زیباوال برای صاحبان سالن — تمرکز روی مدیریت، حسابداری خودکار و امنیت دریافت بیعانه
+// مزایای زیباوال برای صاحبان سالن — تمرکز روی مدیریت نوبت آنلاین، حسابداری خودکار و امنیت دریافت بیعانه
 const BUSINESS_BENEFITS = [
   {
     number: '۰۱',
-    icon: TrendingUp,
-    title: 'حسابداری خودکار سالن',
-    desc: 'درآمد روزانه، سهم دقیق هر پرسنل و سود خالص سالن رو بدون دفتر و ماشین‌حساب، لحظه‌به‌لحظه ببین.',
+    icon: CalendarClock,
+    title: 'مدیریت نوبت‌های آنلاین',
+    desc: 'مشتری‌ها مستقیم از اپ نوبت می‌گیرن، تو هم همه‌ی نوبت‌های امروز و آینده‌ی سالنت رو یک‌جا و منظم می‌بینی.',
   },
   {
     number: '۰۲',
@@ -53,23 +53,23 @@ const BUSINESS_BENEFITS = [
   },
   {
     number: '۰۳',
-    icon: BellRing,
-    title: 'یادآوری خودکار مشتری',
-    desc: 'یادآوری پیامکی خودکار، فقط بعد از قطعی‌شدن نوبت ارسال می‌شه و مشتری رو پایبندتر به قرارش می‌کنه.',
+    icon: TrendingUp,
+    title: 'حسابداری خودکار سالن',
+    desc: 'درآمد روزانه، سهم دقیق هر پرسنل و سود خالص سالن رو بدون دفتر و ماشین‌حساب، لحظه‌به‌لحظه ببین.',
   },
 ];
 
 // بخش «چرا زیباوال؟» — اعتمادسازی و برجسته‌کردن نقاط قوت کلی پلتفرم
 const WHY_US = [
   {
+    icon: CalendarCheck,
+    title: 'رزرو در چند ثانیه',
+    desc: 'ساعت‌های خالی سالن رو می‌بینی و بدون تماس تلفنی، همون لحظه نوبتت رو نهایی می‌کنی.',
+  },
+  {
     icon: Users,
     title: 'مناسب هر دو طرف',
     desc: 'هم برای مشتری‌هایی که دنبال سالن مناسب می‌گردن، هم برای صاحب‌های سالن که به دنبال ابزار مدیریتی‌ان.',
-  },
-  {
-    icon: Clock,
-    title: 'صرفه‌جویی در وقت',
-    desc: 'رزرو آنلاین و یادآوری خودکار، هم وقت مشتری رو نگه می‌داره هم از پیگیری‌های تلفنی سالن‌دار می‌کاهه.',
   },
   {
     icon: ShieldCheck,
@@ -85,8 +85,12 @@ const WHY_US = [
 
 const FAQS = [
   {
+    q: 'چطور نوبتم رو آنلاین رزرو کنم؟',
+    a: 'وارد صفحه‌ی سالن مورد نظرت می‌شی، خدمت، پرسنل (اختیاری)، تاریخ و ساعت خالی رو انتخاب می‌کنی و در همون لحظه نوبتت ثبت می‌شه — بدون نیاز به تماس تلفنی.',
+  },
+  {
     q: 'زیباوال چطور کار می‌کنه؟',
-    a: 'سالن مورد نظرت رو جستجو می‌کنی، خدمات و قیمت‌ها رو می‌بینی و مستقیم از داخل اپ نوبت می‌گیری.',
+    a: 'سالن مورد نظرت رو جستجو می‌کنی، خدمات و قیمت‌ها رو می‌بینی و مستقیم از داخل اپ نوبت آنلاین می‌گیری.',
   },
   {
     q: 'برای رزرو نوبت باید پول واریز کنم؟',
@@ -94,7 +98,7 @@ const FAQS = [
   },
   {
     q: 'اگه صاحب سالن باشم چیکار می‌تونم بکنم؟',
-    a: 'می‌تونی سالنت رو ثبت کنی، نوبت‌های مشتری‌ها رو مدیریت کنی، بیعانه رو به‌صورت امن دریافت کنی و حسابداری روزانه‌ی سالن — درآمد، سهم پرسنل و سود خالص — رو خودکار ببینی.',
+    a: 'می‌تونی سالنت رو ثبت کنی، نوبت‌دهی آنلاین رو برای مشتری‌ها فعال کنی، نوبت‌ها رو مدیریت کنی، بیعانه رو به‌صورت امن دریافت کنی و حسابداری روزانه‌ی سالن — درآمد، سهم پرسنل و سود خالص — رو خودکار ببینی.',
   },
   {
     q: 'یادآوری نوبت چطور ارسال می‌شه؟',
@@ -193,7 +197,7 @@ export default function LandingScreen() {
           </div>
 
           {/* گروه چپ: لوگو */}
-<img src="/logo.png" alt="زیباوال" className="h-12 md:h-12 w-auto" />
+          <img src="/logo.png" alt="زیباوال" className="h-12 md:h-12 w-auto" />
         </div>
       </header>
 
@@ -208,8 +212,8 @@ export default function LandingScreen() {
             </h1>
 
             <p className="text-[13.5px] md:text-[15px] text-zinc-500 leading-relaxed mb-8 px-2 md:px-0 max-w-md mx-auto md:mx-0">
-              زیباوال دایرکتوری سالن‌های زیبایی، رزرو نوبت آنلاین و حسابداری ساده رو
-              برای مشتری‌ها و صاحب‌های سالن، توی یک اپلیکیشن جمع کرده.
+              با زیباوال نوبتت رو در چند ثانیه، بدون تماس تلفنی، به‌صورت آنلاین رزرو کن؛
+              صاحب‌های سالن هم نوبت‌دهی، بیعانه و حسابداری روزانه‌شون رو در یک اپلیکیشن مدیریت می‌کنن.
             </p>
 
             {/* دکمه‌ها: در یک ردیف، دکمه‌ی اصلی پرتر و پهن‌تر — منطق ورود دست‌نخورده */}
@@ -234,7 +238,7 @@ export default function LandingScreen() {
           </div>
 
           {/* المان تصویری سیگنیچر: کارت پیش‌نمایش نوبت + برچسب‌های شناور امکانات */}
-          <section className="relative w-full h-[300px] md:h-[420px] max-w-sm md:max-w-md mx-auto mt-14 md:mt-0 motion-safe:animate-in motion-safe:fade-in motion-safe:duration-1000 motion-safe:delay-150">
+          <section className="relative w-full h-[320px] md:h-[440px] max-w-sm md:max-w-md mx-auto mt-14 md:mt-0 motion-safe:animate-in motion-safe:fade-in motion-safe:duration-1000 motion-safe:delay-150">
             <div className="absolute inset-x-6 md:inset-x-10 top-1/2 -translate-y-1/2 h-[220px] md:h-[280px] rounded-full bg-gradient-to-br from-[#824c71]/25 via-[#C98B6E]/15 to-transparent blur-3xl" />
 
             {/* کارت مرکزی: پیش‌نمایش نوبت‌های امروز */}
@@ -258,20 +262,20 @@ export default function LandingScreen() {
               </div>
             </div>
 
-            {/* برچسب شناور: دایرکتوری */}
+            {/* برچسب شناور: رزرو آنلاین */}
             <div className="absolute top-0 right-0 md:right-2 z-20 flex items-center gap-1.5 bg-white rounded-xl border border-zinc-100 shadow-md px-3 py-2 motion-safe:animate-[float_5s_ease-in-out_infinite]">
               <span className="w-6 h-6 rounded-lg bg-[#824c71]/10 text-[#824c71] flex items-center justify-center shrink-0">
+                <CalendarCheck className="w-3.5 h-3.5" />
+              </span>
+              <span className="text-[10.5px] font-bold text-zinc-700 whitespace-nowrap">رزرو نوبت آنلاین</span>
+            </div>
+
+            {/* برچسب شناور: دایرکتوری */}
+            <div className="absolute top-16 md:top-20 left-0 z-20 flex items-center gap-1.5 bg-white rounded-xl border border-zinc-100 shadow-md px-3 py-2 motion-safe:animate-[float_6s_ease-in-out_infinite] motion-safe:[animation-delay:0.8s]">
+              <span className="w-6 h-6 rounded-lg bg-[#C98B6E]/15 text-[#C98B6E] flex items-center justify-center shrink-0">
                 <Store className="w-3.5 h-3.5" />
               </span>
               <span className="text-[10.5px] font-bold text-zinc-700 whitespace-nowrap">دایرکتوری سالن‌ها</span>
-            </div>
-
-            {/* برچسب شناور: حسابداری */}
-            <div className="absolute top-16 md:top-20 left-0 z-20 flex items-center gap-1.5 bg-white rounded-xl border border-zinc-100 shadow-md px-3 py-2 motion-safe:animate-[float_6s_ease-in-out_infinite] motion-safe:[animation-delay:0.8s]">
-              <span className="w-6 h-6 rounded-lg bg-[#C98B6E]/15 text-[#C98B6E] flex items-center justify-center shrink-0">
-                <Wallet className="w-3.5 h-3.5" />
-              </span>
-              <span className="text-[10.5px] font-bold text-zinc-700 whitespace-nowrap">حسابداری ساده</span>
             </div>
 
             {/* برچسب شناور: یادآوری */}
@@ -325,10 +329,10 @@ export default function LandingScreen() {
           </span>
 
           <h2 className={`${vazir.className} text-[22px] md:text-[32px] leading-[1.4] text-zinc-900 mb-3 max-w-lg`}>
-            سالنت رو بسپار به یک دستیار مدیریتی
+            نوبت‌دهی آنلاین سالنت رو بسپار به یک دستیار مدیریتی
           </h2>
           <p className="text-[13px] md:text-[14.5px] text-zinc-500 leading-relaxed max-w-xl mb-10 md:mb-14">
-            زیباوال فقط یه دفترچه نوبت نیست؛ نوبت‌ها، بیعانه و حسابداری روزانه‌ی سالنت رو
+            زیباوال فقط یه دفترچه نوبت نیست؛ نوبت‌دهی آنلاین، بیعانه و حسابداری روزانه‌ی سالنت رو
             روی یک پلتفرم امن و کاملاً رایگان مدیریت می‌کنه.
           </p>
 
@@ -432,10 +436,11 @@ export default function LandingScreen() {
             </span>
             <p className="text-[13px] md:text-[14.5px] text-zinc-500 leading-relaxed">
               زیباوال با هدف ساده‌تر کردن ارتباط بین مشتری‌ها و سالن‌های زیبایی ساخته شده.
-              از یک طرف، مشتری‌ها می‌تونن بدون تماس‌های مکرر، سالن مناسب رو پیدا کنن و نوبت
-              بگیرن؛ از طرف دیگه، صاحب‌های سالن یک ابزار مدیریتی رایگان دارن که نوبت‌دهی،
-              دریافت امن بیعانه و حسابداری روزانه‌ی سالن رو براشون ساده می‌کنه. هدف ما اینه
-              که این تجربه برای هر دو طرف سریع‌تر، شفاف‌تر و مطمئن‌تر باشه.
+              از یک طرف، مشتری‌ها می‌تونن بدون تماس‌های مکرر، سالن مناسب رو پیدا کنن و
+              نوبتشون رو مستقیم و آنلاین رزرو کنن؛ از طرف دیگه، صاحب‌های سالن یک ابزار
+              مدیریتی رایگان دارن که نوبت‌دهی آنلاین، دریافت امن بیعانه و حسابداری روزانه‌ی
+              سالن رو براشون ساده می‌کنه. هدف ما اینه که این تجربه برای هر دو طرف سریع‌تر،
+              شفاف‌تر و مطمئن‌تر باشه.
             </p>
           </div>
         </section>

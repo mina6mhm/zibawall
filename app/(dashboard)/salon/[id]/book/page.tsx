@@ -49,7 +49,7 @@ const stepOrder: Step[] = ['service', 'staff', 'schedule', 'confirm'];
 
 const STEP_TITLES: Record<Step, { title: string; sub: string }> = {
   service:  { title: 'چه خدماتی می‌خواهید؟', sub: 'یک مورد انتخاب کنید' },
-  staff:    { title: 'توسط چه کسی؟', sub: 'اختیاری، می‌توانید تفاوتی ندارد را انتخاب کنید.' },
+  staff:    { title: 'توسط چه کسی؟', sub: 'اختیاری، می‌توانید تفاوتی ندارد را انتخاب کنید' },
   schedule: { title: 'چه زمانی؟', sub: 'تاریخ و ساعت را انتخاب کنید' },
   confirm:  { title: 'تأیید نهایی', sub: 'نوبت‌های انتخابی را بررسی کنید' },
 };
