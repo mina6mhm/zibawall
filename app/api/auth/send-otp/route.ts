@@ -91,6 +91,7 @@ export async function POST(req: Request) {
       );
     }
 
+    // بعد:
     const requestBody = {
       code: 'J88zq2Mhlt', // کد پترن تایید شده
       recipient: mobile,
@@ -100,7 +101,7 @@ export async function POST(req: Request) {
       },
 
       line_number: lineNumber,
-      number_format: 'persian'
+      number_format: 'english'
     };
 
     console.log(
