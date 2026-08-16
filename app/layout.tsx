@@ -2,7 +2,6 @@
 import localFont from 'next/font/local';
 import './globals.css';
 import { Metadata, Viewport } from 'next';
-import SplashScreen from '@/components/SplashScreen';
 
 const shabnam = localFont({
   src: [
@@ -43,9 +42,7 @@ export default function RootLayout({
   return (
     <html lang="fa" dir="rtl">
       <body className={`${shabnam.className} bg-white text-black antialiased`}>
-        <SplashScreen>
-          {children}
-        </SplashScreen>
+        {children}
       </body>
     </html>
   );
