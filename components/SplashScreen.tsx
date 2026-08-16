@@ -25,6 +25,19 @@ export default function SplashScreen({ children }: { children: React.ReactNode }
     };
   }, []);
 
+  // نوار وضعیت بالای گوشی (status bar) رنگش رو از تگ theme-color می‌گیره، نه از
+  // پس‌زمینه‌ی داخل صفحه — پس تا وقتی اسپلش نمایشه این تگ رو موقتاً بنفش می‌کنیم
+  // و بعد از پایان اسپلش به رنگ عادی اپ (سفید) برش می‌گردونیم
+  useEffect(() => {
+    let meta = document.querySelector('meta[name="theme-color"]') as HTMLMetaElement | null;
+    if (!meta) {
+      meta = document.createElement('meta');
+      meta.setAttribute('name', 'theme-color');
+      document.head.appendChild(meta);
+    }
+    meta.setAttribute('content', isVisible ? '#824c71' : '#ffffff');
+  }, [isVisible]);
+
   // تشخیص روشن بودن فیلترشکن: IP کاربر رو می‌گیریم — اگه کشور خارج از ایران بود
   // یعنی احتمالاً از طریق VPN وصل شده، پس بنر هشدار رو نشون می‌دیم
   useEffect(() => {
