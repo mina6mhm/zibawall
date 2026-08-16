@@ -122,7 +122,7 @@ export async function GET(req: Request) {
   let defaultDaySchedule: { open: boolean; start: string; end: string } | undefined;
 
   if (salonScheduleRow?.weeklySchedule && Object.keys(salonScheduleRow.weeklySchedule as any).length > 0) {
-    const weeklySchedule = salonScheduleRow.weeklySchedule as Record
+    const weeklySchedule = salonScheduleRow.weeklySchedule as Record <
       string,
       { open: boolean; start: string; end: string }
     >;
