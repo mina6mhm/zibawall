@@ -66,6 +66,8 @@ model Salon {
   rating                Float       @default(0)
   reviewsCount          Int         @default(0)
 
+  scheduleOverrides     SalonScheduleOverride[]
+
   tags                  Json        @default("[]")
   imageUrl              String
   description           String
@@ -398,5 +400,25 @@ model StaffScheduleOverride {
 
   @@unique([staffId, date])
   @@index([staffId])
+  @@index([date])
+}
+
+// override دستی برای یک تاریخ خاص از خود سالن
+model SalonScheduleOverride {
+  id        String   @id @default(uuid())
+  salonId   String
+  salon     Salon    @relation(fields: [salonId], references: [id], onDelete: Cascade)
+
+  date      String   // "2025-08-15" — تاریخ میلادی
+
+  isClosed  Boolean  @default(true)  // تعطیلی کامل سالن در این روز
+  start     String?  // اگر تعطیل نیست ولی ساعت کاری آن روز فرق دارد
+  end       String?
+  note      String?  // مثلاً: تعطیلی رسمی، تعمیرات، ...
+
+  createdAt DateTime @default(now())
+
+  @@unique([salonId, date])
+  @@index([salonId])
   @@index([date])
 }

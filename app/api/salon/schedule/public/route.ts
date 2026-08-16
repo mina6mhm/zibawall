@@ -80,7 +80,13 @@ export async function GET(req: Request) {
 
     const closedDays = WEEK_DAYS.filter((d) => weeklySchedule[d]?.open === false);
 
-    return NextResponse.json({ closedDays });
+const overrides = await prisma.salonScheduleOverride.findMany({
+  where: { salonId, isClosed: true },
+  select: { date: true },
+});
+const closedDates = overrides.map((o) => o.date);
+
+return NextResponse.json({ closedDays, closedDates });
   } catch (error) {
     console.error('Error fetching public salon schedule:', error);
     return NextResponse.json({ error: 'خطای سرور' }, { status: 500 });

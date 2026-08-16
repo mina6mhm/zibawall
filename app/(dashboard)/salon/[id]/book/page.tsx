@@ -86,6 +86,16 @@ function buildClosedDayMarkers(closedDays: string[]): Record<string, CalendarDay
   return markers;
 }
 
+// روزهای تعطیل اختصاصی (override سالن) — تاریخ‌های دقیق میلادی
+function buildClosedDateMarkers(closedDates: string[]): Record<string, CalendarDayMarker> {
+  if (!closedDates.length) return {};
+  const markers: Record<string, CalendarDayMarker> = {};
+  closedDates.forEach((d) => {
+    markers[d] = { className: 'bg-red-50 text-red-400 pointer-events-none' };
+  });
+  return markers;
+}
+
 // ─── تشخیص آیکون خدمت بر اساس کلمات کلیدی در اسم آن ────────────────────────
 // همون منطقی که دسته‌بندی‌های صفحه‌ی اصلی دارن، اینجا روی تک‌تک خدمات اعمال می‌شه
 
@@ -156,6 +166,7 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
   const [services, setServices] = useState<BookingService[]>([]);
   const [isLoadingSalon, setIsLoadingSalon] = useState(true);
   const [closedWeekDays, setClosedWeekDays] = useState<string[]>([]); // روزهایی که open:false هستن در weeklySchedule
+  const [closedDates, setClosedDates] = useState<string[]>([]); // تاریخ‌های خاص تعطیل (override سالن)
 
   const [step, setStep] = useState<Step>('service');
   const [selectedService, setSelectedService] = useState<BookingService | null>(null);
@@ -182,7 +193,7 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
       const [salonRes, svcRes, schedRes] = await Promise.all([
         fetch(`/api/salon/${salonId}`),
         fetch(`/api/booking-services/public?salonId=${salonId}`),
-        fetch(`/api/salon/schedule?salonId=${salonId}`),
+        fetch(`/api/salon/schedule/public?salonId=${salonId}`),
       ]);
       if (salonRes.ok) {
         const d = await salonRes.json();
@@ -196,12 +207,8 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
       }
       if (schedRes.ok) {
         const d = await schedRes.json();
-        if (d.weeklySchedule) {
-          const closed = Object.entries(d.weeklySchedule)
-            .filter(([, v]: [string, any]) => !v.open)
-            .map(([day]) => day);
-          setClosedWeekDays(closed);
-        }
+        setClosedWeekDays(d.closedDays ?? []);
+        setClosedDates(d.closedDates ?? []);
       }
       setIsLoadingSalon(false);
     })();
@@ -334,7 +341,10 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
 
   const appFee       = cart.length > 0 ? 20000 : 0;
   const totalPayable = appFee;
-  const closedMarkers = useMemo(() => buildClosedDayMarkers(closedWeekDays), [closedWeekDays]);
+  const closedMarkers = useMemo(() => ({
+    ...buildClosedDayMarkers(closedWeekDays),
+    ...buildClosedDateMarkers(closedDates),
+  }), [closedWeekDays, closedDates]);
 
   // ── Render ───────────────────────────────────────────────────────────────
   if (isLoadingSalon) return (

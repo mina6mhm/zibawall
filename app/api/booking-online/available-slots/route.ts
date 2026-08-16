@@ -122,7 +122,7 @@ export async function GET(req: Request) {
   let defaultDaySchedule: { open: boolean; start: string; end: string } | undefined;
 
   if (salonScheduleRow?.weeklySchedule && Object.keys(salonScheduleRow.weeklySchedule as any).length > 0) {
-    const weeklySchedule = salonScheduleRow.weeklySchedule as Record<
+    const weeklySchedule = salonScheduleRow.weeklySchedule as Record
       string,
       { open: boolean; start: string; end: string }
     >;
@@ -137,8 +137,22 @@ export async function GET(req: Request) {
     });
   }
 
+  // ── ۲.۵. چک تعطیلی/تغییر ساعت اختصاصی همین تاریخ (override خودِ سالن) ──
+  const salonOverride = await prisma.salonScheduleOverride.findUnique({
+    where: { salonId_date: { salonId, date: dateStr } },
+  });
+
+  if (salonOverride) {
+    if (salonOverride.isClosed) {
+      // این تاریخ خاص، سالن تعطیله (مستقل از برنامه‌ی هفتگی)
+      return NextResponse.json({ slots: [], staff: [] });
+    }
+    if (salonOverride.start) defaultDaySchedule = { ...defaultDaySchedule, start: salonOverride.start };
+    if (salonOverride.end)   defaultDaySchedule = { ...defaultDaySchedule, end: salonOverride.end };
+  }
+
   if (!defaultDaySchedule.open) {
-    // این روز سالن تعطیله
+    // این روز طبق برنامه‌ی هفتگی سالن تعطیله
     return NextResponse.json({ slots: [], staff: [] });
   }
 

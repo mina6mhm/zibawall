@@ -42,6 +42,16 @@ type StaffOverride = {
   note: string | null;
 };
 
+// override دستی برای یک تاریخ خاص از خود سالن
+type SalonOverride = {
+  id: string;
+  date: string; // "YYYY-MM-DD" میلادی
+  isClosed: boolean;
+  start: string | null;
+  end: string | null;
+  note: string | null;
+};
+
 type DaySchedule = { open: boolean; start: string; end: string };
 type WeeklySchedule = Record<string, DaySchedule>;
 
@@ -1125,6 +1135,256 @@ function StaffScheduleTab({
   );
 }
 
+// ═══════════════════════════════════════════════════════════════════════════
+// SalonScheduleOverrideSection (بخش تقویم ماهانه داخل تب «برنامه سالن»)
+// این بخش شبیه بخش ۲ از StaffScheduleTab است ولی برای خودِ سالن — بدون نیاز
+// به انتخاب پرسنل. اگر سالن‌دار روی یک روز خاص از ماه کلیک کند، می‌تواند فقط
+// همان روز را تعطیل کند یا ساعت کاری‌اش را تغییر دهد — مستقل از برنامه هفتگی.
+// منبع داده: جدول SalonScheduleOverride — API: POST/DELETE /api/salon-overrides
+// ═══════════════════════════════════════════════════════════════════════════
+
+function SalonScheduleOverrideSection() {
+  const [overrides, setOverrides] = useState<SalonOverride[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [selectedDateStr, setSelectedDateStr] = useState<string | null>(null);
+  const [editIsClosed, setEditIsClosed] = useState(true);
+  const [editStart, setEditStart] = useState('');
+  const [editEnd, setEditEnd] = useState('');
+  const [editNote, setEditNote] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  const fetchOverrides = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const res = await fetch('/api/salon-overrides');
+      if (res.ok) setOverrides((await res.json()).overrides ?? []);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { fetchOverrides(); }, [fetchOverrides]);
+
+  const overrideMap = useMemo(() => {
+    const map: Record<string, SalonOverride> = {};
+    overrides.forEach((o) => { map[o.date] = o; });
+    return map;
+  }, [overrides]);
+
+  const sortedOverrides = useMemo(
+    () => [...overrides].sort((a, b) => a.date.localeCompare(b.date)),
+    [overrides]
+  );
+
+  const calendarMarkers = useMemo(() => {
+    const map: Record<string, CalendarDayMarker> = {};
+    overrides.forEach((o) => {
+      map[o.date] = o.isClosed
+        ? { className: 'bg-red-50 text-red-500', dotClassName: 'bg-red-400' }
+        : { className: 'bg-[#824c71]/10 text-[#824c71]', dotClassName: 'bg-[#824c71]' };
+    });
+    return map;
+  }, [overrides]);
+
+  const openDay = (dateStr: string) => {
+    setSelectedDateStr(dateStr);
+    const existing = overrideMap[dateStr];
+    setEditIsClosed(existing?.isClosed ?? true);
+    setEditStart(existing?.start ?? '');
+    setEditEnd(existing?.end ?? '');
+    setEditNote(existing?.note ?? '');
+  };
+
+  const handleSave = async () => {
+    if (!selectedDateStr) return;
+    setSaving(true);
+    try {
+      await fetch('/api/salon-overrides', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          date: selectedDateStr,
+          isClosed: editIsClosed,
+          start: editIsClosed ? null : editStart || null,
+          end: editIsClosed ? null : editEnd || null,
+          note: editNote || null,
+        }),
+      });
+      await fetchOverrides();
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = async (dateStr: string) => {
+    if (!confirm('این مورد حذف شود؟')) return;
+    setDeleting(true);
+    try {
+      await fetch('/api/salon-overrides', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ date: dateStr }),
+      });
+      if (selectedDateStr === dateStr) setSelectedDateStr(null);
+      await fetchOverrides();
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const formatPersianDate = (dateStr: string) =>
+    new DateObject({ date: new Date(dateStr), calendar: persian, locale: persian_fa }).format('D MMMM YYYY');
+
+  return (
+    <div className="mt-6">
+      <div className="mb-3 px-1">
+        <div className="flex items-center gap-2 mb-1">
+          <CalendarOff className="w-4 h-4 text-zinc-400" />
+          <p className="text-sm font-bold text-zinc-800">تعطیلی یا تغییر ساعت یک روز خاص</p>
+          <span className="text-[10px] bg-[#824c71]/10 text-[#824c71] px-1.5 py-0.5 rounded-md font-medium">
+            موقت
+          </span>
+        </div>
+        <p className="text-[11px] text-zinc-400 leading-relaxed">
+          فقط همون تاریخی که از تقویم زیر انتخاب می‌کنید تغییر می‌کند؛ باقی روزها طبق برنامه‌ی هفتگی بالا می‌ماند.
+        </p>
+      </div>
+
+      <div className="relative mb-3">
+        {isLoading && (
+          <div className="absolute inset-0 bg-white/60 flex items-center justify-center rounded-2xl z-10">
+            <Loader2 className="w-5 h-5 text-[#824c71] animate-spin" />
+          </div>
+        )}
+        <PersianCalendar
+          selectedDate={selectedDateStr}
+          onSelectDate={(dateStr) => openDay(dateStr)}
+          markers={calendarMarkers}
+        />
+      </div>
+
+      <div className="flex items-center gap-4 mb-5 px-1 text-[11px] text-zinc-500">
+        <span className="flex items-center gap-1.5">
+          <span className="w-3 h-3 rounded-md bg-red-50 border border-red-200" />
+          تعطیل کامل
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="w-3 h-3 rounded-md bg-[#824c71]/10 border border-[#824c71]/25" />
+          ساعت اختصاصی
+        </span>
+      </div>
+
+      {selectedDateStr && (
+        <div className="border border-[#824c71]/20 bg-[#824c71]/[0.03] rounded-2xl p-4 mb-5">
+          <div className="flex items-center justify-between mb-4">
+            <p className="text-sm font-bold text-zinc-800">{formatPersianDate(selectedDateStr)}</p>
+            <button onClick={() => setSelectedDateStr(null)} className="p-1 text-zinc-400 bg-white rounded-full">
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+
+          <div className="flex items-center justify-between mb-3.5 bg-white border border-zinc-100 rounded-xl p-3">
+            <div>
+              <p className="text-sm font-medium text-zinc-800">تعطیل کامل</p>
+              <p className="text-[11px] text-zinc-400 mt-0.5">سالن این روز اصلاً نوبت‌دهی ندارد</p>
+            </div>
+            <button onClick={() => setEditIsClosed((p) => !p)}>
+              <div className={`relative w-11 h-6 rounded-full transition-colors duration-200 ${editIsClosed ? 'bg-[#824c71]' : 'bg-zinc-200'}`}>
+                <div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-all duration-200 ${editIsClosed ? 'right-0.5' : 'right-5'}`} />
+              </div>
+            </button>
+          </div>
+
+          {!editIsClosed && (
+            <div className="grid grid-cols-2 gap-3 mb-3.5">
+              <div>
+                <label className="block text-xs font-medium text-zinc-500 mb-1">شروع</label>
+                <input
+                  type="time"
+                  dir="ltr"
+                  value={editStart}
+                  onChange={(e) => setEditStart(e.target.value)}
+                  className="w-full border border-zinc-200 rounded-lg px-3 py-2 text-sm bg-white text-center focus:outline-none focus:border-[#824c71]"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-zinc-500 mb-1">پایان</label>
+                <input
+                  type="time"
+                  dir="ltr"
+                  value={editEnd}
+                  onChange={(e) => setEditEnd(e.target.value)}
+                  className="w-full border border-zinc-200 rounded-lg px-3 py-2 text-sm bg-white text-center focus:outline-none focus:border-[#824c71]"
+                />
+              </div>
+            </div>
+          )}
+
+          <div className="mb-4">
+            <label className="block text-xs font-medium text-zinc-500 mb-1">یادداشت (اختیاری)</label>
+            <input
+              value={editNote}
+              onChange={(e) => setEditNote(e.target.value)}
+              placeholder="مثلاً: تعطیلی رسمی"
+              className="w-full border border-zinc-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:border-[#824c71]"
+            />
+          </div>
+
+          <div className="flex gap-2">
+            <button
+              onClick={handleSave}
+              disabled={saving}
+              className="flex-1 bg-[#824c71] text-white rounded-xl py-2.5 text-xs font-bold disabled:opacity-60 flex items-center justify-center gap-1.5"
+            >
+              {saving && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+              ذخیره
+            </button>
+            {overrideMap[selectedDateStr] && (
+              <button
+                onClick={() => handleDelete(selectedDateStr)}
+                disabled={deleting}
+                className="px-4 rounded-xl bg-red-50 text-red-500 text-xs font-bold disabled:opacity-50"
+              >
+                {deleting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'حذف'}
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
+      <div>
+        <p className="text-xs font-bold text-zinc-500 mb-2 px-1">موارد موقت ثبت‌شده</p>
+        {sortedOverrides.length === 0 ? (
+          <div className="text-center py-8 bg-zinc-50 rounded-2xl">
+            <p className="text-zinc-400 text-xs">هنوز تعطیلی یا تغییر ساعتی برای یک تاریخ خاص ثبت نشده</p>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {sortedOverrides.map((o) => (
+              <div key={o.id} className="w-full flex items-center justify-between gap-2 bg-white border border-zinc-100 rounded-xl px-3.5 py-3">
+                <button onClick={() => openDay(o.date)} className="flex-1 flex items-center gap-2.5 text-right">
+                  <div className={`w-2 h-2 rounded-full shrink-0 ${o.isClosed ? 'bg-red-400' : 'bg-[#824c71]'}`} />
+                  <div>
+                    <p className="text-xs font-bold text-zinc-800">{formatPersianDate(o.date)}</p>
+                    <p className="text-[11px] text-zinc-400 mt-0.5">
+                      {o.isClosed ? 'تعطیل کامل' : `ساعت ${o.start ?? '—'} تا ${o.end ?? '—'}`}
+                      {o.note ? ` · ${o.note}` : ''}
+                    </p>
+                  </div>
+                </button>
+                <button onClick={() => handleDelete(o.date)} className="w-7 h-7 flex items-center justify-center rounded-lg bg-red-50 text-red-400 shrink-0">
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ─── Schedule Tab ─────────────────────────────────────────────────────────────
 
 function ScheduleTab({
@@ -1238,6 +1498,9 @@ function ScheduleTab({
         {saving && <Loader2 className="w-4 h-4 animate-spin" />}
         {saved ? '✓ ذخیره شد' : saving ? 'در حال ذخیره...' : 'ذخیره برنامه هفتگی'}
       </button>
+
+      {/* تقویم ماهانه — تعطیلی یا تغییر ساعت یک روز خاص، مستقل از برنامه‌ی هفتگی بالا */}
+      <SalonScheduleOverrideSection />
     </div>
   );
 }
