@@ -26,7 +26,6 @@ export async function GET(req: Request) {
         name: true,
         durationMin: true,
         price: true,
-        depositAmount: true,
       },
       orderBy: { createdAt: 'asc' },
     });
