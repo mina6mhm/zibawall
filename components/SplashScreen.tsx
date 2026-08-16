@@ -13,8 +13,8 @@ export default function SplashScreen({ children }: { children: React.ReactNode }
   const [isVisible, setIsVisible] = useState(true);
   // isFadingOut: مرحله‌ی شروع محو شدن (برای اجرای ترنزیشن opacity)
   const [isFadingOut, setIsFadingOut] = useState(false);
-  // بنر هشدار VPN، جدا از خودِ اسپلش قابل بسته شدنه
-  const [isBannerVisible, setIsBannerVisible] = useState(true);
+  // بنر هشدار VPN — پیش‌فرض مخفی؛ فقط وقتی فیلترشکن روشن تشخیص داده بشه ظاهر می‌شه
+  const [isBannerVisible, setIsBannerVisible] = useState(false);
 
   useEffect(() => {
     const fadeTimer = setTimeout(() => setIsFadingOut(true), SPLASH_DURATION);
@@ -25,23 +25,50 @@ export default function SplashScreen({ children }: { children: React.ReactNode }
     };
   }, []);
 
+  // تشخیص روشن بودن فیلترشکن: IP کاربر رو می‌گیریم — اگه کشور خارج از ایران بود
+  // یعنی احتمالاً از طریق VPN وصل شده، پس بنر هشدار رو نشون می‌دیم
+  useEffect(() => {
+    let cancelled = false;
+    fetch('https://ipapi.co/json/')
+      .then((res) => res.json())
+      .then((data) => {
+        if (!cancelled && data?.country_code && data.country_code !== 'IR') {
+          setIsBannerVisible(true);
+        }
+      })
+      .catch(() => {
+        // در صورت خطا (مثلاً عدم دسترسی به سرویس) بنر همون مخفی می‌مونه
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   return (
     <>
       {children}
 
       {isVisible && (
         <div
-          className="fixed inset-0 z-[9999] flex flex-col bg-white transition-opacity ease-out"
+          className="fixed inset-0 z-[9999] flex flex-col bg-[#824c71] transition-opacity ease-out"
           style={{
             opacity: isFadingOut ? 0 : 1,
             transitionDuration: `${FADE_DURATION}ms`,
           }}
           dir="rtl"
         >
-          {/* بنر هشدار VPN */}
+          {/* بنر هشدار VPN — فقط وقتی فیلترشکن روشن تشخیص داده بشه */}
           {isBannerVisible && (
             <div className="mx-4 mt-4 sm:mx-6 sm:mt-6">
               <div className="flex items-center justify-between gap-2 bg-amber-50 border border-amber-200 rounded-xl px-3.5 py-3">
+                <span className="w-5 h-5 rounded-full bg-amber-400 text-white flex items-center justify-center text-[11px] font-bold shrink-0">
+                  !
+                </span>
+
+                <p className="flex-1 text-center text-[13px] sm:text-sm font-medium text-amber-900 leading-relaxed">
+                  برای تجربه‌ی بهتر، فیلترشکن (VPN) خود را خاموش کنید
+                </p>
+
                 <button
                   onClick={() => setIsBannerVisible(false)}
                   className="w-6 h-6 flex items-center justify-center rounded-full text-zinc-400 hover:bg-black/5 transition-colors shrink-0"
@@ -51,38 +78,22 @@ export default function SplashScreen({ children }: { children: React.ReactNode }
                     <path d="M18 6 6 18" /><path d="m6 6 12 12" />
                   </svg>
                 </button>
-
-                <p className="flex-1 text-center text-[13px] sm:text-sm font-medium text-amber-900 leading-relaxed">
-                  برای تجربه‌ی بهتر، فیلترشکن (VPN) خود را خاموش کنید
-                </p>
-
-                <span className="w-5 h-5 rounded-full bg-amber-400 text-white flex items-center justify-center text-[11px] font-bold shrink-0">
-                  !
-                </span>
               </div>
             </div>
           )}
 
-          {/* لوگو و نام اپ، وسط صفحه */}
-          <div className="flex-1 flex flex-col items-center justify-center gap-4 px-6">
-            <div className="w-20 h-20 sm:w-24 sm:h-24 relative">
+          {/* لوگو، بزرگ و سفید، وسط صفحه */}
+          <div className="flex-1 flex flex-col items-center justify-center px-6">
+            <div className="w-36 h-36 sm:w-44 sm:h-44 relative">
               <Image
                 src="/logoo.png"
                 alt="زیباوال"
                 fill
-                sizes="96px"
-                className="object-contain"
+                sizes="176px"
+                className="object-contain brightness-0 invert"
                 priority
               />
             </div>
-            <h1 className="text-xl sm:text-2xl font-black tracking-tight text-zinc-900">زیباوال</h1>
-          </div>
-
-          {/* نشانگر بارگذاری — سه نقطه‌ی متحرک */}
-          <div className="flex items-center justify-center gap-1.5 pb-10 sm:pb-14">
-            <span className="w-2 h-2 rounded-full bg-[#824c71] animate-bounce" style={{ animationDelay: '0ms' }} />
-            <span className="w-2 h-2 rounded-full bg-[#824c71] animate-bounce" style={{ animationDelay: '150ms' }} />
-            <span className="w-2 h-2 rounded-full bg-[#824c71] animate-bounce" style={{ animationDelay: '300ms' }} />
           </div>
         </div>
       )}
