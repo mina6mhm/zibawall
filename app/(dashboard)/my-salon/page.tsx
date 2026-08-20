@@ -224,14 +224,28 @@ export default function MySalonPage() {
             </button>
           </div>
         </div>
-        <div className="flex flex-wrap gap-1.5">
+               <div className="space-y-2">
           {booking.services.map((s, idx) => (
-            <span key={idx} className="bg-white px-2 py-1 rounded-md text-[11px] text-zinc-600 border border-zinc-100">
-              {s.name}
-              {s.price ? ` · ${formatMoney(s.price)} تومان` : ''}
-              {s.staffName ? ` · ${s.staffName}` : ''}
-              {s.staffPercentage ? ` (${s.staffPercentage.toLocaleString('fa-IR')}٪)` : ''}
-            </span>
+            <div key={idx} className="bg-white rounded-lg border border-zinc-100 p-2.5">
+              <p className="text-[12.5px] font-bold text-zinc-800 mb-1.5">{s.name}</p>
+              <div className="flex flex-wrap gap-x-3 gap-y-1">
+                {s.price != null && (
+                  <div className="flex items-center gap-1 text-[11px] text-zinc-500">
+                    <span className="text-zinc-400">قیمت:</span>
+                    <span className="font-medium text-zinc-700">{formatMoney(s.price)} تومان</span>
+                  </div>
+                )}
+                {s.staffName && (
+                  <div className="flex items-center gap-1 text-[11px] text-zinc-500">
+                    <span className="text-zinc-400">پرسنل:</span>
+                    <span className="font-medium text-zinc-700">
+                      {s.staffName}
+                      {s.staffPercentage ? ` (${s.staffPercentage.toLocaleString('fa-IR')}٪)` : ''}
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
           ))}
         </div>
       </div>
