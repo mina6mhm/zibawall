@@ -7,7 +7,7 @@ import Link from 'next/link';
 import {
   Loader2, Clock, Phone, User as UserIcon,
   Scissors, Trash2, Store, Settings, Pencil, ChevronRight, ChevronLeft, CalendarDays,
-  Wallet, TrendingUp, Users, BarChart3, CalendarClock, CalendarX, ArrowLeft,
+  Wallet, TrendingUp, Users, BarChart3, CalendarClock, CalendarX, Plus,
 } from 'lucide-react';
 import { DateObject } from 'react-multi-date-picker';
 import persian from 'react-date-object/calendars/persian';
@@ -383,22 +383,25 @@ export default function MySalonPage() {
             </Link>
           </div>
         </div>
-      ) : (
-        <div className="mb-7">
-          <h1 className="text-xl md:text-2xl font-bold text-zinc-900">برنامه پرسنلی</h1>
-          <p className="text-zinc-500 text-xs md:text-sm mt-0.5">نوبت‌هایی که برای شما به‌عنوان پرسنل ثبت شده است</p>
+              ) : (
+        <div className="flex items-center justify-between gap-2 mb-7">
+          <div>
+            <h1 className="text-xl md:text-2xl font-bold text-zinc-900">برنامه پرسنلی</h1>
+            <p className="text-zinc-500 text-xs md:text-sm mt-0.5">نوبت‌هایی که برای شما به‌عنوان پرسنل ثبت شده است</p>
+          </div>
+          {hasSalon === false && (
+            <Link
+              href="/profile/business"
+              className="flex items-center gap-1.5 shrink-0 bg-[#824c71] text-white pr-3 pl-1.5 py-1.5 rounded-full text-[11px] font-bold hover:bg-[#6e3f60] transition-colors"
+              title="ثبت کسب‌وکار جدید"
+            >
+              ثبت کسب‌وکار جدید
+              <span className="w-6 h-6 flex items-center justify-center rounded-full bg-white/20">
+                <Plus className="w-3.5 h-3.5" />
+              </span>
+            </Link>
+          )}
         </div>
-      )}
-
-      {/* بنر تشویق به ثبت کسب‌وکار — فقط وقتی سالن ندارد ولی پرسنل جایی هست */}
-      {hasSalon === false && staffOptions.length > 0 && (
-        <Link
-          href="/profile/business"
-          className="flex items-center justify-between gap-3 bg-[#824c71]/5 border border-[#824c71]/20 rounded-xl px-4 py-3 mb-6 text-[#824c71]"
-        >
-          <span className="text-xs font-bold">می‌خواهید کسب‌وکار خودتان را هم ثبت کنید؟</span>
-          <ArrowLeft className="w-4 h-4 shrink-0" />
-        </Link>
       )}
 
       {/* سوییچ تب — فقط وقتی هم سالن‌دار و هم پرسنل است */}
