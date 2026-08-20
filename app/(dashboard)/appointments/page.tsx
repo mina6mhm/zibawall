@@ -128,12 +128,13 @@ function AppointmentsContent() {
           <p className="text-zinc-400 text-sm">هنوز نوبتی برای شما ثبت نشده است.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {appointments.map((appt) => {
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {appointments.flatMap((appt) => {
             const statusInfo = STATUS_LABELS[appt.status];
 
-            return (
-              <div key={appt.id} className="bg-white border border-zinc-100 rounded-2xl p-4 shadow-sm shadow-zinc-200/50">
+            return appt.items.map((it) => (
+              <div key={it.id} className="bg-white border border-zinc-100 rounded-2xl p-4 shadow-sm shadow-zinc-200/50">
                 <div className="flex items-start justify-between gap-2 mb-3">
                   <Link
                     href={`/salon/${appt.salon.id}`}
@@ -147,53 +148,50 @@ function AppointmentsContent() {
                   </span>
                 </div>
 
-                {/* هر خدمت با تاریخ/ساعت/پرسنل خودش در کادر جدا */}
-                <div className="space-y-2 mb-3">
-                  {appt.items.map((it) => (
-                    <div key={it.id} className="bg-zinc-50 rounded-xl p-3">
-                      <div className="flex items-center gap-1.5 text-[12px] text-zinc-600 mb-1.5">
-                        <Calendar className="w-3.5 h-3.5 text-zinc-400" />
-                        <span>{formatDate(it.date)}</span>
-                        <span className="text-zinc-300">·</span>
-                        <Clock className="w-3.5 h-3.5 text-zinc-400" />
-                        <span dir="ltr">{toPersianDigits(it.startTime)}</span>
-                      </div>
-                      <div className="flex flex-wrap gap-1.5">
-                        {it.services.map((s, idx) => (
-                          <span key={idx} className="bg-white px-2 py-1 rounded-md text-[11px] text-zinc-600 border border-zinc-100 flex items-center gap-1">
-                            <Scissors className="w-3 h-3 text-[#824c71]" />
-                            {s.name}
-                            {s.price ? ` · ${formatMoney(s.price)} تومان` : ''}
-                          </span>
-                        ))}
-                      </div>
-                      {it.services.some((s) => s.staffName) && (
-                        <div className="flex items-center gap-1.5 mt-1.5 text-[11px] text-zinc-500">
-                          <UserIcon className="w-3 h-3" />
-                          {Array.from(new Set(it.services.filter((s) => s.staffName).map((s) => s.staffName))).join('، ')}
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
+                <div className="bg-zinc-50 rounded-xl p-3">
+                  <div className="flex items-center gap-1.5 text-[12px] text-zinc-600 mb-2">
+                    <Calendar className="w-3.5 h-3.5 text-zinc-400" />
+                    <span>{formatDate(it.date)}</span>
+                    <span className="text-zinc-300">·</span>
+                    <Clock className="w-3.5 h-3.5 text-zinc-400" />
+                    <span dir="ltr">{toPersianDigits(it.startTime)}</span>
+                  </div>
 
-                <div className="flex items-center justify-between text-[12px] text-zinc-500 border-t border-zinc-100 pt-2.5 mb-3">
-                  <span>جمع بیعانه: {formatMoney(appt.totalDeposit)} تومان</span>
-                  <span>مبلغ قابل پرداخت: {formatMoney(appt.totalAmount)} تومان</span>
+                  <div className="space-y-2">
+                    {it.services.map((s, idx) => (
+                      <div key={idx} className="bg-white rounded-lg border border-zinc-100 p-2.5">
+                        <p className="text-[12.5px] font-bold text-zinc-800 mb-1.5">{s.name}</p>
+                        <div className="flex flex-wrap gap-x-3 gap-y-1">
+                          {s.price != null && (
+                            <div className="flex items-center gap-1 text-[11px] text-zinc-500">
+                              <span className="text-zinc-400">قیمت:</span>
+                              <span className="font-medium text-zinc-700">{formatMoney(s.price)} تومان</span>
+                            </div>
+                          )}
+                          {s.staffName && (
+                            <div className="flex items-center gap-1 text-[11px] text-zinc-500">
+                              <span className="text-zinc-400">پرسنل:</span>
+                              <span className="font-medium text-zinc-700">{s.staffName}</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
 
                 {appt.status === 'PENDING_PAYMENT' && (
                   <button
                     onClick={() => handlePay(appt)}
                     disabled={payingId === appt.id}
-                    className="w-full flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-[#824c71] text-white text-xs font-bold hover:bg-[#6e3f60] transition disabled:opacity-60"
+                    className="w-full flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-[#824c71] text-white text-xs font-bold hover:bg-[#6e3f60] transition disabled:opacity-60 mt-3"
                   >
                     {payingId === appt.id && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
                     پرداخت و ثبت قطعی نوبت
                   </button>
                 )}
               </div>
-            );
+            ));
           })}
         </div>
       )}

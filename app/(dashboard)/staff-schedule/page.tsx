@@ -118,21 +118,6 @@ export default function StaffSchedulePage() {
     [bookings, selectedDateStr]
   );
 
-  // گروه‌بندی بر اساس bookingGroupId — چند خدمتی که یک مشتری با هم رزرو کرده
-  type GroupView = { key: string; bookings: StaffBooking[] };
-
-  const dayGroups = useMemo<GroupView[]>(() => {
-    const map = new Map<string, StaffBooking[]>();
-    dayBookings.forEach((b) => {
-      const key = b.bookingGroupId ?? b.id;
-      if (!map.has(key)) map.set(key, []);
-      map.get(key)!.push(b);
-    });
-    return Array.from(map.entries())
-      .map(([key, bookings]) => ({ key, bookings: bookings.sort((a, b) => a.startTime.localeCompare(b.startTime)) }))
-      .sort((a, b) => a.bookings[0].startTime.localeCompare(b.bookings[0].startTime));
-  }, [dayBookings]);
-
   const currentOption = salonOptions.find((s) => s.staffId === selectedStaffId);
 
   if (isLoading) {
@@ -247,46 +232,54 @@ export default function StaffSchedulePage() {
           <div className="flex items-center justify-center py-16">
             <Loader2 className="w-7 h-7 text-[#824c71] animate-spin" />
           </div>
-        ) : dayGroups.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {dayGroups.map((group) => {
-              const first = group.bookings[0];
-              return (
-                <div key={group.key} className="bg-white border border-zinc-100 rounded-2xl p-4 shadow-sm shadow-zinc-200/50">
-                  <div className="flex items-center gap-2 text-zinc-800 mb-3">
-                    <UserIcon className="w-4 h-4 text-[#824c71]" />
-                    <span className="font-bold text-sm">{first.customerName || 'بدون نام'}</span>
-                  </div>
 
-                  <div className="flex items-center gap-1.5 text-[13px] text-zinc-600 mb-3">
-                    <Phone className="w-3.5 h-3.5 text-zinc-400" />
-                    <span dir="ltr">{first.customerPhone}</span>
+                  ) : dayBookings.length > 0 ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {dayBookings.map((booking) => (
+              <div key={booking.id} className="bg-white border border-zinc-100 rounded-2xl p-4 shadow-sm shadow-zinc-200/50">
+                <div className="flex items-center gap-2 text-zinc-800 mb-3">
+                  <UserIcon className="w-4 h-4 text-[#824c71]" />
+                  <span className="font-bold text-sm">{booking.customerName || 'بدون نام'}</span>
+                </div>
+
+                <div className="flex items-center gap-1.5 text-[13px] text-zinc-600 mb-3">
+                  <Phone className="w-3.5 h-3.5 text-zinc-400" />
+                  <span dir="ltr">{booking.customerPhone}</span>
+                </div>
+
+                <div className="bg-zinc-50 rounded-xl p-3">
+                  <div className="flex items-center gap-1.5 text-[12px] text-zinc-600 mb-2">
+                    <Clock className="w-3.5 h-3.5 text-zinc-400" />
+                    <span dir="ltr">{toPersianDigits(booking.startTime)}</span>
                   </div>
 
                   <div className="space-y-2">
-                    {group.bookings.map((booking) => (
-                      <div key={booking.id} className="bg-zinc-50 rounded-xl p-3">
-                        <div className="flex items-center gap-1.5 text-[12px] text-zinc-600 mb-1.5">
-                          <Clock className="w-3.5 h-3.5 text-zinc-400" />
-                          <span dir="ltr">{toPersianDigits(booking.startTime)}</span>
-                        </div>
-                        <div className="flex flex-wrap gap-1.5">
-                          {booking.services.map((s, idx) => (
-                            <span key={idx} className="bg-white px-2 py-1 rounded-md text-[11px] text-zinc-600 border border-zinc-100 flex items-center gap-1">
-                              <Scissors className="w-3 h-3 text-[#824c71]" />
-                              {s.name}
-                              {s.price ? ` · ${formatMoney(s.price)} تومان` : ''}
-                            </span>
-                          ))}
+                    {booking.services.map((s, idx) => (
+                      <div key={idx} className="bg-white rounded-lg border border-zinc-100 p-2.5">
+                        <p className="text-[12.5px] font-bold text-zinc-800 mb-1.5">{s.name}</p>
+                        <div className="flex flex-wrap gap-x-3 gap-y-1">
+                          {s.price != null && (
+                            <div className="flex items-center gap-1 text-[11px] text-zinc-500">
+                              <span className="text-zinc-400">قیمت:</span>
+                              <span className="font-medium text-zinc-700">{formatMoney(s.price)} تومان</span>
+                            </div>
+                          )}
+                          {s.durationMin != null && (
+                            <div className="flex items-center gap-1 text-[11px] text-zinc-500">
+                              <span className="text-zinc-400">مدت:</span>
+                              <span className="font-medium text-zinc-700">{toPersianDigits(String(s.durationMin))} دقیقه</span>
+                            </div>
+                          )}
                         </div>
                       </div>
                     ))}
                   </div>
                 </div>
-              );
-            })}
+              </div>
+            ))}
           </div>
         ) : (
+          
           <div className="text-center py-10 bg-zinc-50 rounded-2xl">
             <CalendarX className="w-8 h-8 text-zinc-300 mx-auto mb-2" />
             <p className="text-zinc-400 text-sm">نوبتی برای این روز ثبت نشده است.</p>
