@@ -12,6 +12,7 @@ type AppointmentItem = {
   id: string;
   date: string;
   startTime: string;
+  status: 'PENDING_PAYMENT' | 'CONFIRMED' | 'CANCELLED'; // ← هر آیتم status خودش رو داره
   services: { name: string; price?: number; staffName?: string }[];
 };
 
@@ -27,7 +28,7 @@ type Appointment = {
   items: AppointmentItem[];
 };
 
-const STATUS_LABELS: Record<Appointment['status'], { label: string; className: string }> = {
+const STATUS_LABELS: Record<AppointmentItem['status'], { label: string; className: string }> = {
   PENDING_PAYMENT: { label: 'در انتظار پرداخت', className: 'bg-amber-50 text-amber-700' },
   CONFIRMED: { label: 'قطعی شده', className: 'bg-emerald-50 text-emerald-700' },
   CANCELLED: { label: 'لغو شده', className: 'bg-zinc-100 text-zinc-500' },
@@ -129,69 +130,71 @@ function AppointmentsContent() {
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {appointments.flatMap((appt) => {
-            const statusInfo = STATUS_LABELS[appt.status];
+          {appointments.flatMap((appt) =>
+            appt.items.map((it) => {
+              // هر کارت وضعیت خودش رو نشون میده — نه وضعیت کل گروه
+              const statusInfo = STATUS_LABELS[it.status];
 
-            return appt.items.map((it) => (
-              <div key={it.id} className="bg-white border border-zinc-100 rounded-2xl p-4 shadow-sm shadow-zinc-200/50">
-                <div className="flex items-start justify-between gap-2 mb-3">
-                  <Link
-                    href={`/salon/${appt.salon.id}`}
-                    className="flex items-center gap-2 text-zinc-800 hover:text-[#824c71] transition-colors"
-                  >
-                    <Store className="w-4 h-4 text-[#824c71] shrink-0" />
-                    <span className="font-bold text-sm">{appt.salon.name}</span>
-                  </Link>
-                  <span className={`text-[11px] font-medium px-2.5 py-1 rounded-lg whitespace-nowrap ${statusInfo.className}`}>
-                    {statusInfo.label}
-                  </span>
-                </div>
+              return (
+                <div key={it.id} className="bg-white border border-zinc-100 rounded-2xl p-4 shadow-sm shadow-zinc-200/50">
+                  <div className="flex items-start justify-between gap-2 mb-3">
+                    <Link
+                      href={`/salon/${appt.salon.id}`}
+                      className="flex items-center gap-2 text-zinc-800 hover:text-[#824c71] transition-colors"
+                    >
+                      <Store className="w-4 h-4 text-[#824c71] shrink-0" />
+                      <span className="font-bold text-sm">{appt.salon.name}</span>
+                    </Link>
+                    <span className={`text-[11px] font-medium px-2.5 py-1 rounded-lg whitespace-nowrap ${statusInfo.className}`}>
+                      {statusInfo.label}
+                    </span>
+                  </div>
 
-                {/* تاریخ/ساعت — بدون باکس، فقط یک خط جداکننده زیرش */}
-                <div className="flex items-center gap-1.5 text-[12px] text-zinc-500 pb-3 mb-1 border-b border-zinc-100">
-                  <Calendar className="w-3.5 h-3.5 text-zinc-400" />
-                  <span>{formatDate(it.date)}</span>
-                  <span className="text-zinc-300">·</span>
-                  <Clock className="w-3.5 h-3.5 text-zinc-400" />
-                  <span dir="ltr">{toPersianDigits(it.startTime)}</span>
-                </div>
+                  <div className="flex items-center gap-1.5 text-[12px] text-zinc-500 pb-3 mb-1 border-b border-zinc-100">
+                    <Calendar className="w-3.5 h-3.5 text-zinc-400" />
+                    <span>{formatDate(it.date)}</span>
+                    <span className="text-zinc-300">·</span>
+                    <Clock className="w-3.5 h-3.5 text-zinc-400" />
+                    <span dir="ltr">{toPersianDigits(it.startTime)}</span>
+                  </div>
 
-                {/* خدمات — لیست تخت با خط جداکننده نازک بین ردیف‌ها، بدون باکس تو در تو */}
-                <div className="divide-y divide-zinc-50">
-                  {it.services.map((s, idx) => (
-                    <div key={idx} className="py-2.5 first:pt-0 last:pb-0 flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-1.5 min-w-0">
-                        <Scissors className="w-3 h-3 text-[#824c71]/60 shrink-0" />
-                        <p className="text-[12.5px] font-bold text-zinc-800 truncate">{s.name}</p>
+                  <div className="divide-y divide-zinc-50">
+                    {it.services.map((s, idx) => (
+                      <div key={idx} className="py-2.5 first:pt-0 last:pb-0 flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <Scissors className="w-3 h-3 text-[#824c71]/60 shrink-0" />
+                          <p className="text-[12.5px] font-bold text-zinc-800 truncate">{s.name}</p>
+                        </div>
+                        <div className="flex items-center gap-2.5 shrink-0 text-[11px] text-zinc-500">
+                          {s.price != null && (
+                            <span className="font-medium text-zinc-700">{formatMoney(s.price)} تومان</span>
+                          )}
+                          {s.staffName && (
+                            <span className="flex items-center gap-1">
+                              <UserIcon className="w-3 h-3 text-zinc-400" />
+                              {s.staffName}
+                            </span>
+                          )}
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2.5 shrink-0 text-[11px] text-zinc-500">
-                        {s.price != null && (
-                          <span className="font-medium text-zinc-700">{formatMoney(s.price)} تومان</span>
-                        )}
-                        {s.staffName && (
-                          <span className="flex items-center gap-1">
-                            <UserIcon className="w-3 h-3 text-zinc-400" />
-                            {s.staffName}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
 
-                {appt.status === 'PENDING_PAYMENT' && (
-                  <button
-                    onClick={() => handlePay(appt)}
-                    disabled={payingId === appt.id}
-                    className="w-full flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-[#824c71] text-white text-xs font-bold hover:bg-[#6e3f60] transition disabled:opacity-60 mt-3"
-                  >
-                    {payingId === appt.id && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-                    پرداخت و ثبت قطعی نوبت
-                  </button>
-                )}
-              </div>
-            ));
-          })}
+                  {/* دکمه پرداخت فقط وقتی کل گروه در انتظار پرداخته — نه برای آیتم‌های لغو‌شده */}
+                  {appt.status === 'PENDING_PAYMENT' && it.status !== 'CANCELLED' && (
+                    <button
+                      onClick={() => handlePay(appt)}
+                      disabled={payingId === appt.id}
+                      className="w-full flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-[#824c71] text-white text-xs font-bold hover:bg-[#6e3f60] transition disabled:opacity-60 mt-3"
+                    >
+                      {payingId === appt.id && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                      پرداخت و ثبت قطعی نوبت
+                    </button>
+                  )}
+                </div>
+              );
+            })
+          )}
         </div>
       )}
     </div>

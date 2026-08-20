@@ -26,32 +26,47 @@ export async function GET() {
       },
     });
 
-    // نوبت‌های قدیمی که گروه ندارند (قبل از این تغییر ثبت شده‌اند) — فقط قطعی‌شده‌ها
+    // نوبت‌های قدیمی که گروه ندارند — فقط قطعی‌شده‌ها یا لغو‌شده‌ها
     const ungroupedBookings = await prisma.booking.findMany({
-      where: { customerId: decoded.userId, bookingGroupId: null, status: 'CONFIRMED' },
+      where: {
+        customerId: decoded.userId,
+        bookingGroupId: null,
+        status: { in: ['CONFIRMED', 'CANCELLED'] },
+      },
       orderBy: [{ date: 'asc' }, { startTime: 'asc' }],
       include: { salon: { select: { id: true, name: true, imageUrl: true, address: true } } },
     });
 
+    // هر نوبت status خودش رو داره — وضعیت گروه از روی اولین نوبت تعیین نمیشه
     const mapItem = (b: any) => ({
       id: b.id,
       date: b.date,
       startTime: b.startTime,
+      status: b.status, // ← status هر نوبت جداگانه
       services: Array.isArray(b.services)
         ? (b.services as any[]).map((s) => ({ name: s.name, price: s.price, staffName: s.staffName }))
         : [],
     });
 
+    // وضعیت کلی گروه: اگه همه لغو شده باشن → CANCELLED، وگرنه → وضعیت واقعی
+    const resolveGroupStatus = (bookings: any[]) => {
+      if (bookings.length === 0) return 'CONFIRMED';
+      const allCancelled = bookings.every((b) => b.status === 'CANCELLED');
+      if (allCancelled) return 'CANCELLED';
+      // اگه حداقل یکی CONFIRMED هست، گروه CONFIRMED محسوب میشه
+      return 'CONFIRMED';
+    };
+
     const groupedAppointments = groups.map((g) => ({
       id: g.id,
       isGroup: true,
       salon: g.salon,
-      status: g.bookings[0]?.status ?? 'PENDING_PAYMENT',
+      status: resolveGroupStatus(g.bookings),
       paymentStatus: g.paymentStatus,
       totalDeposit: g.totalDeposit,
       appFee: g.appFee,
       totalAmount: g.totalAmount,
-      items: g.bookings.map(mapItem),
+      items: g.bookings.map(mapItem), // هر آیتم status خودش رو داره
     }));
 
     const singleAppointments = ungroupedBookings.map((b) => ({
