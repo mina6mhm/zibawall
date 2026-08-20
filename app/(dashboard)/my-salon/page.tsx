@@ -393,9 +393,9 @@ export default function MySalonPage() {
             <Link
               href="/profile/business"
               className="flex items-center gap-1.5 shrink-0 bg-[#824c71] text-white pr-3 pl-1.5 py-1.5 rounded-full text-[11px] font-bold hover:bg-[#6e3f60] transition-colors"
-              title="ثبت کسب‌وکار جدید"
+              title="ثبت کسب‌وکار"
             >
-              ثبت کسب‌وکار جدید
+              ثبت کسب‌وکار
               <span className="w-6 h-6 flex items-center justify-center rounded-full bg-white/20">
                 <Plus className="w-3.5 h-3.5" />
               </span>

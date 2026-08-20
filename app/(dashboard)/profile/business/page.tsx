@@ -314,9 +314,13 @@ export default function BusinessRegistrationPage() {
 
       {/* هدر و دکمه بازگشت */}
       <div className="flex items-center gap-3 md:gap-4 mb-6 md:mb-8">
-        <Link href="/profile" className="p-1.5 md:p-2 hover:bg-zinc-100 rounded-full transition-colors">
+                <button
+          type="button"
+          onClick={() => router.back()}
+          className="p-1.5 md:p-2 hover:bg-zinc-100 rounded-full transition-colors"
+        >
           <ArrowRight className="text-zinc-600 w-5 h-5 md:w-6 md:h-6" />
-        </Link>
+        </button>
         <div>
           <h1 className="text-xl md:text-2xl font-bold text-zinc-900">ثبت کسب‌وکار جدید</h1>
           <p className="text-zinc-500 text-xs md:text-sm mt-0.5 md:mt-1">مرحله {step.toLocaleString('fa-IR')} از ۴</p>

@@ -401,9 +401,9 @@ export default function BusinessEditPage() {
     <div className="max-w-4xl mx-auto pt-8 pb-28 px-4 md:py-12 md:px-0 animate-fade-in">
 
       <div className="flex items-center gap-4 mb-8">
-<Link href="/profile/business/overview" className="p-2 hover:bg-zinc-100 rounded-full transition-colors">
+<button type="button" onClick={() => router.back()} className="p-2 hover:bg-zinc-100 rounded-full transition-colors">
   <ArrowRight className="text-zinc-600" size={24} />
-</Link>
+</button>
         <div>
           <h1 className="text-2xl font-bold text-zinc-900">ویرایش کسب‌وکار</h1>
           <p className="text-zinc-500 text-sm mt-1">مرحله {step.toLocaleString('fa-IR')} از ۴</p>
