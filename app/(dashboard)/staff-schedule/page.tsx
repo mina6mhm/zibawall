@@ -232,8 +232,7 @@ export default function StaffSchedulePage() {
           <div className="flex items-center justify-center py-16">
             <Loader2 className="w-7 h-7 text-[#824c71] animate-spin" />
           </div>
-
-                  ) : dayBookings.length > 0 ? (
+        ) : dayBookings.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {dayBookings.map((booking) => (
               <div key={booking.id} className="bg-white border border-zinc-100 rounded-2xl p-4 shadow-sm shadow-zinc-200/50">
@@ -242,44 +241,37 @@ export default function StaffSchedulePage() {
                   <span className="font-bold text-sm">{booking.customerName || 'بدون نام'}</span>
                 </div>
 
-                <div className="flex items-center gap-1.5 text-[13px] text-zinc-600 mb-3">
+                <div className="flex items-center gap-1.5 text-[13px] text-zinc-600 pb-3 mb-1 border-b border-zinc-100">
                   <Phone className="w-3.5 h-3.5 text-zinc-400" />
                   <span dir="ltr">{booking.customerPhone}</span>
+                  <span className="text-zinc-300">·</span>
+                  <Clock className="w-3.5 h-3.5 text-zinc-400" />
+                  <span dir="ltr">{toPersianDigits(booking.startTime)}</span>
                 </div>
 
-                <div className="bg-zinc-50 rounded-xl p-3">
-                  <div className="flex items-center gap-1.5 text-[12px] text-zinc-600 mb-2">
-                    <Clock className="w-3.5 h-3.5 text-zinc-400" />
-                    <span dir="ltr">{toPersianDigits(booking.startTime)}</span>
-                  </div>
-
-                  <div className="space-y-2">
-                    {booking.services.map((s, idx) => (
-                      <div key={idx} className="bg-white rounded-lg border border-zinc-100 p-2.5">
-                        <p className="text-[12.5px] font-bold text-zinc-800 mb-1.5">{s.name}</p>
-                        <div className="flex flex-wrap gap-x-3 gap-y-1">
-                          {s.price != null && (
-                            <div className="flex items-center gap-1 text-[11px] text-zinc-500">
-                              <span className="text-zinc-400">قیمت:</span>
-                              <span className="font-medium text-zinc-700">{formatMoney(s.price)} تومان</span>
-                            </div>
-                          )}
-                          {s.durationMin != null && (
-                            <div className="flex items-center gap-1 text-[11px] text-zinc-500">
-                              <span className="text-zinc-400">مدت:</span>
-                              <span className="font-medium text-zinc-700">{toPersianDigits(String(s.durationMin))} دقیقه</span>
-                            </div>
-                          )}
-                        </div>
+                {/* خدمات — لیست تخت با خط جداکننده نازک، بدون باکس تو در تو */}
+                <div className="divide-y divide-zinc-50">
+                  {booking.services.map((s, idx) => (
+                    <div key={idx} className="py-2.5 first:pt-0 last:pb-0 flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <Scissors className="w-3 h-3 text-[#824c71]/60 shrink-0" />
+                        <p className="text-[12.5px] font-bold text-zinc-800 truncate">{s.name}</p>
                       </div>
-                    ))}
-                  </div>
+                      <div className="flex items-center gap-2.5 shrink-0 text-[11px] text-zinc-500">
+                        {s.price != null && (
+                          <span className="font-medium text-zinc-700">{formatMoney(s.price)} تومان</span>
+                        )}
+                        {s.durationMin != null && (
+                          <span>{toPersianDigits(String(s.durationMin))} دقیقه</span>
+                        )}
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
             ))}
           </div>
         ) : (
-          
           <div className="text-center py-10 bg-zinc-50 rounded-2xl">
             <CalendarX className="w-8 h-8 text-zinc-300 mx-auto mb-2" />
             <p className="text-zinc-400 text-sm">نوبتی برای این روز ثبت نشده است.</p>

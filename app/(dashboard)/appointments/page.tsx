@@ -128,8 +128,7 @@ function AppointmentsContent() {
           <p className="text-zinc-400 text-sm">هنوز نوبتی برای شما ثبت نشده است.</p>
         </div>
       ) : (
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {appointments.flatMap((appt) => {
             const statusInfo = STATUS_LABELS[appt.status];
 
@@ -148,36 +147,36 @@ function AppointmentsContent() {
                   </span>
                 </div>
 
-                <div className="bg-zinc-50 rounded-xl p-3">
-                  <div className="flex items-center gap-1.5 text-[12px] text-zinc-600 mb-2">
-                    <Calendar className="w-3.5 h-3.5 text-zinc-400" />
-                    <span>{formatDate(it.date)}</span>
-                    <span className="text-zinc-300">·</span>
-                    <Clock className="w-3.5 h-3.5 text-zinc-400" />
-                    <span dir="ltr">{toPersianDigits(it.startTime)}</span>
-                  </div>
+                {/* تاریخ/ساعت — بدون باکس، فقط یک خط جداکننده زیرش */}
+                <div className="flex items-center gap-1.5 text-[12px] text-zinc-500 pb-3 mb-1 border-b border-zinc-100">
+                  <Calendar className="w-3.5 h-3.5 text-zinc-400" />
+                  <span>{formatDate(it.date)}</span>
+                  <span className="text-zinc-300">·</span>
+                  <Clock className="w-3.5 h-3.5 text-zinc-400" />
+                  <span dir="ltr">{toPersianDigits(it.startTime)}</span>
+                </div>
 
-                  <div className="space-y-2">
-                    {it.services.map((s, idx) => (
-                      <div key={idx} className="bg-white rounded-lg border border-zinc-100 p-2.5">
-                        <p className="text-[12.5px] font-bold text-zinc-800 mb-1.5">{s.name}</p>
-                        <div className="flex flex-wrap gap-x-3 gap-y-1">
-                          {s.price != null && (
-                            <div className="flex items-center gap-1 text-[11px] text-zinc-500">
-                              <span className="text-zinc-400">قیمت:</span>
-                              <span className="font-medium text-zinc-700">{formatMoney(s.price)} تومان</span>
-                            </div>
-                          )}
-                          {s.staffName && (
-                            <div className="flex items-center gap-1 text-[11px] text-zinc-500">
-                              <span className="text-zinc-400">پرسنل:</span>
-                              <span className="font-medium text-zinc-700">{s.staffName}</span>
-                            </div>
-                          )}
-                        </div>
+                {/* خدمات — لیست تخت با خط جداکننده نازک بین ردیف‌ها، بدون باکس تو در تو */}
+                <div className="divide-y divide-zinc-50">
+                  {it.services.map((s, idx) => (
+                    <div key={idx} className="py-2.5 first:pt-0 last:pb-0 flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <Scissors className="w-3 h-3 text-[#824c71]/60 shrink-0" />
+                        <p className="text-[12.5px] font-bold text-zinc-800 truncate">{s.name}</p>
                       </div>
-                    ))}
-                  </div>
+                      <div className="flex items-center gap-2.5 shrink-0 text-[11px] text-zinc-500">
+                        {s.price != null && (
+                          <span className="font-medium text-zinc-700">{formatMoney(s.price)} تومان</span>
+                        )}
+                        {s.staffName && (
+                          <span className="flex items-center gap-1">
+                            <UserIcon className="w-3 h-3 text-zinc-400" />
+                            {s.staffName}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  ))}
                 </div>
 
                 {appt.status === 'PENDING_PAYMENT' && (

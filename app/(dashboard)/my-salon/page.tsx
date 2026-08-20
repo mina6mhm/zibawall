@@ -181,32 +181,33 @@ export default function MySalonPage() {
   );
 
   const renderBookingCard = (booking: Booking) => {
-  const statusInfo = STATUS_LABELS[booking.status];
+    const statusInfo = STATUS_LABELS[booking.status];
 
-  return (
-    <div key={booking.id} className="bg-white border border-zinc-100 rounded-2xl p-4 shadow-sm shadow-zinc-200/50">
-      <div className="flex items-start justify-between gap-2 mb-3">
-        <div className="flex items-center gap-2 text-zinc-800">
-          <UserIcon className="w-4 h-4 text-[#824c71]" />
-          <span className="font-bold text-sm">{booking.customerName || 'بدون نام'}</span>
-        </div>
-        <span className={`text-[11px] font-medium px-2.5 py-1 rounded-lg whitespace-nowrap ${statusInfo.className}`}>
-          {statusInfo.label}
-        </span>
-      </div>
-
-      <div className="flex items-center gap-1.5 text-[13px] text-zinc-600 mb-3">
-        <Phone className="w-3.5 h-3.5 text-zinc-400" />
-        <span dir="ltr">{booking.customerPhone}</span>
-      </div>
-
-      <div className="bg-zinc-50 rounded-xl p-3">
-        <div className="flex items-center justify-between gap-2 mb-1.5">
-          <div className="flex items-center gap-1.5 text-[12px] text-zinc-600">
-            <Clock className="w-3.5 h-3.5 text-zinc-400" />
-            <span dir="ltr">{booking.startTime}</span>
+    return (
+      <div key={booking.id} className="bg-white border border-zinc-100 rounded-2xl p-4 shadow-sm shadow-zinc-200/50">
+        <div className="flex items-start justify-between gap-2 mb-3">
+          <div className="flex items-center gap-2 text-zinc-800">
+            <UserIcon className="w-4 h-4 text-[#824c71]" />
+            <span className="font-bold text-sm">{booking.customerName || 'بدون نام'}</span>
           </div>
-          <div className="flex items-center gap-1.5">
+          <span className={`text-[11px] font-medium px-2.5 py-1 rounded-lg whitespace-nowrap ${statusInfo.className}`}>
+            {statusInfo.label}
+          </span>
+        </div>
+
+        {/* شماره تماس + ساعت + دکمه‌های ویرایش/لغو — یک ردیف، بدون باکس */}
+        <div className="flex items-center justify-between gap-2 pb-3 mb-1 border-b border-zinc-100">
+          <div className="flex items-center gap-3 text-[12.5px] text-zinc-600">
+            <span className="flex items-center gap-1.5">
+              <Phone className="w-3.5 h-3.5 text-zinc-400" />
+              <span dir="ltr">{booking.customerPhone}</span>
+            </span>
+            <span className="flex items-center gap-1.5">
+              <Clock className="w-3.5 h-3.5 text-zinc-400" />
+              <span dir="ltr">{booking.startTime}</span>
+            </span>
+          </div>
+          <div className="flex items-center gap-1.5 shrink-0">
             <button
               onClick={() => openEditBookingModal(booking)}
               className="w-7 h-7 flex items-center justify-center rounded-lg bg-zinc-100 text-zinc-500"
@@ -224,34 +225,32 @@ export default function MySalonPage() {
             </button>
           </div>
         </div>
-               <div className="space-y-2">
+
+        {/* خدمات — لیست تخت با خط جداکننده نازک، بدون باکس تو در تو */}
+        <div className="divide-y divide-zinc-50">
           {booking.services.map((s, idx) => (
-            <div key={idx} className="bg-white rounded-lg border border-zinc-100 p-2.5">
-              <p className="text-[12.5px] font-bold text-zinc-800 mb-1.5">{s.name}</p>
-              <div className="flex flex-wrap gap-x-3 gap-y-1">
+            <div key={idx} className="py-2.5 first:pt-0 last:pb-0 flex items-center justify-between gap-2">
+              <div className="flex items-center gap-1.5 min-w-0">
+                <Scissors className="w-3 h-3 text-[#824c71]/60 shrink-0" />
+                <p className="text-[12.5px] font-bold text-zinc-800 truncate">{s.name}</p>
+              </div>
+              <div className="flex items-center gap-2.5 shrink-0 text-[11px] text-zinc-500">
                 {s.price != null && (
-                  <div className="flex items-center gap-1 text-[11px] text-zinc-500">
-                    <span className="text-zinc-400">قیمت:</span>
-                    <span className="font-medium text-zinc-700">{formatMoney(s.price)} تومان</span>
-                  </div>
+                  <span className="font-medium text-zinc-700">{formatMoney(s.price)} تومان</span>
                 )}
                 {s.staffName && (
-                  <div className="flex items-center gap-1 text-[11px] text-zinc-500">
-                    <span className="text-zinc-400">پرسنل:</span>
-                    <span className="font-medium text-zinc-700">
-                      {s.staffName}
-                      {s.staffPercentage ? ` (${s.staffPercentage.toLocaleString('fa-IR')}٪)` : ''}
-                    </span>
-                  </div>
+                  <span>
+                    {s.staffName}
+                    {s.staffPercentage ? ` (${s.staffPercentage.toLocaleString('fa-IR')}٪)` : ''}
+                  </span>
                 )}
               </div>
             </div>
           ))}
         </div>
       </div>
-    </div>
-  );
-};
+    );
+  };
 
   type StaffShareRow = { name: string; amount: number };
 
@@ -337,23 +336,23 @@ export default function MySalonPage() {
       </div>
 
       <Link
-  href="/my-salon/booking-settings"
-  className={`w-full flex items-center justify-between gap-3 px-4 py-3.5 rounded-xl border transition-colors mb-6 ${
-    bookingEnabled
-      ? 'bg-[#824c71]/5 border-[#824c71]/30 text-[#824c71]'
-      : 'bg-white border-zinc-200 text-zinc-700'
-  }`}
->
-  <div className="flex items-center gap-2.5">
-  <CalendarClock className="w-4.5 h-4.5 shrink-0" />
-  <p className="text-sm font-bold">نوبت‌دهی آنلاین</p>
-</div>
-  <span className={`text-[11px] font-bold px-2.5 py-1 rounded-lg shrink-0 ${
-    bookingEnabled ? 'bg-emerald-50 text-emerald-600' : 'bg-zinc-100 text-zinc-400'
-  }`}>
-    {bookingEnabled ? 'فعال' : 'غیرفعال'}
-  </span>
-</Link>
+        href="/my-salon/booking-settings"
+        className={`w-full flex items-center justify-between gap-3 px-4 py-3.5 rounded-xl border transition-colors mb-6 ${
+          bookingEnabled
+            ? 'bg-[#824c71]/5 border-[#824c71]/30 text-[#824c71]'
+            : 'bg-white border-zinc-200 text-zinc-700'
+        }`}
+      >
+        <div className="flex items-center gap-2.5">
+          <CalendarClock className="w-4.5 h-4.5 shrink-0" />
+          <p className="text-sm font-bold">نوبت‌دهی آنلاین</p>
+        </div>
+        <span className={`text-[11px] font-bold px-2.5 py-1 rounded-lg shrink-0 ${
+          bookingEnabled ? 'bg-emerald-50 text-emerald-600' : 'bg-zinc-100 text-zinc-400'
+        }`}>
+          {bookingEnabled ? 'فعال' : 'غیرفعال'}
+        </span>
+      </Link>
 
       {/* ناوبری روز: قبل / انتخاب تاریخ (برای پرش به روزهای دور) / بعد */}
       <div className="flex items-center gap-2 mb-3 mt-1">
@@ -445,10 +444,10 @@ export default function MySalonPage() {
           نوبت‌های این روز {dayBookings.length > 0 && `(${dayBookings.length.toLocaleString('fa-IR')})`}
         </h2>
         {dayBookings.length > 0 ? (
-  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-    {dayBookings.map(renderBookingCard)}
-  </div>
-) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {dayBookings.map(renderBookingCard)}
+          </div>
+        ) : (
           <div className="text-center py-10 bg-zinc-50 rounded-2xl">
             <p className="text-zinc-400 text-sm">نوبتی برای این روز ثبت نشده است.</p>
           </div>
