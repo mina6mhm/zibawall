@@ -1,7 +1,7 @@
 // components/DashboardLayout.tsx
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
@@ -33,15 +33,6 @@ const MySalonIcon = ({ isActive, className }: { isActive: boolean, className?: s
   </svg>
 );
 
-// آیکون برنامه پرسنلی — بازطراحی‌شده هم‌سبک بقیه (خطوط ساده، بدون جزئیات اضافه)
-const StaffScheduleIcon = ({ isActive, className }: { isActive: boolean, className?: string }) => (
-  <svg viewBox="0 0 24 24" className={className} fill={isActive ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-    <circle cx="9" cy="7" r="3" />
-    <path d="M3.5 20v-1a5.5 5.5 0 0 1 5.5-5.5h0" />
-    <path d="M15 13.5h6M15 17h6M15 20h4" stroke={isActive ? "#fff" : "currentColor"} />
-  </svg>
-);
-
 const ProfileIcon = ({ isActive, className }: { isActive: boolean, className?: string }) => (
   <svg viewBox="0 0 24 24" className={className} fill={isActive ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
     <circle cx="12" cy="7" r="3.5" />
@@ -49,7 +40,7 @@ const ProfileIcon = ({ isActive, className }: { isActive: boolean, className?: s
   </svg>
 );
 
-const baseNavItems = [
+const navItems = [
   { key: 'dashboard', name: 'پیشخوان', href: '/dashboard', icon: DashboardIcon },
   { key: 'bookmarks', name: 'نشان‌ها', href: '/bookmarks', icon: BookmarkIcon },
   { key: 'appointments', name: 'نوبت‌های من', href: '/appointments', icon: AppointmentsIcon },
@@ -57,55 +48,9 @@ const baseNavItems = [
   { key: 'profile', name: 'پروفایل', href: '/profile', icon: ProfileIcon },
 ];
 
-// آیتم منوی مخصوص پرسنل — فقط وقتی کاربر واقعاً در یک سالن پرسنل باشد به لیست اضافه می‌شود
-const staffNavItem = {
-  key: 'staff-schedule',
-  name: 'برنامه پرسنلی',
-  href: '/staff-schedule',
-  icon: StaffScheduleIcon,
-};
-
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const isSalonPage = pathname?.startsWith('/salon/');
-
-  const [isStaffSomewhere, setIsStaffSomewhere] = useState(false);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    const checkStaffStatus = async () => {
-      try {
-        const res = await fetch('/api/staff/my-salons');
-        if (!res.ok) return; // 401 یعنی لاگین نیست؛ فقط منوی پرسنل نمایش داده نمی‌شود
-        const data = await res.json();
-        if (!cancelled) {
-          setIsStaffSomewhere(Array.isArray(data.salons) && data.salons.length > 0);
-        }
-      } catch {
-        // خطای شبکه؛ صرفاً منوی پرسنل نشون داده نمیشه، بقیه‌ی اپ کار می‌کنه
-      }
-    };
-
-    checkStaffStatus();
-    return () => { cancelled = true; };
-  }, []);
-
-  // آیتم پرسنل درست بعد از «سالن من» اضافه می‌شود، فقط اگر کاربر پرسنل جایی باشد
-  const navItems = isStaffSomewhere
-    ? [
-        ...baseNavItems.slice(0, 4),
-        staffNavItem,
-        ...baseNavItems.slice(4),
-      ]
-    : baseNavItems;
-
-  // در حالت ۶ تبی (وقتی کاربر پرسنل جایی هم هست)، آیکون و فونت نوار پایین موبایل
-  // کمی کوچیک‌تر می‌شود تا فضا خلوت‌تر دیده شود؛ حالت ۵ تبی دست‌نخورده می‌ماند.
-  const isDenseMobileNav = navItems.length >= 6;
-  const mobileIconSize = isDenseMobileNav ? 'w-[19px] h-[19px]' : 'w-[22px] h-[22px]';
-  const mobileLabelSize = isDenseMobileNav ? 'text-[9px]' : 'text-[10px]';
-  const mobileItemGap = isDenseMobileNav ? 'gap-1' : 'gap-1.5';
 
   return (
     <div className="flex h-screen bg-white text-zinc-900 dir-rtl font-sans selection:bg-zinc-200">
@@ -150,13 +95,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 <Link
                   key={item.key}
                   href={item.href}
-                  className={`flex flex-1 flex-col items-center justify-center h-full ${mobileItemGap} transition-transform active:scale-95`}
+                  className="flex flex-1 flex-col items-center justify-center h-full gap-1.5 transition-transform active:scale-95"
                 >
                   <item.icon
-                    className={`${mobileIconSize} transition-colors duration-300 ${isActive ? 'text-[#824c71]' : 'text-zinc-400'}`}
+                    className={`w-[22px] h-[22px] transition-colors duration-300 ${isActive ? 'text-[#824c71]' : 'text-zinc-400'}`}
                     isActive={isActive}
                   />
-                  <span className={`${mobileLabelSize} tracking-tight transition-colors duration-300 ${isActive ? 'text-[#824c71] font-bold' : 'text-zinc-500 font-medium'}`}>
+                  <span className={`text-[10px] tracking-tight transition-colors duration-300 ${isActive ? 'text-[#824c71] font-bold' : 'text-zinc-500 font-medium'}`}>
                     {item.name}
                   </span>
                 </Link>
