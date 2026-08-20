@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { X, Plus, Trash2, Loader2, ChevronDown, Lock } from 'lucide-react';
+import { X, Loader2, ChevronDown, Lock } from 'lucide-react';
 
 type ServiceRow = {
   name: string;
@@ -13,8 +13,6 @@ type ServiceRow = {
 
 type StaffMember = { id: string; name: string };
 
-// اطلاعات نوبتی که قراره ویرایش بشه — همه‌شون از قبل توسط سیستم نوبت‌دهی آنلاین ثبت شده
-// و در این مدال قابل تغییر نیستن، به‌جز آرایه‌ی services
 export type BookingToEdit = {
   id: string;
   customerName: string | null;
@@ -22,9 +20,6 @@ export type BookingToEdit = {
   date: string; // ISO
   startTime: string;
   services: { name: string; price?: number; staffName?: string; staffPercentage?: number }[];
-  depositAmount: number;
-  totalAmount: number;
-  paymentStatus: 'PENDING' | 'SUCCESS' | 'FAILED';
 };
 
 type EditBookingModalProps = {
@@ -55,7 +50,7 @@ const boxSmallClass =
 const fillInputClass = 'w-full h-full bg-transparent outline-none border-0 px-3 text-sm';
 
 export default function EditBookingModal({ isOpen, onClose, onSaved, booking }: EditBookingModalProps) {
-  const [services, setServices] = useState<ServiceRow[]>([emptyService()]);
+  const [service, setService] = useState<ServiceRow>(emptyService());
   const [staffList, setStaffList] = useState<StaffMember[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
@@ -68,18 +63,18 @@ export default function EditBookingModal({ isOpen, onClose, onSaved, booking }: 
       .catch(() => setStaffList([]));
   }, [isOpen]);
 
-  // پر کردن ردیف‌های خدمات از روی نوبت انتخاب‌شده هر بار که مدال باز می‌شود
   useEffect(() => {
     if (!isOpen || !booking) return;
-    setServices(
-      booking.services.length > 0
-        ? booking.services.map((s) => ({
+    const s = booking.services[0];
+    setService(
+      s
+        ? {
             name: s.name,
             priceDigits: s.price ? String(s.price) : '',
             staffName: s.staffName || '',
             staffPercentageDigits: s.staffPercentage ? String(s.staffPercentage) : '',
-          }))
-        : [emptyService()]
+          }
+        : emptyService()
     );
     setError('');
   }, [isOpen, booking]);
@@ -89,60 +84,46 @@ export default function EditBookingModal({ isOpen, onClose, onSaved, booking }: 
     onClose();
   };
 
-  const updateService = (index: number, field: keyof ServiceRow, value: string) => {
-    setServices((prev) => {
-      const updated = [...prev];
-      updated[index] = { ...updated[index], [field]: value };
-      return updated;
-    });
+  const updateService = (field: keyof ServiceRow, value: string) => {
+    setService((prev) => ({ ...prev, [field]: value }));
   };
 
-  const handleServicePriceChange = (index: number, value: string) => {
-    updateService(index, 'priceDigits', sanitizeDigitsOnly(value));
+  const handleServicePriceChange = (value: string) => {
+    updateService('priceDigits', sanitizeDigitsOnly(value));
   };
 
-  const handleServicePercentageChange = (index: number, value: string) => {
+  const handleServicePercentageChange = (value: string) => {
     let digits = sanitizeDigitsOnly(value).slice(0, 3);
     if (digits !== '' && Number(digits) > 100) digits = '100';
-    updateService(index, 'staffPercentageDigits', digits);
-  };
-
-  const addServiceRow = () => setServices((prev) => [...prev, emptyService()]);
-
-  const removeServiceRow = (index: number) => {
-    setServices((prev) => (prev.length > 1 ? prev.filter((_, i) => i !== index) : prev));
+    updateService('staffPercentageDigits', digits);
   };
 
   const handleSubmit = async () => {
     if (!booking) return;
     setError('');
 
-    const cleanedServices = services
-      .map((s) => ({
-        name: s.name.trim(),
-        price: s.priceDigits ? Number(s.priceDigits) : undefined,
-        staffName: s.staffName.trim() || undefined,
-        staffPercentage: s.staffPercentageDigits ? Number(s.staffPercentageDigits) : undefined,
-      }))
-      .filter((s) => s.name !== '');
-
-    if (cleanedServices.length === 0) {
-      setError('حداقل یک خدمت را وارد کنید');
+    const name = service.name.trim();
+    if (!name) {
+      setError('نام خدمت را وارد کنید');
       return;
     }
+
+    const cleanedService = {
+      name,
+      price: service.priceDigits ? Number(service.priceDigits) : undefined,
+      staffName: service.staffName.trim() || undefined,
+      staffPercentage: service.staffPercentageDigits ? Number(service.staffPercentageDigits) : undefined,
+    };
 
     try {
       setIsSubmitting(true);
 
-      // فقط خدمات ویرایش می‌شه — مشتری، تاریخ، ساعت و بیعانه دقیقاً همونی می‌مونه
-      // که هنگام رزرو آنلاین ثبت شده و اینجا دست‌کاری نمی‌شه
       const payload = {
         customerName: booking.customerName ?? undefined,
         customerPhone: booking.customerPhone,
         date: booking.date,
         startTime: booking.startTime,
-        services: cleanedServices,
-        depositAmount: booking.depositAmount,
+        services: [cleanedService],
       };
 
       const res = await fetch(`/api/booking?id=${booking.id}`, {
@@ -190,7 +171,7 @@ export default function EditBookingModal({ isOpen, onClose, onSaved, booking }: 
         </div>
 
         <div className="space-y-4">
-          {/* اطلاعات ثابت نوبت — فقط نمایش، از رزرو آنلاین اومده و اینجا قابل تغییر نیست */}
+          {/* اطلاعات ثابت نوبت — فقط نمایش */}
           <div className="bg-zinc-50 border border-zinc-100 rounded-xl p-3.5">
             <div className="flex items-center gap-1.5 mb-2.5 text-zinc-400">
               <Lock className="w-3.5 h-3.5" />
@@ -213,17 +194,6 @@ export default function EditBookingModal({ isOpen, onClose, onSaved, booking }: 
                 <p className="text-[11px] text-zinc-400 mb-0.5">ساعت</p>
                 <p className="font-medium text-zinc-800" dir="ltr">{booking.startTime}</p>
               </div>
-              <div className="col-span-2 pt-2 border-t border-zinc-100 flex items-center justify-between">
-                <span className="text-[11px] text-zinc-400">بیعانه</span>
-                <span className="font-bold text-zinc-800 flex items-center gap-1.5">
-                  {formatMoney(booking.depositAmount)} تومان
-                  {booking.paymentStatus === 'SUCCESS' && (
-                    <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-md">
-                      پرداخت‌شده
-                    </span>
-                  )}
-                </span>
-              </div>
             </div>
           </div>
 
@@ -232,94 +202,68 @@ export default function EditBookingModal({ isOpen, onClose, onSaved, booking }: 
             <label className="block text-xs font-medium text-zinc-600 mb-1.5">
               خدمات <span className="text-red-500">*</span>
             </label>
-            <div className="space-y-2.5">
-              {services.map((service, index) => (
-                <div key={index} className="border border-zinc-200 rounded-xl p-3 space-y-2.5 bg-zinc-50/40">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-medium text-zinc-500">
-                      خدمت {(index + 1).toLocaleString('fa-IR')}
-                    </span>
-                    {services.length > 1 && (
-                      <button
-                        type="button"
-                        onClick={() => removeServiceRow(index)}
-                        className="w-7 h-7 flex items-center justify-center rounded-lg bg-red-50 text-red-500"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    )}
-                  </div>
-
-                  <div className="flex gap-2">
-                    <div className="flex-1">
-                      <label className="block text-[11px] font-medium text-zinc-500 mb-1">نام خدمت</label>
-                      <div className={boxSmallClass}>
-                        <input
-                          type="text"
-                          value={service.name}
-                          onChange={(e) => updateService(index, 'name', e.target.value)}
-                          className={fillInputClass}
-                          placeholder="مثلاً کراتین مو"
-                        />
-                      </div>
-                    </div>
-                    <div className="w-28 shrink-0">
-                      <label className="block text-[11px] font-medium text-zinc-500 mb-1">قیمت</label>
-                      <div className={boxSmallClass}>
-                        <input
-                          type="text"
-                          inputMode="numeric"
-                          value={formatPriceDisplay(service.priceDigits)}
-                          onChange={(e) => handleServicePriceChange(index, e.target.value)}
-                          className={fillInputClass}
-                          placeholder="۰"
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex gap-2">
-                    <div className="flex-1">
-                      <label className="block text-[11px] font-medium text-zinc-500 mb-1">اسم پرسنل</label>
-                      <div className={`${boxSmallClass} relative`}>
-                        <select
-                          value={service.staffName}
-                          onChange={(e) => updateService(index, 'staffName', e.target.value)}
-                          className={`${fillInputClass} appearance-none pl-7`}
-                        >
-                          <option value="">بدون پرسنل مشخص</option>
-                          {staffList.map((s) => (
-                            <option key={s.id} value={s.name}>{s.name}</option>
-                          ))}
-                        </select>
-                        <ChevronDown className="w-3.5 h-3.5 text-zinc-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                      </div>
-                    </div>
-                    <div className="w-28 shrink-0">
-                      <label className="block text-[11px] font-medium text-zinc-500 mb-1">درصد پرسنل</label>
-                      <div className={boxSmallClass}>
-                        <input
-                          type="text"
-                          inputMode="numeric"
-                          value={toPersianDigits(service.staffPercentageDigits)}
-                          onChange={(e) => handleServicePercentageChange(index, e.target.value)}
-                          className={`${fillInputClass} pl-1`}
-                          placeholder="۰"
-                        />
-                        <span className="text-zinc-400 text-xs pl-2 shrink-0">٪</span>
-                      </div>
-                    </div>
+            <div className="border border-zinc-200 rounded-xl p-3 space-y-2.5 bg-zinc-50/40">
+              <div className="flex gap-2">
+                <div className="flex-1">
+                  <label className="block text-[11px] font-medium text-zinc-500 mb-1">نام خدمت</label>
+                  <div className={boxSmallClass}>
+                    <input
+                      type="text"
+                      value={service.name}
+                      onChange={(e) => updateService('name', e.target.value)}
+                      className={fillInputClass}
+                      placeholder="مثلاً کراتین مو"
+                    />
                   </div>
                 </div>
-              ))}
+                <div className="w-28 shrink-0">
+                  <label className="block text-[11px] font-medium text-zinc-500 mb-1">قیمت</label>
+                  <div className={boxSmallClass}>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      value={formatPriceDisplay(service.priceDigits)}
+                      onChange={(e) => handleServicePriceChange(e.target.value)}
+                      className={fillInputClass}
+                      placeholder="۰"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex gap-2">
+                <div className="flex-1">
+                  <label className="block text-[11px] font-medium text-zinc-500 mb-1">اسم پرسنل</label>
+                  <div className={`${boxSmallClass} relative`}>
+                    <select
+                      value={service.staffName}
+                      onChange={(e) => updateService('staffName', e.target.value)}
+                      className={`${fillInputClass} appearance-none pl-7`}
+                    >
+                      <option value="">بدون پرسنل مشخص</option>
+                      {staffList.map((s) => (
+                        <option key={s.id} value={s.name}>{s.name}</option>
+                      ))}
+                    </select>
+                    <ChevronDown className="w-3.5 h-3.5 text-zinc-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  </div>
+                </div>
+                <div className="w-28 shrink-0">
+                  <label className="block text-[11px] font-medium text-zinc-500 mb-1">درصد پرسنل</label>
+                  <div className={boxSmallClass}>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      value={toPersianDigits(service.staffPercentageDigits)}
+                      onChange={(e) => handleServicePercentageChange(e.target.value)}
+                      className={`${fillInputClass} pl-1`}
+                      placeholder="۰"
+                    />
+                    <span className="text-zinc-400 text-xs pl-2 shrink-0">٪</span>
+                  </div>
+                </div>
+              </div>
             </div>
-            <button
-              type="button"
-              onClick={addServiceRow}
-              className="mt-2.5 flex items-center gap-1.5 text-xs font-medium text-[#824c71]"
-            >
-              <Plus className="w-3.5 h-3.5" /> افزودن خدمت دیگر
-            </button>
           </div>
 
           {error && <p className="text-red-600 text-xs font-medium">{error}</p>}
