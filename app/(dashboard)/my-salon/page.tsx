@@ -180,24 +180,64 @@ export default function MySalonPage() {
     [bookings, selectedDateStr]
   );
 
-  // گروه‌بندی نوبت‌های همان روز بر اساس bookingGroupId — چند خدمتی که یک مشتری
-  // با هم رزرو کرده، در یک کارت با ردیف‌های جدا برای هر ساعت نمایش داده می‌شه
-  type BookingGroupView = { key: string; bookings: Booking[] };
+  const renderBookingCard = (booking: Booking) => {
+  const statusInfo = STATUS_LABELS[booking.status];
 
-  const dayGroups = useMemo<BookingGroupView[]>(() => {
-    const map = new Map<string, Booking[]>();
-    dayBookings.forEach((b) => {
-      const key = b.bookingGroupId ?? b.id;
-      if (!map.has(key)) map.set(key, []);
-      map.get(key)!.push(b);
-    });
-    return Array.from(map.entries())
-      .map(([key, bookings]) => ({
-        key,
-        bookings: bookings.sort((a, b) => a.startTime.localeCompare(b.startTime)),
-      }))
-      .sort((a, b) => a.bookings[0].startTime.localeCompare(b.bookings[0].startTime));
-  }, [dayBookings]);
+  return (
+    <div key={booking.id} className="bg-white border border-zinc-100 rounded-2xl p-4 shadow-sm shadow-zinc-200/50">
+      <div className="flex items-start justify-between gap-2 mb-3">
+        <div className="flex items-center gap-2 text-zinc-800">
+          <UserIcon className="w-4 h-4 text-[#824c71]" />
+          <span className="font-bold text-sm">{booking.customerName || 'بدون نام'}</span>
+        </div>
+        <span className={`text-[11px] font-medium px-2.5 py-1 rounded-lg whitespace-nowrap ${statusInfo.className}`}>
+          {statusInfo.label}
+        </span>
+      </div>
+
+      <div className="flex items-center gap-1.5 text-[13px] text-zinc-600 mb-3">
+        <Phone className="w-3.5 h-3.5 text-zinc-400" />
+        <span dir="ltr">{booking.customerPhone}</span>
+      </div>
+
+      <div className="bg-zinc-50 rounded-xl p-3">
+        <div className="flex items-center justify-between gap-2 mb-1.5">
+          <div className="flex items-center gap-1.5 text-[12px] text-zinc-600">
+            <Clock className="w-3.5 h-3.5 text-zinc-400" />
+            <span dir="ltr">{booking.startTime}</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={() => openEditBookingModal(booking)}
+              className="w-7 h-7 flex items-center justify-center rounded-lg bg-zinc-100 text-zinc-500"
+              title="ویرایش این خدمت"
+            >
+              <Pencil className="w-3 h-3" />
+            </button>
+            <button
+              onClick={() => handleCancel(booking.id)}
+              disabled={deletingId === booking.id}
+              className="w-7 h-7 flex items-center justify-center rounded-lg bg-red-50 text-red-500 disabled:opacity-50"
+              title="لغو این نوبت"
+            >
+              {deletingId === booking.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3 h-3" />}
+            </button>
+          </div>
+        </div>
+        <div className="flex flex-wrap gap-1.5">
+          {booking.services.map((s, idx) => (
+            <span key={idx} className="bg-white px-2 py-1 rounded-md text-[11px] text-zinc-600 border border-zinc-100">
+              {s.name}
+              {s.price ? ` · ${formatMoney(s.price)} تومان` : ''}
+              {s.staffName ? ` · ${s.staffName}` : ''}
+              {s.staffPercentage ? ` (${s.staffPercentage.toLocaleString('fa-IR')}٪)` : ''}
+            </span>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
 
   type StaffShareRow = { name: string; amount: number };
 
@@ -256,76 +296,6 @@ export default function MySalonPage() {
       </div>
     );
   }
-
- const renderBookingGroupCard = (group: BookingGroupView) => {
-    const first = group.bookings[0];
-    const statusInfo = STATUS_LABELS[first.status];
-
-    return (
-      <div key={group.key} className="bg-white border border-zinc-100 rounded-2xl p-4 shadow-sm shadow-zinc-200/50">
-        <div className="flex items-start justify-between gap-2 mb-3">
-          <div className="flex items-center gap-2 text-zinc-800">
-            <UserIcon className="w-4 h-4 text-[#824c71]" />
-            <span className="font-bold text-sm">{first.customerName || 'بدون نام'}</span>
-          </div>
-          <span className={`text-[11px] font-medium px-2.5 py-1 rounded-lg whitespace-nowrap ${statusInfo.className}`}>
-            {statusInfo.label}
-          </span>
-        </div>
-
-        <div className="flex items-center gap-1.5 text-[13px] text-zinc-600 mb-3">
-          <Phone className="w-3.5 h-3.5 text-zinc-400" />
-          <span dir="ltr">{first.customerPhone}</span>
-        </div>
-
-        {/* هر خدمت با ساعت و پرسنل خودش، در ردیف جدا */}
-        <div className="space-y-2 mb-3">
-          {group.bookings.map((booking) => (
-            <div key={booking.id} className="bg-zinc-50 rounded-xl p-3">
-              <div className="flex items-center justify-between gap-2 mb-1.5">
-                <div className="flex items-center gap-1.5 text-[12px] text-zinc-600">
-                  <Clock className="w-3.5 h-3.5 text-zinc-400" />
-                  <span dir="ltr">{booking.startTime}</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <button
-                    onClick={() => openEditBookingModal(booking)}
-                    className="w-7 h-7 flex items-center justify-center rounded-lg bg-zinc-100 text-zinc-500"
-                    title="ویرایش این خدمت"
-                  >
-                    <Pencil className="w-3 h-3" />
-                  </button>
-                  <button
-                    onClick={() => handleCancel(booking.id)}
-                    disabled={deletingId === booking.id}
-                    className="w-7 h-7 flex items-center justify-center rounded-lg bg-red-50 text-red-500 disabled:opacity-50"
-                    title="لغو این نوبت"
-                  >
-                    {deletingId === booking.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3 h-3" />}
-                  </button>
-                </div>
-              </div>
-              <div className="flex flex-wrap gap-1.5">
-                {booking.services.map((s, idx) => (
-                  <span key={idx} className="bg-white px-2 py-1 rounded-md text-[11px] text-zinc-600 border border-zinc-100">
-                    {s.name}
-                    {s.price ? ` · ${formatMoney(s.price)} تومان` : ''}
-                    {s.staffName ? ` · ${s.staffName}` : ''}
-                    {s.staffPercentage ? ` (${s.staffPercentage.toLocaleString('fa-IR')}٪)` : ''}
-                  </span>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-
-        <div className="flex items-center justify-between text-[12px] text-zinc-500 border-t border-zinc-100 pt-2.5">
-          <span>بیعانه: {formatMoney(group.bookings.reduce((a, b) => a + b.depositAmount, 0))} تومان</span>
-          <span>مبلغ کل: {formatMoney(group.bookings.reduce((a, b) => a + b.totalAmount, 0))} تومان</span>
-        </div>
-      </div>
-    );
-  };
 
   return (
     <div className="max-w-3xl mx-auto pt-8 pb-32 px-4 md:pt-10 md:px-0">
@@ -460,11 +430,11 @@ export default function MySalonPage() {
         <h2 className="text-sm font-bold text-zinc-800 mb-3">
           نوبت‌های این روز {dayBookings.length > 0 && `(${dayBookings.length.toLocaleString('fa-IR')})`}
         </h2>
-        {dayGroups.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {dayGroups.map(renderBookingGroupCard)}
-          </div>
-        ) : (
+        {dayBookings.length > 0 ? (
+  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+    {dayBookings.map(renderBookingCard)}
+  </div>
+) : (
           <div className="text-center py-10 bg-zinc-50 rounded-2xl">
             <p className="text-zinc-400 text-sm">نوبتی برای این روز ثبت نشده است.</p>
           </div>
