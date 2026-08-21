@@ -120,9 +120,16 @@ if (
     }
   );
 }
+    // اگر سالن قبلاً رد شده بود، ویرایش اطلاعات یعنی درخواست بررسی مجدد از ادمین
+    const resubmissionData =
+      existingSalon.status === 'REJECTED'
+        ? { status: 'PENDING_APPROVAL' as const, rejectionReason: null, reviewedAt: null }
+        : {};
+
     const updatedSalon = await prisma.salon.update({
   where: { userId: user.id },
   data: {
+    ...resubmissionData,
     name: body.name,
     province: body.province,
     city: body.city,

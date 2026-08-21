@@ -9,7 +9,9 @@ datasource db {
 
 enum SalonStatus {
   PENDING_PAYMENT
+  PENDING_APPROVAL // ثبت شده، منتظر تایید ادمین قبل از پابلیک شدن
   ACTIVE
+  REJECTED         // ادمین ثبت را رد کرده است
   INACTIVE
 }
 
@@ -74,6 +76,8 @@ model Salon {
   portfolios            String[]
 
   status                SalonStatus @default(PENDING_PAYMENT)
+  rejectionReason       String?     // در صورت رد شدن توسط ادمین، دلیل به سالن‌دار نشان داده می‌شود
+  reviewedAt            DateTime?   // زمانی که ادمین تایید یا رد کرد
   planId                String?
   subscriptionExpiresAt DateTime?
   reminderSentAt        DateTime?

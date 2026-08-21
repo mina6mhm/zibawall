@@ -4,9 +4,11 @@ import { prisma } from '@/lib/prisma';
 
 const mobileRegex = /^09\d{9}$/;
 
-// این مسیر سالن را مستقیماً و بدون پرداخت فعال می‌کند (اشتراک/پلن فعلاً حذف شده است).
-// subscriptionExpiresAt عمداً به ۱۰۰ سال بعد تنظیم می‌شود تا فیلتر «ACTIVE و منقضی‌نشده»ی
-// موجود در GET /api/salon (صفحه اصلی) بدون نیاز به تغییر schema یا آن فیلتر، به‌درستی کار کند.
+// این مسیر سالن را بدون پرداخت می‌سازد ولی آن را مستقیم پابلیک نمی‌کند (اشتراک/پلن فعلاً حذف شده است).
+// سالن با status=PENDING_APPROVAL ساخته می‌شود و تا زمانی‌که ادمین از پنل مدیریت
+// آن را تایید نکند، در GET /api/salon (صفحه اصلی، که فقط ACTIVE برمی‌گرداند) نمایش داده نمی‌شود.
+// subscriptionExpiresAt عمداً به ۱۰۰ سال بعد تنظیم می‌شود تا بعد از تایید ادمین، فیلتر
+// «ACTIVE و منقضی‌نشده»ی GET /api/salon بدون نیاز به تغییر schema یا آن فیلتر درست کار کند.
 export async function POST(req: Request) {
   try {
     const body = await req.json();
@@ -73,7 +75,7 @@ export async function POST(req: Request) {
         imageUrl,
         description: description || 'توضیحات پیش‌فرض سالن',
         portfolios: finalPortfolios,
-        status: 'ACTIVE',
+        status: 'PENDING_APPROVAL',
         planId: null,
         subscriptionExpiresAt: farFuture,
         userId: user.id,

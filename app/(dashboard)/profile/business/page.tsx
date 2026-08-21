@@ -298,8 +298,8 @@ export default function BusinessRegistrationPage() {
         throw new Error(data.message || data.error || 'خطا در ارتباط با سرور');
       }
 
-      alert('کسب‌وکار شما با موفقیت ثبت و فعال شد!');
-      router.push('/');
+      alert('کسب‌وکار شما با موفقیت ثبت شد و برای بررسی به ادمین ارسال شد. پس از تایید، صفحه‌ی شما برای همه نمایش داده می‌شود.');
+      router.push('/profile/business/overview');
 
     } catch (error: any) {
       console.error(error);

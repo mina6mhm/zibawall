@@ -1,0 +1,1 @@
+ALTER TYPE "SalonStatus" ADD VALUE 'REJECTED';

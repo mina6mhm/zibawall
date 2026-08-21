@@ -2,7 +2,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Store, Edit, Trash2, ArrowRight, Loader2, MapPin, ChevronLeft, Users, CalendarClock } from 'lucide-react';
+import { Store, Edit, Trash2, ArrowRight, Loader2, MapPin, ChevronLeft, Users, CalendarClock, Clock, XCircle } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
@@ -103,6 +103,31 @@ export default function BusinessOverviewPage() {
         >
           <ArrowRight className="w-4 h-4" /> بازگشت
         </button>
+
+        {/* وضعیت تایید سالن توسط ادمین */}
+        {salonData.status === 'PENDING_APPROVAL' && (
+          <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-2xl px-4 py-3.5 mb-5">
+            <Clock className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" strokeWidth={1.5} />
+            <div>
+              <p className="text-sm font-bold text-amber-800">در انتظار تایید ادمین</p>
+              <p className="text-xs text-amber-700 mt-1 leading-5">
+                کسب‌وکار شما ثبت شده ولی هنوز برای کاربران دیگر نمایش داده نمی‌شود. پس از بررسی و تایید ادمین، صفحه‌ی شما پابلیک خواهد شد.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {salonData.status === 'REJECTED' && (
+          <div className="flex items-start gap-3 bg-red-50 border border-red-200 rounded-2xl px-4 py-3.5 mb-5">
+            <XCircle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" strokeWidth={1.5} />
+            <div>
+              <p className="text-sm font-bold text-red-800">ثبت کسب‌وکار رد شد</p>
+              <p className="text-xs text-red-700 mt-1 leading-5">
+                {salonData.rejectionReason || 'اطلاعات ثبتی شما توسط ادمین تایید نشد.'} برای اصلاح اطلاعات و ارسال مجدد، از گزینه‌ی «ویرایش اطلاعات» استفاده کنید.
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* کارت سالن — با زدن روی آن، صفحه عمومی سالن باز می‌شود */}
         <Link
