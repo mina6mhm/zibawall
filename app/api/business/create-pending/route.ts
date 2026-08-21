@@ -1,6 +1,7 @@
 // app/api/business/create-pending/route.ts
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { notifyAdminNewSalonPending } from '@/lib/telegram';
 
 const mobileRegex = /^09\d{9}$/;
 
@@ -91,6 +92,14 @@ export async function POST(req: Request) {
         },
       },
     });
+
+    // نوتیف آنی به ادمین از طریق تلگرام — عمداً await نمی‌شود که سرعت پاسخ به کاربر کم نشود
+    notifyAdminNewSalonPending({
+      id: salon.id,
+      name: salon.name,
+      province: salon.province,
+      city: salon.city,
+    }).catch((err) => console.error('Telegram notify error:', err));
 
     return NextResponse.json({ success: true, salon }, { status: 201 });
   } catch (error) {

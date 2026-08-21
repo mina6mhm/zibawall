@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import { checkSubscriptions } from '@/lib/checkSubscriptions';
 import { cookies } from 'next/headers';
 import jwt from 'jsonwebtoken';
+import { notifyAdminNewSalonPending } from '@/lib/telegram';
 
 import { prisma } from '@/lib/prisma';
 
@@ -171,6 +172,17 @@ if (
         }
       }
     });
+
+    // اگر این ویرایش، یک "درخواست بررسی مجدد" بعد از رد شدن بود، به ادمین نوتیف بده
+    if (existingSalon.status === 'REJECTED') {
+      notifyAdminNewSalonPending({
+        id: updatedSalon.id,
+        name: updatedSalon.name,
+        province: updatedSalon.province,
+        city: updatedSalon.city,
+        isResubmission: true,
+      }).catch((err) => console.error('Telegram notify error:', err));
+    }
 
     return NextResponse.json({ success: true, salon: updatedSalon }, { status: 200 });
 
