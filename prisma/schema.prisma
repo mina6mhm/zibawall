@@ -96,6 +96,7 @@ model Salon {
   bookings              Booking[]
   bookingGroups         BookingGroup[]
   staff                 Staff[]
+  managers              SalonManager[]
 
   createdAt             DateTime    @default(now())
   updatedAt             DateTime    @updatedAt
@@ -104,6 +105,24 @@ model Salon {
   @@index([status, subscriptionExpiresAt])
   @@index([hasHomeService])
   @@index([genderAudience])
+}
+
+// شماره‌موبایل‌هایی که سالن‌دار به‌عنوان «مدیر سالن» اضافه کرده است.
+// هر کاربری که با این شماره لاگین کند، دقیقاً همان دسترسی صاحب سالن را
+// به تنظیمات، نوبت‌ها، پرسنل و ... خواهد داشت (بجز حذف کسب‌وکار و مدیریت خود این لیست).
+model SalonManager {
+  id        String   @id @default(uuid())
+  phone     String
+  label     String?  // یادداشت اختیاری خودِ صاحب سالن، مثلاً «منشی سارا» — فقط نمایشی
+
+  salonId   String
+  salon     Salon    @relation(fields: [salonId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([salonId, phone])
+  @@index([salonId])
+  @@index([phone])
 }
 
 model Social {

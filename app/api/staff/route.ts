@@ -4,10 +4,11 @@ import { cookies } from 'next/headers';
 import jwt from 'jsonwebtoken';
 
 import { prisma } from '@/lib/prisma';
+import { getSalonForUserId } from '@/lib/salonAccess';
 
 const mobileRegex = /^09\d{9}$/;
 
-// گرفتن سالن متعلق به کاربر لاگین‌شده از روی توکن
+// گرفتن سالنی که کاربر لاگین‌شده به آن دسترسی دارد (صاحب اصلی یا مدیر اضافه‌شده)
 async function getOwnedSalonFromToken() {
   const cookieStore = await cookies();
   const token = cookieStore.get('token')?.value;
@@ -21,9 +22,7 @@ async function getOwnedSalonFromToken() {
     return { error: 'توکن نامعتبر است', status: 401 as const };
   }
 
-  const salon = await prisma.salon.findUnique({
-    where: { userId: decoded.userId },
-  });
+  const salon = await getSalonForUserId(decoded.userId);
 
   if (!salon) return { error: 'شما سالنی ثبت نکرده‌اید', status: 404 as const };
 

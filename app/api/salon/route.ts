@@ -6,6 +6,7 @@ import jwt from 'jsonwebtoken';
 import { notifyAdminNewSalonPending } from '@/lib/telegram';
 
 import { prisma } from '@/lib/prisma';
+import { getSalonAccessForUserId } from '@/lib/salonAccess';
 
 // ۱. اضافه شدن این خط برای جلوگیری از کش شدن و نمایش دیتای لحظه‌ای
 export const dynamic = 'force-dynamic';
@@ -57,8 +58,14 @@ return NextResponse.json(
       return NextResponse.json({ error: 'کاربر یافت نشد' }, { status: 404 });
     }
 
+    const access = await getSalonAccessForUserId(user.id);
+
+    if (!access) {
+      return NextResponse.json({ error: 'سالنی یافت نشد' }, { status: 404 });
+    }
+
     const salon = await prisma.salon.findUnique({
-      where: { userId: user.id },
+      where: { id: access.salon.id },
       include: { socials: true }
     });
 
@@ -95,9 +102,8 @@ export async function PUT(req: Request) {
       return NextResponse.json({ error: 'کاربر یافت نشد' }, { status: 404 });
     }
 
-    const existingSalon = await prisma.salon.findUnique({
-      where: { userId: user.id }
-    });
+    const access = await getSalonAccessForUserId(user.id);
+    const existingSalon = access?.salon ?? null;
 
     if (!existingSalon) {
       return NextResponse.json({ error: 'سالنی برای ویرایش یافت نشد' }, { status: 404 });
@@ -128,7 +134,7 @@ if (
         : {};
 
     const updatedSalon = await prisma.salon.update({
-  where: { userId: user.id },
+  where: { id: existingSalon.id },
   data: {
     ...resubmissionData,
     name: body.name,

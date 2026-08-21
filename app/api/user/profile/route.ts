@@ -4,6 +4,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import jwt from 'jsonwebtoken';
 import { cookies } from 'next/headers';
+import { getSalonAccessForUserId } from '@/lib/salonAccess';
 
 // دریافت اطلاعات کاربر در صفحه پروفایل
 export async function GET(req: Request) {
@@ -19,12 +20,15 @@ export async function GET(req: Request) {
 
     const user = await prisma.user.findUnique({
       where: { id: decoded.userId },
-      include: { salon: true }
     });
 
     if (!user) {
       return NextResponse.json({ error: 'کاربر یافت نشد' }, { status: 404 });
     }
+
+    // سالنی که این کاربر بهش دسترسی داره: یا خودش صاحب اصلیه، یا به‌عنوان
+    // «مدیر سالن» توسط صاحبِ یک سالن دیگر با همین شماره موبایل اضافه شده
+    const access = await getSalonAccessForUserId(user.id);
 
     return NextResponse.json({
       id: user.id,
@@ -32,7 +36,8 @@ export async function GET(req: Request) {
       phone: user.phone,
       username: user.username,
       role: user.role,     // 👈 این خط اضافه شد
-      salon: user.salon
+      salon: access?.salon ?? null,
+      isSalonOwner: access?.isOwner ?? false, // فقط صاحب اصلی؛ مدیرها false می‌گیرن
     });
   } catch (error) {
     return NextResponse.json({ error: 'توکن نامعتبر یا خطای سرور' }, { status: 401 });

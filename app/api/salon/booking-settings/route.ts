@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import jwt from 'jsonwebtoken';
 import { prisma } from '@/lib/prisma';
+import { getSalonForUserId } from '@/lib/salonAccess';
 
 export async function PATCH(req: Request) {
   try {
@@ -17,7 +18,7 @@ export async function PATCH(req: Request) {
       return NextResponse.json({ error: 'توکن نامعتبر است' }, { status: 401 });
     }
 
-    const salon = await prisma.salon.findUnique({ where: { userId: decoded.userId } });
+    const salon = await getSalonForUserId(decoded.userId);
     if (!salon) return NextResponse.json({ error: 'سالنی یافت نشد' }, { status: 404 });
 
     const body = await req.json();

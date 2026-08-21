@@ -5,6 +5,7 @@ import jwt from 'jsonwebtoken';
 
 import { prisma } from '@/lib/prisma';
 import { BOOKING_APP_FEE } from '@/lib/constants';
+import { getSalonForUserId } from '@/lib/salonAccess';
 
 export const dynamic = 'force-dynamic';
 
@@ -23,9 +24,7 @@ async function getOwnedSalonFromToken() {
     return { error: 'توکن نامعتبر است', status: 401 as const };
   }
 
-  const salon = await prisma.salon.findUnique({
-    where: { userId: decoded.userId },
-  });
+  const salon = await getSalonForUserId(decoded.userId);
 
   if (!salon) return { error: 'شما سالنی ثبت نکرده‌اید', status: 404 as const };
 
