@@ -1,5 +1,7 @@
 //app/api/upload/route.ts
 import { NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
+import jwt from 'jsonwebtoken';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import sharp from 'sharp';
 // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -19,6 +21,36 @@ const MAX_FILE_SIZE_MB = 50;
 const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
 const MAX_DIM = 2048;
 const QUALITY = 85;
+
+// فقط این پسوندها مجاز به آپلود هستن. توجه: mimeType که کلاینت می‌فرسته کاملاً
+// قابل جعله (هرکسی می‌تونه Content-Type دلخواه بذاره)، پس ملاک اصلی تصمیم‌گیری
+// پسوند فایل و پردازش واقعی با sharp هست، نه mimeType خام کلاینت.
+const ALLOWED_EXTENSIONS = new Set(['jpg', 'jpeg', 'png', 'webp', 'heic', 'heif']);
+const EXT_TO_CONTENT_TYPE: Record<string, string> = {
+  jpg: 'image/jpeg',
+  jpeg: 'image/jpeg',
+  png: 'image/png',
+  webp: 'image/webp',
+  heic: 'image/heic',
+  heif: 'image/heif',
+};
+
+function isAllowedFile(fileName: string): boolean {
+  const ext = fileName.toLowerCase().split('.').pop() || '';
+  return ALLOWED_EXTENSIONS.has(ext);
+}
+
+async function getUserIdFromToken(): Promise<string | null> {
+  const cookieStore = await cookies();
+  const token = cookieStore.get('token')?.value;
+  if (!token) return null;
+  try {
+    const decoded: any = jwt.verify(token, process.env.JWT_SECRET!);
+    return decoded.userId ?? null;
+  } catch {
+    return null;
+  }
+}
 
 async function processImage(
   buffer: Buffer,
@@ -62,14 +94,20 @@ async function processImage(
 
   } catch (err: any) {
     // اگه پردازش fail شد، فایل اصلی رو بفرست (fallback)
+    // contentType رو از روی پسوند مجاز تعیین می‌کنیم، نه mimeType خام کلاینت
     console.error('Image processing failed, using original:', err?.message);
     const ext = lowerName.split('.').pop() || 'jpg';
-    return { buffer, ext, contentType: mimeType || 'application/octet-stream' };
+    return { buffer, ext, contentType: EXT_TO_CONTENT_TYPE[ext] ?? 'application/octet-stream' };
   }
 }
 
 export async function POST(req: Request) {
   try {
+    const userId = await getUserIdFromToken();
+    if (!userId) {
+      return NextResponse.json({ error: 'ابتدا وارد حساب کاربری شوید' }, { status: 401 });
+    }
+
     const formData = await req.formData();
     const files = formData.getAll('file') as File[];
 
@@ -84,6 +122,13 @@ export async function POST(req: Request) {
         return NextResponse.json(
           { error: `حجم فایل "${file.name}" بیش از ${MAX_FILE_SIZE_MB} مگابایت است` },
           { status: 413 }
+        );
+      }
+
+      if (!isAllowedFile(file.name)) {
+        return NextResponse.json(
+          { error: `نوع فایل "${file.name}" مجاز نیست` },
+          { status: 415 }
         );
       }
 
