@@ -7,7 +7,7 @@ import { CATEGORY_MAPPING } from "@/lib/data";
 import { 
   ArrowRight, Star, MapPin, Clock, Phone,
   CheckCircle2, CalendarOff, X, MessageCircle, CalendarClock, ChevronDown, ChevronUp, Map, Trash2,
-  Home, Users
+  Home, Users, Share2, Check
 } from "lucide-react";
 import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
 
@@ -44,6 +44,9 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
 
   // --- کنترل پاپ‌آپ هشدار وقتی نوبت‌دهی آنلاین سالن غیرفعاله ---
   const [showBookingAlert, setShowBookingAlert] = useState(false);
+
+  // --- اشتراک‌گذاری صفحه سالن ---
+  const [copied, setCopied] = useState(false);
 
   const toggleCategory = (category: string) => {
     setExpandedCategories(prev => 
@@ -136,6 +139,32 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
       setDeleteError(error.message || 'مشکلی پیش آمد. لطفاً دوباره تلاش کنید.');
       setIsDeleting(false);
     }
+  };
+
+  // --- اشتراک‌گذاری صفحه‌ی این سالن — موبایل: Web Share API، دسکتاپ: کپی لینک ---
+  const handleShare = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!salon) return;
+
+    const url = `${window.location.origin}/salon/${salon.id}`;
+    const shareData = {
+      title: salon.name,
+      text: `رزرو آنلاین در ${salon.name}`,
+      url,
+    };
+
+    if (navigator.share) {
+      try {
+        await navigator.share(shareData);
+      } catch {}
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {}
   };
 
   if (isLoading) {
@@ -634,11 +663,31 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
             <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 ml-1.5" />
             بازگشت
           </button>
-          <button onClick={toggleBookmark} className="p-2 rounded-full active:bg-zinc-100">
-            <svg viewBox="0 0 24 24" className={`w-6 h-6 ${isBookmarked ? "text-[#824c71]" : "text-zinc-500"}`} fill={isBookmarked ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M6 4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v17.5l-6-4-6 4V4z" />
-            </svg>
-          </button>
+
+          {/* سمت چپ: اشتراک‌گذاری + نشان کردن، کنار هم */}
+          <div className="flex items-center gap-1">
+            <button
+              onClick={handleShare}
+              className="p-2 rounded-full active:bg-zinc-100 relative"
+              aria-label="اشتراک‌گذاری صفحه سالن"
+            >
+              {copied ? (
+                <Check className="w-5 h-5 text-emerald-500" />
+              ) : (
+                <Share2 className="w-5 h-5 text-zinc-500" />
+              )}
+              {copied && (
+                <span className="absolute -bottom-6 left-1/2 -translate-x-1/2 whitespace-nowrap text-[10px] font-medium text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md">
+                  لینک کپی شد
+                </span>
+              )}
+            </button>
+            <button onClick={toggleBookmark} className="p-2 rounded-full active:bg-zinc-100">
+              <svg viewBox="0 0 24 24" className={`w-6 h-6 ${isBookmarked ? "text-[#824c71]" : "text-zinc-500"}`} fill={isBookmarked ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M6 4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v17.5l-6-4-6 4V4z" />
+              </svg>
+            </button>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 sm:gap-8">

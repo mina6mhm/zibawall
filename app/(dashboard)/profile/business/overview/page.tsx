@@ -2,7 +2,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Store, Edit, Trash2, ArrowRight, Loader2, MapPin, ChevronLeft, CalendarClock, Share2, Check } from 'lucide-react';
+import { Store, Edit, Trash2, ArrowRight, Loader2, MapPin, ChevronLeft, Users, CalendarClock } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
@@ -11,7 +11,6 @@ export default function BusinessOverviewPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [isFetching, setIsFetching] = useState(true);
   const [salonData, setSalonData] = useState<any>(null);
-  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -35,30 +34,6 @@ export default function BusinessOverviewPage() {
     };
     fetchProfile();
   }, [router]);
-
-  const handleShare = async () => {
-    const url = `${window.location.origin}/salon/${salonData.id}`;
-    const shareData = {
-      title: salonData.name,
-      text: `رزرو آنلاین در ${salonData.name}`,
-      url,
-    };
-
-    // موبایل: Web Share API (شیت سیستمی با اینستا، واتساپ، تلگرام و...)
-    if (navigator.share) {
-      try {
-        await navigator.share(shareData);
-      } catch {}
-      return;
-    }
-
-    // دسکتاپ: کپی لینک
-    try {
-      await navigator.clipboard.writeText(url);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch {}
-  };
 
   const handleDeleteBusiness = async () => {
     if (!window.confirm('آیا از حذف کامل کسب‌وکار خود مطمئن هستید؟ این عمل غیرقابل بازگشت است.')) return;
@@ -91,31 +66,31 @@ export default function BusinessOverviewPage() {
   if (!salonData) return null;
 
   const actions = [
-    {
-      key: 'booking',
-      label: 'تنظیمات نوبت‌دهی آنلاین',
-      description: 'فعال‌سازی و مدیریت نوبت‌دهی',
-      icon: CalendarClock,
-      href: '/my-salon/booking-settings',
-      variant: 'default' as const,
-    },
-    {
-      key: 'edit',
-      label: 'ویرایش اطلاعات',
-      description: 'خدمات، تصاویر و مشخصات سالن',
-      icon: Edit,
-      href: '/profile/business/edit',
-      variant: 'default' as const,
-    },
-    {
-      key: 'delete',
-      label: 'حذف کسب‌وکار',
-      description: 'این عمل غیرقابل بازگشت است',
-      icon: Trash2,
-      onClick: handleDeleteBusiness,
-      variant: 'danger' as const,
-    },
-  ];
+  {
+    key: 'booking',
+    label: 'تنظیمات نوبت‌دهی آنلاین',
+    description: 'فعال‌سازی و مدیریت نوبت‌دهی',
+    icon: CalendarClock,
+    href: '/my-salon/booking-settings',
+    variant: 'default' as const,
+  },
+  {
+    key: 'edit',
+    label: 'ویرایش اطلاعات',
+    description: 'خدمات، تصاویر و مشخصات سالن',
+    icon: Edit,
+    href: '/profile/business/edit',
+    variant: 'default' as const,
+  },
+  {
+    key: 'delete',
+    label: 'حذف کسب‌وکار',
+    description: 'این عمل غیرقابل بازگشت است',
+    icon: Trash2,
+    onClick: handleDeleteBusiness,
+    variant: 'danger' as const,
+  },
+];
 
   return (
     <div className="flex flex-col min-h-screen bg-white pb-24">
@@ -129,10 +104,10 @@ export default function BusinessOverviewPage() {
           <ArrowRight className="w-4 h-4" /> بازگشت
         </button>
 
-        {/* کارت سالن */}
+        {/* کارت سالن — با زدن روی آن، صفحه عمومی سالن باز می‌شود */}
         <Link
           href={`/salon/${salonData.id}`}
-          className="block bg-gradient-to-br from-[#824c71] to-[#6d3f5e] rounded-3xl p-5 shadow-lg shadow-[#824c71]/20 mb-3 active:opacity-90 transition-opacity"
+          className="block bg-gradient-to-br from-[#824c71] to-[#6d3f5e] rounded-3xl p-5 shadow-lg shadow-[#824c71]/20 mb-5 active:opacity-90 transition-opacity"
         >
           <div className="flex items-center gap-4">
             <div className="w-14 h-14 bg-white/15 backdrop-blur rounded-2xl flex items-center justify-center shrink-0 border border-white/20">
@@ -149,33 +124,19 @@ export default function BusinessOverviewPage() {
           </div>
         </Link>
 
-        {/* دکمه اشتراک‌گذاری — زیر کارت سالن، جدا و برجسته */}
-        <button
-          onClick={handleShare}
-          className="w-full flex items-center justify-center gap-2 py-2.5 rounded-2xl border border-dashed border-zinc-300 text-zinc-500 text-sm font-medium hover:border-[#824c71] hover:text-[#824c71] transition-colors mb-5"
-        >
-          {copied ? (
-            <>
-              <Check className="w-4 h-4 text-emerald-500" />
-              <span className="text-emerald-500">لینک کپی شد</span>
-            </>
-          ) : (
-            <>
-              <Share2 className="w-4 h-4" />
-              اشتراک‌گذاری صفحه سالن
-            </>
-          )}
-        </button>
-
         {/* اکشن‌ها */}
         <div className="space-y-2.5">
           {actions.map((action) => {
             const Icon = action.icon;
 
             const iconBox = (
-              <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
-                action.variant === 'danger' ? 'bg-red-50 text-red-500' : 'bg-zinc-100 text-zinc-600'
-              }`}>
+              <div
+                className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
+                  action.variant === 'danger'
+                    ? 'bg-red-50 text-red-500'
+                    : 'bg-zinc-100 text-zinc-600'
+                }`}
+              >
                 <Icon className="w-4.5 h-4.5" strokeWidth={1.75} />
               </div>
             );
