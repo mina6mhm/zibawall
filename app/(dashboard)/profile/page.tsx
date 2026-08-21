@@ -99,11 +99,11 @@ export default function ProfilePage() {
  
           {userData.role === 'ADMIN' && (
             <Link
-              href="/admin/support"
+              href="/admin"
               className="mt-4 flex items-center gap-2 bg-[#824c71] text-white px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-[#6d3f5e] transition-colors"
             >
               <ShieldCheck className="w-4 h-4" />
-              پنل مدیریت پشتیبانی
+              پنل مدیریت
             </Link>
           )}
         </div>
