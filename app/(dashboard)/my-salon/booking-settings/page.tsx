@@ -299,14 +299,20 @@ function ServiceFormModal({ initial, onSave, onClose }: ServiceFormProps) {
 
 function ServicesTab({
   services,
+  staff,
   onRefresh,
 }: {
   services: BookingService[];
+  staff: StaffMember[];
   onRefresh: () => void;
 }) {
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<BookingService | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  // خدماتی که حداقل یک پرسنل انجامشون می‌ده — برای هشدار خدمات یتیم
+  const servicesWithStaff = new Set<string>();
+  staff.forEach((s) => (s.bookingServices ?? []).forEach((bs) => servicesWithStaff.add(bs.bookingServiceId)));
 
   const handleSave = async (data: Omit<BookingService, 'id' | 'isActive'>) => {
     const method = editing ? 'PUT' : 'POST';
@@ -369,10 +375,15 @@ function ServicesTab({
                       </span>
                     )}
                   </div>
-                  <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-[12px] text-zinc-500">
+                  <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-[12px] text-zinc-500 mb-1">
                     <span>⏱ {minToDuration(s.durationMin)}</span>
                     {s.price > 0 && <span>💰 {formatPrice(s.price)} تومان</span>}
                   </div>
+                  {s.isActive && !servicesWithStaff.has(s.id) && (
+                    <p className="text-[11px] text-amber-600 bg-amber-50 rounded-lg px-2 py-1 inline-flex items-center gap-1 mt-0.5">
+                      ⚠️ هیچ پرسنلی این خدمت را انجام نمی‌دهد
+                    </p>
+                  )}
                 </div>
                 <div className="flex items-center gap-1.5 shrink-0">
                   <button
@@ -575,9 +586,13 @@ function StaffTab({
                 </div>
                 <div>
                   <p className="text-sm font-bold text-zinc-800">{s.name}</p>
-                  <p className="text-[11px] text-zinc-400">
-                    {assignedIds.size} خدمات تخصیص‌یافته
-                  </p>
+                  {assignedIds.size === 0 ? (
+                    <p className="text-[11px] text-amber-600 font-medium">⚠️ هیچ خدمتی تخصیص داده نشده</p>
+                  ) : (
+                    <p className="text-[11px] text-zinc-400">
+                      {assignedIds.size} خدمات تخصیص‌یافته
+                    </p>
+                  )}
                 </div>
               </div>
               <div className="flex items-center gap-1.5">
@@ -1621,6 +1636,13 @@ export default function BookingSettingsPage() {
 
   const canEnable = services.some((s) => s.isActive) && staff.some((s) => (s.bookingServices ?? []).length > 0);
 
+  // خدمات فعالی که به هیچ پرسنلی تخصیص داده نشده و پرسنل‌هایی که هیچ خدمتی ندارند —
+  // برای بنر خلاصه‌ی بالای صفحه
+  const servicesWithStaff = new Set<string>();
+  staff.forEach((s) => (s.bookingServices ?? []).forEach((bs) => servicesWithStaff.add(bs.bookingServiceId)));
+  const unlinkedServicesCount = services.filter((s) => s.isActive && !servicesWithStaff.has(s.id)).length;
+  const unlinkedStaffCount = staff.filter((s) => (s.bookingServices ?? []).length === 0).length;
+
   return (
     <div className="max-w-2xl mx-auto pt-8 pb-32 px-4 md:pt-10 md:px-0">
       {/* Header */}
@@ -1668,6 +1690,21 @@ export default function BookingSettingsPage() {
         </button>
       </div>
 
+      {/* هشدار خلاصه — خدمات بدون پرسنل یا پرسنل بدون خدمت */}
+      {(unlinkedServicesCount > 0 || unlinkedStaffCount > 0) && (
+        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-3.5 mb-6 text-amber-700">
+          <p className="text-xs font-bold mb-1">⚠️ نیاز به تکمیل تنظیمات</p>
+          <ul className="text-[11px] space-y-0.5 leading-relaxed">
+            {unlinkedServicesCount > 0 && (
+              <li>• {unlinkedServicesCount.toLocaleString('fa-IR')} خدمت هنوز به هیچ پرسنلی تخصیص داده نشده</li>
+            )}
+            {unlinkedStaffCount > 0 && (
+              <li>• {unlinkedStaffCount.toLocaleString('fa-IR')} پرسنل هنوز هیچ خدمتی ندارد</li>
+            )}
+          </ul>
+        </div>
+      )}
+
       {/* Tabs */}
       <TabBar
         active={tab}
@@ -1677,7 +1714,7 @@ export default function BookingSettingsPage() {
       />
 
       {tab === 0 && (
-        <ServicesTab services={services} onRefresh={fetchAll} />
+        <ServicesTab services={services} staff={staff} onRefresh={fetchAll} />
       )}
       {tab === 1 && (
         <StaffTab staff={staff} services={services} onRefresh={fetchAll} />
