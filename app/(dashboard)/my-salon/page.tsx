@@ -7,7 +7,7 @@ import Link from 'next/link';
 import {
   Loader2, Clock, Phone, User as UserIcon,
   Scissors, Trash2, Store, Settings, Pencil, ChevronRight, ChevronLeft, ChevronDown, CalendarDays,
-  Wallet, TrendingUp, Users, BarChart3, CalendarClock, CalendarX, Plus, Check, ShieldCheck,
+  Wallet, TrendingUp, Users, BarChart3, CalendarClock, CalendarX, Plus, Check, ShieldCheck, X,
 } from 'lucide-react';
 import { DateObject } from 'react-multi-date-picker';
 import persian from 'react-date-object/calendars/persian';
@@ -94,7 +94,6 @@ export default function MySalonPage() {
   const [mySalons, setMySalons] = useState<MySalonOption[]>([]);
   const [isSalonSwitcherOpen, setIsSalonSwitcherOpen] = useState(false);
   const [isSwitchingSalon, setIsSwitchingSalon] = useState(false);
-  const salonSwitcherRef = useRef<HTMLDivElement>(null);
 
   // ── وضعیت پرسنل‌بودن ──
   const [staffOptions, setStaffOptions] = useState<StaffSalonOption[]>([]);
@@ -181,17 +180,6 @@ export default function MySalonPage() {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isDatePickerOpen]);
-
-  useEffect(() => {
-    if (!isSalonSwitcherOpen) return;
-    const handleClickOutside = (e: MouseEvent) => {
-      if (salonSwitcherRef.current && !salonSwitcherRef.current.contains(e.target as Node)) {
-        setIsSalonSwitcherOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [isSalonSwitcherOpen]);
 
   // سوییچ به یکی دیگر از سالن‌های در دسترس کاربر (مالکیت یا مدیریت)
   const handleSwitchSalon = async (salonId: string) => {
@@ -426,69 +414,17 @@ export default function MySalonPage() {
       {/* هدر */}
       {effectiveTab === 'salon' ? (
         <div className="flex items-center justify-between mb-7">
-          <div ref={salonSwitcherRef} className="relative min-w-0">
+          <div className="min-w-0">
             <button
               type="button"
-              onClick={() => setIsSalonSwitcherOpen((v) => !v)}
+              onClick={() => setIsSalonSwitcherOpen(true)}
               className="flex items-center gap-1.5 max-w-full"
             >
               <h1 className="text-xl md:text-2xl font-bold text-zinc-900 truncate">{salonName}</h1>
               {/* این آیکون همیشه نمایش داده می‌شود، حتی وقتی کاربر فقط یک سالن دارد */}
-              <ChevronDown
-                className={`w-5 h-5 text-zinc-900 shrink-0 transition-transform ${isSalonSwitcherOpen ? 'rotate-180' : ''}`}
-              />
+              <ChevronDown className="w-5 h-5 text-zinc-900 shrink-0" />
             </button>
             <p className="text-zinc-500 text-xs md:text-sm mt-0.5">مدیریت نوبت‌های سالن</p>
-
-            {isSalonSwitcherOpen && (
-              <div className="absolute z-20 top-full right-0 mt-2 w-64 bg-violet-50 rounded-2xl border border-violet-100 shadow-lg shadow-zinc-200/60 py-1.5 overflow-hidden">
-                {isSwitchingSalon ? (
-                  <div className="flex items-center justify-center py-6">
-                    <Loader2 className="w-5 h-5 text-[#824c71] animate-spin" />
-                  </div>
-                ) : (
-                  <>
-                    {mySalons.map((s) => (
-                      <button
-                        key={s.id}
-                        onClick={() => handleSwitchSalon(s.id)}
-                        className={`w-full flex items-center gap-2.5 px-3.5 py-2.5 text-right hover:bg-[#824c71]/10 transition-colors ${
-                          s.isActive ? 'bg-[#824c71]/15' : ''
-                        }`}
-                      >
-                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
-                          s.isActive ? 'bg-[#824c71] text-white' : 'bg-white/70 text-[#824c71]'
-                        }`}>
-                          {s.isOwner ? <Store className="w-3.5 h-3.5" /> : <ShieldCheck className="w-3.5 h-3.5" />}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className={`text-xs font-bold truncate ${s.isActive ? 'text-[#824c71]' : 'text-zinc-800'}`}>
-                            {s.name}
-                          </p>
-                          <p className="text-[10px] text-zinc-500 truncate">
-                            {s.isOwner ? 'سالن شما' : 'مدیر سالن'} · {s.city}
-                          </p>
-                        </div>
-                        {s.isActive && <Check className="w-4 h-4 text-[#824c71] shrink-0" />}
-                      </button>
-                    ))}
-
-                    <div className="border-t border-violet-200/60 mt-1 pt-1">
-                      <Link
-                        href="/profile/business"
-                        onClick={() => setIsSalonSwitcherOpen(false)}
-                        className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-right hover:bg-[#824c71]/10 transition-colors"
-                      >
-                        <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 bg-white/70 text-[#824c71]">
-                          <Plus className="w-3.5 h-3.5" />
-                        </div>
-                        <p className="text-xs font-bold text-zinc-700">ثبت‌نام کسب‌وکار جدید</p>
-                      </Link>
-                    </div>
-                  </>
-                )}
-              </div>
-            )}
           </div>
           <div className="flex items-center gap-2 shrink-0">
             <Link href="/my-salon/reports" aria-label="گزارش درآمد" className="w-10 h-10 flex items-center justify-center rounded-xl bg-zinc-100 text-zinc-600 hover:bg-zinc-200 transition-colors">
@@ -715,6 +651,74 @@ export default function MySalonPage() {
             dayLabel={dayLabel}
           />
         </>
+      )}
+
+      {/* پاپ‌آپ سوییچ سالن — لیست سالن‌هایی که کاربر بهشون دسترسی داره + ثبت‌نام کسب‌وکار جدید */}
+      {isSalonSwitcherOpen && (
+        <div
+          className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center bg-black/40 backdrop-blur-sm px-4 pb-4 sm:pb-4"
+          onClick={() => !isSwitchingSalon && setIsSalonSwitcherOpen(false)}
+        >
+          <div
+            className="w-full max-w-sm bg-white rounded-3xl p-4 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-3 px-1">
+              <h3 className="text-sm font-bold text-zinc-900">سالن‌های من</h3>
+              <button
+                type="button"
+                onClick={() => setIsSalonSwitcherOpen(false)}
+                className="w-7 h-7 flex items-center justify-center rounded-full bg-zinc-100 text-zinc-500"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
+            {isSwitchingSalon ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="w-6 h-6 text-[#824c71] animate-spin" />
+              </div>
+            ) : (
+              <div className="space-y-1.5">
+                {mySalons.map((s) => (
+                  <button
+                    key={s.id}
+                    onClick={() => handleSwitchSalon(s.id)}
+                    className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-2xl text-right transition-colors ${
+                      s.isActive ? 'bg-[#824c71]/8' : 'hover:bg-zinc-50'
+                    }`}
+                  >
+                    <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
+                      s.isActive ? 'bg-[#824c71] text-white' : 'bg-zinc-100 text-zinc-500'
+                    }`}>
+                      {s.isOwner ? <Store className="w-4 h-4" /> : <ShieldCheck className="w-4 h-4" />}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className={`text-sm font-bold truncate ${s.isActive ? 'text-[#824c71]' : 'text-zinc-800'}`}>
+                        {s.name}
+                      </p>
+                      <p className="text-[11px] text-zinc-400 truncate">
+                        {s.isOwner ? 'سالن شما' : 'مدیر سالن'} · {s.city}
+                      </p>
+                    </div>
+                    {s.isActive && <Check className="w-4.5 h-4.5 text-[#824c71] shrink-0" />}
+                  </button>
+                ))}
+
+                <Link
+                  href="/profile/business"
+                  onClick={() => setIsSalonSwitcherOpen(false)}
+                  className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-2xl text-right hover:bg-zinc-50 transition-colors mt-1 border-t border-zinc-100 pt-3.5"
+                >
+                  <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 bg-zinc-100 text-zinc-500">
+                    <Plus className="w-4 h-4" />
+                  </div>
+                  <p className="text-sm font-bold text-zinc-700">ثبت‌نام کسب‌وکار جدید</p>
+                </Link>
+              </div>
+            )}
+          </div>
+        </div>
       )}
     </div>
   );

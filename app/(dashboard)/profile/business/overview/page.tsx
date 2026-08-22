@@ -397,7 +397,7 @@ export default function BusinessOverviewPage() {
       {/* پاپ‌آپ تایید حذف کسب‌وکار */}
       {showDeleteConfirm && (
         <div
-          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 backdrop-blur-sm px-4 pb-4 sm:pb-4"
+          className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center bg-black/40 backdrop-blur-sm px-4 pb-4 sm:pb-4"
           onClick={() => !isLoading && setShowDeleteConfirm(false)}
         >
           <div
