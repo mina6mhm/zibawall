@@ -1,3 +1,4 @@
+// app/api/salon-overrides/route.ts
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import jwt from 'jsonwebtoken';

@@ -4,7 +4,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import jwt from 'jsonwebtoken';
 import { cookies } from 'next/headers';
-import { getSalonAccessForUserId } from '@/lib/salonAccess';
+import { getAccessibleSalonsForUserId, ACTIVE_SALON_COOKIE } from '@/lib/salonAccess';
 
 // دریافت اطلاعات کاربر در صفحه پروفایل
 export async function GET(req: Request) {
@@ -26,9 +26,23 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: 'کاربر یافت نشد' }, { status: 404 });
     }
 
-    // سالنی که این کاربر بهش دسترسی داره: یا خودش صاحب اصلیه، یا به‌عنوان
-    // «مدیر سالن» توسط صاحبِ یک سالن دیگر با همین شماره موبایل اضافه شده
-    const access = await getSalonAccessForUserId(user.id);
+    // همه‌ی سالن‌هایی که این کاربر بهشون دسترسی داره: هم سالن خودش (اگه مالک باشه)
+    // هم سالن‌هایی که به‌عنوان «مدیر» با همین شماره موبایل بهش اضافه شده
+    const accessibleSalons = await getAccessibleSalonsForUserId(user.id);
+
+    let activeSalonId: string | null = null;
+    try {
+      const cookieStore = await cookies();
+      activeSalonId = cookieStore.get(ACTIVE_SALON_COOKIE)?.value || null;
+    } catch {
+      // نادیده گرفته می‌شود
+    }
+
+    const active =
+      (activeSalonId && accessibleSalons.find((a) => a.salon.id === activeSalonId)) ||
+      accessibleSalons.find((a) => a.isOwner) ||
+      accessibleSalons[0] ||
+      null;
 
     return NextResponse.json({
       id: user.id,
@@ -36,8 +50,18 @@ export async function GET(req: Request) {
       phone: user.phone,
       username: user.username,
       role: user.role,     // 👈 این خط اضافه شد
-      salon: access?.salon ?? null,
-      isSalonOwner: access?.isOwner ?? false, // فقط صاحب اصلی؛ مدیرها false می‌گیرن
+      salon: active?.salon ?? null,
+      isSalonOwner: active?.isOwner ?? false, // فقط صاحب اصلی؛ مدیرها false می‌گیرن
+      // لیست همه‌ی سالن‌های در دسترس، برای سوییچر — همیشه برگردونده می‌شه حتی اگه فقط یک سالن باشه
+      salons: accessibleSalons.map((a) => ({
+        id: a.salon.id,
+        name: a.salon.name,
+        city: a.salon.city,
+        province: a.salon.province,
+        imageUrl: a.salon.imageUrl,
+        isOwner: a.isOwner,
+        isActive: active?.salon.id === a.salon.id,
+      })),
     });
   } catch (error) {
     return NextResponse.json({ error: 'توکن نامعتبر یا خطای سرور' }, { status: 401 });

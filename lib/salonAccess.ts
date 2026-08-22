@@ -1,39 +1,73 @@
 // lib/salonAccess.ts
 //
-// یک شماره موبایل ممکن است «مدیر» یک سالن باشد بدون اینکه صاحب اصلی
-// (userId ثبت‌شده روی رکورد Salon) آن باشد. این فایل جایگزین همه‌ی
-// جاهایی می‌شود که قبلاً مستقیماً با
-//   prisma.salon.findUnique({ where: { userId } })
-// سالن کاربر لاگین‌شده را پیدا می‌کردند؛ حالا هم صاحب اصلی و هم
-// مدیرهای اضافه‌شده (SalonManager) را در نظر می‌گیرد.
+// یک کاربر ممکن است به چند سالن دسترسی داشته باشد:
+//   ۱) سالنی که خودش با همین حساب ثبت کرده (مالک اصلی — userId روی رکورد Salon)
+//   ۲) سالن‌هایی که صاحب‌شان او را با شماره موبایلش به‌عنوان «مدیر» اضافه کرده (SalonManager)
+//
+// کاربر با کوکی «activeSalonId» مشخص می‌کند الان روی کدام‌یک از سالن‌های
+// در دسترسش کار می‌کند (سوییچر سالن). این فایل جایگزین همه‌ی جاهایی شده که
+// قبلاً مستقیماً با prisma.salon.findUnique({ where: { userId } }) سالنِ
+// کاربر لاگین‌شده را پیدا می‌کردند.
 
 import { cookies } from 'next/headers';
 import jwt from 'jsonwebtoken';
 import { prisma } from '@/lib/prisma';
 import type { Salon } from '@prisma/client';
 
+export const ACTIVE_SALON_COOKIE = 'activeSalonId';
+
 export type SalonAccess = {
   salon: Salon;
   isOwner: boolean;
 };
 
-// سالن + مشخص می‌کند که کاربر صاحب اصلی است یا فقط مدیر اضافه‌شده
-export async function getSalonAccessForUserId(userId: string): Promise<SalonAccess | null> {
-  const ownedSalon = await prisma.salon.findUnique({ where: { userId } });
-  if (ownedSalon) return { salon: ownedSalon, isOwner: true };
-
+// همه‌ی سالن‌هایی که این کاربر بهشون دسترسی داره (مالکیت یا مدیریت)
+export async function getAccessibleSalonsForUserId(userId: string): Promise<SalonAccess[]> {
   const user = await prisma.user.findUnique({ where: { id: userId } });
-  if (!user?.phone) return null;
+  if (!user) return [];
 
-  const managerRecord = await prisma.salonManager.findFirst({
-    where: { phone: user.phone },
-    include: { salon: true },
-    orderBy: { createdAt: 'asc' },
-  });
+  const results: SalonAccess[] = [];
 
-  if (!managerRecord) return null;
+  const ownedSalon = await prisma.salon.findUnique({ where: { userId } });
+  if (ownedSalon) results.push({ salon: ownedSalon, isOwner: true });
 
-  return { salon: managerRecord.salon, isOwner: false };
+  if (user.phone) {
+    const managerRecords = await prisma.salonManager.findMany({
+      where: { phone: user.phone },
+      include: { salon: true },
+      orderBy: { createdAt: 'asc' },
+    });
+    for (const rec of managerRecords) {
+      if (!results.some((r) => r.salon.id === rec.salon.id)) {
+        results.push({ salon: rec.salon, isOwner: false });
+      }
+    }
+  }
+
+  return results;
+}
+
+// سالنِ «فعال»ِ کاربر: اگر با سوییچر سالن دیگری را انتخاب کرده باشد همان،
+// وگرنه سالن خودش (اگر مالک باشد) و در غیر این صورت اولین سالنی که مدیرش است
+export async function getSalonAccessForUserId(userId: string): Promise<SalonAccess | null> {
+  const accessible = await getAccessibleSalonsForUserId(userId);
+  if (accessible.length === 0) return null;
+  if (accessible.length === 1) return accessible[0];
+
+  let preferredId: string | null = null;
+  try {
+    const cookieStore = await cookies();
+    preferredId = cookieStore.get(ACTIVE_SALON_COOKIE)?.value || null;
+  } catch {
+    // در کانتکست‌هایی که cookies() در دسترس نیست، همون پیش‌فرض استفاده می‌شود
+  }
+
+  if (preferredId) {
+    const preferred = accessible.find((a) => a.salon.id === preferredId);
+    if (preferred) return preferred;
+  }
+
+  return accessible.find((a) => a.isOwner) ?? accessible[0];
 }
 
 // فقط خود سالن — جایگزین مستقیم الگوی قدیمیِ

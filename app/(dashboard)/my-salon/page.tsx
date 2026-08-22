@@ -6,8 +6,8 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
   Loader2, Clock, Phone, User as UserIcon,
-  Scissors, Trash2, Store, Settings, Pencil, ChevronRight, ChevronLeft, CalendarDays,
-  Wallet, TrendingUp, Users, BarChart3, CalendarClock, CalendarX, Plus,
+  Scissors, Trash2, Store, Settings, Pencil, ChevronRight, ChevronLeft, ChevronDown, CalendarDays,
+  Wallet, TrendingUp, Users, BarChart3, CalendarClock, CalendarX, Plus, Check, ShieldCheck,
 } from 'lucide-react';
 import { DateObject } from 'react-multi-date-picker';
 import persian from 'react-date-object/calendars/persian';
@@ -48,6 +48,16 @@ type StaffSalonOption = {
   salonName: string;
 };
 
+// سالن‌هایی که کاربر لاگین‌شده بهشون دسترسی داره — یا خودش مالکه، یا به‌عنوان مدیر اضافه شده
+type MySalonOption = {
+  id: string;
+  name: string;
+  city: string;
+  province: string;
+  isOwner: boolean;
+  isActive: boolean;
+};
+
 type StaffBooking = {
   id: string;
   date: string;
@@ -80,6 +90,12 @@ export default function MySalonPage() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [isStaffModalOpen, setIsStaffModalOpen] = useState(false);
 
+  // ── سوییچر سالن — وقتی کاربر هم مالک یک سالنه، هم مدیر سالن(های) دیگه ──
+  const [mySalons, setMySalons] = useState<MySalonOption[]>([]);
+  const [isSalonSwitcherOpen, setIsSalonSwitcherOpen] = useState(false);
+  const [isSwitchingSalon, setIsSwitchingSalon] = useState(false);
+  const salonSwitcherRef = useRef<HTMLDivElement>(null);
+
   // ── وضعیت پرسنل‌بودن ──
   const [staffOptions, setStaffOptions] = useState<StaffSalonOption[]>([]);
   const [selectedStaffId, setSelectedStaffId] = useState<string>('');
@@ -104,6 +120,7 @@ export default function MySalonPage() {
         if (profileRes.status === 401) { router.push('/login'); return; }
       } else {
         const profileData = await profileRes.json();
+        setMySalons(profileData.salons || []);
         if (profileData.salon) {
           setHasSalon(true);
           setSalonName(profileData.salon.name);
@@ -164,6 +181,45 @@ export default function MySalonPage() {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isDatePickerOpen]);
+
+  useEffect(() => {
+    if (!isSalonSwitcherOpen) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (salonSwitcherRef.current && !salonSwitcherRef.current.contains(e.target as Node)) {
+        setIsSalonSwitcherOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isSalonSwitcherOpen]);
+
+  // سوییچ به یکی دیگر از سالن‌های در دسترس کاربر (مالکیت یا مدیریت)
+  const handleSwitchSalon = async (salonId: string) => {
+    if (mySalons.find((s) => s.id === salonId)?.isActive) {
+      setIsSalonSwitcherOpen(false);
+      return;
+    }
+    setIsSwitchingSalon(true);
+    try {
+      const res = await fetch('/api/user/active-salon', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ salonId }),
+      });
+      if (res.ok) {
+        setIsSalonSwitcherOpen(false);
+        setIsLoading(true);
+        await fetchData();
+      } else {
+        const data = await res.json();
+        alert(data.error || 'خطا در تعویض سالن');
+      }
+    } catch {
+      alert('خطای ارتباط با سرور');
+    } finally {
+      setIsSwitchingSalon(false);
+    }
+  };
 
   const openEditBookingModal = (booking: Booking) => {
     setEditingBooking(booking);
@@ -370,9 +426,69 @@ export default function MySalonPage() {
       {/* هدر */}
       {effectiveTab === 'salon' ? (
         <div className="flex items-center justify-between mb-7">
-          <div>
-            <h1 className="text-xl md:text-2xl font-bold text-zinc-900">{salonName}</h1>
+          <div ref={salonSwitcherRef} className="relative min-w-0">
+            <button
+              type="button"
+              onClick={() => setIsSalonSwitcherOpen((v) => !v)}
+              className="flex items-center gap-1.5 max-w-full"
+            >
+              <h1 className="text-xl md:text-2xl font-bold text-zinc-900 truncate">{salonName}</h1>
+              {/* این آیکون همیشه نمایش داده می‌شود، حتی وقتی کاربر فقط یک سالن دارد */}
+              <ChevronDown
+                className={`w-5 h-5 text-zinc-400 shrink-0 transition-transform ${isSalonSwitcherOpen ? 'rotate-180' : ''}`}
+              />
+            </button>
             <p className="text-zinc-500 text-xs md:text-sm mt-0.5">مدیریت نوبت‌های سالن</p>
+
+            {isSalonSwitcherOpen && (
+              <div className="absolute z-20 top-full right-0 mt-2 w-64 bg-white rounded-2xl border border-zinc-100 shadow-lg shadow-zinc-200/60 py-1.5 overflow-hidden">
+                {isSwitchingSalon ? (
+                  <div className="flex items-center justify-center py-6">
+                    <Loader2 className="w-5 h-5 text-[#824c71] animate-spin" />
+                  </div>
+                ) : (
+                  <>
+                    {mySalons.map((s) => (
+                      <button
+                        key={s.id}
+                        onClick={() => handleSwitchSalon(s.id)}
+                        className={`w-full flex items-center gap-2.5 px-3.5 py-2.5 text-right hover:bg-zinc-50 transition-colors ${
+                          s.isActive ? 'bg-[#824c71]/5' : ''
+                        }`}
+                      >
+                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
+                          s.isActive ? 'bg-[#824c71] text-white' : 'bg-zinc-100 text-zinc-500'
+                        }`}>
+                          {s.isOwner ? <Store className="w-3.5 h-3.5" /> : <ShieldCheck className="w-3.5 h-3.5" />}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className={`text-xs font-bold truncate ${s.isActive ? 'text-[#824c71]' : 'text-zinc-800'}`}>
+                            {s.name}
+                          </p>
+                          <p className="text-[10px] text-zinc-400 truncate">
+                            {s.isOwner ? 'سالن شما' : 'مدیر سالن'} · {s.city}
+                          </p>
+                        </div>
+                        {s.isActive && <Check className="w-4 h-4 text-[#824c71] shrink-0" />}
+                      </button>
+                    ))}
+
+                    <div className="border-t border-zinc-100 mt-1 pt-1">
+                      <Link
+                        href="/profile/business"
+                        onClick={() => setIsSalonSwitcherOpen(false)}
+                        className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-right hover:bg-zinc-50 transition-colors"
+                      >
+                        <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 bg-zinc-100 text-zinc-500">
+                          <Plus className="w-3.5 h-3.5" />
+                        </div>
+                        <p className="text-xs font-bold text-zinc-700">ثبت‌نام کسب‌وکار جدید</p>
+                      </Link>
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
           </div>
           <div className="flex items-center gap-2 shrink-0">
             <Link href="/my-salon/reports" aria-label="گزارش درآمد" className="w-10 h-10 flex items-center justify-center rounded-xl bg-zinc-100 text-zinc-600 hover:bg-zinc-200 transition-colors">
