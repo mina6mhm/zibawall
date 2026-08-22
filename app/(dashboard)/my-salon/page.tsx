@@ -7,7 +7,7 @@ import Link from 'next/link';
 import {
   Loader2, Clock, Phone, User as UserIcon,
   Scissors, Trash2, Store, Settings, Pencil, ChevronRight, ChevronLeft, ChevronDown, CalendarDays,
-  Wallet, TrendingUp, Users, BarChart3, CalendarClock, CalendarX, Plus, Check, ShieldCheck, X,
+  Wallet, TrendingUp, Users, BarChart3, CalendarClock, CalendarX, Plus, Check, ShieldCheck,
 } from 'lucide-react';
 import { DateObject } from 'react-multi-date-picker';
 import persian from 'react-date-object/calendars/persian';
@@ -656,23 +656,15 @@ export default function MySalonPage() {
       {/* پاپ‌آپ سوییچ سالن — لیست سالن‌هایی که کاربر بهشون دسترسی داره + ثبت‌نام کسب‌وکار جدید */}
       {isSalonSwitcherOpen && (
         <div
-          className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center bg-black/40 backdrop-blur-sm px-4 pb-4 sm:pb-4"
+          className="fixed inset-0 z-[9999] flex items-end justify-center bg-black/40 backdrop-blur-sm"
           onClick={() => !isSwitchingSalon && setIsSalonSwitcherOpen(false)}
         >
           <div
-            className="w-full max-w-sm bg-white rounded-3xl p-4 shadow-2xl"
+            className="w-full bg-white rounded-t-3xl p-4 pb-6 shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between mb-3 px-1">
-              <h3 className="text-sm font-bold text-zinc-900">سالن‌های من</h3>
-              <button
-                type="button"
-                onClick={() => setIsSalonSwitcherOpen(false)}
-                className="w-7 h-7 flex items-center justify-center rounded-full bg-zinc-100 text-zinc-500"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            </div>
+            <div className="w-10 h-1 bg-zinc-200 rounded-full mx-auto mb-3" />
+            <h3 className="text-sm font-bold text-zinc-900 mb-3 px-1">سالن‌های من</h3>
 
             {isSwitchingSalon ? (
               <div className="flex items-center justify-center py-8">
