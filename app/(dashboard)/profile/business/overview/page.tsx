@@ -41,6 +41,9 @@ export default function BusinessOverviewPage() {
   const [isAddingManager, setIsAddingManager] = useState(false);
   const [removingId, setRemovingId] = useState<string | null>(null);
 
+  // ── تایید حذف کسب‌وکار — به‌جای window.confirm پیش‌فرض مرورگر ──
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
   useEffect(() => {
     const fetchProfile = async () => {
       try {
@@ -140,20 +143,18 @@ export default function BusinessOverviewPage() {
   };
 
   const handleDeleteBusiness = async () => {
-    if (!window.confirm('آیا از حذف کامل کسب‌وکار خود مطمئن هستید؟ این عمل غیرقابل بازگشت است.')) return;
     setIsLoading(true);
     try {
       const res = await fetch(`/api/salon?id=${salonData.id}`, { method: 'DELETE' });
       if (res.ok) {
-        alert('کسب‌وکار شما با موفقیت حذف شد.');
         router.push('/profile');
       } else {
         const errorData = await res.json();
         alert(errorData.error || 'خطا در حذف');
+        setIsLoading(false);
       }
     } catch {
       alert('خطای شبکه');
-    } finally {
       setIsLoading(false);
     }
   };
@@ -176,7 +177,6 @@ export default function BusinessOverviewPage() {
     description: 'فعال‌سازی و مدیریت نوبت‌دهی',
     icon: CalendarClock,
     href: '/my-salon/booking-settings',
-    variant: 'default' as const,
   },
   {
     key: 'edit',
@@ -184,19 +184,7 @@ export default function BusinessOverviewPage() {
     description: 'خدمات، تصاویر و مشخصات سالن',
     icon: Edit,
     href: '/profile/business/edit',
-    variant: 'default' as const,
   },
-  // حذف کسب‌وکار فقط برای صاحب اصلی نمایش داده می‌شود
-  ...(isSalonOwner
-    ? [{
-        key: 'delete',
-        label: 'حذف کسب‌وکار',
-        description: 'این عمل غیرقابل بازگشت است',
-        icon: Trash2,
-        onClick: handleDeleteBusiness,
-        variant: 'danger' as const,
-      }]
-    : []),
 ];
 
   return (
@@ -273,61 +261,21 @@ export default function BusinessOverviewPage() {
         <div className="space-y-2.5">
           {actions.map((action) => {
             const Icon = action.icon;
-
-            const iconBox = (
-              <div
-                className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
-                  action.variant === 'danger'
-                    ? 'bg-red-50 text-red-500'
-                    : 'bg-zinc-100 text-zinc-600'
-                }`}
-              >
-                <Icon className="w-4.5 h-4.5" strokeWidth={1.75} />
-              </div>
-            );
-
-            const textBlock = (
-              <div className="flex-1 min-w-0 text-right">
-                <p className={`text-sm font-bold ${action.variant === 'danger' ? 'text-red-600' : 'text-zinc-900'}`}>
-                  {action.label}
-                </p>
-                <p className={`text-xs mt-0.5 truncate ${action.variant === 'danger' ? 'text-red-400' : 'text-zinc-400'}`}>
-                  {action.description}
-                </p>
-              </div>
-            );
-
-            const baseClass = `group w-full flex items-center gap-3.5 px-4 py-3.5 rounded-2xl bg-white border transition-all text-right ${
-              action.variant === 'danger'
-                ? 'border-zinc-100 hover:border-red-200 hover:bg-red-50/50'
-                : 'border-zinc-100 hover:border-zinc-200 hover:shadow-sm'
-            }`;
-
-            if (action.href) {
-              return (
-                <Link key={action.key} href={action.href} className={baseClass}>
-                  {iconBox}
-                  {textBlock}
-                  <ChevronLeft className="w-4 h-4 text-zinc-300 group-hover:-translate-x-0.5 transition-transform shrink-0" />
-                </Link>
-              );
-            }
-
             return (
-              <button
+              <Link
                 key={action.key}
-                onClick={action.onClick}
-                disabled={isLoading}
-                className={`${baseClass} disabled:opacity-50`}
+                href={action.href}
+                className="group w-full flex items-center gap-3.5 px-4 py-3.5 rounded-2xl bg-white border border-zinc-100 hover:border-zinc-200 hover:shadow-sm transition-all text-right"
               >
-                {iconBox}
-                {textBlock}
-                {isLoading ? (
-                  <Loader2 className="w-4 h-4 text-red-400 animate-spin shrink-0" />
-                ) : (
-                  <ChevronLeft className="w-4 h-4 text-red-200 group-hover:-translate-x-0.5 transition-transform shrink-0" />
-                )}
-              </button>
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-zinc-100 text-zinc-600">
+                  <Icon className="w-4.5 h-4.5" strokeWidth={1.75} />
+                </div>
+                <div className="flex-1 min-w-0 text-right">
+                  <p className="text-sm font-bold text-zinc-900">{action.label}</p>
+                  <p className="text-xs mt-0.5 truncate text-zinc-400">{action.description}</p>
+                </div>
+                <ChevronLeft className="w-4 h-4 text-zinc-300 group-hover:-translate-x-0.5 transition-transform shrink-0" />
+              </Link>
             );
           })}
 
@@ -426,8 +374,64 @@ export default function BusinessOverviewPage() {
               )}
             </div>
           )}
+
+          {/* حذف کسب‌وکار — همیشه آخرین گزینه، فقط برای صاحب اصلی */}
+          {isSalonOwner && (
+            <button
+              onClick={() => setShowDeleteConfirm(true)}
+              className="group w-full flex items-center gap-3.5 px-4 py-3.5 rounded-2xl bg-white border border-zinc-100 hover:border-red-200 hover:bg-red-50/50 transition-all text-right"
+            >
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-red-50 text-red-500">
+                <Trash2 className="w-4.5 h-4.5" strokeWidth={1.75} />
+              </div>
+              <div className="flex-1 min-w-0 text-right">
+                <p className="text-sm font-bold text-red-600">حذف کسب‌وکار</p>
+                <p className="text-xs mt-0.5 truncate text-red-400">این عمل غیرقابل بازگشت است</p>
+              </div>
+              <ChevronLeft className="w-4 h-4 text-red-200 group-hover:-translate-x-0.5 transition-transform shrink-0" />
+            </button>
+          )}
         </div>
       </div>
+
+      {/* پاپ‌آپ تایید حذف کسب‌وکار */}
+      {showDeleteConfirm && (
+        <div
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 backdrop-blur-sm px-4 pb-4 sm:pb-4"
+          onClick={() => !isLoading && setShowDeleteConfirm(false)}
+        >
+          <div
+            className="w-full max-w-sm bg-white rounded-3xl p-5 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="w-12 h-12 rounded-2xl bg-red-50 text-red-500 flex items-center justify-center mb-4">
+              <Trash2 className="w-5 h-5" />
+            </div>
+            <h3 className="text-base font-bold text-zinc-900 mb-1.5">حذف کامل کسب‌وکار</h3>
+            <p className="text-sm text-zinc-500 leading-6 mb-5">
+              با حذف «{salonData.name}»، تمام اطلاعات، نوبت‌ها و پرسنل این سالن برای همیشه پاک می‌شود. این عمل غیرقابل بازگشت است.
+            </p>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setShowDeleteConfirm(false)}
+                disabled={isLoading}
+                className="flex-1 py-2.5 rounded-xl text-sm font-bold text-zinc-600 bg-zinc-100 hover:bg-zinc-200 transition-colors disabled:opacity-50"
+              >
+                انصراف
+              </button>
+              <button
+                type="button"
+                onClick={handleDeleteBusiness}
+                disabled={isLoading}
+                className="flex-1 py-2.5 rounded-xl text-sm font-bold text-white bg-red-500 hover:bg-red-600 transition-colors disabled:opacity-50 flex items-center justify-center gap-1.5"
+              >
+                {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'بله، حذف شود'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

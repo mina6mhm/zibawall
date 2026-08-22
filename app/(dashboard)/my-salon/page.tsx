@@ -435,13 +435,13 @@ export default function MySalonPage() {
               <h1 className="text-xl md:text-2xl font-bold text-zinc-900 truncate">{salonName}</h1>
               {/* این آیکون همیشه نمایش داده می‌شود، حتی وقتی کاربر فقط یک سالن دارد */}
               <ChevronDown
-                className={`w-5 h-5 text-zinc-400 shrink-0 transition-transform ${isSalonSwitcherOpen ? 'rotate-180' : ''}`}
+                className={`w-5 h-5 text-zinc-900 shrink-0 transition-transform ${isSalonSwitcherOpen ? 'rotate-180' : ''}`}
               />
             </button>
             <p className="text-zinc-500 text-xs md:text-sm mt-0.5">مدیریت نوبت‌های سالن</p>
 
             {isSalonSwitcherOpen && (
-              <div className="absolute z-20 top-full right-0 mt-2 w-64 bg-white rounded-2xl border border-zinc-100 shadow-lg shadow-zinc-200/60 py-1.5 overflow-hidden">
+              <div className="absolute z-20 top-full right-0 mt-2 w-64 bg-violet-50 rounded-2xl border border-violet-100 shadow-lg shadow-zinc-200/60 py-1.5 overflow-hidden">
                 {isSwitchingSalon ? (
                   <div className="flex items-center justify-center py-6">
                     <Loader2 className="w-5 h-5 text-[#824c71] animate-spin" />
@@ -452,12 +452,12 @@ export default function MySalonPage() {
                       <button
                         key={s.id}
                         onClick={() => handleSwitchSalon(s.id)}
-                        className={`w-full flex items-center gap-2.5 px-3.5 py-2.5 text-right hover:bg-zinc-50 transition-colors ${
-                          s.isActive ? 'bg-[#824c71]/5' : ''
+                        className={`w-full flex items-center gap-2.5 px-3.5 py-2.5 text-right hover:bg-[#824c71]/10 transition-colors ${
+                          s.isActive ? 'bg-[#824c71]/15' : ''
                         }`}
                       >
                         <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
-                          s.isActive ? 'bg-[#824c71] text-white' : 'bg-zinc-100 text-zinc-500'
+                          s.isActive ? 'bg-[#824c71] text-white' : 'bg-white/70 text-[#824c71]'
                         }`}>
                           {s.isOwner ? <Store className="w-3.5 h-3.5" /> : <ShieldCheck className="w-3.5 h-3.5" />}
                         </div>
@@ -465,7 +465,7 @@ export default function MySalonPage() {
                           <p className={`text-xs font-bold truncate ${s.isActive ? 'text-[#824c71]' : 'text-zinc-800'}`}>
                             {s.name}
                           </p>
-                          <p className="text-[10px] text-zinc-400 truncate">
+                          <p className="text-[10px] text-zinc-500 truncate">
                             {s.isOwner ? 'سالن شما' : 'مدیر سالن'} · {s.city}
                           </p>
                         </div>
@@ -473,13 +473,13 @@ export default function MySalonPage() {
                       </button>
                     ))}
 
-                    <div className="border-t border-zinc-100 mt-1 pt-1">
+                    <div className="border-t border-violet-200/60 mt-1 pt-1">
                       <Link
                         href="/profile/business"
                         onClick={() => setIsSalonSwitcherOpen(false)}
-                        className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-right hover:bg-zinc-50 transition-colors"
+                        className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-right hover:bg-[#824c71]/10 transition-colors"
                       >
-                        <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 bg-zinc-100 text-zinc-500">
+                        <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 bg-white/70 text-[#824c71]">
                           <Plus className="w-3.5 h-3.5" />
                         </div>
                         <p className="text-xs font-bold text-zinc-700">ثبت‌نام کسب‌وکار جدید</p>
