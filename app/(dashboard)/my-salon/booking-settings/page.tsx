@@ -358,7 +358,7 @@ function ServicesTab({
           <p className="text-zinc-400 text-xs mt-1">خدمات سالن را با مدت زمان و قیمت وارد کنید</p>
         </div>
       ) : (
-        <div className="space-y-2.5 mb-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
           {services.map((s) => (
             <div
               key={s.id}
@@ -441,7 +441,7 @@ function ServicesTab({
   );
 }
 
-// ─── Staff Tab ────────────────────────────────────────────────────────────────
+// ─── Staff Form Modal ─────────────────────────────────────────────────────────
 
 const mobileRegex = /^09\d{9}$/;
 
@@ -450,6 +450,125 @@ const toEnglishDigitsPhone = (str: string) =>
     .replace(/[۰-۹]/g, (d) => String(d.charCodeAt(0) - '۰'.charCodeAt(0)))
     .replace(/[٠-٩]/g, (d) => String(d.charCodeAt(0) - '٠'.charCodeAt(0)))
     .replace(/[^0-9]/g, '');
+
+type StaffFormProps = {
+  initial?: StaffMember;
+  onSave: (data: { name: string; phone: string; commissionPercent: number | null }) => Promise<void>;
+  onClose: () => void;
+};
+
+function StaffFormModal({ initial, onSave, onClose }: StaffFormProps) {
+  const [name, setName] = useState(initial?.name ?? '');
+  const [phone, setPhone] = useState(initial?.phone ?? '');
+  const [commission, setCommission] = useState(
+    initial?.commissionPercent != null ? String(initial.commissionPercent) : ''
+  );
+  const [saving, setSaving] = useState(false);
+  const [err, setErr] = useState('');
+
+  const sanitizeCommission = (value: string) => {
+    let digits = toEnglishDigitsPhone(value).slice(0, 3);
+    if (digits !== '' && Number(digits) > 100) digits = '100';
+    return digits;
+  };
+
+  const handleSave = async () => {
+    const trimmedName = name.trim();
+    if (!trimmedName) return setErr('نام پرسنل الزامی است');
+    const cleanPhone = toEnglishDigitsPhone(phone);
+    if (!mobileRegex.test(cleanPhone)) return setErr('شماره موبایل معتبر نیست');
+    setErr('');
+    setSaving(true);
+    try {
+      await onSave({
+        name: trimmedName,
+        phone: cleanPhone,
+        commissionPercent: commission === '' ? null : Number(commission),
+      });
+      onClose();
+    } catch (e: any) {
+      setErr(e.message || 'خطا در ذخیره');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-[120] flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm sm:p-4" onClick={onClose}>
+      <div className="bg-white w-full sm:max-w-md rounded-t-2xl sm:rounded-2xl p-5 pb-8 sm:pb-5" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between mb-5">
+          <h3 className="text-base font-bold text-zinc-900">
+            {initial ? 'ویرایش پرسنل' : 'افزودن پرسنل'}
+          </h3>
+          <button onClick={onClose} className="p-1.5 text-zinc-400 bg-zinc-50 rounded-full">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        <div className="space-y-4">
+          <div>
+            <label className="block text-xs font-medium text-zinc-600 mb-1.5">
+              نام پرسنل <span className="text-red-500">*</span>
+            </label>
+            <input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="مثلاً سارا محمدی"
+              className="w-full border border-zinc-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-[#824c71] focus:ring-1 focus:ring-[#824c71]/20"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-zinc-600 mb-1.5">
+              شماره موبایل <span className="text-red-500">*</span>
+            </label>
+            <input
+              value={phone}
+              onChange={(e) => setPhone(toEnglishDigitsPhone(e.target.value).slice(0, 11))}
+              placeholder="۰۹۱۲۳۴۵۶۷۸۹"
+              dir="ltr"
+              inputMode="numeric"
+              className="w-full border border-zinc-200 rounded-xl px-3.5 py-2.5 text-sm text-left focus:outline-none focus:border-[#824c71] focus:ring-1 focus:ring-[#824c71]/20"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-zinc-600 mb-1.5">
+              درصد پیش‌فرض پرسنل <span className="text-zinc-400 font-normal">(اختیاری)</span>
+            </label>
+            <div className="flex items-center border border-zinc-200 rounded-xl overflow-hidden focus-within:border-[#824c71] focus-within:ring-1 focus-within:ring-[#824c71]/20">
+              <input
+                value={commission}
+                onChange={(e) => setCommission(sanitizeCommission(e.target.value))}
+                dir="ltr"
+                inputMode="numeric"
+                placeholder="مثلاً ۴۰"
+                className="w-full px-3.5 py-2.5 text-sm bg-transparent outline-none border-0"
+              />
+              <span className="text-zinc-400 text-xs pl-3 shrink-0">٪</span>
+            </div>
+            <p className="text-[10.5px] text-zinc-400 mt-1 leading-relaxed">
+              این درصد موقع ثبت نوبت آنلاین خودکار برای این پرسنل ثبت می‌شه؛ برای یه نوبت خاص هم می‌تونی بعداً از صفحه‌ی «نوبت‌ها» تغییرش بدی.
+            </p>
+          </div>
+
+          {err && <p className="text-red-500 text-xs font-medium">{err}</p>}
+
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="w-full bg-[#824c71] text-white rounded-xl py-3 text-sm font-bold disabled:opacity-60 flex items-center justify-center gap-2"
+          >
+            {saving && <Loader2 className="w-4 h-4 animate-spin" />}
+            {saving ? 'در حال ذخیره...' : 'ذخیره پرسنل'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Staff Tab ────────────────────────────────────────────────────────────────
 
 function StaffTab({
   staff,
@@ -462,57 +581,26 @@ function StaffTab({
 }) {
   const [expanded, setExpanded] = useState<string | null>(null);
   const [saving, setSaving] = useState<string | null>(null);
-
-  // افزودن پرسنل inline
-  const [showAddStaff, setShowAddStaff] = useState(false);
-  const [newName, setNewName] = useState('');
-  const [newPhone, setNewPhone] = useState('');
-  const [newCommission, setNewCommission] = useState(''); // درصد پیش‌فرض، اختیاری
-  const [addingStaff, setAddingStaff] = useState(false);
-  const [addStaffErr, setAddStaffErr] = useState('');
   const [deletingStaffId, setDeletingStaffId] = useState<string | null>(null);
 
-  // ویرایش نام/شماره/درصد پرسنل موجود — inline، مستقل از بخش افزودن پرسنل جدید
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editName, setEditName] = useState('');
-  const [editPhone, setEditPhone] = useState('');
-  const [editCommission, setEditCommission] = useState('');
-  const [editError, setEditError] = useState('');
-  const [savingEdit, setSavingEdit] = useState(false);
+  // افزودن/ویرایش پرسنل — هر دو از یک مودال، مثل مودال خدمات
+  const [showForm, setShowForm] = useState(false);
+  const [editingStaff, setEditingStaff] = useState<StaffMember | null>(null);
 
-  const sanitizeCommission = (value: string) => {
-    let digits = toEnglishDigitsPhone(value).slice(0, 3);
-    if (digits !== '' && Number(digits) > 100) digits = '100';
-    return digits;
-  };
-
-  const handleAddStaff = async () => {
-    const name = newName.trim();
-    if (!name) return setAddStaffErr('نام پرسنل الزامی است');
-    const phone = toEnglishDigitsPhone(newPhone);
-    if (!mobileRegex.test(phone)) return setAddStaffErr('شماره موبایل معتبر نیست');
-    setAddStaffErr('');
-    setAddingStaff(true);
-    try {
-      const res = await fetch('/api/staff', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name,
-          phone,
-          commissionPercent: newCommission === '' ? undefined : Number(newCommission),
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) return setAddStaffErr(data.error || 'خطا در ثبت پرسنل');
-      setNewName('');
-      setNewPhone('');
-      setNewCommission('');
-      setShowAddStaff(false);
-      onRefresh();
-    } finally {
-      setAddingStaff(false);
+  const handleSaveStaff = async (data: { name: string; phone: string; commissionPercent: number | null }) => {
+    const isEdit = !!editingStaff;
+    const url = isEdit ? `/api/staff/${editingStaff!.id}` : '/api/staff';
+    const method = isEdit ? 'PATCH' : 'POST';
+    const res = await fetch(url, {
+      method,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+      const d = await res.json();
+      throw new Error(d.error || 'خطا در ذخیره');
     }
+    onRefresh();
   };
 
   const handleDeleteStaff = async (id: string) => {
@@ -521,41 +609,6 @@ function StaffTab({
     await fetch(`/api/staff?id=${id}`, { method: 'DELETE' });
     onRefresh();
     setDeletingStaffId(null);
-  };
-
-  // ── باز کردن فرم ویرایش نام/شماره یک پرسنل ──
-  const openEditStaff = (s: StaffMember) => {
-    setEditingId(s.id);
-    setEditName(s.name);
-    setEditPhone(s.phone ?? '');
-    setEditCommission(s.commissionPercent != null ? String(s.commissionPercent) : '');
-    setEditError('');
-  };
-
-  const handleSaveEditStaff = async (staffId: string) => {
-    const name = editName.trim();
-    if (!name) return setEditError('نام پرسنل الزامی است');
-    const phone = toEnglishDigitsPhone(editPhone);
-    if (!mobileRegex.test(phone)) return setEditError('شماره موبایل معتبر نیست');
-    setEditError('');
-    setSavingEdit(true);
-    try {
-      const res = await fetch(`/api/staff/${staffId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name,
-          phone,
-          commissionPercent: editCommission === '' ? null : Number(editCommission),
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) { setEditError(data.error || 'خطا در ذخیره تغییرات'); return; }
-      setEditingId(null);
-      onRefresh();
-    } finally {
-      setSavingEdit(false);
-    }
   };
 
   const toggleService = async (staffId: string, serviceId: string, has: boolean) => {
@@ -579,222 +632,116 @@ function StaffTab({
   }
 
   return (
-    <div className="space-y-2.5">
-      {staff.length === 0 && !showAddStaff && (
-        <div className="text-center py-10 bg-zinc-50 rounded-2xl mb-2">
+    <div>
+      {staff.length === 0 ? (
+        <div className="text-center py-10 bg-zinc-50 rounded-2xl mb-4">
           <Users className="w-8 h-8 text-zinc-300 mx-auto mb-2" />
           <p className="text-zinc-500 text-sm font-medium">هنوز پرسنلی ثبت نشده</p>
           <p className="text-zinc-400 text-xs mt-1">پرسنل خود را از همین‌جا اضافه کنید</p>
         </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+          {staff.map((s) => {
+            const assignedIds = new Set((s.bookingServices ?? []).map((b) => b.bookingServiceId));
+            const isOpen = expanded === s.id;
+
+            return (
+              <div key={s.id} className="border border-zinc-100 rounded-2xl overflow-hidden bg-white self-start">
+                <button
+                  className="w-full flex items-center justify-between px-4 py-3.5 text-right"
+                  onClick={() => setExpanded(isOpen ? null : s.id)}
+                >
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="w-8 h-8 rounded-full bg-[#824c71]/10 text-[#824c71] flex items-center justify-center text-xs font-bold shrink-0">
+                      {s.name.slice(0, 1)}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-bold text-zinc-800 truncate">{s.name}</p>
+                      {assignedIds.size === 0 ? (
+                        <p className="text-[11px] text-amber-600 font-medium">⚠️ هیچ خدمتی تخصیص داده نشده</p>
+                      ) : (
+                        <p className="text-[11px] text-zinc-400 flex items-center gap-1.5 truncate">
+                          <span>{assignedIds.size} خدمات تخصیص‌یافته</span>
+                          {s.commissionPercent != null && (
+                            <span className="text-[#824c71] font-medium">· {s.commissionPercent}٪ سهم پرسنل</span>
+                          )}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setEditingStaff(s); setShowForm(true); }}
+                      className="w-7 h-7 flex items-center justify-center rounded-lg bg-zinc-100 text-zinc-500"
+                    >
+                      <Pencil className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); handleDeleteStaff(s.id); }}
+                      disabled={deletingStaffId === s.id}
+                      className="w-7 h-7 flex items-center justify-center rounded-lg bg-red-50 text-red-400 disabled:opacity-40"
+                    >
+                      {deletingStaffId === s.id
+                        ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        : <Trash2 className="w-3.5 h-3.5" />}
+                    </button>
+                    <ChevronDown className={`w-4 h-4 text-zinc-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+                  </div>
+                </button>
+
+                {isOpen && (
+                  <div className="px-4 pb-4 border-t border-zinc-50">
+                    <p className="text-[11px] text-zinc-400 mt-3 mb-2">خدمات این پرسنل:</p>
+                    <div className="grid grid-cols-1 gap-1.5">
+                      {services.map((svc) => {
+                        const has = assignedIds.has(svc.id);
+                        const isSaving = saving === s.id + svc.id;
+                        return (
+                          <button
+                            key={svc.id}
+                            onClick={() => toggleService(s.id, svc.id, has)}
+                            disabled={isSaving || !svc.isActive}
+                            className={`flex items-center justify-between px-3 py-2.5 rounded-xl border text-right transition-all disabled:opacity-40 ${
+                              has
+                                ? 'border-[#824c71]/30 bg-[#824c71]/5 text-[#824c71]'
+                                : 'border-zinc-100 bg-zinc-50 text-zinc-600 hover:border-zinc-200'
+                            }`}
+                          >
+                            <div className="flex items-center gap-2">
+                              <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${
+                                has ? 'bg-[#824c71] border-[#824c71]' : 'border-zinc-300'
+                              }`}>
+                                {has && <Check className="w-2.5 h-2.5 text-white" />}
+                              </div>
+                              <span className="text-xs font-medium">{svc.name}</span>
+                            </div>
+                            <span className="text-[11px] text-zinc-400">{minToDuration(svc.durationMin)}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
       )}
 
-      {staff.map((s) => {
-        const assignedIds = new Set((s.bookingServices ?? []).map((b) => b.bookingServiceId));
-        const isOpen = expanded === s.id;
-        const isEditing = editingId === s.id;
+      <button
+        onClick={() => { setEditingStaff(null); setShowForm(true); }}
+        className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border-2 border-dashed border-zinc-200 text-zinc-500 text-sm font-medium hover:border-[#824c71]/40 hover:text-[#824c71] transition-colors"
+      >
+        <Plus className="w-4 h-4" />
+        افزودن پرسنل جدید
+      </button>
 
-        return (
-          <div key={s.id} className="border border-zinc-100 rounded-2xl overflow-hidden bg-white">
-            <button
-              className="w-full flex items-center justify-between px-4 py-3.5 text-right"
-              onClick={() => setExpanded(isOpen ? null : s.id)}
-            >
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-full bg-[#824c71]/10 text-[#824c71] flex items-center justify-center text-xs font-bold shrink-0">
-                  {s.name.slice(0, 1)}
-                </div>
-                <div>
-                  <p className="text-sm font-bold text-zinc-800">{s.name}</p>
-                  {assignedIds.size === 0 ? (
-                    <p className="text-[11px] text-amber-600 font-medium">⚠️ هیچ خدمتی تخصیص داده نشده</p>
-                  ) : (
-                    <p className="text-[11px] text-zinc-400 flex items-center gap-1.5">
-                      <span>{assignedIds.size} خدمات تخصیص‌یافته</span>
-                      {s.commissionPercent != null && (
-                        <span className="text-[#824c71] font-medium">· {s.commissionPercent}٪ سهم پرسنل</span>
-                      )}
-                    </p>
-                  )}
-                </div>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <button
-                  onClick={(e) => { e.stopPropagation(); openEditStaff(s); }}
-                  className="w-7 h-7 flex items-center justify-center rounded-lg bg-zinc-100 text-zinc-500"
-                >
-                  <Pencil className="w-3.5 h-3.5" />
-                </button>
-                <button
-                  onClick={(e) => { e.stopPropagation(); handleDeleteStaff(s.id); }}
-                  disabled={deletingStaffId === s.id}
-                  className="w-7 h-7 flex items-center justify-center rounded-lg bg-red-50 text-red-400 disabled:opacity-40"
-                >
-                  {deletingStaffId === s.id
-                    ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                    : <Trash2 className="w-3.5 h-3.5" />}
-                </button>
-                <ChevronDown className={`w-4 h-4 text-zinc-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
-              </div>
-            </button>
-
-            {isEditing && (
-              <div className="px-4 pb-4 pt-1 border-t border-zinc-50 space-y-2.5" onClick={(e) => e.stopPropagation()}>
-                <div>
-                  <label className="block text-[11px] font-medium text-zinc-500 mb-1">نام پرسنل</label>
-                  <input
-                    value={editName}
-                    onChange={(e) => setEditName(e.target.value)}
-                    className="w-full border border-zinc-200 rounded-xl px-3.5 py-2.5 text-sm bg-white focus:outline-none focus:border-[#824c71]"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[11px] font-medium text-zinc-500 mb-1">شماره موبایل</label>
-                  <input
-                    value={editPhone}
-                    onChange={(e) => setEditPhone(toEnglishDigitsPhone(e.target.value).slice(0, 11))}
-                    dir="ltr"
-                    inputMode="numeric"
-                    className="w-full border border-zinc-200 rounded-xl px-3.5 py-2.5 text-sm bg-white text-left focus:outline-none focus:border-[#824c71]"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[11px] font-medium text-zinc-500 mb-1">
-                    درصد پیش‌فرض پرسنل <span className="text-zinc-400 font-normal">(اختیاری)</span>
-                  </label>
-                  <div className="flex items-center border border-zinc-200 rounded-xl bg-white overflow-hidden focus-within:border-[#824c71]">
-                    <input
-                      value={editCommission}
-                      onChange={(e) => setEditCommission(sanitizeCommission(e.target.value))}
-                      dir="ltr"
-                      inputMode="numeric"
-                      placeholder="مثلاً ۴۰"
-                      className="w-full px-3.5 py-2.5 text-sm bg-transparent outline-none border-0"
-                    />
-                    <span className="text-zinc-400 text-xs pl-3 shrink-0">٪</span>
-                  </div>
-                  <p className="text-[10.5px] text-zinc-400 mt-1 leading-relaxed">
-                    این درصد موقع ثبت نوبت آنلاین خودکار برای این پرسنل ثبت می‌شه؛ برای یه نوبت خاص هم می‌تونی بعداً از صفحه‌ی «نوبت‌ها» تغییرش بدی.
-                  </p>
-                </div>
-                {editError && <p className="text-red-500 text-xs">{editError}</p>}
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => handleSaveEditStaff(s.id)}
-                    disabled={savingEdit}
-                    className="flex-1 bg-[#824c71] text-white rounded-xl py-2.5 text-xs font-bold disabled:opacity-60 flex items-center justify-center gap-1.5"
-                  >
-                    {savingEdit && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-                    ذخیره
-                  </button>
-                  <button
-                    onClick={() => setEditingId(null)}
-                    className="px-4 rounded-xl bg-zinc-100 text-zinc-600 text-xs font-medium"
-                  >
-                    انصراف
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {isOpen && (
-              <div className="px-4 pb-4 border-t border-zinc-50">
-                <p className="text-[11px] text-zinc-400 mt-3 mb-2">خدمات این پرسنل:</p>
-                <div className="grid grid-cols-1 gap-1.5">
-                  {services.map((svc) => {
-                    const has = assignedIds.has(svc.id);
-                    const isSaving = saving === s.id + svc.id;
-                    return (
-                      <button
-                        key={svc.id}
-                        onClick={() => toggleService(s.id, svc.id, has)}
-                        disabled={isSaving || !svc.isActive}
-                        className={`flex items-center justify-between px-3 py-2.5 rounded-xl border text-right transition-all disabled:opacity-40 ${
-                          has
-                            ? 'border-[#824c71]/30 bg-[#824c71]/5 text-[#824c71]'
-                            : 'border-zinc-100 bg-zinc-50 text-zinc-600 hover:border-zinc-200'
-                        }`}
-                      >
-                        <div className="flex items-center gap-2">
-                          <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${
-                            has ? 'bg-[#824c71] border-[#824c71]' : 'border-zinc-300'
-                          }`}>
-                            {has && <Check className="w-2.5 h-2.5 text-white" />}
-                          </div>
-                          <span className="text-xs font-medium">{svc.name}</span>
-                        </div>
-                        <span className="text-[11px] text-zinc-400">{minToDuration(svc.durationMin)}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-          </div>
-        );
-      })}
-
-      {/* افزودن پرسنل inline */}
-      {showAddStaff ? (
-        <div className="border border-zinc-200 rounded-2xl p-4 bg-zinc-50/40">
-          <p className="text-xs font-bold text-zinc-700 mb-3">افزودن پرسنل جدید</p>
-          <div className="space-y-2.5">
-            <input
-              value={newName}
-              onChange={(e) => setNewName(e.target.value)}
-              placeholder="نام پرسنل"
-              className="w-full border border-zinc-200 rounded-xl px-3.5 py-2.5 text-sm bg-white focus:outline-none focus:border-[#824c71]"
-            />
-            <input
-              value={newPhone}
-              onChange={(e) => setNewPhone(toEnglishDigitsPhone(e.target.value).slice(0, 11))}
-              placeholder="شماره موبایل (مثلاً ۰۹۱۲...)"
-              dir="ltr"
-              inputMode="numeric"
-              className="w-full border border-zinc-200 rounded-xl px-3.5 py-2.5 text-sm bg-white text-left focus:outline-none focus:border-[#824c71]"
-            />
-            <div>
-              <div className="flex items-center border border-zinc-200 rounded-xl bg-white overflow-hidden focus-within:border-[#824c71]">
-                <input
-                  value={newCommission}
-                  onChange={(e) => setNewCommission(sanitizeCommission(e.target.value))}
-                  placeholder="درصد پیش‌فرض پرسنل (اختیاری)"
-                  dir="ltr"
-                  inputMode="numeric"
-                  className="w-full px-3.5 py-2.5 text-sm bg-transparent outline-none border-0"
-                />
-                <span className="text-zinc-400 text-xs pl-3 shrink-0">٪</span>
-              </div>
-              <p className="text-[10.5px] text-zinc-400 mt-1 leading-relaxed">
-                اگه پرسنل درصد ثابتی از هر خدمت می‌گیره اینجا وارد کن؛ بعداً برای نوبت‌های خاص از صفحه‌ی «نوبت‌ها» قابل تغییره.
-              </p>
-            </div>
-            {addStaffErr && <p className="text-red-500 text-xs">{addStaffErr}</p>}
-            <div className="flex gap-2">
-              <button
-                onClick={handleAddStaff}
-                disabled={addingStaff}
-                className="flex-1 bg-[#824c71] text-white rounded-xl py-2.5 text-xs font-bold disabled:opacity-60 flex items-center justify-center gap-1.5"
-              >
-                {addingStaff && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-                ثبت پرسنل
-              </button>
-              <button
-                onClick={() => { setShowAddStaff(false); setNewName(''); setNewPhone(''); setNewCommission(''); setAddStaffErr(''); }}
-                className="px-4 rounded-xl bg-zinc-100 text-zinc-600 text-xs font-medium"
-              >
-                انصراف
-              </button>
-            </div>
-          </div>
-        </div>
-      ) : (
-        <button
-          onClick={() => setShowAddStaff(true)}
-          className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border-2 border-dashed border-zinc-200 text-zinc-500 text-sm font-medium hover:border-[#824c71]/40 hover:text-[#824c71] transition-colors"
-        >
-          <Plus className="w-4 h-4" />
-          افزودن پرسنل جدید
-        </button>
+      {showForm && (
+        <StaffFormModal
+          initial={editingStaff ?? undefined}
+          onSave={handleSaveStaff}
+          onClose={() => { setShowForm(false); setEditingStaff(null); }}
+        />
       )}
     </div>
   );
