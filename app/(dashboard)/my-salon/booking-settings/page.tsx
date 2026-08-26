@@ -70,14 +70,6 @@ const minToDuration = (min: number) => {
   return `${h}:${String(m).padStart(2, '0')}`;
 };
 
-const durationToMin = (val: string): number => {
-  const normalized = val
-    .replace(/[۰-۹]/g, (d) => String(d.charCodeAt(0) - '۰'.charCodeAt(0)))
-    .replace(/[٠-٩]/g, (d) => String(d.charCodeAt(0) - '٠'.charCodeAt(0)));
-  const [h, m] = normalized.split(':').map(Number);
-  return (h || 0) * 60 + (m || 0);
-};
-
 // تبدیل ورودی عددی: فارسی/عربی → انگلیسی، حذف غیر عدد
 const toEnglishDigits = (str: string) =>
   str
@@ -196,19 +188,28 @@ type ServiceFormProps = {
 
 function ServiceFormModal({ initial, onSave, onClose }: ServiceFormProps) {
   const [name, setName] = useState(initial?.name ?? '');
-  const [duration, setDuration] = useState(
-    initial?.durationMin ? minToDuration(initial.durationMin) : '1:00'
+  const [durHour, setDurHour] = useState(
+    initial?.durationMin != null ? String(Math.floor(initial.durationMin / 60)) : '1'
+  );
+  const [durMin, setDurMin] = useState(
+    initial?.durationMin != null ? String(initial.durationMin % 60).padStart(2, '0') : '00'
   );
   const [priceRaw, setPriceRaw] = useState(initial?.price ? String(initial.price) : '');
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState('');
 
   const handlePriceChange = (val: string) => setPriceRaw(toEnglishDigits(val));
+  const sanitizeHour = (val: string) => toEnglishDigits(val).slice(0, 2);
+  const sanitizeMinute = (val: string) => {
+    let digits = toEnglishDigits(val).slice(0, 2);
+    if (digits !== '' && Number(digits) > 59) digits = '59';
+    return digits;
+  };
 
   const handleSave = async () => {
     if (!name.trim()) return setErr('نام خدمات الزامی است');
-    const dMin = durationToMin(duration);
-    if (!dMin) return setErr('مدت زمان معتبر وارد کنید (مثلاً ۱:۳۰)');
+    const dMin = (Number(durHour) || 0) * 60 + (Number(durMin) || 0);
+    if (!dMin) return setErr('مدت زمان معتبر وارد کنید');
     setErr('');
     setSaving(true);
     try {
@@ -255,14 +256,26 @@ function ServiceFormModal({ initial, onSave, onClose }: ServiceFormProps) {
               <label className="block text-xs font-medium text-zinc-600 mb-1.5">
                 مدت زمان <span className="text-red-500">*</span>
               </label>
-              <input
-                value={duration}
-                onChange={(e) => setDuration(e.target.value)}
-                placeholder="۱:۳۰"
-                dir="ltr"
-                className="w-full border border-zinc-200 rounded-xl px-3.5 py-2.5 text-sm text-left focus:outline-none focus:border-[#824c71] focus:ring-1 focus:ring-[#824c71]/20"
-              />
-              <p className="text-[10px] text-zinc-400 mt-1">ساعت:دقیقه — مثلاً ۱:۳۰</p>
+              <div className="flex items-center gap-1.5">
+                <input
+                  value={durHour}
+                  onChange={(e) => setDurHour(sanitizeHour(e.target.value))}
+                  placeholder="ساعت"
+                  dir="ltr"
+                  inputMode="numeric"
+                  className="w-full border border-zinc-200 rounded-xl px-2 py-2.5 text-sm text-center focus:outline-none focus:border-[#824c71] focus:ring-1 focus:ring-[#824c71]/20"
+                />
+                <span className="text-zinc-400 font-bold shrink-0">:</span>
+                <input
+                  value={durMin}
+                  onChange={(e) => setDurMin(sanitizeMinute(e.target.value))}
+                  placeholder="دقیقه"
+                  dir="ltr"
+                  inputMode="numeric"
+                  className="w-full border border-zinc-200 rounded-xl px-2 py-2.5 text-sm text-center focus:outline-none focus:border-[#824c71] focus:ring-1 focus:ring-[#824c71]/20"
+                />
+              </div>
+              <p className="text-[10px] text-zinc-400 mt-1">ساعت و دقیقه — مثلاً ۱ و ۳۰</p>
             </div>
             <div>
               <label className="block text-xs font-medium text-zinc-600 mb-1.5">
@@ -518,39 +531,41 @@ function StaffFormModal({ initial, onSave, onClose }: StaffFormProps) {
             />
           </div>
 
-          <div>
-            <label className="block text-xs font-medium text-zinc-600 mb-1.5">
-              شماره موبایل <span className="text-red-500">*</span>
-            </label>
-            <input
-              value={phone}
-              onChange={(e) => setPhone(toEnglishDigitsPhone(e.target.value).slice(0, 11))}
-              placeholder="۰۹۱۲۳۴۵۶۷۸۹"
-              dir="ltr"
-              inputMode="numeric"
-              className="w-full border border-zinc-200 rounded-xl px-3.5 py-2.5 text-sm text-left focus:outline-none focus:border-[#824c71] focus:ring-1 focus:ring-[#824c71]/20"
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs font-medium text-zinc-600 mb-1.5">
-              درصد پیش‌فرض پرسنل <span className="text-zinc-400 font-normal">(اختیاری)</span>
-            </label>
-            <div className="flex items-center border border-zinc-200 rounded-xl overflow-hidden focus-within:border-[#824c71] focus-within:ring-1 focus-within:ring-[#824c71]/20">
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-medium text-zinc-600 mb-1.5">
+                شماره موبایل <span className="text-red-500">*</span>
+              </label>
               <input
-                value={commission}
-                onChange={(e) => setCommission(sanitizeCommission(e.target.value))}
+                value={phone}
+                onChange={(e) => setPhone(toEnglishDigitsPhone(e.target.value).slice(0, 11))}
+                placeholder="۰۹۱۲۳۴۵۶۷۸۹"
                 dir="ltr"
                 inputMode="numeric"
-                placeholder="مثلاً ۴۰"
-                className="w-full px-3.5 py-2.5 text-sm bg-transparent outline-none border-0"
+                className="w-full border border-zinc-200 rounded-xl px-3.5 py-2.5 text-sm text-left focus:outline-none focus:border-[#824c71] focus:ring-1 focus:ring-[#824c71]/20"
               />
-              <span className="text-zinc-400 text-xs pl-3 shrink-0">٪</span>
             </div>
-            <p className="text-[10.5px] text-zinc-400 mt-1 leading-relaxed">
-              این درصد موقع ثبت نوبت آنلاین خودکار برای این پرسنل ثبت می‌شه؛ برای یه نوبت خاص هم می‌تونی بعداً از صفحه‌ی «نوبت‌ها» تغییرش بدی.
-            </p>
+            <div>
+              <label className="block text-xs font-medium text-zinc-600 mb-1.5">
+                درصد پرسنل <span className="text-zinc-400 font-normal">(اختیاری)</span>
+              </label>
+              <div className="flex items-center border border-zinc-200 rounded-xl overflow-hidden focus-within:border-[#824c71] focus-within:ring-1 focus-within:ring-[#824c71]/20">
+                <input
+                  value={commission}
+                  onChange={(e) => setCommission(sanitizeCommission(e.target.value))}
+                  dir="ltr"
+                  inputMode="numeric"
+                  placeholder="مثلاً ۴۰"
+                  className="w-full px-3.5 py-2.5 text-sm bg-transparent outline-none border-0"
+                />
+                <span className="text-zinc-400 text-xs pl-3 shrink-0">٪</span>
+              </div>
+            </div>
           </div>
+
+          <p className="text-[10.5px] text-zinc-400 -mt-2 leading-relaxed">
+            این درصد موقع ثبت نوبت آنلاین خودکار برای این پرسنل ثبت می‌شه؛ برای یه نوبت خاص هم می‌تونی بعداً از صفحه‌ی «نوبت‌ها» تغییرش بدی.
+          </p>
 
           {err && <p className="text-red-500 text-xs font-medium">{err}</p>}
 
