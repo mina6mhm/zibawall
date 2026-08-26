@@ -179,6 +179,9 @@ export async function POST(req: Request) {
                     durationMin: p.service.durationMin,
                     staffId: p.staff.id,
                     staffName: p.staff.name,
+                    // درصد پیش‌فرض پرسنل (در صورت تعریف) به‌صورت اسنپ‌شات ثبت می‌شود؛
+                    // سالن‌دار بعداً می‌تواند از صفحه‌ی نوبت‌ها برای این نوبت خاص تغییرش دهد
+                    ...(p.staff.commissionPercent != null ? { staffPercentage: p.staff.commissionPercent } : {}),
                   },
                 ],
                 depositAmount: p.service.depositAmount ?? 0,

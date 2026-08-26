@@ -70,6 +70,16 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'شماره موبایل پرسنل معتبر نیست' }, { status: 400 });
     }
 
+    // درصد پرسنل کاملاً اختیاریه؛ اگه ارسال بشه باید عددی بین ۰ تا ۱۰۰ باشه
+    let commissionPercent: number | null = null;
+    if (body?.commissionPercent !== undefined && body?.commissionPercent !== null && body?.commissionPercent !== '') {
+      const n = Number(body.commissionPercent);
+      if (Number.isNaN(n) || n < 0 || n > 100) {
+        return NextResponse.json({ error: 'درصد پرسنل باید عددی بین ۰ تا ۱۰۰ باشد' }, { status: 400 });
+      }
+      commissionPercent = n;
+    }
+
     const existingName = await prisma.staff.findUnique({
       where: { salonId_name: { salonId: result.salon.id, name } },
     });
@@ -87,7 +97,7 @@ export async function POST(req: Request) {
     }
 
     const staff = await prisma.staff.create({
-      data: { salonId: result.salon.id, name, phone },
+      data: { salonId: result.salon.id, name, phone, commissionPercent },
     });
 
     return NextResponse.json({ success: true, staff }, { status: 201 });

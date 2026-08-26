@@ -348,10 +348,12 @@ model Booking {
 }
 
 model Staff {
-  id        String   @id @default(uuid())
-  name      String
-  phone     String?
-  offDays   String[] @default([]) // روزهای ثابت تعطیل: ["شنبه", "جمعه"]
+  id                String   @id @default(uuid())
+  name              String
+  phone             String?
+  offDays           String[] @default([]) // روزهای ثابت تعطیل: ["شنبه", "جمعه"]
+  commissionPercent Int?     // درصد پیش‌فرض پرسنل، اختیاری؛ موقع ثبت نوبت روی هر سرویس اسنپ‌شات می‌شود
+                             // و بعداً از صفحه‌ی نوبت‌ها (EditBookingModal) برای یک نوبت خاص قابل ویرایش است
   
   bookingServices   StaffBookingService[]
   scheduleOverrides StaffScheduleOverride[]

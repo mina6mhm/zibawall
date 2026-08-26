@@ -29,6 +29,7 @@ type StaffMember = {
   name: string;
   phone: string | null;
   offDays: string[]; // روزهای ثابت هفته که همیشه تعطیله
+  commissionPercent: number | null; // درصد پیش‌فرض پرسنل، اختیاری
   bookingServices: { bookingServiceId: string }[];
 };
 
@@ -466,16 +467,24 @@ function StaffTab({
   const [showAddStaff, setShowAddStaff] = useState(false);
   const [newName, setNewName] = useState('');
   const [newPhone, setNewPhone] = useState('');
+  const [newCommission, setNewCommission] = useState(''); // درصد پیش‌فرض، اختیاری
   const [addingStaff, setAddingStaff] = useState(false);
   const [addStaffErr, setAddStaffErr] = useState('');
   const [deletingStaffId, setDeletingStaffId] = useState<string | null>(null);
 
-  // ویرایش نام/شماره پرسنل موجود — inline، مستقل از بخش افزودن پرسنل جدید
+  // ویرایش نام/شماره/درصد پرسنل موجود — inline، مستقل از بخش افزودن پرسنل جدید
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
   const [editPhone, setEditPhone] = useState('');
+  const [editCommission, setEditCommission] = useState('');
   const [editError, setEditError] = useState('');
   const [savingEdit, setSavingEdit] = useState(false);
+
+  const sanitizeCommission = (value: string) => {
+    let digits = toEnglishDigitsPhone(value).slice(0, 3);
+    if (digits !== '' && Number(digits) > 100) digits = '100';
+    return digits;
+  };
 
   const handleAddStaff = async () => {
     const name = newName.trim();
@@ -488,12 +497,17 @@ function StaffTab({
       const res = await fetch('/api/staff', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, phone }),
+        body: JSON.stringify({
+          name,
+          phone,
+          commissionPercent: newCommission === '' ? undefined : Number(newCommission),
+        }),
       });
       const data = await res.json();
       if (!res.ok) return setAddStaffErr(data.error || 'خطا در ثبت پرسنل');
       setNewName('');
       setNewPhone('');
+      setNewCommission('');
       setShowAddStaff(false);
       onRefresh();
     } finally {
@@ -514,6 +528,7 @@ function StaffTab({
     setEditingId(s.id);
     setEditName(s.name);
     setEditPhone(s.phone ?? '');
+    setEditCommission(s.commissionPercent != null ? String(s.commissionPercent) : '');
     setEditError('');
   };
 
@@ -528,7 +543,11 @@ function StaffTab({
       const res = await fetch(`/api/staff/${staffId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, phone }),
+        body: JSON.stringify({
+          name,
+          phone,
+          commissionPercent: editCommission === '' ? null : Number(editCommission),
+        }),
       });
       const data = await res.json();
       if (!res.ok) { setEditError(data.error || 'خطا در ذخیره تغییرات'); return; }
@@ -589,8 +608,11 @@ function StaffTab({
                   {assignedIds.size === 0 ? (
                     <p className="text-[11px] text-amber-600 font-medium">⚠️ هیچ خدمتی تخصیص داده نشده</p>
                   ) : (
-                    <p className="text-[11px] text-zinc-400">
-                      {assignedIds.size} خدمات تخصیص‌یافته
+                    <p className="text-[11px] text-zinc-400 flex items-center gap-1.5">
+                      <span>{assignedIds.size} خدمات تخصیص‌یافته</span>
+                      {s.commissionPercent != null && (
+                        <span className="text-[#824c71] font-medium">· {s.commissionPercent}٪ سهم پرسنل</span>
+                      )}
                     </p>
                   )}
                 </div>
@@ -634,6 +656,25 @@ function StaffTab({
                     inputMode="numeric"
                     className="w-full border border-zinc-200 rounded-xl px-3.5 py-2.5 text-sm bg-white text-left focus:outline-none focus:border-[#824c71]"
                   />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-medium text-zinc-500 mb-1">
+                    درصد پیش‌فرض پرسنل <span className="text-zinc-400 font-normal">(اختیاری)</span>
+                  </label>
+                  <div className="flex items-center border border-zinc-200 rounded-xl bg-white overflow-hidden focus-within:border-[#824c71]">
+                    <input
+                      value={editCommission}
+                      onChange={(e) => setEditCommission(sanitizeCommission(e.target.value))}
+                      dir="ltr"
+                      inputMode="numeric"
+                      placeholder="مثلاً ۴۰"
+                      className="w-full px-3.5 py-2.5 text-sm bg-transparent outline-none border-0"
+                    />
+                    <span className="text-zinc-400 text-xs pl-3 shrink-0">٪</span>
+                  </div>
+                  <p className="text-[10.5px] text-zinc-400 mt-1 leading-relaxed">
+                    این درصد موقع ثبت نوبت آنلاین خودکار برای این پرسنل ثبت می‌شه؛ برای یه نوبت خاص هم می‌تونی بعداً از صفحه‌ی «نوبت‌ها» تغییرش بدی.
+                  </p>
                 </div>
                 {editError && <p className="text-red-500 text-xs">{editError}</p>}
                 <div className="flex gap-2">
@@ -711,6 +752,22 @@ function StaffTab({
               inputMode="numeric"
               className="w-full border border-zinc-200 rounded-xl px-3.5 py-2.5 text-sm bg-white text-left focus:outline-none focus:border-[#824c71]"
             />
+            <div>
+              <div className="flex items-center border border-zinc-200 rounded-xl bg-white overflow-hidden focus-within:border-[#824c71]">
+                <input
+                  value={newCommission}
+                  onChange={(e) => setNewCommission(sanitizeCommission(e.target.value))}
+                  placeholder="درصد پیش‌فرض پرسنل (اختیاری)"
+                  dir="ltr"
+                  inputMode="numeric"
+                  className="w-full px-3.5 py-2.5 text-sm bg-transparent outline-none border-0"
+                />
+                <span className="text-zinc-400 text-xs pl-3 shrink-0">٪</span>
+              </div>
+              <p className="text-[10.5px] text-zinc-400 mt-1 leading-relaxed">
+                اگه پرسنل درصد ثابتی از هر خدمت می‌گیره اینجا وارد کن؛ بعداً برای نوبت‌های خاص از صفحه‌ی «نوبت‌ها» قابل تغییره.
+              </p>
+            </div>
             {addStaffErr && <p className="text-red-500 text-xs">{addStaffErr}</p>}
             <div className="flex gap-2">
               <button
@@ -722,7 +779,7 @@ function StaffTab({
                 ثبت پرسنل
               </button>
               <button
-                onClick={() => { setShowAddStaff(false); setNewName(''); setNewPhone(''); setAddStaffErr(''); }}
+                onClick={() => { setShowAddStaff(false); setNewName(''); setNewPhone(''); setNewCommission(''); setAddStaffErr(''); }}
                 className="px-4 rounded-xl bg-zinc-100 text-zinc-600 text-xs font-medium"
               >
                 انصراف

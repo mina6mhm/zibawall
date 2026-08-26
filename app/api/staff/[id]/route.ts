@@ -37,7 +37,7 @@ export async function PATCH(
     return NextResponse.json({ error: 'پرسنل یافت نشد' }, { status: 404 });
 
   const body = await req.json();
-  const data: { name?: string; phone?: string; offDays?: string[] } = {};
+  const data: { name?: string; phone?: string; offDays?: string[]; commissionPercent?: number | null } = {};
 
   // ── بخش ۱: نام/شماره ──
   if (body.name !== undefined) {
@@ -72,7 +72,20 @@ export async function PATCH(
     data.phone = phone;
   }
 
-  // ── بخش ۲: روزهای ثابت تعطیل ──
+  // ── بخش ۲: درصد پیش‌فرض پرسنل (اختیاری) ──
+  if (body.commissionPercent !== undefined) {
+    if (body.commissionPercent === null || body.commissionPercent === '') {
+      data.commissionPercent = null;
+    } else {
+      const n = Number(body.commissionPercent);
+      if (Number.isNaN(n) || n < 0 || n > 100) {
+        return NextResponse.json({ error: 'درصد پرسنل باید عددی بین ۰ تا ۱۰۰ باشد' }, { status: 400 });
+      }
+      data.commissionPercent = n;
+    }
+  }
+
+  // ── بخش ۳: روزهای ثابت تعطیل ──
   if (body.offDays !== undefined) {
     if (!Array.isArray(body.offDays)) {
       return NextResponse.json({ error: 'offDays باید آرایه باشد' }, { status: 400 });
