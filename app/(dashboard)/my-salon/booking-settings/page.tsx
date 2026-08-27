@@ -258,18 +258,18 @@ function ServiceFormModal({ initial, onSave, onClose }: ServiceFormProps) {
               </label>
               <div className="flex items-center gap-1.5">
                 <input
-                  value={durHour}
-                  onChange={(e) => setDurHour(sanitizeHour(e.target.value))}
-                  placeholder="ساعت"
+                  value={durMin}
+                  onChange={(e) => setDurMin(sanitizeMinute(e.target.value))}
+                  placeholder="دقیقه"
                   dir="ltr"
                   inputMode="numeric"
                   className="w-full border border-zinc-200 rounded-xl px-2 py-2.5 text-sm text-center focus:outline-none focus:border-[#824c71] focus:ring-1 focus:ring-[#824c71]/20"
                 />
                 <span className="text-zinc-400 font-bold shrink-0">:</span>
                 <input
-                  value={durMin}
-                  onChange={(e) => setDurMin(sanitizeMinute(e.target.value))}
-                  placeholder="دقیقه"
+                  value={durHour}
+                  onChange={(e) => setDurHour(sanitizeHour(e.target.value))}
+                  placeholder="ساعت"
                   dir="ltr"
                   inputMode="numeric"
                   className="w-full border border-zinc-200 rounded-xl px-2 py-2.5 text-sm text-center focus:outline-none focus:border-[#824c71] focus:ring-1 focus:ring-[#824c71]/20"
