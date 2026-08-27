@@ -1069,25 +1069,25 @@ function StaffScheduleTab({
               </div>
 
               {!editIsDayOff && (
-                <div className="grid grid-cols-2 gap-3 mb-3.5">
-                  <div>
+                <div className="grid grid-cols-2 gap-4 mb-3.5">
+                  <div className="min-w-0">
                     <label className="block text-xs font-medium text-zinc-500 mb-1">شروع</label>
                     <input
                       type="time"
                       dir="ltr"
                       value={editStart}
                       onChange={(e) => setEditStart(e.target.value)}
-                      className="w-full border border-zinc-200 rounded-lg px-3 py-2 text-sm bg-white text-center focus:outline-none focus:border-[#824c71]"
+                      className="w-full min-w-0 border border-zinc-300 rounded-lg px-3 py-2 text-sm bg-zinc-50 text-center focus:outline-none focus:border-[#824c71] focus:bg-white"
                     />
                   </div>
-                  <div>
+                  <div className="min-w-0">
                     <label className="block text-xs font-medium text-zinc-500 mb-1">پایان</label>
                     <input
                       type="time"
                       dir="ltr"
                       value={editEnd}
                       onChange={(e) => setEditEnd(e.target.value)}
-                      className="w-full border border-zinc-200 rounded-lg px-3 py-2 text-sm bg-white text-center focus:outline-none focus:border-[#824c71]"
+                      className="w-full min-w-0 border border-zinc-300 rounded-lg px-3 py-2 text-sm bg-zinc-50 text-center focus:outline-none focus:border-[#824c71] focus:bg-white"
                     />
                   </div>
                 </div>
@@ -1331,25 +1331,25 @@ function SalonScheduleOverrideSection() {
           </div>
 
           {!editIsClosed && (
-            <div className="grid grid-cols-2 gap-3 mb-3.5">
-              <div>
+            <div className="grid grid-cols-2 gap-4 mb-3.5">
+              <div className="min-w-0">
                 <label className="block text-xs font-medium text-zinc-500 mb-1">شروع</label>
                 <input
                   type="time"
                   dir="ltr"
                   value={editStart}
                   onChange={(e) => setEditStart(e.target.value)}
-                  className="w-full border border-zinc-200 rounded-lg px-3 py-2 text-sm bg-white text-center focus:outline-none focus:border-[#824c71]"
+                  className="w-full min-w-0 border border-zinc-300 rounded-lg px-3 py-2 text-sm bg-zinc-50 text-center focus:outline-none focus:border-[#824c71] focus:bg-white"
                 />
               </div>
-              <div>
+              <div className="min-w-0">
                 <label className="block text-xs font-medium text-zinc-500 mb-1">پایان</label>
                 <input
                   type="time"
                   dir="ltr"
                   value={editEnd}
                   onChange={(e) => setEditEnd(e.target.value)}
-                  className="w-full border border-zinc-200 rounded-lg px-3 py-2 text-sm bg-white text-center focus:outline-none focus:border-[#824c71]"
+                  className="w-full min-w-0 border border-zinc-300 rounded-lg px-3 py-2 text-sm bg-zinc-50 text-center focus:outline-none focus:border-[#824c71] focus:bg-white"
                 />
               </div>
             </div>
