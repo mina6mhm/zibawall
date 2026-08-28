@@ -80,6 +80,27 @@ const toEnglishDigits = (str: string) =>
 // نمایش با جداکننده سه‌رقمی فارسی
 const formatPrice = (n: number) => n.toLocaleString('fa-IR');
 
+// جدا کردن "HH:MM" به ساعت/دقیقه برای دو کادر جدا (نیتیو input[type=time] در موبایل
+// گاهی به‌درستی جمع نمی‌شه و باعث می‌شه کادرهای شروع/پایان به هم بچسبن)
+const splitTime = (v: string) => {
+  const [h = '', m = ''] = (v || '').split(':');
+  return { h, m };
+};
+const joinTime = (h: string, m: string) => {
+  if (!h && !m) return '';
+  return `${(h || '0').padStart(2, '0')}:${(m || '0').padStart(2, '0')}`;
+};
+const sanitizeHourTime = (val: string) => {
+  let d = toEnglishDigits(val).slice(0, 2);
+  if (d !== '' && Number(d) > 23) d = '23';
+  return d;
+};
+const sanitizeMinuteTime = (val: string) => {
+  let d = toEnglishDigits(val).slice(0, 2);
+  if (d !== '' && Number(d) > 59) d = '59';
+  return d;
+};
+
 // نمایش مقدار خام در input: سه‌رقم سه‌رقم بدون تبدیل به فارسی
 const displayNumber = (raw: string) => {
   if (!raw) return '';
@@ -1069,26 +1090,50 @@ function StaffScheduleTab({
               </div>
 
               {!editIsDayOff && (
-                <div className="grid grid-cols-2 gap-4 mb-3.5">
+                <div className="grid grid-cols-2 gap-3 mb-3.5">
                   <div className="min-w-0">
                     <label className="block text-xs font-medium text-zinc-500 mb-1">شروع</label>
-                    <input
-                      type="time"
-                      dir="ltr"
-                      value={editStart}
-                      onChange={(e) => setEditStart(e.target.value)}
-                      className="w-full min-w-0 border border-zinc-300 rounded-lg px-3 py-2 text-sm bg-zinc-50 text-center focus:outline-none focus:border-[#824c71] focus:bg-white"
-                    />
+                    <div className="flex items-center gap-1.5">
+                      <input
+                        value={splitTime(editStart).m}
+                        onChange={(e) => setEditStart(joinTime(splitTime(editStart).h, sanitizeMinuteTime(e.target.value)))}
+                        placeholder="دقیقه"
+                        dir="ltr"
+                        inputMode="numeric"
+                        className="w-full min-w-0 border border-zinc-300 rounded-lg px-2 py-2 text-sm bg-zinc-50 text-center focus:outline-none focus:border-[#824c71] focus:bg-white"
+                      />
+                      <span className="text-zinc-400 font-bold shrink-0">:</span>
+                      <input
+                        value={splitTime(editStart).h}
+                        onChange={(e) => setEditStart(joinTime(sanitizeHourTime(e.target.value), splitTime(editStart).m))}
+                        placeholder="ساعت"
+                        dir="ltr"
+                        inputMode="numeric"
+                        className="w-full min-w-0 border border-zinc-300 rounded-lg px-2 py-2 text-sm bg-zinc-50 text-center focus:outline-none focus:border-[#824c71] focus:bg-white"
+                      />
+                    </div>
                   </div>
                   <div className="min-w-0">
                     <label className="block text-xs font-medium text-zinc-500 mb-1">پایان</label>
-                    <input
-                      type="time"
-                      dir="ltr"
-                      value={editEnd}
-                      onChange={(e) => setEditEnd(e.target.value)}
-                      className="w-full min-w-0 border border-zinc-300 rounded-lg px-3 py-2 text-sm bg-zinc-50 text-center focus:outline-none focus:border-[#824c71] focus:bg-white"
-                    />
+                    <div className="flex items-center gap-1.5">
+                      <input
+                        value={splitTime(editEnd).m}
+                        onChange={(e) => setEditEnd(joinTime(splitTime(editEnd).h, sanitizeMinuteTime(e.target.value)))}
+                        placeholder="دقیقه"
+                        dir="ltr"
+                        inputMode="numeric"
+                        className="w-full min-w-0 border border-zinc-300 rounded-lg px-2 py-2 text-sm bg-zinc-50 text-center focus:outline-none focus:border-[#824c71] focus:bg-white"
+                      />
+                      <span className="text-zinc-400 font-bold shrink-0">:</span>
+                      <input
+                        value={splitTime(editEnd).h}
+                        onChange={(e) => setEditEnd(joinTime(sanitizeHourTime(e.target.value), splitTime(editEnd).m))}
+                        placeholder="ساعت"
+                        dir="ltr"
+                        inputMode="numeric"
+                        className="w-full min-w-0 border border-zinc-300 rounded-lg px-2 py-2 text-sm bg-zinc-50 text-center focus:outline-none focus:border-[#824c71] focus:bg-white"
+                      />
+                    </div>
                   </div>
                 </div>
               )}
@@ -1331,26 +1376,50 @@ function SalonScheduleOverrideSection() {
           </div>
 
           {!editIsClosed && (
-            <div className="grid grid-cols-2 gap-4 mb-3.5">
+            <div className="grid grid-cols-2 gap-3 mb-3.5">
               <div className="min-w-0">
                 <label className="block text-xs font-medium text-zinc-500 mb-1">شروع</label>
-                <input
-                  type="time"
-                  dir="ltr"
-                  value={editStart}
-                  onChange={(e) => setEditStart(e.target.value)}
-                  className="w-full min-w-0 border border-zinc-300 rounded-lg px-3 py-2 text-sm bg-zinc-50 text-center focus:outline-none focus:border-[#824c71] focus:bg-white"
-                />
+                <div className="flex items-center gap-1.5">
+                  <input
+                    value={splitTime(editStart).m}
+                    onChange={(e) => setEditStart(joinTime(splitTime(editStart).h, sanitizeMinuteTime(e.target.value)))}
+                    placeholder="دقیقه"
+                    dir="ltr"
+                    inputMode="numeric"
+                    className="w-full min-w-0 border border-zinc-300 rounded-lg px-2 py-2 text-sm bg-zinc-50 text-center focus:outline-none focus:border-[#824c71] focus:bg-white"
+                  />
+                  <span className="text-zinc-400 font-bold shrink-0">:</span>
+                  <input
+                    value={splitTime(editStart).h}
+                    onChange={(e) => setEditStart(joinTime(sanitizeHourTime(e.target.value), splitTime(editStart).m))}
+                    placeholder="ساعت"
+                    dir="ltr"
+                    inputMode="numeric"
+                    className="w-full min-w-0 border border-zinc-300 rounded-lg px-2 py-2 text-sm bg-zinc-50 text-center focus:outline-none focus:border-[#824c71] focus:bg-white"
+                  />
+                </div>
               </div>
               <div className="min-w-0">
                 <label className="block text-xs font-medium text-zinc-500 mb-1">پایان</label>
-                <input
-                  type="time"
-                  dir="ltr"
-                  value={editEnd}
-                  onChange={(e) => setEditEnd(e.target.value)}
-                  className="w-full min-w-0 border border-zinc-300 rounded-lg px-3 py-2 text-sm bg-zinc-50 text-center focus:outline-none focus:border-[#824c71] focus:bg-white"
-                />
+                <div className="flex items-center gap-1.5">
+                  <input
+                    value={splitTime(editEnd).m}
+                    onChange={(e) => setEditEnd(joinTime(splitTime(editEnd).h, sanitizeMinuteTime(e.target.value)))}
+                    placeholder="دقیقه"
+                    dir="ltr"
+                    inputMode="numeric"
+                    className="w-full min-w-0 border border-zinc-300 rounded-lg px-2 py-2 text-sm bg-zinc-50 text-center focus:outline-none focus:border-[#824c71] focus:bg-white"
+                  />
+                  <span className="text-zinc-400 font-bold shrink-0">:</span>
+                  <input
+                    value={splitTime(editEnd).h}
+                    onChange={(e) => setEditEnd(joinTime(sanitizeHourTime(e.target.value), splitTime(editEnd).m))}
+                    placeholder="ساعت"
+                    dir="ltr"
+                    inputMode="numeric"
+                    className="w-full min-w-0 border border-zinc-300 rounded-lg px-2 py-2 text-sm bg-zinc-50 text-center focus:outline-none focus:border-[#824c71] focus:bg-white"
+                  />
+                </div>
               </div>
             </div>
           )}
