@@ -1277,7 +1277,10 @@ function SalonScheduleOverrideSection() {
   const openDay = (dateStr: string) => {
     setSelectedDateStr(dateStr);
     const existing = overrideMap[dateStr];
-    setEditIsClosed(existing?.isClosed ?? true);
+    // برای یک تاریخ جدید که هنوز override نداره، پیش‌فرض باید «تعطیل نیست» باشه
+    // (مشابه بخش پرسنل)، وگرنه سالن‌دار که فقط می‌خواد ساعت اختصاصی ثبت کنه
+    // ممکنه فراموش کنه سوییچ «تعطیل کامل» رو خاموش کنه و کل روز اشتباهی تعطیل بشه
+    setEditIsClosed(existing?.isClosed ?? false);
     const s = splitTime(existing?.start ?? '');
     const e = splitTime(existing?.end ?? '');
     setEditStartH(s.h);

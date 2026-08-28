@@ -15,6 +15,7 @@ import PersianCalendar, { CalendarDayMarker } from '@/components/ui/PersianCalen
 import persian from 'react-date-object/calendars/persian';
 import persian_fa from 'react-date-object/locales/persian_fa';
 import { toDateOnlyAnchor } from '@/lib/dateUtils';
+import { BOOKING_APP_FEE } from '@/lib/constants';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -339,7 +340,7 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
     }
   };
 
-  const appFee       = cart.length > 0 ? 20000 : 0;
+  const appFee       = cart.length > 0 ? BOOKING_APP_FEE : 0;
   const totalPayable = appFee;
   const closedMarkers = useMemo(() => ({
     ...buildClosedDayMarkers(closedWeekDays),
