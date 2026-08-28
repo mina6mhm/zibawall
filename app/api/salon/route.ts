@@ -1,6 +1,5 @@
 //app/api/salon/route.ts
 import { NextResponse } from 'next/server';
-import { checkSubscriptions } from '@/lib/checkSubscriptions';
 import { cookies } from 'next/headers';
 import jwt from 'jsonwebtoken';
 import { notifyAdminNewSalonPending } from '@/lib/telegram';
@@ -11,8 +10,11 @@ import { getSalonAccessForUserId } from '@/lib/salonAccess';
 // ۱. اضافه شدن این خط برای جلوگیری از کش شدن و نمایش دیتای لحظه‌ای
 export const dynamic = 'force-dynamic';
 
+// نکته: قبلاً اینجا checkSubscriptions() روی هر بار لود صفحه‌ی اصلی صدا زده می‌شد.
+// چون سالن‌ها دیگه اشتراک ندارن (ثبت‌نام کاملاً رایگانه و subscriptionExpiresAt
+// همیشه ۱۰۰ سال جلوتر ست می‌شه)، اون تابع عملاً هیچ‌وقت کاری انجام نمی‌داد و فقط
+// یه query نوشتن/خوندن اضافه روی پرترافیک‌ترین مسیر پروژه بود — حذف شد.
 export async function GET(req: Request) {
- await checkSubscriptions();
   try {
     const { searchParams } = new URL(req.url);
     const userPhone = searchParams.get('userPhone');

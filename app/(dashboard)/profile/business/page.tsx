@@ -26,10 +26,7 @@ export default function BusinessRegistrationPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [cardNumber, setCardNumber] = useState('');
 
-  // استیت انتخاب پلن (فعلاً همیشه advanced ارسال می‌شود، مرحله انتخاب پلن موقتا غیرفعال است)
-  const [selectedPlanId] = useState<string>('monthly-advanced');
-
-  const maxPortfolios = 15; // سقف پیش‌فرض برای همه در مرحله ساخت کسب‌وکار
+  const maxPortfolios = 15; // سقف ثابت نمونه‌کار برای همه — ثبت‌نام کاملاً رایگانه و پلنی وجود نداره
 
   const [name, setName] = useState('');
   const [workingHours, setWorkingHours] = useState('');
@@ -399,7 +396,7 @@ export default function BusinessRegistrationPage() {
           maxPortfolios={maxPortfolios}
           portfolioFootnote={
             <p className="text-[10px] md:text-xs text-blue-600 mb-4 bg-blue-50 p-2 md:p-2.5 rounded-lg md:rounded-xl">
-              در مرحله ثبت اولیه امکان آپلود حداکثر ۱۰ نمونه‌کار وجود دارد. در صورت خرید اشتراک پیشرفته، پس از تکمیل ثبت‌نام می‌توانید تا ۳۰ نمونه‌کار به پروفایل خود اضافه کنید.
+              می‌توانید حداکثر ۱۵ نمونه‌کار به پروفایل خود اضافه کنید.
             </p>
           }
         />
