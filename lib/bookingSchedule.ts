@@ -8,7 +8,11 @@
 // چیزی چک نمی‌کرد).
 
 import { prisma } from '@/lib/prisma';
-import type { Salon, Staff, StaffScheduleOverride } from '@prisma/client';
+import type { Salon, Staff, StaffScheduleOverride, Prisma, PrismaClient } from '@prisma/client';
+
+// هم prisma معمولی و هم tx داخل یک $transaction این شکل رو دارن — برای
+// چک‌های زیر همین کافیه (فقط به query خواندنی booking.findMany نیاز داریم)
+type QueryClient = Pick<PrismaClient, 'booking'> | Prisma.TransactionClient;
 
 export const GREGORIAN_TO_PERSIAN_DAY: Record<number, string> = {
   6: 'شنبه',
@@ -224,5 +228,89 @@ export async function validateSlotAgainstSchedule(params: {
     return { ok: false, error: `ساعت ${startTime} خارج از ساعت کاری است` };
   }
 
+  return { ok: true };
+}
+
+/**
+ * چک می‌کند که یک نوبت خاص (که قبلاً ساخته شده و هنوز PENDING_PAYMENT است)
+ * هنوز قابل تایید است یا نه: هولدش منقضی نشده، ساعتش نگذشته، و با هیچ
+ * نوبت CONFIRMED یا PENDING_PAYMENT-فعالِ دیگری برای همون پرسنل/ساعت تداخل نداره.
+ *
+ * این تابع دقیقاً همون‌جایی لازمه که reserve نمی‌تونه کافی باشه: لحظه‌ی
+ * verify شدنِ پرداخت. چون بین ساخت نوبت (با هولد ۱۰ دقیقه‌ای) و لحظه‌ای که
+ * کاربر از درگاه بانک برمی‌گرده، ممکنه هولد منقضی شده باشه و یک نفر دیگه
+ * دقیقاً همون اسلات رو گرفته و حتی CONFIRM هم کرده باشه.
+ */
+export async function checkBookingSlotStillAvailable(
+  booking: {
+    id: string;
+    salonId: string;
+    date: Date;
+    startTime: string;
+    services: Prisma.JsonValue;
+    expiresAt: Date | null;
+  },
+  client: QueryClient = prisma
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const now = new Date();
+
+  if (booking.expiresAt && booking.expiresAt.getTime() <= now.getTime()) {
+    return { ok: false, error: 'مهلت این رزرو به پایان رسیده است' };
+  }
+
+  const dateStr = new Date(booking.date).toISOString().slice(0, 10);
+  if (isSlotInPast(dateStr, booking.startTime, now)) {
+    return { ok: false, error: `ساعت ${booking.startTime} گذشته است` };
+  }
+
+  const services = (booking.services as any[]) ?? [];
+  const staffIds: string[] = services.map((s: any) => s.staffId).filter(Boolean);
+  if (staffIds.length === 0) return { ok: true };
+
+  const startMin = timeToMin(booking.startTime);
+  const duration = services.reduce((acc: number, s: any) => acc + (s.durationMin ?? 60), 0);
+  const endMin = startMin + duration;
+
+  const dayStart = new Date(dateStr + 'T00:00:00Z');
+  const dayEnd = new Date(dateStr + 'T23:59:59Z');
+
+  const others = await client.booking.findMany({
+    where: {
+      salonId: booking.salonId,
+      id: { not: booking.id },
+      date: { gte: dayStart, lt: dayEnd },
+      OR: [
+        { status: 'CONFIRMED' },
+        { status: 'PENDING_PAYMENT', expiresAt: { gt: now } },
+      ],
+    },
+  });
+
+  const conflict = others.some((ob) => {
+    const obServices = (ob.services as any[]) ?? [];
+    const obStaffIds: string[] = obServices.map((s: any) => s.staffId).filter(Boolean);
+    if (!staffIds.some((id) => obStaffIds.includes(id))) return false;
+    const obStart = timeToMin(ob.startTime);
+    const obDuration = obServices.reduce((acc: number, s: any) => acc + (s.durationMin ?? 60), 0);
+    const obEnd = obStart + obDuration;
+    return startMin < obEnd && endMin > obStart;
+  });
+
+  if (conflict) {
+    return { ok: false, error: `ساعت ${booking.startTime} توسط شخص دیگری رزرو شده است` };
+  }
+
+  return { ok: true };
+}
+
+/** همون چک بالا، برای همه‌ی نوبت‌های یک BookingGroup (سبد چند-خدمتی) */
+export async function checkGroupSlotsStillAvailable(
+  bookings: Parameters<typeof checkBookingSlotStillAvailable>[0][],
+  client: QueryClient = prisma
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  for (const booking of bookings) {
+    const result = await checkBookingSlotStillAvailable(booking, client);
+    if (!result.ok) return result;
+  }
   return { ok: true };
 }
