@@ -4,7 +4,6 @@ import { cookies } from 'next/headers';
 import jwt from 'jsonwebtoken';
 
 import { prisma } from '@/lib/prisma';
-import { BOOKING_APP_FEE } from '@/lib/constants';
 import { getSalonForUserId } from '@/lib/salonAccess';
 
 export const dynamic = 'force-dynamic';
@@ -70,62 +69,11 @@ export async function GET(req: Request) {
   }
 }
 
-// ساخت نوبت جدید توسط سالن‌دار
-export async function POST(req: Request) {
-  try {
-    const result = await getOwnedSalonFromToken();
-    if ('error' in result) {
-      return NextResponse.json({ error: result.error }, { status: result.status });
-    }
-    const { salon } = result;
-
-    const body = await req.json();
-    const { customerName, customerPhone, date, startTime, services, depositAmount } = body;
-
-    if (!customerPhone || !mobileRegex.test(customerPhone)) {
-      return NextResponse.json({ error: 'شماره موبایل مشتری معتبر نیست' }, { status: 400 });
-    }
-
-    if (!date || !startTime) {
-      return NextResponse.json({ error: 'تاریخ و ساعت نوبت الزامی است' }, { status: 400 });
-    }
-
-    const cleanedServices = sanitizeServices(services);
-
-    if (cleanedServices.length === 0) {
-      return NextResponse.json({ error: 'حداقل یک خدمت معتبر وارد کنید' }, { status: 400 });
-    }
-
-    const finalDepositAmount =
-      typeof depositAmount === 'number' && depositAmount > 0 ? Math.round(depositAmount) : 0;
-
-    const totalAmount = finalDepositAmount + BOOKING_APP_FEE;
-
-    const existingCustomer = await prisma.user.findUnique({
-      where: { phone: customerPhone },
-    });
-
-    const booking = await prisma.booking.create({
-      data: {
-        salonId: salon.id,
-        customerId: existingCustomer?.id || null,
-        customerName: customerName?.trim() || null,
-        customerPhone,
-        date: new Date(date),
-        startTime,
-        services: cleanedServices,
-        depositAmount: finalDepositAmount,
-        appFee: BOOKING_APP_FEE,
-        totalAmount,
-      },
-    });
-
-    return NextResponse.json({ success: true, booking }, { status: 201 });
-  } catch (error) {
-    console.error('Error creating booking:', error);
-    return NextResponse.json({ error: 'خطای سرور در ثبت نوبت' }, { status: 500 });
-  }
-}
+// نکته: ثبت نوبت دستی توسط سالن‌دار (POST) عمداً حذف شده است.
+// تنها راه ساخت نوبت، مسیر آنلاین مشتری (POST /api/booking-online/reserve)
+// است که ساعت کاری سالن/پرسنل و تداخل نوبت‌ها را کامل چک می‌کند.
+// این endpoint فقط برای مشاهده‌ی (GET)، ویرایش (PUT) و حذف (DELETE) نوبت‌های
+// موجود توسط سالن‌دار باقی مانده است.
 
 // ویرایش نوبت (فقط تا زمانی که هنوز CONFIRMED نشده، یعنی مشتری پرداخت نکرده)
 export async function PUT(req: Request) {

@@ -3,8 +3,10 @@ import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import jwt from 'jsonwebtoken';
 import { Prisma } from '@prisma/client';
+import type { BookingService, Staff } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { BOOKING_APP_FEE } from '@/lib/constants';
+import { timeToMin, validateSlotAgainstSchedule } from '@/lib/bookingSchedule';
 
 type ReserveItem = {
   serviceId: string;
@@ -13,12 +15,8 @@ type ReserveItem = {
   startTime: string; // "HH:MM"
 };
 
-function timeToMin(t: string) {
-  const [h, m] = t.split(':').map(Number);
-  return h * 60 + m;
-}
-
 class SlotConflictError extends Error {}
+class ScheduleError extends Error {}
 
 export async function POST(req: Request) {
   try {
@@ -51,8 +49,8 @@ export async function POST(req: Request) {
     // اعتبارسنجی و تعیین پرسنل هر آیتم سبد
     const prepared: {
       item: ReserveItem;
-      service: any;
-      staff: any;
+      service: BookingService;
+      staff: Staff;
       startMin: number;
       endMin: number;
     }[] = [];
@@ -85,6 +83,21 @@ export async function POST(req: Request) {
         }
       }
 
+      // ── چک ساعت کاری سالن/پرسنل + گذشته نبودن زمان ──────────────────────
+      // این همان چکی است که available-slots برای نمایش لیست انجام می‌دهد؛
+      // اینجا هم اجرا می‌شود تا کسی نتواند مستقیم به این API درخواست بزند
+      // و برای ساعتی خارج از ساعت کاری یا روز مرخصی پرسنل نوبت بگیرد.
+      const scheduleCheck = await validateSlotAgainstSchedule({
+        salon,
+        staff: assignedStaff,
+        dateStr: item.date,
+        startTime: item.startTime,
+        durationMin: service.durationMin,
+      });
+      if (!scheduleCheck.ok) {
+        return NextResponse.json({ error: scheduleCheck.error }, { status: 400 });
+      }
+
       const startMin = timeToMin(item.startTime);
       const endMin = startMin + service.durationMin;
 
@@ -92,7 +105,11 @@ export async function POST(req: Request) {
     }
 
     // محاسبه مبالغ کل سبد — هزینه پلتفرم فقط یک بار روی کل گروه
-    const totalDeposit = prepared.reduce((acc, p) => acc + (p.service.depositAmount ?? 0), 0);
+    // نکته: BookingService فیلد depositAmount ندارد (فقط مدل Booking این فیلد
+    // را دارد)، پس فعلاً بیعانه‌ی سطح خدمت وجود ندارد و همیشه صفر است.
+    // اگر در آینده بیعانه‌ی واقعی روی خدمات اضافه شد، اینجا باید از
+    // service.depositAmount خوانده شود (بعد از افزودن فیلد به schema.prisma).
+    const totalDeposit = 0;
     const appFee = BOOKING_APP_FEE;
     const totalAmount = totalDeposit + appFee;
 
@@ -135,6 +152,15 @@ export async function POST(req: Request) {
           }
 
           for (const p of prepared) {
+            // گذشته نبودن زمان را دوباره داخل تراکنش هم چک می‌کنیم (نه فقط
+            // بیرون از تراکنش)، چون ممکنه بین شروع درخواست و رسیدن به این‌جا
+            // چند دقیقه طول کشیده باشه و اسلات درخواستی همین حین گذشته باشه.
+            const nowInsideTx = new Date();
+            const slotDateTime = new Date(`${p.item.date}T${p.item.startTime}:00Z`);
+            if (slotDateTime.getTime() <= nowInsideTx.getTime()) {
+              throw new ScheduleError(`ساعت ${p.item.startTime} در تاریخ ${p.item.date} گذشته است`);
+            }
+
             const key = `${p.staff.id}_${p.item.date}`;
             const ranges = busyByStaffDate[key] ?? [];
             const conflict = ranges.some((r) => p.startMin < r.end && p.endMin > r.start);
@@ -184,9 +210,9 @@ export async function POST(req: Request) {
                     ...(p.staff.commissionPercent != null ? { staffPercentage: p.staff.commissionPercent } : {}),
                   },
                 ],
-                depositAmount: p.service.depositAmount ?? 0,
+                depositAmount: 0,
                 appFee: 0,
-                totalAmount: p.service.depositAmount ?? 0,
+                totalAmount: 0,
                 status: totalAmount > 0 ? 'PENDING_PAYMENT' : 'CONFIRMED',
                 paymentStatus: totalAmount > 0 ? 'PENDING' : 'SUCCESS',
                 bookingGroupId: createdGroup.id,
@@ -202,6 +228,9 @@ export async function POST(req: Request) {
     } catch (err: any) {
       if (err instanceof SlotConflictError) {
         return NextResponse.json({ error: err.message }, { status: 409 });
+      }
+      if (err instanceof ScheduleError) {
+        return NextResponse.json({ error: err.message }, { status: 400 });
       }
       // P2034 = کانفلیکت write در تراکنش Serializable (دو درخواست همزمان با هم تداخل کردن)
       if (err?.code === 'P2034') {
