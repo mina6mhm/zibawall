@@ -1,13 +1,13 @@
 // app/(dashboard)/profile/business/overview/page.tsx
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import {
   Store, Edit, Trash2, ArrowRight, Loader2, MapPin, ChevronLeft, ChevronDown,
-  CalendarClock, Clock, XCircle, ShieldCheck, UserPlus, Phone, X,
+  CalendarClock, Clock, XCircle, ShieldCheck, UserPlus, Phone, X, Pin, CheckCircle2,
 } from 'lucide-react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 type SalonManager = {
   id: string;
@@ -24,12 +24,19 @@ const toPersianDigits = (str: string) => str.replace(/[0-9]/g, (d) => '۰۱۲۳�
 const sanitizeDigitsOnly = (value: string) => toEnglishDigits(value).replace(/[^0-9]/g, '');
 const mobileRegex = /^09\d{9}$/;
 
-export default function BusinessOverviewPage() {
+function BusinessOverviewContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [isLoading, setIsLoading] = useState(false);
   const [isFetching, setIsFetching] = useState(true);
   const [salonData, setSalonData] = useState<any>(null);
   const [isSalonOwner, setIsSalonOwner] = useState(false);
+
+  // ── پین کردن سالن — نمایش اول در جستجوها ──
+  const [showPinModal, setShowPinModal] = useState(false);
+  const [isPinning, setIsPinning] = useState(false);
+  const [pinError, setPinError] = useState('');
+  const [pinNotice, setPinNotice] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   // ── بخش «مدیران سالن» — به‌صورت آکاردئون، همین‌جا توی صفحه‌ی تنظیمات ──
   const [managersOpen, setManagersOpen] = useState(false);
@@ -44,29 +51,65 @@ export default function BusinessOverviewPage() {
   // ── تایید حذف کسب‌وکار — به‌جای window.confirm پیش‌فرض مرورگر ──
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
-  useEffect(() => {
-    const fetchProfile = async () => {
-      try {
-        const res = await fetch('/api/user/profile');
-        if (res.ok) {
-          const data = await res.json();
-          if (!data.salon) {
-            router.push('/profile/business');
-            return;
-          }
-          setSalonData(data.salon);
-          setIsSalonOwner(!!data.isSalonOwner);
-        } else if (res.status === 401) {
-          router.push('/login');
+  const fetchProfile = async () => {
+    try {
+      const res = await fetch('/api/user/profile');
+      if (res.ok) {
+        const data = await res.json();
+        if (!data.salon) {
+          router.push('/profile/business');
+          return;
         }
-      } catch (error) {
-        console.error('خطا در دریافت اطلاعات:', error);
-      } finally {
-        setIsFetching(false);
+        setSalonData(data.salon);
+        setIsSalonOwner(!!data.isSalonOwner);
+      } else if (res.status === 401) {
+        router.push('/login');
       }
-    };
+    } catch (error) {
+      console.error('خطا در دریافت اطلاعات:', error);
+    } finally {
+      setIsFetching(false);
+    }
+  };
+
+  useEffect(() => {
     fetchProfile();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [router]);
+
+  // ── بازگشت از درگاه پرداخت پین ──
+  useEffect(() => {
+    if (searchParams.get('pinSuccess')) {
+      setPinNotice({ type: 'success', text: 'پرداخت با موفقیت انجام شد و سالن شما پین شد.' });
+      fetchProfile();
+    } else if (searchParams.get('pinFailed')) {
+      setPinNotice({ type: 'error', text: 'پرداخت ناموفق بود. سالن شما پین نشد. لطفاً دوباره تلاش کنید.' });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
+
+  const isPinned = !!salonData?.pinnedUntil && new Date(salonData.pinnedUntil) > new Date();
+  const pinnedUntilLabel = salonData?.pinnedUntil
+    ? new Date(salonData.pinnedUntil).toLocaleDateString('fa-IR')
+    : '';
+
+  const handlePin = async () => {
+    setPinError('');
+    setIsPinning(true);
+    try {
+      const res = await fetch('/api/salon/pin', { method: 'POST' });
+      const data = await res.json();
+      if (!res.ok) {
+        setPinError(data.error || 'خطا در اتصال به درگاه پرداخت');
+        return;
+      }
+      window.location.href = data.paymentUrl;
+    } catch {
+      setPinError('خطای ارتباط با سرور');
+    } finally {
+      setIsPinning(false);
+    }
+  };
 
   const fetchManagers = async () => {
     setManagersLoading(true);
@@ -199,6 +242,22 @@ export default function BusinessOverviewPage() {
           <ArrowRight className="w-4 h-4" /> بازگشت
         </button>
 
+        {/* اعلان نتیجه‌ی بازگشت از درگاه پرداخت پین */}
+        {pinNotice && (
+          <div
+            className={`flex items-center gap-2 rounded-xl p-3 mb-5 text-sm font-medium ${
+              pinNotice.type === 'success' ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-600'
+            }`}
+          >
+            {pinNotice.type === 'success' ? (
+              <CheckCircle2 className="w-4 h-4 shrink-0" />
+            ) : (
+              <XCircle className="w-4 h-4 shrink-0" />
+            )}
+            {pinNotice.text}
+          </div>
+        )}
+
         {/* وضعیت تایید سالن توسط ادمین */}
         {salonData.status === 'PENDING_APPROVAL' && (
           <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-2xl px-4 py-3.5 mb-5">
@@ -278,6 +337,35 @@ export default function BusinessOverviewPage() {
               </Link>
             );
           })}
+
+          {/* پین کردن سالن — نمایش اول در جستجوها، فقط صاحب اصلی می‌تواند پرداخت کند */}
+          {isSalonOwner && salonData.status === 'ACTIVE' && (
+            <button
+              type="button"
+              onClick={() => {
+                setPinError('');
+                setShowPinModal(true);
+              }}
+              className="group w-full flex items-center gap-3.5 px-4 py-3.5 rounded-2xl bg-white border border-zinc-100 hover:border-zinc-200 hover:shadow-sm transition-all text-right"
+            >
+              <div
+                className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
+                  isPinned ? 'bg-amber-50 text-amber-600' : 'bg-zinc-100 text-zinc-600'
+                }`}
+              >
+                <Pin className="w-4.5 h-4.5" strokeWidth={1.75} />
+              </div>
+              <div className="flex-1 min-w-0 text-right">
+                <p className="text-sm font-bold text-zinc-900">
+                  {isPinned ? 'سالن شما پین است' : 'پین کردن سالن'}
+                </p>
+                <p className="text-xs mt-0.5 truncate text-zinc-400">
+                  {isPinned ? `تا ${pinnedUntilLabel} در جستجوها اول نمایش داده می‌شوید` : 'همیشه اولین سالن در جستجوها باشید'}
+                </p>
+              </div>
+              <ChevronLeft className="w-4 h-4 text-zinc-300 group-hover:-translate-x-0.5 transition-transform shrink-0" />
+            </button>
+          )}
 
           {/* مدیران سالن — فقط صاحب اصلی می‌بیند، به‌صورت آکاردئون همین‌جا باز می‌شود */}
           {isSalonOwner && (
@@ -394,6 +482,58 @@ export default function BusinessOverviewPage() {
         </div>
       </div>
 
+      {/* پاپ‌آپ توضیح و پرداخت پین کردن سالن */}
+      {showPinModal && (
+        <div
+          className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center bg-black/40 backdrop-blur-sm px-4 pb-4 sm:pb-4"
+          onClick={() => !isPinning && setShowPinModal(false)}
+        >
+          <div
+            className="w-full max-w-sm bg-white rounded-3xl p-5 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center mb-4">
+              <Pin className="w-5 h-5" />
+            </div>
+            <h3 className="text-base font-bold text-zinc-900 mb-1.5">
+              {isPinned ? 'تمدید پین سالن' : 'پین کردن سالن'}
+            </h3>
+            <p className="text-sm text-zinc-500 leading-6 mb-2">
+              با پرداخت، به مدت ۳۰ روز سالن «{salonData.name}» در جستجوها و فیلترها همیشه به‌عنوان اولین سالن نمایش داده می‌شود.
+            </p>
+            {isPinned && (
+              <p className="text-xs text-amber-700 bg-amber-50 rounded-xl px-3 py-2 mb-2 leading-5">
+                سالن شما الان تا {pinnedUntilLabel} پین است. با پرداخت مجدد، ۳۰ روز به همین تاریخ اضافه می‌شود.
+              </p>
+            )}
+            <p className="text-xs text-zinc-400 leading-5 mb-5">
+              مبلغ در صفحه‌ی پرداخت زرین‌پال به شما نمایش داده خواهد شد.
+            </p>
+
+            {pinError && <p className="text-red-600 text-xs font-medium mb-3">{pinError}</p>}
+
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setShowPinModal(false)}
+                disabled={isPinning}
+                className="flex-1 py-2.5 rounded-xl text-sm font-bold text-zinc-600 bg-zinc-100 hover:bg-zinc-200 transition-colors disabled:opacity-50"
+              >
+                انصراف
+              </button>
+              <button
+                type="button"
+                onClick={handlePin}
+                disabled={isPinning}
+                className="flex-1 py-2.5 rounded-xl text-sm font-bold text-white bg-[#824c71] hover:bg-[#6f3f5f] transition-colors disabled:opacity-50 flex items-center justify-center gap-1.5"
+              >
+                {isPinning ? <Loader2 className="w-4 h-4 animate-spin" /> : 'پرداخت و ادامه'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* پاپ‌آپ تایید حذف کسب‌وکار */}
       {showDeleteConfirm && (
         <div
@@ -433,5 +573,20 @@ export default function BusinessOverviewPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function BusinessOverviewPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex flex-col items-center justify-center min-h-[60vh] bg-white">
+          <Loader2 className="w-10 h-10 text-[#824c71] animate-spin mb-4" />
+          <p className="text-zinc-500 font-medium text-sm">در حال دریافت اطلاعات...</p>
+        </div>
+      }
+    >
+      <BusinessOverviewContent />
+    </Suspense>
   );
 }

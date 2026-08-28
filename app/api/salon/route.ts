@@ -33,7 +33,25 @@ export async function GET(req: Request) {
   },
 });
   
+const now = new Date();
+
 const sortedSalons = allSalons.sort((a, b) => {
+  // سالن‌های پین‌شده (پرداخت برای نمایش اول در جستجو/فیلترها) همیشه اول‌اند —
+  // مهم نیست چه سرچ یا فیلتری اعمال شده، چون این مرتب‌سازی همین‌جا روی کل
+  // لیست انجام می‌شود و صفحه‌ی اصلی فقط با .filter() (که ترتیب را حفظ می‌کند)
+  // روی همین آرایه‌ی مرتب‌شده جستجو/فیلتر می‌کند.
+  const aPinned = a.pinnedUntil && new Date(a.pinnedUntil) > now ? 1 : 0;
+  const bPinned = b.pinnedUntil && new Date(b.pinnedUntil) > now ? 1 : 0;
+
+  if (aPinned !== bPinned) {
+    return bPinned - aPinned;
+  }
+
+  // بین چند سالن پین‌شده: کسی که تازه‌تر پین کرده/تمدید کرده بالاتر است
+  if (aPinned && bPinned) {
+    return new Date(b.pinnedAt as Date).getTime() - new Date(a.pinnedAt as Date).getTime();
+  }
+
   const aAdvanced = a.planId === 'monthly-advanced' ? 1 : 0;
   const bAdvanced = b.planId === 'monthly-advanced' ? 1 : 0;
 

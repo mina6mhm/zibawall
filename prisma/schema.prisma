@@ -82,6 +82,13 @@ model Salon {
   subscriptionExpiresAt DateTime?
   reminderSentAt        DateTime?
 
+  // پین کردن سالن: سالندار پرداخت می‌کند تا سالنش به مدت ۳۰ روز همیشه اول
+  // نتایج جستجو/فیلتر نمایش داده شود. pinnedUntil تاریخ انقضای پین است؛
+  // اگر در آینده باشد یعنی سالن الان پین است. pinnedAt آخرین لحظه‌ای است که
+  // پین فعال/تمدید شده (برای مرتب‌سازی «جدیدترین پین اول» بین چند سالن پین‌شده).
+  pinnedUntil           DateTime?
+  pinnedAt              DateTime?
+
   // نوبت‌دهی: کاملاً اختیاری و سمت سالن‌دار روشن/خاموش می‌شود
   bookingEnabled        Boolean     @default(false)
 
@@ -105,6 +112,7 @@ model Salon {
   @@index([status, subscriptionExpiresAt])
   @@index([hasHomeService])
   @@index([genderAudience])
+  @@index([pinnedUntil])
 }
 
 // شماره‌موبایل‌هایی که سالن‌دار به‌عنوان «مدیر سالن» اضافه کرده است.

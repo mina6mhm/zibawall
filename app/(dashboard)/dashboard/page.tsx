@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { CATEGORIES, CATEGORY_MAPPING } from '@/lib/data'; 
 import RegionFilterModal from '@/components/RegionFilterModal';
 import SearchBar from '@/components/SearchBar';
-import { Home, Check, Sparkles, Eye, Hand, Scissors, Flower2, Zap, Crown, Palette, type LucideIcon } from 'lucide-react';
+import { Home, Check, Sparkles, Eye, Hand, Scissors, Flower2, Zap, Crown, Palette, Pin, type LucideIcon } from 'lucide-react';
 import LandingScreen from '@/components/LandingScreen';
 
 // --- نگاشت دقیق آیکون مینیمال بر اساس اسم واقعی هر دسته (از lib/data.ts) ---
@@ -472,6 +472,8 @@ export default function DashboardHomePage() {
                 const averageRating = totalVotes > 0 
                   ? (validReviews.reduce((acc: number, review: any) => acc + review.rating, 0) / totalVotes).toFixed(1)
                   : salon.rating ? String(salon.rating) : null; 
+
+                const isPinned = !!salon.pinnedUntil && new Date(salon.pinnedUntil) > new Date();
                   
                 return (
                   // --- شروع کارت (ارتفاع بر اساس محتوا، بدون افتادن دکمه بیرون از کارت) ---
@@ -495,7 +497,14 @@ export default function DashboardHomePage() {
                       
                       {/* ردیف بالا: نام (راست) / بوکمارک (چپ) */}
                       <div className="flex items-start justify-between gap-2">
-                        <h3 className="font-bold text-zinc-900 text-[15px] leading-tight truncate flex-1">{salon.name}</h3>
+                        <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                          {isPinned && (
+                            <span className="shrink-0 flex items-center gap-0.5 bg-amber-50 text-amber-600 rounded-full px-1.5 py-0.5">
+                              <Pin className="w-2.5 h-2.5 fill-amber-500" strokeWidth={2} />
+                            </span>
+                          )}
+                          <h3 className="font-bold text-zinc-900 text-[15px] leading-tight truncate">{salon.name}</h3>
+                        </div>
 
                         <button 
                           onClick={(e) => handleBookmarkClick(salon.id, e)}
