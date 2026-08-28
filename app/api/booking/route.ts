@@ -98,14 +98,14 @@ export async function PUT(req: Request) {
     }
 
     const body = await req.json();
-    const { customerName, customerPhone, date, startTime, services, depositAmount } = body;
+    // تاریخ و ساعت نوبت عمداً از ورودی خونده نمی‌شن: طراحی محصول اینه که بعد از
+    // ثبت نوبت، فقط خدمات/پرسنل/درصد قابل ویرایشه (چون تغییر تاریخ/ساعت نیاز به
+    // چک تداخل و ساعت کاری داره که این endpoint انجامش نمی‌ده). حتی اگه کسی مستقیم
+    // با این فیلدها درخواست بزنه، نادیده گرفته می‌شن و مقدار قبلیِ خودِ نوبت می‌مونه.
+    const { customerName, customerPhone, services, depositAmount } = body;
 
     if (!customerPhone || !mobileRegex.test(customerPhone)) {
       return NextResponse.json({ error: 'شماره موبایل مشتری معتبر نیست' }, { status: 400 });
-    }
-
-    if (!date || !startTime) {
-      return NextResponse.json({ error: 'تاریخ و ساعت نوبت الزامی است' }, { status: 400 });
     }
 
     const cleanedServices = sanitizeServices(services);
@@ -129,8 +129,6 @@ export async function PUT(req: Request) {
         customerId: existingCustomer?.id || null,
         customerName: customerName?.trim() || null,
         customerPhone,
-        date: new Date(date),
-        startTime,
         services: cleanedServices,
         depositAmount: finalDepositAmount,
         totalAmount,

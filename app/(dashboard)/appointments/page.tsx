@@ -68,6 +68,12 @@ function AppointmentsContent() {
   useEffect(() => {
     if (searchParams.get('paymentSuccess')) {
       setNotice({ type: 'success', text: 'پرداخت با موفقیت انجام شد و نوبت شما قطعی شد.' });
+    } else if (searchParams.get('slotTaken')) {
+      setNotice({
+        type: 'error',
+        text:
+          'پرداخت شما انجام شد اما متأسفانه این ساعت هم‌زمان توسط شخص دیگری رزرو شده بود، پس این نوبت لغو شد. مبلغ پرداختی‌تان به‌زودی توسط پشتیبانی بازگردانده می‌شود؛ در صورت نیاز از طریق بخش پشتیبانی پیگیری کنید.',
+      });
     } else if (searchParams.get('paymentFailed')) {
       setNotice({ type: 'error', text: 'پرداخت ناموفق بود. لطفاً دوباره تلاش کنید.' });
     }
