@@ -61,7 +61,7 @@ export async function POST(req: Request) {
       amountToman: PIN_PRICE_TOMAN,
       description: `پین کردن سالن «${salon.name}» به مدت ${PIN_DURATION_DAYS} روز`,
       callbackUrl,
-      mobile: user.phone,
+      mobile: user.phone ?? undefined,
     });
 
     await prisma.payment.update({
