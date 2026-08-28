@@ -1,20 +1,7 @@
 // app/api/staff-overrides/route.ts
 import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
-import jwt from 'jsonwebtoken';
 import { prisma } from '@/lib/prisma';
-
-async function getSalonFromToken() {
-  const cookieStore = await cookies();
-  const token = cookieStore.get('token')?.value;
-  if (!token) return null;
-  try {
-    const decoded: any = jwt.verify(token, process.env.JWT_SECRET!);
-    return await prisma.salon.findUnique({ where: { userId: decoded.userId } });
-  } catch {
-    return null;
-  }
-}
+import { getSalonFromCookieToken as getSalonFromToken } from '@/lib/salonAccess';
 
 // GET: دریافت override های ثبت‌شده — یا برای یک پرسنل خاص (staffId) یا همه‌ی پرسنل سالن
 export async function GET(req: Request) {

@@ -1,20 +1,7 @@
 // app/api/booking-services/[id]/route.ts
 import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
-import jwt from 'jsonwebtoken';
 import { prisma } from '@/lib/prisma';
-
-async function getSalonFromToken() {
-  const cookieStore = await cookies();
-  const token = cookieStore.get('token')?.value;
-  if (!token) return null;
-  try {
-    const decoded: any = jwt.verify(token, process.env.JWT_SECRET!);
-    return await prisma.salon.findUnique({ where: { userId: decoded.userId } });
-  } catch {
-    return null;
-  }
-}
+import { getSalonFromCookieToken as getSalonFromToken } from '@/lib/salonAccess';
 
 // PUT: ویرایش خدمت
 export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
