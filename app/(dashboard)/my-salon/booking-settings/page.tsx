@@ -814,8 +814,10 @@ function StaffScheduleTab({
   const [isLoadingOverrides, setIsLoadingOverrides] = useState(false);
   const [selectedDateStr, setSelectedDateStr] = useState<string | null>(null);
   const [editIsDayOff, setEditIsDayOff] = useState(false);
-  const [editStart, setEditStart] = useState('');
-  const [editEnd, setEditEnd] = useState('');
+  const [editStartH, setEditStartH] = useState('');
+  const [editStartM, setEditStartM] = useState('');
+  const [editEndH, setEditEndH] = useState('');
+  const [editEndM, setEditEndM] = useState('');
   const [editNote, setEditNote] = useState('');
   const [savingOverride, setSavingOverride] = useState(false);
   const [deletingOverride, setDeletingOverride] = useState(false);
@@ -899,8 +901,12 @@ function StaffScheduleTab({
     setSelectedDateStr(dateStr);
     const existing = overrideMap[dateStr];
     setEditIsDayOff(existing?.isDayOff ?? false);
-    setEditStart(existing?.start ?? '');
-    setEditEnd(existing?.end ?? '');
+    const s = splitTime(existing?.start ?? '');
+    const e = splitTime(existing?.end ?? '');
+    setEditStartH(s.h);
+    setEditStartM(s.m);
+    setEditEndH(e.h);
+    setEditEndM(e.m);
     setEditNote(existing?.note ?? '');
   };
 
@@ -915,8 +921,8 @@ function StaffScheduleTab({
           staffId: selectedStaffId,
           date: selectedDateStr,
           isDayOff: editIsDayOff,
-          start: editIsDayOff ? null : editStart || null,
-          end: editIsDayOff ? null : editEnd || null,
+          start: editIsDayOff ? null : joinTime(editStartH, editStartM) || null,
+          end: editIsDayOff ? null : joinTime(editEndH, editEndM) || null,
           note: editNote || null,
         }),
       });
@@ -1095,8 +1101,8 @@ function StaffScheduleTab({
                     <label className="block text-xs font-medium text-zinc-500 mb-1">شروع</label>
                     <div className="flex items-center gap-1.5">
                       <input
-                        value={splitTime(editStart).m}
-                        onChange={(e) => setEditStart(joinTime(splitTime(editStart).h, sanitizeMinuteTime(e.target.value)))}
+                        value={editStartM}
+                        onChange={(e) => setEditStartM(sanitizeMinuteTime(e.target.value))}
                         placeholder="دقیقه"
                         dir="ltr"
                         inputMode="numeric"
@@ -1104,8 +1110,8 @@ function StaffScheduleTab({
                       />
                       <span className="text-zinc-400 font-bold shrink-0">:</span>
                       <input
-                        value={splitTime(editStart).h}
-                        onChange={(e) => setEditStart(joinTime(sanitizeHourTime(e.target.value), splitTime(editStart).m))}
+                        value={editStartH}
+                        onChange={(e) => setEditStartH(sanitizeHourTime(e.target.value))}
                         placeholder="ساعت"
                         dir="ltr"
                         inputMode="numeric"
@@ -1117,8 +1123,8 @@ function StaffScheduleTab({
                     <label className="block text-xs font-medium text-zinc-500 mb-1">پایان</label>
                     <div className="flex items-center gap-1.5">
                       <input
-                        value={splitTime(editEnd).m}
-                        onChange={(e) => setEditEnd(joinTime(splitTime(editEnd).h, sanitizeMinuteTime(e.target.value)))}
+                        value={editEndM}
+                        onChange={(e) => setEditEndM(sanitizeMinuteTime(e.target.value))}
                         placeholder="دقیقه"
                         dir="ltr"
                         inputMode="numeric"
@@ -1126,8 +1132,8 @@ function StaffScheduleTab({
                       />
                       <span className="text-zinc-400 font-bold shrink-0">:</span>
                       <input
-                        value={splitTime(editEnd).h}
-                        onChange={(e) => setEditEnd(joinTime(sanitizeHourTime(e.target.value), splitTime(editEnd).m))}
+                        value={editEndH}
+                        onChange={(e) => setEditEndH(sanitizeHourTime(e.target.value))}
                         placeholder="ساعت"
                         dir="ltr"
                         inputMode="numeric"
@@ -1227,8 +1233,10 @@ function SalonScheduleOverrideSection() {
   const [isLoading, setIsLoading] = useState(false);
   const [selectedDateStr, setSelectedDateStr] = useState<string | null>(null);
   const [editIsClosed, setEditIsClosed] = useState(true);
-  const [editStart, setEditStart] = useState('');
-  const [editEnd, setEditEnd] = useState('');
+  const [editStartH, setEditStartH] = useState('');
+  const [editStartM, setEditStartM] = useState('');
+  const [editEndH, setEditEndH] = useState('');
+  const [editEndM, setEditEndM] = useState('');
   const [editNote, setEditNote] = useState('');
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -1270,8 +1278,12 @@ function SalonScheduleOverrideSection() {
     setSelectedDateStr(dateStr);
     const existing = overrideMap[dateStr];
     setEditIsClosed(existing?.isClosed ?? true);
-    setEditStart(existing?.start ?? '');
-    setEditEnd(existing?.end ?? '');
+    const s = splitTime(existing?.start ?? '');
+    const e = splitTime(existing?.end ?? '');
+    setEditStartH(s.h);
+    setEditStartM(s.m);
+    setEditEndH(e.h);
+    setEditEndM(e.m);
     setEditNote(existing?.note ?? '');
   };
 
@@ -1285,8 +1297,8 @@ function SalonScheduleOverrideSection() {
         body: JSON.stringify({
           date: selectedDateStr,
           isClosed: editIsClosed,
-          start: editIsClosed ? null : editStart || null,
-          end: editIsClosed ? null : editEnd || null,
+          start: editIsClosed ? null : joinTime(editStartH, editStartM) || null,
+          end: editIsClosed ? null : joinTime(editEndH, editEndM) || null,
           note: editNote || null,
         }),
       });
@@ -1381,8 +1393,8 @@ function SalonScheduleOverrideSection() {
                 <label className="block text-xs font-medium text-zinc-500 mb-1">شروع</label>
                 <div className="flex items-center gap-1.5">
                   <input
-                    value={splitTime(editStart).m}
-                    onChange={(e) => setEditStart(joinTime(splitTime(editStart).h, sanitizeMinuteTime(e.target.value)))}
+                    value={editStartM}
+                    onChange={(e) => setEditStartM(sanitizeMinuteTime(e.target.value))}
                     placeholder="دقیقه"
                     dir="ltr"
                     inputMode="numeric"
@@ -1390,8 +1402,8 @@ function SalonScheduleOverrideSection() {
                   />
                   <span className="text-zinc-400 font-bold shrink-0">:</span>
                   <input
-                    value={splitTime(editStart).h}
-                    onChange={(e) => setEditStart(joinTime(sanitizeHourTime(e.target.value), splitTime(editStart).m))}
+                    value={editStartH}
+                    onChange={(e) => setEditStartH(sanitizeHourTime(e.target.value))}
                     placeholder="ساعت"
                     dir="ltr"
                     inputMode="numeric"
@@ -1403,8 +1415,8 @@ function SalonScheduleOverrideSection() {
                 <label className="block text-xs font-medium text-zinc-500 mb-1">پایان</label>
                 <div className="flex items-center gap-1.5">
                   <input
-                    value={splitTime(editEnd).m}
-                    onChange={(e) => setEditEnd(joinTime(splitTime(editEnd).h, sanitizeMinuteTime(e.target.value)))}
+                    value={editEndM}
+                    onChange={(e) => setEditEndM(sanitizeMinuteTime(e.target.value))}
                     placeholder="دقیقه"
                     dir="ltr"
                     inputMode="numeric"
@@ -1412,8 +1424,8 @@ function SalonScheduleOverrideSection() {
                   />
                   <span className="text-zinc-400 font-bold shrink-0">:</span>
                   <input
-                    value={splitTime(editEnd).h}
-                    onChange={(e) => setEditEnd(joinTime(sanitizeHourTime(e.target.value), splitTime(editEnd).m))}
+                    value={editEndH}
+                    onChange={(e) => setEditEndH(sanitizeHourTime(e.target.value))}
                     placeholder="ساعت"
                     dir="ltr"
                     inputMode="numeric"
