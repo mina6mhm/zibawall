@@ -86,12 +86,6 @@ const toEnglishDigits = (str: string) =>
 // نمایش با جداکننده سه‌رقمی فارسی
 const formatPrice = (n: number) => n.toLocaleString('fa-IR');
 
-// جدا کردن "HH:MM" به ساعت/دقیقه برای دو کادر جدا (نیتیو input[type=time] در موبایل
-// گاهی به‌درستی جمع نمی‌شه و باعث می‌شه کادرهای شروع/پایان به هم بچسبن)
-const splitTime = (v: string) => {
-  const [h = '', m = ''] = (v || '').split(':');
-  return { h, m };
-};
 const joinTime = (h: string, m: string) => {
   if (!h && !m) return '';
   return `${(h || '0').padStart(2, '0')}:${(m || '0').padStart(2, '0')}`;
@@ -952,14 +946,17 @@ function StaffScheduleTab({
   const [isLoadingOverrides, setIsLoadingOverrides] = useState(false);
   const [selectedDateStr, setSelectedDateStr] = useState<string | null>(null);
   const [editIsDayOff, setEditIsDayOff] = useState(false);
-  const [editStartH, setEditStartH] = useState('');
-  const [editStartM, setEditStartM] = useState('');
-  const [editEndH, setEditEndH] = useState('');
-  const [editEndM, setEditEndM] = useState('');
   const [editClosedRanges, setEditClosedRanges] = useState<ClosedRange[]>([]);
   const [editNote, setEditNote] = useState('');
   const [savingOverride, setSavingOverride] = useState(false);
   const [deletingOverride, setDeletingOverride] = useState(false);
+
+  // ماهی که همین الان روی تقویم نمایش داده می‌شه — برای اینکه لیست «موارد موقت ثبت‌شده»
+  // فقط همین ماه رو نشون بده، نه همه‌ی تاریخ‌های ثبت‌شده در همه‌ی ماه‌ها
+  const [viewedMonth, setViewedMonth] = useState<{ year: number; month: number }>(() => {
+    const now = new DateObject({ calendar: persian, locale: persian_fa });
+    return { year: now.year, month: now.month.number };
+  });
 
   useEffect(() => {
     if (staff.length === 0) {
@@ -1004,6 +1001,16 @@ function StaffScheduleTab({
     [overrides]
   );
 
+  // فقط مواردی که تاریخشون توی همون ماهیه که الان روی تقویم بازه
+  const overridesInViewedMonth = useMemo(
+    () =>
+      sortedOverrides.filter((o) => {
+        const d = new DateObject({ date: new Date(o.date), calendar: persian, locale: persian_fa });
+        return d.year === viewedMonth.year && d.month.number === viewedMonth.month;
+      }),
+    [sortedOverrides, viewedMonth]
+  );
+
   const calendarMarkers = useMemo(() => {
     const map: Record<string, CalendarDayMarker> = {};
     overrides.forEach((o) => {
@@ -1040,12 +1047,6 @@ function StaffScheduleTab({
     setSelectedDateStr(dateStr);
     const existing = overrideMap[dateStr];
     setEditIsDayOff(existing?.isDayOff ?? false);
-    const s = splitTime(existing?.start ?? '');
-    const e = splitTime(existing?.end ?? '');
-    setEditStartH(s.h);
-    setEditStartM(s.m);
-    setEditEndH(e.h);
-    setEditEndM(e.m);
     setEditClosedRanges(parseClosedRangesClient(existing?.closedRanges));
     setEditNote(existing?.note ?? '');
   };
@@ -1061,8 +1062,8 @@ function StaffScheduleTab({
           staffId: selectedStaffId,
           date: selectedDateStr,
           isDayOff: editIsDayOff,
-          start: editIsDayOff ? null : joinTime(editStartH, editStartM) || null,
-          end: editIsDayOff ? null : joinTime(editEndH, editEndM) || null,
+          start: null,
+          end: null,
           closedRanges: editIsDayOff ? [] : editClosedRanges,
           note: editNote || null,
         }),
@@ -1200,6 +1201,7 @@ function StaffScheduleTab({
               selectedDate={selectedDateStr}
               onSelectDate={(dateStr) => openDay(dateStr)}
               markers={calendarMarkers}
+              onMonthChange={(year, month) => setViewedMonth({ year, month })}
             />
           </div>
 
@@ -1210,7 +1212,7 @@ function StaffScheduleTab({
             </span>
             <span className="flex items-center gap-1.5">
               <span className="w-3 h-3 rounded-md bg-[#824c71]/10 border border-[#824c71]/25" />
-              ساعت اختصاصی آن روز
+              بازه‌ی ساعتی بسته در آن روز
             </span>
           </div>
 
@@ -1235,55 +1237,6 @@ function StaffScheduleTab({
                   </div>
                 </button>
               </div>
-
-              {!editIsDayOff && (
-                <div className="grid grid-cols-2 gap-3 mb-3.5">
-                  <div className="min-w-0">
-                    <label className="block text-xs font-medium text-zinc-500 mb-1">شروع</label>
-                    <div className="flex items-center gap-1.5">
-                      <input
-                        value={editStartM}
-                        onChange={(e) => setEditStartM(sanitizeMinuteTime(e.target.value))}
-                        placeholder="دقیقه"
-                        dir="ltr"
-                        inputMode="numeric"
-                        className="w-full min-w-0 border border-zinc-300 rounded-lg px-2 py-2 text-sm bg-zinc-50 text-center focus:outline-none focus:border-[#824c71] focus:bg-white"
-                      />
-                      <span className="text-zinc-400 font-bold shrink-0">:</span>
-                      <input
-                        value={editStartH}
-                        onChange={(e) => setEditStartH(sanitizeHourTime(e.target.value))}
-                        placeholder="ساعت"
-                        dir="ltr"
-                        inputMode="numeric"
-                        className="w-full min-w-0 border border-zinc-300 rounded-lg px-2 py-2 text-sm bg-zinc-50 text-center focus:outline-none focus:border-[#824c71] focus:bg-white"
-                      />
-                    </div>
-                  </div>
-                  <div className="min-w-0">
-                    <label className="block text-xs font-medium text-zinc-500 mb-1">پایان</label>
-                    <div className="flex items-center gap-1.5">
-                      <input
-                        value={editEndM}
-                        onChange={(e) => setEditEndM(sanitizeMinuteTime(e.target.value))}
-                        placeholder="دقیقه"
-                        dir="ltr"
-                        inputMode="numeric"
-                        className="w-full min-w-0 border border-zinc-300 rounded-lg px-2 py-2 text-sm bg-zinc-50 text-center focus:outline-none focus:border-[#824c71] focus:bg-white"
-                      />
-                      <span className="text-zinc-400 font-bold shrink-0">:</span>
-                      <input
-                        value={editEndH}
-                        onChange={(e) => setEditEndH(sanitizeHourTime(e.target.value))}
-                        placeholder="ساعت"
-                        dir="ltr"
-                        inputMode="numeric"
-                        className="w-full min-w-0 border border-zinc-300 rounded-lg px-2 py-2 text-sm bg-zinc-50 text-center focus:outline-none focus:border-[#824c71] focus:bg-white"
-                      />
-                    </div>
-                  </div>
-                </div>
-              )}
 
               {!editIsDayOff && (
                 <ClosedRangesEditor ranges={editClosedRanges} onChange={setEditClosedRanges} />
@@ -1321,44 +1274,50 @@ function StaffScheduleTab({
             </div>
           )}
 
-          {/* لیست موارد موقت ثبت‌شده — برای دسترسی و ویرایش سریع */}
+          {/* لیست موارد موقت ثبت‌شده — فقط همون ماهی که الان روی تقویم بازه */}
           <div>
-            <p className="text-xs font-bold text-zinc-500 mb-2 px-1">موارد موقت ثبت‌شده برای این پرسنل</p>
-            {sortedOverrides.length === 0 ? (
+            <p className="text-xs font-bold text-zinc-500 mb-2 px-1">
+              موارد موقت این ماه برای {currentStaff.name}
+            </p>
+            {overridesInViewedMonth.length === 0 ? (
               <div className="text-center py-8 bg-zinc-50 rounded-2xl">
-                <p className="text-zinc-400 text-xs">هنوز مرخصی یا تغییر ساعتی برای یک تاریخ خاص ثبت نشده</p>
+                <p className="text-zinc-400 text-xs">در این ماه مرخصی یا بازه‌ی ساعتی خاصی ثبت نشده</p>
               </div>
             ) : (
               <div className="space-y-2">
-                {sortedOverrides.map((o) => (
-                  <div
-                    key={o.id}
-                    className="w-full flex items-center justify-between gap-2 bg-white border border-zinc-100 rounded-xl px-3.5 py-3"
-                  >
-                    <button
-                      onClick={() => openDay(o.date)}
-                      className="flex-1 flex items-center gap-2.5 text-right"
+                {overridesInViewedMonth.map((o) => {
+                  const closed = parseClosedRangesClient(o.closedRanges);
+                  return (
+                    <div
+                      key={o.id}
+                      className="w-full flex items-center justify-between gap-2 bg-white border border-zinc-100 rounded-xl px-3.5 py-3"
                     >
-                      <div className={`w-2 h-2 rounded-full shrink-0 ${o.isDayOff ? 'bg-red-400' : 'bg-[#824c71]'}`} />
-                      <div>
-                        <p className="text-xs font-bold text-zinc-800">{formatPersianDate(o.date)}</p>
-                        <p className="text-[11px] text-zinc-400 mt-0.5">
-                          {o.isDayOff ? 'مرخصی کامل' : `ساعت ${o.start ?? '—'} تا ${o.end ?? '—'}`}
-                          {!o.isDayOff && parseClosedRangesClient(o.closedRanges).length > 0
-                            ? ` · تعطیل: ${formatClosedRangesSummary(parseClosedRangesClient(o.closedRanges))}`
-                            : ''}
-                          {o.note ? ` · ${o.note}` : ''}
-                        </p>
-                      </div>
-                    </button>
-                    <button
-                      onClick={() => handleDeleteOverride(o.date)}
-                      className="w-7 h-7 flex items-center justify-center rounded-lg bg-red-50 text-red-400 shrink-0"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                ))}
+                      <button
+                        onClick={() => openDay(o.date)}
+                        className="flex-1 flex items-center gap-2.5 text-right"
+                      >
+                        <div className={`w-2 h-2 rounded-full shrink-0 ${o.isDayOff ? 'bg-red-400' : 'bg-[#824c71]'}`} />
+                        <div>
+                          <p className="text-xs font-bold text-zinc-800">{formatPersianDate(o.date)}</p>
+                          <p className="text-[11px] text-zinc-400 mt-0.5">
+                            {o.isDayOff
+                              ? 'مرخصی کامل'
+                              : closed.length > 0
+                              ? `تعطیل: ${formatClosedRangesSummary(closed)}`
+                              : 'بدون بازه‌ی بسته'}
+                            {o.note ? ` · ${o.note}` : ''}
+                          </p>
+                        </div>
+                      </button>
+                      <button
+                        onClick={() => handleDeleteOverride(o.date)}
+                        className="w-7 h-7 flex items-center justify-center rounded-lg bg-red-50 text-red-400 shrink-0"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>
@@ -1381,14 +1340,17 @@ function SalonScheduleOverrideSection() {
   const [isLoading, setIsLoading] = useState(false);
   const [selectedDateStr, setSelectedDateStr] = useState<string | null>(null);
   const [editIsClosed, setEditIsClosed] = useState(true);
-  const [editStartH, setEditStartH] = useState('');
-  const [editStartM, setEditStartM] = useState('');
-  const [editEndH, setEditEndH] = useState('');
-  const [editEndM, setEditEndM] = useState('');
   const [editClosedRanges, setEditClosedRanges] = useState<ClosedRange[]>([]);
   const [editNote, setEditNote] = useState('');
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
+
+  // ماهی که همین الان روی تقویم نمایش داده می‌شه — برای اینکه لیست «موارد موقت ثبت‌شده»
+  // فقط همین ماه رو نشون بده، نه همه‌ی تاریخ‌های ثبت‌شده در همه‌ی ماه‌ها
+  const [viewedMonth, setViewedMonth] = useState<{ year: number; month: number }>(() => {
+    const now = new DateObject({ calendar: persian, locale: persian_fa });
+    return { year: now.year, month: now.month.number };
+  });
 
   const fetchOverrides = useCallback(async () => {
     setIsLoading(true);
@@ -1413,6 +1375,16 @@ function SalonScheduleOverrideSection() {
     [overrides]
   );
 
+  // فقط مواردی که تاریخشون توی همون ماهیه که الان روی تقویم بازه
+  const overridesInViewedMonth = useMemo(
+    () =>
+      sortedOverrides.filter((o) => {
+        const d = new DateObject({ date: new Date(o.date), calendar: persian, locale: persian_fa });
+        return d.year === viewedMonth.year && d.month.number === viewedMonth.month;
+      }),
+    [sortedOverrides, viewedMonth]
+  );
+
   const calendarMarkers = useMemo(() => {
     const map: Record<string, CalendarDayMarker> = {};
     overrides.forEach((o) => {
@@ -1427,15 +1399,9 @@ function SalonScheduleOverrideSection() {
     setSelectedDateStr(dateStr);
     const existing = overrideMap[dateStr];
     // برای یک تاریخ جدید که هنوز override نداره، پیش‌فرض باید «تعطیل نیست» باشه
-    // (مشابه بخش پرسنل)، وگرنه سالن‌دار که فقط می‌خواد ساعت اختصاصی ثبت کنه
+    // (مشابه بخش پرسنل)، وگرنه سالن‌دار که فقط می‌خواد بازه‌ی ساعتی خاصی رو ببنده
     // ممکنه فراموش کنه سوییچ «تعطیل کامل» رو خاموش کنه و کل روز اشتباهی تعطیل بشه
     setEditIsClosed(existing?.isClosed ?? false);
-    const s = splitTime(existing?.start ?? '');
-    const e = splitTime(existing?.end ?? '');
-    setEditStartH(s.h);
-    setEditStartM(s.m);
-    setEditEndH(e.h);
-    setEditEndM(e.m);
     setEditClosedRanges(parseClosedRangesClient(existing?.closedRanges));
     setEditNote(existing?.note ?? '');
   };
@@ -1450,8 +1416,8 @@ function SalonScheduleOverrideSection() {
         body: JSON.stringify({
           date: selectedDateStr,
           isClosed: editIsClosed,
-          start: editIsClosed ? null : joinTime(editStartH, editStartM) || null,
-          end: editIsClosed ? null : joinTime(editEndH, editEndM) || null,
+          start: null,
+          end: null,
           closedRanges: editIsClosed ? [] : editClosedRanges,
           note: editNote || null,
         }),
@@ -1506,6 +1472,7 @@ function SalonScheduleOverrideSection() {
           selectedDate={selectedDateStr}
           onSelectDate={(dateStr) => openDay(dateStr)}
           markers={calendarMarkers}
+          onMonthChange={(year, month) => setViewedMonth({ year, month })}
         />
       </div>
 
@@ -1516,7 +1483,7 @@ function SalonScheduleOverrideSection() {
         </span>
         <span className="flex items-center gap-1.5">
           <span className="w-3 h-3 rounded-md bg-[#824c71]/10 border border-[#824c71]/25" />
-          ساعت اختصاصی
+          بازه‌ی ساعتی بسته
         </span>
       </div>
 
@@ -1540,55 +1507,6 @@ function SalonScheduleOverrideSection() {
               </div>
             </button>
           </div>
-
-          {!editIsClosed && (
-            <div className="grid grid-cols-2 gap-3 mb-3.5">
-              <div className="min-w-0">
-                <label className="block text-xs font-medium text-zinc-500 mb-1">شروع</label>
-                <div className="flex items-center gap-1.5">
-                  <input
-                    value={editStartM}
-                    onChange={(e) => setEditStartM(sanitizeMinuteTime(e.target.value))}
-                    placeholder="دقیقه"
-                    dir="ltr"
-                    inputMode="numeric"
-                    className="w-full min-w-0 border border-zinc-300 rounded-lg px-2 py-2 text-sm bg-zinc-50 text-center focus:outline-none focus:border-[#824c71] focus:bg-white"
-                  />
-                  <span className="text-zinc-400 font-bold shrink-0">:</span>
-                  <input
-                    value={editStartH}
-                    onChange={(e) => setEditStartH(sanitizeHourTime(e.target.value))}
-                    placeholder="ساعت"
-                    dir="ltr"
-                    inputMode="numeric"
-                    className="w-full min-w-0 border border-zinc-300 rounded-lg px-2 py-2 text-sm bg-zinc-50 text-center focus:outline-none focus:border-[#824c71] focus:bg-white"
-                  />
-                </div>
-              </div>
-              <div className="min-w-0">
-                <label className="block text-xs font-medium text-zinc-500 mb-1">پایان</label>
-                <div className="flex items-center gap-1.5">
-                  <input
-                    value={editEndM}
-                    onChange={(e) => setEditEndM(sanitizeMinuteTime(e.target.value))}
-                    placeholder="دقیقه"
-                    dir="ltr"
-                    inputMode="numeric"
-                    className="w-full min-w-0 border border-zinc-300 rounded-lg px-2 py-2 text-sm bg-zinc-50 text-center focus:outline-none focus:border-[#824c71] focus:bg-white"
-                  />
-                  <span className="text-zinc-400 font-bold shrink-0">:</span>
-                  <input
-                    value={editEndH}
-                    onChange={(e) => setEditEndH(sanitizeHourTime(e.target.value))}
-                    placeholder="ساعت"
-                    dir="ltr"
-                    inputMode="numeric"
-                    className="w-full min-w-0 border border-zinc-300 rounded-lg px-2 py-2 text-sm bg-zinc-50 text-center focus:outline-none focus:border-[#824c71] focus:bg-white"
-                  />
-                </div>
-              </div>
-            </div>
-          )}
 
           {!editIsClosed && (
             <ClosedRangesEditor ranges={editClosedRanges} onChange={setEditClosedRanges} />
@@ -1627,33 +1545,37 @@ function SalonScheduleOverrideSection() {
       )}
 
       <div>
-        <p className="text-xs font-bold text-zinc-500 mb-2 px-1">موارد موقت ثبت‌شده</p>
-        {sortedOverrides.length === 0 ? (
+        <p className="text-xs font-bold text-zinc-500 mb-2 px-1">موارد موقت این ماه</p>
+        {overridesInViewedMonth.length === 0 ? (
           <div className="text-center py-8 bg-zinc-50 rounded-2xl">
-            <p className="text-zinc-400 text-xs">هنوز تعطیلی یا تغییر ساعتی برای یک تاریخ خاص ثبت نشده</p>
+            <p className="text-zinc-400 text-xs">در این ماه تعطیلی یا بازه‌ی ساعتی خاصی ثبت نشده</p>
           </div>
         ) : (
           <div className="space-y-2">
-            {sortedOverrides.map((o) => (
-              <div key={o.id} className="w-full flex items-center justify-between gap-2 bg-white border border-zinc-100 rounded-xl px-3.5 py-3">
-                <button onClick={() => openDay(o.date)} className="flex-1 flex items-center gap-2.5 text-right">
-                  <div className={`w-2 h-2 rounded-full shrink-0 ${o.isClosed ? 'bg-red-400' : 'bg-[#824c71]'}`} />
-                  <div>
-                    <p className="text-xs font-bold text-zinc-800">{formatPersianDate(o.date)}</p>
-                    <p className="text-[11px] text-zinc-400 mt-0.5">
-                      {o.isClosed ? 'تعطیل کامل' : `ساعت ${o.start ?? '—'} تا ${o.end ?? '—'}`}
-                      {!o.isClosed && parseClosedRangesClient(o.closedRanges).length > 0
-                        ? ` · تعطیل: ${formatClosedRangesSummary(parseClosedRangesClient(o.closedRanges))}`
-                        : ''}
-                      {o.note ? ` · ${o.note}` : ''}
-                    </p>
-                  </div>
-                </button>
-                <button onClick={() => handleDelete(o.date)} className="w-7 h-7 flex items-center justify-center rounded-lg bg-red-50 text-red-400 shrink-0">
-                  <Trash2 className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            ))}
+            {overridesInViewedMonth.map((o) => {
+              const closed = parseClosedRangesClient(o.closedRanges);
+              return (
+                <div key={o.id} className="w-full flex items-center justify-between gap-2 bg-white border border-zinc-100 rounded-xl px-3.5 py-3">
+                  <button onClick={() => openDay(o.date)} className="flex-1 flex items-center gap-2.5 text-right">
+                    <div className={`w-2 h-2 rounded-full shrink-0 ${o.isClosed ? 'bg-red-400' : 'bg-[#824c71]'}`} />
+                    <div>
+                      <p className="text-xs font-bold text-zinc-800">{formatPersianDate(o.date)}</p>
+                      <p className="text-[11px] text-zinc-400 mt-0.5">
+                        {o.isClosed
+                          ? 'تعطیل کامل'
+                          : closed.length > 0
+                          ? `تعطیل: ${formatClosedRangesSummary(closed)}`
+                          : 'بدون بازه‌ی بسته'}
+                        {o.note ? ` · ${o.note}` : ''}
+                      </p>
+                    </div>
+                  </button>
+                  <button onClick={() => handleDelete(o.date)} className="w-7 h-7 flex items-center justify-center rounded-lg bg-red-50 text-red-400 shrink-0">
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              );
+            })}
           </div>
         )}
       </div>

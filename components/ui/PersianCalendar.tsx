@@ -1,7 +1,7 @@
 // components/ui/PersianCalendar.tsx
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ChevronRight, ChevronLeft } from 'lucide-react';
 import { DateObject } from 'react-multi-date-picker';
 import persian from 'react-date-object/calendars/persian';
@@ -19,6 +19,8 @@ type PersianCalendarProps = {
   markers?: Record<string, CalendarDayMarker>; // key: "YYYY-MM-DD" میلادی
   initialMonth?: DateObject;
   className?: string;
+  // هر بار ماهِ در حال نمایش عوض بشه صدا زده می‌شه — برای فیلتر کردن لیست‌ها بر اساس ماهِ جاری تقویم
+  onMonthChange?: (year: number, month: number) => void;
 };
 
 const WEEKDAY_LABELS = ['ش', 'ی', 'د', 'س', 'چ', 'پ', 'ج'];
@@ -41,10 +43,17 @@ export default function PersianCalendar({
   markers = {},
   initialMonth,
   className = '',
+  onMonthChange,
 }: PersianCalendarProps) {
   const [viewMonth, setViewMonth] = useState<DateObject>(
     () => initialMonth ?? new DateObject({ calendar: persian, locale: persian_fa })
   );
+
+  // هر بار ماهِ نمایش داده شده عوض بشه، به والد اطلاع می‌دیم (مثلاً برای فیلتر کردن لیست موارد موقت بر اساس همین ماه)
+  useEffect(() => {
+    onMonthChange?.(viewMonth.year, viewMonth.month.number);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [viewMonth.year, viewMonth.month.number]);
 
   // حالت نمایش: تقویم روزها / انتخاب ماه / انتخاب سال
   const [mode, setMode] = useState<ViewMode>('calendar');
