@@ -137,8 +137,17 @@ export async function POST(req: Request) {
           });
 
           const busyByStaffDate: Record<string, { start: number; end: number }[]> = {};
+          // هولدهای فعالِ خودِ همین کاربر برای همین تاریخ‌ها — این‌ها نباید مانع
+          // تلاش دوباره‌اش بشن (مثلاً وقتی بار قبل پرداخت انجام نشده)، ولی چون
+          // داره دوباره هولد می‌گیره، هولد قبلی‌شو کنسل می‌کنیم که دیتای یتیم
+          // نمونه و دو هولد فعال هم‌زمان برای خودش نداشته باشه
+          const ownStaleBookingIds: string[] = [];
 
           for (const b of existingBookings) {
+            if (b.customerId === user.id) {
+              ownStaleBookingIds.push(b.id);
+              continue;
+            }
             const services = b.services as any[];
             const dStr = new Date(b.date).toISOString().slice(0, 10);
             const bStart = timeToMin(b.startTime);
@@ -173,6 +182,30 @@ export async function POST(req: Request) {
             // برای جلوگیری از تداخل بین آیتم‌های همین سبد
             if (!busyByStaffDate[key]) busyByStaffDate[key] = [];
             busyByStaffDate[key].push({ start: p.startMin, end: p.endMin });
+          }
+
+          // هولدهای قبلیِ خودِ همین کاربر برای همین سالن/تاریخ‌ها رو کنسل می‌کنیم
+          // (مثلاً هولدی که بار قبل ساخته شده ولی پرداختش کامل نشده بود) — چون
+          // داره از نو هولد می‌گیره، دیگه نیازی به نگه‌داشتن اون هولد قدیمی نیست
+          if (ownStaleBookingIds.length > 0) {
+            const staleGroups = await tx.booking.findMany({
+              where: { id: { in: ownStaleBookingIds } },
+              select: { bookingGroupId: true },
+            });
+            const staleGroupIds = Array.from(
+              new Set(staleGroups.map((b) => b.bookingGroupId).filter((id): id is string => !!id))
+            );
+
+            await tx.booking.updateMany({
+              where: { id: { in: ownStaleBookingIds } },
+              data: { status: 'CANCELLED' },
+            });
+            if (staleGroupIds.length > 0) {
+              await tx.bookingGroup.updateMany({
+                where: { id: { in: staleGroupIds } },
+                data: { paymentStatus: 'FAILED' },
+              });
+            }
           }
 
           const createdGroup = await tx.bookingGroup.create({

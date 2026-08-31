@@ -300,6 +300,7 @@ export async function checkBookingSlotStillAvailable(
     startTime: string;
     services: Prisma.JsonValue;
     expiresAt: Date | null;
+    customerId: string | null;
   },
   client: QueryClient = prisma
 ): Promise<{ ok: true } | { ok: false; error: string }> {
@@ -330,6 +331,9 @@ export async function checkBookingSlotStillAvailable(
       salonId: booking.salonId,
       id: { not: booking.id },
       date: { gte: dayStart, lt: dayEnd },
+      // نوبت‌های دیگه‌ی خودِ همین مشتری نباید به‌عنوان «توسط شخص دیگری رزرو
+      // شده» حساب بشن — این چک فقط باید جلوی تداخل با مشتری‌های دیگه رو بگیره
+      ...(booking.customerId ? { customerId: { not: booking.customerId } } : {}),
       OR: [
         { status: 'CONFIRMED' },
         { status: 'PENDING_PAYMENT', expiresAt: { gt: now } },

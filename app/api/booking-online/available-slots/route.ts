@@ -1,5 +1,7 @@
 // app/api/booking-online/available-slots/route.ts
 import { NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
+import jwt from 'jsonwebtoken';
 import { prisma } from '@/lib/prisma';
 import {
   persianDayNameForDate,
@@ -81,10 +83,26 @@ export async function GET(req: Request) {
 
   // ── ۴. نوبت‌های تأییدشده/در انتظار پرداخت برای همین تاریخ ──────────────
   const now = new Date();
+
+  // اگه کاربر لاگین باشه، شناسه‌اش رو می‌گیریم تا هولدهای فعالِ خودش رو از
+  // لیستِ «اسلات‌های اشغال‌شده» کنار بذاریم — چون نباید هولدِ پرداخت‌نشده‌ی
+  // خودش مانع تلاش دوباره‌اش برای همون ساعت بشه (فقط برای بقیه اشغاله)
+  let currentUserId: string | null = null;
+  try {
+    const token = (await cookies()).get('token')?.value;
+    if (token) {
+      const decoded: any = jwt.verify(token, process.env.JWT_SECRET!);
+      currentUserId = decoded?.userId ?? null;
+    }
+  } catch {
+    currentUserId = null;
+  }
+
   const existingBookings = await prisma.booking.findMany({
     where: {
       salonId,
       date: { gte: new Date(dateStr + 'T00:00:00Z'), lt: new Date(dateStr + 'T23:59:59Z') },
+      ...(currentUserId ? { customerId: { not: currentUserId } } : {}),
       OR: [
         { status: 'CONFIRMED' },
         { status: 'PENDING_PAYMENT', expiresAt: { gt: now } },
