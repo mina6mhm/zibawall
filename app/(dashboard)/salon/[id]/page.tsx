@@ -7,9 +7,10 @@ import { CATEGORY_MAPPING } from "@/lib/data";
 import { 
   ArrowRight, Star, MapPin, Clock, Phone,
   CheckCircle2, CalendarOff, X, MessageCircle, CalendarClock, ChevronDown, ChevronUp, Map, Trash2,
-  Home, Users, Share2, Check
+  Home, Users, Share2
 } from "lucide-react";
 import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
+import ShareSalonModal from "@/components/salon/ShareSalonModal";
 
 
 const GENDER_AUDIENCE_LABELS: Record<string, string> = {
@@ -45,8 +46,8 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
   // --- کنترل پاپ‌آپ هشدار وقتی نوبت‌دهی آنلاین سالن غیرفعاله ---
   const [showBookingAlert, setShowBookingAlert] = useState(false);
 
-  // --- اشتراک‌گذاری صفحه سالن ---
-  const [copied, setCopied] = useState(false);
+  // --- اشتراک‌گذاری صفحه سالن (لینک + QR) ---
+  const [showShareModal, setShowShareModal] = useState(false);
 
   const toggleCategory = (category: string) => {
     setExpandedCategories(prev => 
@@ -141,31 +142,16 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
     }
   };
 
-  // --- اشتراک‌گذاری صفحه‌ی این سالن — موبایل: Web Share API، دسکتاپ: کپی لینک ---
-  const handleShare = async (e: React.MouseEvent) => {
+  // --- اشتراک‌گذاری صفحه‌ی این سالن: باز کردن مودال لینک + QR ---
+  const handleShare = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (!salon) return;
-
-    const url = `${window.location.origin}/salon/${salon.id}`;
-    const shareData = {
-      title: salon.name,
-      text: `رزرو آنلاین در ${salon.name}`,
-      url,
-    };
-
-    if (navigator.share) {
-      try {
-        await navigator.share(shareData);
-      } catch {}
-      return;
-    }
-
-    try {
-      await navigator.clipboard.writeText(url);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch {}
+    setShowShareModal(true);
   };
+
+  const shareUrl = salon && typeof window !== "undefined"
+    ? `${window.location.origin}/salon/${salon.id}`
+    : "";
 
   if (isLoading) {
     return (
@@ -654,6 +640,14 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
         </div>
       )}
 
+      {/* مودال اشتراک‌گذاری (لینک + QR) */}
+      <ShareSalonModal
+        isOpen={showShareModal}
+        onClose={() => setShowShareModal(false)}
+        url={shareUrl}
+        salonName={salon?.name || ""}
+      />
+
       {/* محتوای اصلی */}
       {/* پدینگ پایین (pb-28) برای جلوگیری از رفتن محتوا زیر دکمه شناور موبایل است */}
       <div className="max-w-5xl mx-auto pb-36 sm:pb-24 px-3 sm:px-6 mt-4 sm:mt-8">
@@ -671,16 +665,7 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
               className="p-2 rounded-full active:bg-zinc-100 relative"
               aria-label="اشتراک‌گذاری صفحه سالن"
             >
-              {copied ? (
-                <Check className="w-5 h-5 text-emerald-500" />
-              ) : (
-                <Share2 className="w-5 h-5 text-zinc-500" />
-              )}
-              {copied && (
-                <span className="absolute -bottom-6 left-1/2 -translate-x-1/2 whitespace-nowrap text-[10px] font-medium text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md">
-                  لینک کپی شد
-                </span>
-              )}
+              <Share2 className="w-5 h-5 text-zinc-500" />
             </button>
             <button onClick={toggleBookmark} className="p-2 rounded-full active:bg-zinc-100">
               <svg viewBox="0 0 24 24" className={`w-6 h-6 ${isBookmarked ? "text-[#824c71]" : "text-zinc-500"}`} fill={isBookmarked ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">

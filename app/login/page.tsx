@@ -1,12 +1,31 @@
 //app/login/page.tsx
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, Suspense } from 'react';
 import Image from 'next/image';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 export default function LoginPage() {
+  return (
+    <Suspense fallback={null}>
+      <LoginPageInner />
+    </Suspense>
+  );
+}
+
+function LoginPageInner() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+
+  // اگر کاربر از یک لینک محافظت‌شده (مثلاً نوبت‌دهی یک سالن) به لاگین هدایت شده،
+  // بعد از ورود موفق باید به همون صفحه برگرده، نه همیشه به /dashboard
+  const getRedirectTarget = () => {
+    const next = searchParams.get('next');
+    if (next && next.startsWith('/') && !next.startsWith('//')) {
+      return next;
+    }
+    return '/dashboard';
+  };
 
   const [step, setStep] = useState<'mobile' | 'otp' | 'username'>('mobile');
 
@@ -142,7 +161,7 @@ export default function LoginPage() {
       if (data.isNewUser || !data.user?.username) {
         setStep('username');
       } else {
-        router.push('/dashboard');
+        router.push(getRedirectTarget());
         router.refresh();
       }
     } catch {
@@ -181,7 +200,7 @@ export default function LoginPage() {
         return;
       }
 
-      router.push('/dashboard');
+      router.push(getRedirectTarget());
       router.refresh();
     } catch {
       alert('خطای ارتباط با سرور');
