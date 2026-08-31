@@ -8,6 +8,7 @@ import {
   timeToMin,
   minToTime,
   isSlotInPast,
+  overlapsClosedRange,
 } from '@/lib/bookingSchedule';
 
 export const dynamic = 'force-dynamic';
@@ -123,8 +124,11 @@ export async function GET(req: Request) {
 
       const isBusy = busyRanges.some((r) => cursor < r.end && slotEnd > r.start);
       const isPast = isSlotInPast(dateStr, time, now);
+      // بازه‌های تعطیلی موقت (سالن یا خودِ همین پرسنل) — فقط همین بازه بسته
+      // میشه، بقیه‌ی روز طبق ساعت کاری عادی باز می‌مونه
+      const isClosedRange = overlapsClosedRange(cursor, slotEnd, staffSchedule.closedRanges);
 
-      if (!isBusy && !isPast) {
+      if (!isBusy && !isPast && !isClosedRange) {
         if (!slotStaffMap[time]) slotStaffMap[time] = [];
         slotStaffMap[time].push({ id: s.id, name: s.name });
       }

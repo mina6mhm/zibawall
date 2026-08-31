@@ -428,7 +428,12 @@ model StaffScheduleOverride {
   start     String?  // ساعت شروع اختصاصی، مثلاً "10:00"
   end       String?  // ساعت پایان اختصاصی
   note      String?  // دلیل: مرخصی، بیماری، ...
-  
+
+  // بازه‌های تعطیلی موقت داخل همون روز — یعنی فقط همین ساعت‌ها بسته میشه،
+  // بقیه‌ی روز طبق ساعت کاری عادی (یا start/end بالا اگه ست شده) باز می‌مونه.
+  // ذخیره به صورت JSON آرایه: [{ "start": "13:00", "end": "14:00" }, ...]
+  closedRanges Json  @default("[]")
+
   createdAt DateTime @default(now())
 
   @@unique([staffId, date])
@@ -448,6 +453,11 @@ model SalonScheduleOverride {
   start     String?  // اگر تعطیل نیست ولی ساعت کاری آن روز فرق دارد
   end       String?
   note      String?  // مثلاً: تعطیلی رسمی، تعمیرات، ...
+
+  // بازه‌های تعطیلی موقت داخل همون روز — یعنی فقط همین ساعت‌ها بسته میشه،
+  // بقیه‌ی روز طبق ساعت کاری عادی (یا start/end بالا اگه ست شده) باز می‌مونه.
+  // ذخیره به صورت JSON آرایه: [{ "start": "13:00", "end": "14:00" }, ...]
+  closedRanges Json  @default("[]")
 
   createdAt DateTime @default(now())
 

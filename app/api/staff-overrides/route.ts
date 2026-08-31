@@ -2,6 +2,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getSalonFromCookieToken as getSalonFromToken } from '@/lib/salonAccess';
+import { parseClosedRanges } from '@/lib/bookingSchedule';
 
 // GET: دریافت override های ثبت‌شده — یا برای یک پرسنل خاص (staffId) یا همه‌ی پرسنل سالن
 export async function GET(req: Request) {
@@ -43,7 +44,7 @@ export async function POST(req: Request) {
   if (!salon) return NextResponse.json({ error: 'دسترسی ندارید' }, { status: 401 });
 
   const body = await req.json();
-  const { staffId, date, isDayOff, start, end, note } = body;
+  const { staffId, date, isDayOff, start, end, note, closedRanges } = body;
 
   if (!staffId || !date)
     return NextResponse.json({ error: 'staffId و date الزامی است' }, { status: 400 });
@@ -51,6 +52,9 @@ export async function POST(req: Request) {
   const staffMember = await prisma.staff.findUnique({ where: { id: staffId } });
   if (!staffMember || staffMember.salonId !== salon.id)
     return NextResponse.json({ error: 'پرسنل یافت نشد' }, { status: 404 });
+
+  // بازه‌های تعطیلیِ فقط-همون-ساعت — وقتی پرسنل کلاً مرخصی نیست
+  const cleanClosedRanges = isDayOff ? [] : parseClosedRanges(closedRanges);
 
   const override = await prisma.staffScheduleOverride.upsert({
     where: { staffId_date: { staffId, date } },
@@ -61,12 +65,14 @@ export async function POST(req: Request) {
       start: isDayOff ? null : (start || null),
       end: isDayOff ? null : (end || null),
       note: note || null,
+      closedRanges: cleanClosedRanges,
     },
     update: {
       isDayOff: !!isDayOff,
       start: isDayOff ? null : (start || null),
       end: isDayOff ? null : (end || null),
       note: note || null,
+      closedRanges: cleanClosedRanges,
     },
   });
 

@@ -2,6 +2,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getSalonFromCookieToken as getSalonFromToken } from '@/lib/salonAccess';
+import { parseClosedRanges } from '@/lib/bookingSchedule';
 
 // GET: دریافت همه‌ی override های ثبت‌شده برای سالنِ لاگین‌کرده
 export async function GET() {
@@ -22,9 +23,12 @@ export async function POST(req: Request) {
   if (!salon) return NextResponse.json({ error: 'دسترسی ندارید' }, { status: 401 });
 
   const body = await req.json();
-  const { date, isClosed, start, end, note } = body;
+  const { date, isClosed, start, end, note, closedRanges } = body;
 
   if (!date) return NextResponse.json({ error: 'date الزامی است' }, { status: 400 });
+
+  // بازه‌های تعطیلیِ فقط-همون-ساعت — وقتی سالن کلاً تعطیل نیست
+  const cleanClosedRanges = isClosed ? [] : parseClosedRanges(closedRanges);
 
   const override = await prisma.salonScheduleOverride.upsert({
     where: { salonId_date: { salonId: salon.id, date } },
@@ -35,12 +39,14 @@ export async function POST(req: Request) {
       start: isClosed ? null : (start || null),
       end: isClosed ? null : (end || null),
       note: note || null,
+      closedRanges: cleanClosedRanges,
     },
     update: {
       isClosed: !!isClosed,
       start: isClosed ? null : (start || null),
       end: isClosed ? null : (end || null),
       note: note || null,
+      closedRanges: cleanClosedRanges,
     },
   });
 

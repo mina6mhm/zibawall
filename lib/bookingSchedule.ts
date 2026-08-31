@@ -28,6 +28,13 @@ export const WEEK_DAYS = ['شنبه', 'یکشنبه', 'دوشنبه', 'سه‌ش
 
 export type DaySchedule = { open: boolean; start: string; end: string };
 
+// یک بازه‌ی زمانیِ بسته («تعطیلی موقتِ فقط همین بازه») داخل یک روز
+export type TimeRange = { start: string; end: string };
+
+// نسخه‌ی DaySchedule که بازه‌های تعطیلِ داخل همون روز رو هم داره —
+// خروجی resolveSalonDaySchedule و ورودی/خروجی توابع مربوط به پرسنل
+export type DayScheduleWithClosedRanges = DaySchedule & { closedRanges: TimeRange[] };
+
 // تبدیل "HH:MM" به دقیقه از ابتدای روز
 export function timeToMin(t: string): number {
   const [h, m] = t.split(':').map(Number);
@@ -39,6 +46,38 @@ export function minToTime(min: number): string {
   const h = Math.floor(min / 60);
   const m = min % 60;
   return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+}
+
+// پارس امن فیلد JSON دیتابیس closedRanges به آرایه‌ای از بازه‌های معتبر
+// "HH:MM"-"HH:MM"؛ هر چیز نامعتبر (فرمت غلط، start >= end) نادیده گرفته میشه
+export function parseClosedRanges(raw: unknown): TimeRange[] {
+  if (!Array.isArray(raw)) return [];
+  const timeRe = /^\d{2}:\d{2}$/;
+  return raw
+    .filter(
+      (r): r is TimeRange =>
+        !!r &&
+        typeof r === 'object' &&
+        typeof (r as any).start === 'string' &&
+        typeof (r as any).end === 'string' &&
+        timeRe.test((r as any).start) &&
+        timeRe.test((r as any).end) &&
+        timeToMin((r as any).start) < timeToMin((r as any).end)
+    )
+    .map((r) => ({ start: r.start, end: r.end }));
+}
+
+// آیا بازه‌ی [startMin, endMin) با حداقل یکی از closedRanges تداخل داره؟
+export function overlapsClosedRange(
+  startMin: number,
+  endMin: number,
+  closedRanges: TimeRange[]
+): boolean {
+  return closedRanges.some((r) => {
+    const rStart = timeToMin(r.start);
+    const rEnd = timeToMin(r.end);
+    return startMin < rEnd && endMin > rStart;
+  });
 }
 
 export function persianDayNameForDate(dateStr: string): string {
@@ -103,7 +142,7 @@ function buildFallbackDaySchedule(
 export async function resolveSalonDaySchedule(
   salon: Pick<Salon, 'id' | 'closedDays' | 'workingHours'>,
   dateStr: string
-): Promise<DaySchedule> {
+): Promise<DayScheduleWithClosedRanges> {
   const persianDayName = persianDayNameForDate(dateStr);
 
   const [salonScheduleRow, salonOverride] = await Promise.all([
@@ -126,16 +165,19 @@ export async function resolveSalonDaySchedule(
 
   if (salonOverride) {
     if (salonOverride.isClosed) {
-      return { open: false, start: daySchedule.start, end: daySchedule.end };
+      return { open: false, start: daySchedule.start, end: daySchedule.end, closedRanges: [] };
     }
     daySchedule = {
       ...daySchedule,
       start: salonOverride.start ?? daySchedule.start,
       end: salonOverride.end ?? daySchedule.end,
     };
+    // تعطیلی موقتِ فقط چند ساعتِ همین روز — سالن تعطیل نیست، فقط این بازه‌ها
+    // از ساعت کاری کنار گذاشته میشه (مثلاً برای تعمیرات یا استراحت)
+    return { ...daySchedule, closedRanges: parseClosedRanges(salonOverride.closedRanges) };
   }
 
-  return daySchedule;
+  return { ...daySchedule, closedRanges: [] };
 }
 
 /**
@@ -146,8 +188,8 @@ export async function resolveSalonDaySchedule(
 export async function resolveStaffDaySchedule(
   staff: Pick<Staff, 'id' | 'offDays'>,
   dateStr: string,
-  salonDaySchedule: DaySchedule
-): Promise<{ dayOff: boolean; start: string; end: string }> {
+  salonDaySchedule: DayScheduleWithClosedRanges
+): Promise<{ dayOff: boolean; start: string; end: string; closedRanges: TimeRange[] }> {
   const persianDayName = persianDayNameForDate(dateStr);
 
   const override = await prisma.staffScheduleOverride.findUnique({
@@ -162,12 +204,14 @@ export async function resolveStaffDaySchedule(
 export function resolveStaffDayScheduleSync(
   staff: Pick<Staff, 'offDays'>,
   persianDayName: string,
-  salonDaySchedule: DaySchedule,
-  override: Pick<StaffScheduleOverride, 'isDayOff' | 'start' | 'end'> | null | undefined
-): { dayOff: boolean; start: string; end: string } {
+  salonDaySchedule: DayScheduleWithClosedRanges,
+  override: Pick<StaffScheduleOverride, 'isDayOff' | 'start' | 'end' | 'closedRanges'> | null | undefined
+): { dayOff: boolean; start: string; end: string; closedRanges: TimeRange[] } {
   let start = salonDaySchedule.start;
   let end = salonDaySchedule.end;
   let dayOff = (staff.offDays ?? []).includes(persianDayName);
+  // بازه‌های تعطیلِ سالن (مثلاً ساعت تعمیرات) همیشه روی همه‌ی پرسنل هم اثر داره
+  let closedRanges = salonDaySchedule.closedRanges;
 
   if (override) {
     if (override.isDayOff) {
@@ -175,10 +219,13 @@ export function resolveStaffDayScheduleSync(
     } else {
       if (override.start) start = override.start;
       if (override.end) end = override.end;
+      // بازه‌های تعطیلِ اختصاصیِ خودِ همین پرسنل (مثلاً یک ساعت مرخصی ساعتی)
+      // به بازه‌های تعطیلِ سالن اضافه میشه، جایگزینش نمی‌کنه
+      closedRanges = [...closedRanges, ...parseClosedRanges(override.closedRanges)];
     }
   }
 
-  return { dayOff, start, end };
+  return { dayOff, start, end, closedRanges };
 }
 
 /** آیا یک "YYYY-MM-DD" + "HH:MM" مشخص، از همین لحظه گذشته است یا نه. */
@@ -226,6 +273,10 @@ export async function validateSlotAgainstSchedule(params: {
 
   if (startMin < staffStart || endMin > staffEnd) {
     return { ok: false, error: `ساعت ${startTime} خارج از ساعت کاری است` };
+  }
+
+  if (overlapsClosedRange(startMin, endMin, staffSchedule.closedRanges)) {
+    return { ok: false, error: `ساعت ${startTime} در این تاریخ موقتاً تعطیل است` };
   }
 
   return { ok: true };

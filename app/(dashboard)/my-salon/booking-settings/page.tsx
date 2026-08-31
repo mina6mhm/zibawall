@@ -33,6 +33,10 @@ type StaffMember = {
   bookingServices: { bookingServiceId: string }[];
 };
 
+// یک بازه‌ی ساعتیِ تعطیل داخل یک روز — فقط همین بازه بسته میشه،
+// بقیه‌ی همون روز طبق ساعت کاری عادی (یا start/end اختصاصی) باز می‌مونه
+type ClosedRange = { start: string; end: string };
+
 type StaffOverride = {
   id: string;
   staffId: string;
@@ -41,6 +45,7 @@ type StaffOverride = {
   start: string | null;
   end: string | null;
   note: string | null;
+  closedRanges?: unknown; // JSON از دیتابیس — با parseClosedRangesClient پردازش میشه
 };
 
 // override دستی برای یک تاریخ خاص از خود سالن
@@ -51,6 +56,7 @@ type SalonOverride = {
   start: string | null;
   end: string | null;
   note: string | null;
+  closedRanges?: unknown; // JSON از دیتابیس — با parseClosedRangesClient پردازش میشه
 };
 
 type DaySchedule = { open: boolean; start: string; end: string };
@@ -100,6 +106,27 @@ const sanitizeMinuteTime = (val: string) => {
   if (d !== '' && Number(d) > 59) d = '59';
   return d;
 };
+
+// پارس امن مقدار JSON که از دیتابیس برمی‌گرده (closedRanges) به آرایه‌ی معتبر
+const parseClosedRangesClient = (raw: unknown): ClosedRange[] => {
+  if (!Array.isArray(raw)) return [];
+  const timeRe = /^\d{2}:\d{2}$/;
+  return raw
+    .filter(
+      (r): r is ClosedRange =>
+        !!r &&
+        typeof r === 'object' &&
+        typeof (r as any).start === 'string' &&
+        typeof (r as any).end === 'string' &&
+        timeRe.test((r as any).start) &&
+        timeRe.test((r as any).end) &&
+        (r as any).start < (r as any).end
+    )
+    .map((r) => ({ start: r.start, end: r.end }));
+};
+
+const formatClosedRangesSummary = (ranges: ClosedRange[]) =>
+  ranges.map((r) => `${r.start}-${r.end}`).join('، ');
 
 // نمایش مقدار خام در input: سه‌رقم سه‌رقم بدون تبدیل به فارسی
 const displayNumber = (raw: string) => {
@@ -783,6 +810,117 @@ function StaffTab({
   );
 }
 // ═══════════════════════════════════════════════════════════════════════════
+// ClosedRangesEditor — ویرایشگر «بازه‌های ساعتی تعطیل» داخل یک روز خاص.
+// برخلاف «مرخصی کامل» یا «ساعت اختصاصی» (که کل روز رو تغییر می‌دن)، اینجا
+// می‌شه چند بازه‌ی کوتاه رو بست بدون این‌که بقیه‌ی همون روز تعطیل بشه —
+// مثلاً فقط ۱۳:۰۰ تا ۱۴:۰۰ برای ناهار. هم برای سالن و هم برای پرسنل استفاده میشه.
+// ═══════════════════════════════════════════════════════════════════════════
+
+function ClosedRangesEditor({
+  ranges,
+  onChange,
+}: {
+  ranges: ClosedRange[];
+  onChange: (ranges: ClosedRange[]) => void;
+}) {
+  const [startH, setStartH] = useState('');
+  const [startM, setStartM] = useState('');
+  const [endH, setEndH] = useState('');
+  const [endM, setEndM] = useState('');
+  const [error, setError] = useState('');
+
+  const addRange = () => {
+    const start = joinTime(startH, startM);
+    const end = joinTime(endH, endM);
+    if (!start || !end) {
+      setError('ساعت شروع و پایان بازه را کامل وارد کنید');
+      return;
+    }
+    if (start >= end) {
+      setError('ساعت پایان باید بعد از ساعت شروع باشد');
+      return;
+    }
+    setError('');
+    onChange([...ranges, { start, end }].sort((a, b) => a.start.localeCompare(b.start)));
+    setStartH(''); setStartM(''); setEndH(''); setEndM('');
+  };
+
+  const removeRange = (idx: number) => onChange(ranges.filter((_, i) => i !== idx));
+
+  return (
+    <div className="mb-3.5 bg-white border border-zinc-100 rounded-xl p-3">
+      <p className="text-sm font-medium text-zinc-800">بستن یک بازه‌ی ساعتی خاص</p>
+      <p className="text-[11px] text-zinc-400 mt-0.5 mb-3 leading-relaxed">
+        فقط همین بازه‌ها بسته می‌شه؛ بقیه‌ی همین روز طبق ساعت کاری بالا باز می‌مونه.
+      </p>
+
+      {ranges.length > 0 && (
+        <div className="flex flex-wrap gap-1.5 mb-3">
+          {ranges.map((r, idx) => (
+            <span
+              key={`${r.start}-${r.end}-${idx}`}
+              className="flex items-center gap-1.5 bg-red-50 border border-red-200 text-red-500 text-[11px] font-medium rounded-lg pl-1 pr-2.5 py-1"
+            >
+              {r.start} تا {r.end}
+              <button
+                type="button"
+                onClick={() => removeRange(idx)}
+                className="w-4 h-4 flex items-center justify-center rounded-full bg-red-100 shrink-0"
+              >
+                <X className="w-2.5 h-2.5" />
+              </button>
+            </span>
+          ))}
+        </div>
+      )}
+
+      <div className="flex items-center gap-1.5 flex-wrap">
+        <div className="flex items-center gap-1">
+          <input
+            value={startM}
+            onChange={(e) => setStartM(sanitizeMinuteTime(e.target.value))}
+            placeholder="دقیقه" dir="ltr" inputMode="numeric"
+            className="w-11 border border-zinc-300 rounded-lg px-1 py-1.5 text-xs bg-zinc-50 text-center focus:outline-none focus:border-[#824c71] focus:bg-white"
+          />
+          <span className="text-zinc-400 text-xs">:</span>
+          <input
+            value={startH}
+            onChange={(e) => setStartH(sanitizeHourTime(e.target.value))}
+            placeholder="ساعت" dir="ltr" inputMode="numeric"
+            className="w-11 border border-zinc-300 rounded-lg px-1 py-1.5 text-xs bg-zinc-50 text-center focus:outline-none focus:border-[#824c71] focus:bg-white"
+          />
+        </div>
+        <span className="text-zinc-400 text-[11px] shrink-0">تا</span>
+        <div className="flex items-center gap-1">
+          <input
+            value={endM}
+            onChange={(e) => setEndM(sanitizeMinuteTime(e.target.value))}
+            placeholder="دقیقه" dir="ltr" inputMode="numeric"
+            className="w-11 border border-zinc-300 rounded-lg px-1 py-1.5 text-xs bg-zinc-50 text-center focus:outline-none focus:border-[#824c71] focus:bg-white"
+          />
+          <span className="text-zinc-400 text-xs">:</span>
+          <input
+            value={endH}
+            onChange={(e) => setEndH(sanitizeHourTime(e.target.value))}
+            placeholder="ساعت" dir="ltr" inputMode="numeric"
+            className="w-11 border border-zinc-300 rounded-lg px-1 py-1.5 text-xs bg-zinc-50 text-center focus:outline-none focus:border-[#824c71] focus:bg-white"
+          />
+        </div>
+        <button
+          type="button"
+          onClick={addRange}
+          className="shrink-0 h-[30px] px-3 rounded-lg bg-zinc-800 text-white text-[11px] font-bold flex items-center gap-1"
+        >
+          <Plus className="w-3 h-3" />
+          افزودن
+        </button>
+      </div>
+      {error && <p className="text-[10px] text-red-500 mt-1.5">{error}</p>}
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
 // StaffScheduleTab (تب «برنامه پرسنل»)
 // این تابع دقیقاً دو بخش کاملاً مجزا دارد — هر دو با هم، هیچکدام حذف نشده:
 //
@@ -818,6 +956,7 @@ function StaffScheduleTab({
   const [editStartM, setEditStartM] = useState('');
   const [editEndH, setEditEndH] = useState('');
   const [editEndM, setEditEndM] = useState('');
+  const [editClosedRanges, setEditClosedRanges] = useState<ClosedRange[]>([]);
   const [editNote, setEditNote] = useState('');
   const [savingOverride, setSavingOverride] = useState(false);
   const [deletingOverride, setDeletingOverride] = useState(false);
@@ -907,6 +1046,7 @@ function StaffScheduleTab({
     setEditStartM(s.m);
     setEditEndH(e.h);
     setEditEndM(e.m);
+    setEditClosedRanges(parseClosedRangesClient(existing?.closedRanges));
     setEditNote(existing?.note ?? '');
   };
 
@@ -923,6 +1063,7 @@ function StaffScheduleTab({
           isDayOff: editIsDayOff,
           start: editIsDayOff ? null : joinTime(editStartH, editStartM) || null,
           end: editIsDayOff ? null : joinTime(editEndH, editEndM) || null,
+          closedRanges: editIsDayOff ? [] : editClosedRanges,
           note: editNote || null,
         }),
       });
@@ -1144,6 +1285,10 @@ function StaffScheduleTab({
                 </div>
               )}
 
+              {!editIsDayOff && (
+                <ClosedRangesEditor ranges={editClosedRanges} onChange={setEditClosedRanges} />
+              )}
+
               <div className="mb-4">
                 <label className="block text-xs font-medium text-zinc-500 mb-1">یادداشت (اختیاری)</label>
                 <input
@@ -1199,6 +1344,9 @@ function StaffScheduleTab({
                         <p className="text-xs font-bold text-zinc-800">{formatPersianDate(o.date)}</p>
                         <p className="text-[11px] text-zinc-400 mt-0.5">
                           {o.isDayOff ? 'مرخصی کامل' : `ساعت ${o.start ?? '—'} تا ${o.end ?? '—'}`}
+                          {!o.isDayOff && parseClosedRangesClient(o.closedRanges).length > 0
+                            ? ` · تعطیل: ${formatClosedRangesSummary(parseClosedRangesClient(o.closedRanges))}`
+                            : ''}
                           {o.note ? ` · ${o.note}` : ''}
                         </p>
                       </div>
@@ -1237,6 +1385,7 @@ function SalonScheduleOverrideSection() {
   const [editStartM, setEditStartM] = useState('');
   const [editEndH, setEditEndH] = useState('');
   const [editEndM, setEditEndM] = useState('');
+  const [editClosedRanges, setEditClosedRanges] = useState<ClosedRange[]>([]);
   const [editNote, setEditNote] = useState('');
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -1287,6 +1436,7 @@ function SalonScheduleOverrideSection() {
     setEditStartM(s.m);
     setEditEndH(e.h);
     setEditEndM(e.m);
+    setEditClosedRanges(parseClosedRangesClient(existing?.closedRanges));
     setEditNote(existing?.note ?? '');
   };
 
@@ -1302,6 +1452,7 @@ function SalonScheduleOverrideSection() {
           isClosed: editIsClosed,
           start: editIsClosed ? null : joinTime(editStartH, editStartM) || null,
           end: editIsClosed ? null : joinTime(editEndH, editEndM) || null,
+          closedRanges: editIsClosed ? [] : editClosedRanges,
           note: editNote || null,
         }),
       });
@@ -1439,6 +1590,10 @@ function SalonScheduleOverrideSection() {
             </div>
           )}
 
+          {!editIsClosed && (
+            <ClosedRangesEditor ranges={editClosedRanges} onChange={setEditClosedRanges} />
+          )}
+
           <div className="mb-4">
             <label className="block text-xs font-medium text-zinc-500 mb-1">یادداشت (اختیاری)</label>
             <input
@@ -1487,6 +1642,9 @@ function SalonScheduleOverrideSection() {
                     <p className="text-xs font-bold text-zinc-800">{formatPersianDate(o.date)}</p>
                     <p className="text-[11px] text-zinc-400 mt-0.5">
                       {o.isClosed ? 'تعطیل کامل' : `ساعت ${o.start ?? '—'} تا ${o.end ?? '—'}`}
+                      {!o.isClosed && parseClosedRangesClient(o.closedRanges).length > 0
+                        ? ` · تعطیل: ${formatClosedRangesSummary(parseClosedRangesClient(o.closedRanges))}`
+                        : ''}
                       {o.note ? ` · ${o.note}` : ''}
                     </p>
                   </div>
