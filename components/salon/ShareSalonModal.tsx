@@ -91,9 +91,6 @@ export default function ShareSalonModal({ isOpen, onClose, url, salonName }: Pro
         <h3 className="text-base font-bold text-zinc-900 text-center mb-1">
           اشتراک‌گذاری صفحه‌ی سالن
         </h3>
-        <p className="text-xs text-zinc-500 text-center mb-5">
-          این لینک یا QR رو می‌تونید در استوری/بیو اینستا، واتساپ یا برای چاپ استفاده کنید — بدون نیاز به ورود کاربر.
-        </p>
 
         {/* پیش‌نمایش QR */}
         <div className="flex justify-center mb-5">
