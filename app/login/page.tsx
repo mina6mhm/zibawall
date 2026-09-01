@@ -4,6 +4,7 @@
 import React, { useState, useEffect, useRef, Suspense } from 'react';
 import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { subscribeToWebPushSilently } from '@/lib/pushClient';
 
 export default function LoginPage() {
   return (
@@ -161,6 +162,9 @@ function LoginPageInner() {
       if (data.isNewUser || !data.user?.username) {
         setStep('username');
       } else {
+        // اجازه‌ی نوتیف مرورگر رو همینجا، بدون دکمه‌ی جدا، به‌صورت خودکار می‌گیریم.
+        // عمداً await نمی‌کنیم و خطاش رو هم نادیده می‌گیریم تا ریدایرکت کند نشه.
+        subscribeToWebPushSilently().catch(() => {});
         router.push(getRedirectTarget());
         router.refresh();
       }
@@ -200,6 +204,8 @@ function LoginPageInner() {
         return;
       }
 
+      // اجازه‌ی نوتیف مرورگر رو همینجا، بدون دکمه‌ی جدا، به‌صورت خودکار می‌گیریم.
+      subscribeToWebPushSilently().catch(() => {});
       router.push(getRedirectTarget());
       router.refresh();
     } catch {

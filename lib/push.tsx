@@ -92,3 +92,55 @@ export async function notifyAdminNewSalonPendingPush(salon: {
 
   await sendWebPushToAdmins({ title, body, url: '/admin/salons' });
 }
+
+// نوتیف Web Push به یک کاربر خاص (نه فقط ادمین‌ها) — روی همه‌ی مرورگر/دستگاه‌هایی
+// که اون کاربر توشون subscribe کرده. دقیقاً همون مکانیزم ارسال به ادمین‌هاست،
+// فقط فیلترش به‌جای role=ADMIN روی یک userId مشخصه.
+export async function sendWebPushToUser(userId: string, payload: PushPayload) {
+  if (!ensureVapidConfigured()) return;
+
+  const subscriptions = await prisma.pushSubscription.findMany({
+    where: { userId },
+  });
+
+  if (subscriptions.length === 0) return;
+
+  const notificationPayload = JSON.stringify({
+    title: payload.title,
+    body: payload.body,
+    url: payload.url || '/appointments',
+  });
+
+  await Promise.all(
+    subscriptions.map(async (sub) => {
+      try {
+        await webpush.sendNotification(
+          {
+            endpoint: sub.endpoint,
+            keys: { p256dh: sub.p256dh, auth: sub.auth },
+          },
+          notificationPayload
+        );
+      } catch (err: any) {
+        if (err?.statusCode === 404 || err?.statusCode === 410) {
+          await prisma.pushSubscription.delete({ where: { id: sub.id } }).catch(() => {});
+        } else {
+          console.error(`❌ Web push error for subscription ${sub.id}:`, err?.statusCode, err?.body || err);
+        }
+      }
+    })
+  );
+}
+
+// نوتیف اختصاصی: یادآوری نوبت ۲۴ ساعت قبل — معادل Web Push همون پیامکی که
+// با sendBookingReminderSms می‌ره، ولی برای مشتری‌ای که subscribe کرده.
+export async function notifyUserBookingReminderPush(
+  userId: string,
+  booking: { salonName: string; date: string; time: string }
+) {
+  await sendWebPushToUser(userId, {
+    title: '⏰ یادآوری نوبت',
+    body: `فردا ساعت ${booking.time} نوبت ${booking.salonName} داری — ${booking.date}`,
+    url: '/appointments',
+  });
+}

@@ -2,6 +2,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { sendBookingReminderSms } from '@/lib/sms';
+import { notifyUserBookingReminderPush } from '@/lib/push';
 
 export const dynamic = 'force-dynamic';
 
@@ -25,18 +26,34 @@ export async function GET(req: Request) {
         reminderSentAt: null,
         date: { gte: windowStart, lte: windowEnd },
       },
-      include: { salon: { select: { name: true } } },
+      include: { salon: { select: { name: true } }, customer: { select: { id: true } } },
     });
 
     let sentCount = 0;
     for (const booking of bookings) {
       try {
+        const formattedDate = new Date(booking.date).toLocaleDateString('fa-IR');
+
         await sendBookingReminderSms({
           phone: booking.customerPhone,
           salonName: booking.salon.name,
-          date: new Date(booking.date).toLocaleDateString('fa-IR'),
+          date: formattedDate,
           time: booking.startTime,
         });
+
+        // دقیقاً همون مکانیزم Web Push که برای ادمین‌ها استفاده می‌شه؛ اگه مشتری
+        // یوزر شناخته‌شده باشه و روی مرورگری subscribe کرده باشه، نوتیف می‌گیره.
+        // خودش عمداً throw نمی‌کنه، پس جریان اصلی (پیامک + reminderSentAt) رو نمی‌شکنه.
+        if (booking.customer?.id) {
+          notifyUserBookingReminderPush(booking.customer.id, {
+            salonName: booking.salon.name,
+            date: formattedDate,
+            time: booking.startTime,
+          }).catch((pushError) => {
+            console.error(`خطا در ارسال نوتیف پوش برای نوبت ${booking.id}:`, pushError);
+          });
+        }
+
         await prisma.booking.update({
           where: { id: booking.id },
           data: { reminderSentAt: new Date() },

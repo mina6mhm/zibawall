@@ -1,11 +1,11 @@
 // app/api/push/subscribe/route.ts
-// ذخیره‌ی subscription مرورگر یک ادمین برای دریافت Web Push.
+// ذخیره‌ی subscription مرورگر یک کاربر (ادمین یا کاربر عادی) برای دریافت Web Push.
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { requireAdmin } from '@/lib/requireAdmin';
+import { requireUser } from '@/lib/requireUser';
 
 export async function POST(req: Request) {
-  const auth = await requireAdmin();
+  const auth = await requireUser();
   if ('error' in auth) {
     return NextResponse.json({ error: auth.error }, { status: auth.status });
   }

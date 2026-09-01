@@ -1,11 +1,11 @@
 // app/api/push/unsubscribe/route.ts
-// حذف subscription مرورگر (مثلاً وقتی ادمین دکمه‌ی «غیرفعال‌سازی نوتیف» رو می‌زنه).
+// حذف subscription مرورگر یک کاربر (مثلاً وقتی ادمین دکمه‌ی «غیرفعال‌سازی نوتیف» رو می‌زنه).
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { requireAdmin } from '@/lib/requireAdmin';
+import { requireUser } from '@/lib/requireUser';
 
 export async function POST(req: Request) {
-  const auth = await requireAdmin();
+  const auth = await requireUser();
   if ('error' in auth) {
     return NextResponse.json({ error: auth.error }, { status: auth.status });
   }
