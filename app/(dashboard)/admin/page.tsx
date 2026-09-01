@@ -4,6 +4,7 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { MessageCircle, Store, ChevronLeft, ShieldCheck } from 'lucide-react';
+import PushNotificationSetup from '@/components/admin/PushNotificationSetup';
 
 export default function AdminHubPage() {
   const [pendingSupportCount, setPendingSupportCount] = useState<number | null>(null);
@@ -73,6 +74,8 @@ export default function AdminHubPage() {
         </div>
         <h1 className="text-xl sm:text-2xl font-bold text-zinc-900">پنل مدیریت</h1>
       </div>
+
+      <PushNotificationSetup />
 
       <div className="space-y-2.5">
         {sections.map((item) => {
