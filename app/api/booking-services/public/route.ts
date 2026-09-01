@@ -20,7 +20,13 @@ export async function GET(req: Request) {
     }
 
     const services = await prisma.bookingService.findMany({
-      where: { salonId, isActive: true },
+      where: {
+        salonId,
+        isActive: true,
+        // فقط خدماتی که حداقل یک پرسنل انجامشون می‌ده — وگرنه مشتری وارد
+        // مرحله‌ی «پرسنل»/«ساعت» می‌شه و به بن‌بست می‌خوره (هیچ پرسنل/اسلاتی نیست)
+        staffMembers: { some: {} },
+      },
       select: {
         id: true,
         name: true,
