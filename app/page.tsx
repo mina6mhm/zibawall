@@ -3,6 +3,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { Capacitor } from '@capacitor/core';
 import LandingScreen from '@/components/LandingScreen';
 
 const isStandaloneMode = () => {
@@ -19,17 +20,17 @@ export default function RootPage() {
   const [checking, setChecking] = useState(true);
 
   useEffect(() => {
-    // اگه کاربر قبلاً اپ رو نصب کرده و از حالت standalone باز کرده،
-    // دیگه هیچ‌وقت لندینگ رو نبینه و مستقیم بره صفحه‌ی ورود
+    // اگه داخل اپ اندروید/iOS (Capacitor) هستیم، یا کاربر اپ رو به‌صورت PWA
+    // نصب کرده و standalone بازش کرده، لندینگ اصلاً دیده نشه — مستقیم بره صفحه‌ی ورود
     // (میدل‌ور خودش اگه توکن معتبر باشه، از /login به /dashboard هدایت می‌کنه)
-    if (isStandaloneMode()) {
+    if (Capacitor.isNativePlatform() || isStandaloneMode()) {
       router.replace('/login');
       return;
     }
     setChecking(false);
   }, [router]);
 
-  // تا وقتی چک standalone انجام نشده چیزی رندر نکن تا لندینگ برای یک لحظه فلش نزنه
+  // تا وقتی چک انجام نشده چیزی رندر نکن تا لندینگ برای یک لحظه فلش نزنه
   if (checking) return null;
 
   return <LandingScreen />;
