@@ -177,12 +177,31 @@ model User {
   supportMessages SupportMessage[]
   bookings        Booking[]
   bookingGroups   BookingGroup[]
+  pushSubscriptions PushSubscription[]
 
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
   @@index([phone])
   @@index([email])
+}
+
+// اشتراک Web Push مرورگر یک کاربر (فعلاً فقط ادمین‌ها ازش استفاده می‌کنن) —
+// برای ارسال نوتیف مستقیم از خود اپ، بدون نیاز به تلگرام یا Firebase.
+// هر مرورگر/دستگاه یک رکورد جدا داره (endpoint یکتاست).
+model PushSubscription {
+  id        String   @id @default(uuid())
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  userAgent String?
+
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([userId])
 }
 
 model Payment {

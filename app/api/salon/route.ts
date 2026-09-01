@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import jwt from 'jsonwebtoken';
 import { notifyAdminNewSalonPending } from '@/lib/telegram';
+import { notifyAdminNewSalonPendingPush } from '@/lib/push';
 
 import { prisma } from '@/lib/prisma';
 import { getSalonAccessForUserId } from '@/lib/salonAccess';
@@ -208,6 +209,14 @@ if (
         city: updatedSalon.city,
         isResubmission: true,
       }).catch((err) => console.error('Telegram notify error:', err));
+
+      // نوتیف مستقیم از خود اپ به مرورگر ادمین‌ها (Web Push) — مستقل از تلگرام
+      notifyAdminNewSalonPendingPush({
+        name: updatedSalon.name,
+        province: updatedSalon.province,
+        city: updatedSalon.city,
+        isResubmission: true,
+      }).catch((err) => console.error('Web push notify error:', err));
     }
 
     return NextResponse.json({ success: true, salon: updatedSalon }, { status: 200 });

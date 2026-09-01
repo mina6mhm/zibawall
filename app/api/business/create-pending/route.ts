@@ -2,6 +2,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { notifyAdminNewSalonPending } from '@/lib/telegram';
+import { notifyAdminNewSalonPendingPush } from '@/lib/push';
 
 const mobileRegex = /^09\d{9}$/;
 
@@ -100,6 +101,13 @@ export async function POST(req: Request) {
       province: salon.province,
       city: salon.city,
     }).catch((err) => console.error('Telegram notify error:', err));
+
+    // نوتیف مستقیم از خود اپ به مرورگر ادمین‌ها (Web Push) — مستقل از تلگرام
+    notifyAdminNewSalonPendingPush({
+      name: salon.name,
+      province: salon.province,
+      city: salon.city,
+    }).catch((err) => console.error('Web push notify error:', err));
 
     return NextResponse.json({ success: true, salon }, { status: 201 });
   } catch (error) {
