@@ -4,6 +4,10 @@
   "webDir": "out",
   "server": {
     "url": "https://zibawall.ir",
-    "cleartext": false
+    "cleartext": false,
+    "allowNavigation": [
+      "*.zarinpal.com",
+      "zarinpal.com"
+    ]
   }
 }
