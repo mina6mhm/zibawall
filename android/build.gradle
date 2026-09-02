@@ -3,6 +3,10 @@
 buildscript {
     
     repositories {
+        // آینه‌ی ایرانی مایکت — اول این رو امتحان می‌کنه، چون dl.google.com معمولاً
+        // بدون فیلترشکن در دسترس نیست. اگه این هم جواب نداد، google() و mavenCentral()
+        // به‌عنوان fallback همچنان امتحان می‌شن.
+        maven { url 'https://maven.myket.ir' }
         google()
         mavenCentral()
     }
@@ -34,6 +38,7 @@ subprojects {
 
 allprojects {
     repositories {
+        maven { url 'https://maven.myket.ir' }
         google()
         mavenCentral()
     }
