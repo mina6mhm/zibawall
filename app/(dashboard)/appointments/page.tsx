@@ -7,6 +7,7 @@ import Link from 'next/link';
 import {
   Loader2, Calendar, Clock, Scissors, User as UserIcon, Store, CalendarX, CheckCircle2, XCircle,
 } from 'lucide-react';
+import { openPaymentUrl } from '@/lib/openPaymentUrl';
 
 type AppointmentItem = {
   id: string;
@@ -89,7 +90,7 @@ function AppointmentsContent() {
         alert(data.error || 'خطا در اتصال به درگاه پرداخت');
         return;
       }
-      window.location.href = data.paymentUrl;
+      await openPaymentUrl(data.paymentUrl);
     } catch {
       alert('خطای ارتباط با سرور');
     } finally {

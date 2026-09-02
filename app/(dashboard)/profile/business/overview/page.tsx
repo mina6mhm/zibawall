@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { openPaymentUrl } from '@/lib/openPaymentUrl';
 
 type SalonManager = {
   id: string;
@@ -103,7 +104,7 @@ function BusinessOverviewContent() {
         setPinError(data.error || 'خطا در اتصال به درگاه پرداخت');
         return;
       }
-      window.location.href = data.paymentUrl;
+      await openPaymentUrl(data.paymentUrl);
     } catch {
       setPinError('خطای ارتباط با سرور');
     } finally {

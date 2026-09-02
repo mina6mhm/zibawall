@@ -16,6 +16,7 @@ import persian from 'react-date-object/calendars/persian';
 import persian_fa from 'react-date-object/locales/persian_fa';
 import { toDateOnlyAnchor } from '@/lib/dateUtils';
 import { BOOKING_APP_FEE } from '@/lib/constants';
+import { openPaymentUrl } from '@/lib/openPaymentUrl';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -325,7 +326,7 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
       // هیچ‌وقت نباید اینو معادل موفقیت در نظر بگیریم، چون status نوبت
       // همچنان PENDING_PAYMENT می‌مونه و باید کاربر واقعاً پرداخت کنه.
       if (payRes.ok && payData.paymentUrl) {
-        window.location.href = payData.paymentUrl;
+        await openPaymentUrl(payData.paymentUrl);
         return;
       }
 
