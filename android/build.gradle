@@ -11,8 +11,8 @@ buildscript {
         mavenCentral()
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:8.13.0'
-classpath 'com.google.gms:google-services:4.4.4'
+        classpath 'com.android.tools.build:gradle:8.7.2'
+        classpath 'com.google.gms:google-services:4.4.2'
 
         // NOTE: Do not place your application dependencies here; they belong
         // in the individual module build.gradle files
@@ -29,8 +29,10 @@ subprojects {
 
             // @capacitor/browser (استفاده‌شده برای باز کردن لینک درگاه زرین‌پال) از نسخه‌ی
             // جدیدش androidx.browser:1.9.0 رو می‌کشه که نیاز به compileSdk 36 و AGP 8.9.1+
-            // داره. با قفل کردن این نسخه‌ی قدیمی‌تر (که با compileSdk 35 سازگاره)، دیگه
-            // نیازی به آپدیت AGP نداریم و به همون تنظیمات پایدار دیروز برمی‌گردیم.
+            // داره. اینجا صراحتاً قفلش می‌کنیم رو همون نسخه‌ی قدیمی‌تر (که با
+            // compileSdk 35 سازگاره و توی variables.gradle هم ست شده)، تا هیچ
+            // مسیر transitive-ای نتونه نسخه‌ی جدیدترو بکشه بالا.
+            force 'androidx.browser:browser:1.8.0'
         }
     }
 }
