@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { CATEGORIES, CATEGORY_MAPPING } from '@/lib/data'; 
 import RegionFilterModal from '@/components/RegionFilterModal';
 import SearchBar from '@/components/SearchBar';
-import { Home, Check, Sparkles, Eye, Hand, Scissors, Flower2, Zap, Crown, Palette, Pin, type LucideIcon } from 'lucide-react';
+import { Home, Check, Sparkles, Eye, Hand, Scissors, Flower2, Zap, Crown, Palette, Pin, SlidersHorizontal, X, type LucideIcon } from 'lucide-react';
 import LandingScreen from '@/components/LandingScreen';
 
 // --- نگاشت دقیق آیکون مینیمال بر اساس اسم واقعی هر دسته (از lib/data.ts) ---
@@ -152,6 +152,102 @@ function FilterPill({
   );
 }
 
+// --- مودال فیلترها: خدمات در منزل + مخاطب سالن، به‌صورت باتم‌شیت ---
+function FiltersModal({
+  isOpen,
+  onClose,
+  homeServiceOnly,
+  onToggleHomeService,
+  genderFilter,
+  onToggleGender,
+  onClear,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  homeServiceOnly: boolean;
+  onToggleHomeService: () => void;
+  genderFilter: GenderFilter;
+  onToggleGender: (value: Exclude<GenderFilter, 'ALL'>) => void;
+  onClear: () => void;
+}) {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center">
+      {/* پس‌زمینه تیره */}
+      <div className="absolute inset-0 bg-black/40" onClick={onClose} />
+
+      {/* کارت فیلترها (باتم‌شیت) */}
+      <div className="relative w-full max-w-md bg-white rounded-t-3xl px-4 pt-3 pb-6 shadow-xl">
+        <div className="w-10 h-1 bg-zinc-200 rounded-full mx-auto mb-4" />
+
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-base font-bold text-zinc-900">فیلترها</h3>
+          <button
+            onClick={onClose}
+            className="w-8 h-8 flex items-center justify-center rounded-full text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600 transition-colors"
+          >
+            <X className="w-[18px] h-[18px]" strokeWidth={2.3} />
+          </button>
+        </div>
+
+        {/* خدمات در منزل */}
+        <button
+          onClick={onToggleHomeService}
+          className={`w-full flex items-center gap-2 px-3.5 py-3 rounded-2xl border text-[14px] font-medium transition-all active:scale-[0.99] ${
+            homeServiceOnly
+              ? 'border-[#824c71] bg-[#824c71]/5 text-[#824c71]'
+              : 'border-zinc-200 text-zinc-600'
+          }`}
+        >
+          <span
+            className={`w-[18px] h-[18px] rounded-[5px] border-[1.5px] flex items-center justify-center shrink-0 transition-colors ${
+              homeServiceOnly ? 'bg-[#824c71] border-[#824c71]' : 'border-zinc-300'
+            }`}
+          >
+            {homeServiceOnly && <Check className="w-3 h-3 text-white" strokeWidth={3} />}
+          </span>
+          <Home className="w-4 h-4 shrink-0" strokeWidth={2.3} />
+          خدمات در منزل
+        </button>
+
+        {/* مخاطب سالن */}
+        <div className="mt-3">
+          <p className="text-[13px] font-medium text-zinc-500 mb-2 px-1">مخاطب سالن</p>
+          <div className="flex items-center gap-0.5 bg-zinc-100 rounded-full p-1">
+            <FilterPill
+              label="بانوان"
+              isActive={genderFilter === 'FEMALE'}
+              onClick={() => onToggleGender('FEMALE')}
+            />
+            <FilterPill
+              label="آقایون"
+              isActive={genderFilter === 'MALE'}
+              onClick={() => onToggleGender('MALE')}
+            />
+          </div>
+        </div>
+
+        {/* دکمه‌های پایین */}
+        <div className="flex items-center gap-2 mt-5">
+          <button
+            onClick={onClear}
+            className="flex-1 py-3 rounded-xl border border-zinc-200 text-zinc-600 text-[14px] font-medium active:scale-[0.99] transition-all"
+          >
+            پاک کردن فیلترها
+          </button>
+          <button
+            onClick={onClose}
+            className="flex-1 py-3 rounded-xl bg-[#824c71] text-white text-[14px] font-bold active:scale-[0.99] transition-all"
+          >
+            اعمال فیلتر
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function DashboardHomePage() {
   const router = useRouter();
   
@@ -169,6 +265,9 @@ export default function DashboardHomePage() {
   const [selectedNeighborhoods, setSelectedNeighborhoods] = useState<string[]>([]);
   
   const [isRegionModalOpen, setIsRegionModalOpen] = useState(false);
+
+  // مودال فیلترهای اضافی (خدمات در منزل + مخاطب سالن)
+  const [isFiltersModalOpen, setIsFiltersModalOpen] = useState(false);
 
   // خدمات در منزل: یک چک‌باکس ساده (فعال/غیرفعال) - بدون حالت سه‌گانه
   const [homeServiceOnly, setHomeServiceOnly] = useState(false);
@@ -352,58 +451,26 @@ export default function DashboardHomePage() {
             </div>
           </div>
 
-          <SearchBar searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
-
-          {/* خدمات در منزل (چک‌باکس ساده) + مخاطب سالن (بانوان / آقایون) */}
-          <div className="flex items-center gap-2 mt-3">
-            {/* چک‌باکس خدمات در منزل */}
+          {/* سرچ‌باکس + آیکون فیلترها (خدمات در منزل و مخاطب سالن حالا در مودال هستند) */}
+          <div className="flex items-center gap-2">
+            <div className="flex-1 min-w-0">
+              <SearchBar searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
+            </div>
             <button
-              onClick={() => setHomeServiceOnly((prev) => !prev)}
-              className={`flex items-center gap-1.5 px-3 py-2 rounded-full border text-[13px] font-medium transition-all active:scale-95 shrink-0 ${
-                homeServiceOnly
+              onClick={() => setIsFiltersModalOpen(true)}
+              aria-label="فیلترها"
+              className={`relative shrink-0 w-11 h-11 flex items-center justify-center rounded-full border transition-all active:scale-95 ${
+                hasActiveExtraFilters
                   ? 'border-[#824c71] bg-[#824c71]/5 text-[#824c71]'
                   : 'border-zinc-200 text-zinc-600 hover:border-zinc-300'
               }`}
             >
-              <span
-                className={`w-4 h-4 rounded-[5px] border-[1.5px] flex items-center justify-center shrink-0 transition-colors ${
-                  homeServiceOnly ? 'bg-[#824c71] border-[#824c71]' : 'border-zinc-300'
-                }`}
-              >
-                {homeServiceOnly && <Check className="w-3 h-3 text-white" strokeWidth={3} />}
-              </span>
-              <Home className="w-3.5 h-3.5 shrink-0" strokeWidth={2.3} />
-              خدمات در منزل
+              <SlidersHorizontal className="w-[18px] h-[18px]" strokeWidth={2.2} />
+              {hasActiveExtraFilters && (
+                <span className="absolute top-1.5 left-1.5 w-2 h-2 rounded-full bg-[#824c71] border-2 border-white" />
+              )}
             </button>
-
-            {/* مخاطب سالن: فقط دو گزینه */}
-            <div className="flex items-center gap-0.5 bg-zinc-100 rounded-full p-1 flex-1">
-              <FilterPill
-                label="بانوان"
-                isActive={genderFilter === 'FEMALE'}
-                onClick={() => toggleGender('FEMALE')}
-              />
-              <FilterPill
-                label="آقایون"
-                isActive={genderFilter === 'MALE'}
-                onClick={() => toggleGender('MALE')}
-              />
-            </div>
           </div>
-
-          {hasActiveExtraFilters && (
-            <div className="pt-2">
-              <button
-                onClick={() => {
-                  setHomeServiceOnly(false);
-                  setGenderFilter('ALL');
-                }}
-                className="text-[12.5px] font-medium text-zinc-400 hover:text-zinc-600 transition-colors"
-              >
-                پاک کردن فیلترها
-              </button>
-            </div>
-          )}
         </div>
 
         {/* دسته‌بندی‌ها: عنوان + گرید دو ردیف چهارتایی با آیکون مینیمال، بدون گزینه‌ی «همه» */}
@@ -454,9 +521,9 @@ export default function DashboardHomePage() {
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {isLoading ? (
-              // اسکلتون‌های لودینگ
+              // اسکلتون‌های لودینگ - ارتفاع دقیقاً هم‌اندازه با کارت واقعی
               [1, 2, 3, 4].map((n) => (
-                <div key={n} className="bg-zinc-100 rounded-2xl h-40 animate-pulse"></div>
+                <div key={n} className="bg-zinc-100 rounded-2xl h-44 animate-pulse"></div>
               ))
             ) : error ? (
               <div className="col-span-full py-8 text-center text-red-500 font-medium">{error}</div>
@@ -476,15 +543,15 @@ export default function DashboardHomePage() {
                 const isPinned = !!salon.pinnedUntil && new Date(salon.pinnedUntil) > new Date();
                   
                 return (
-                  // --- شروع کارت (ارتفاع بر اساس محتوا، بدون افتادن دکمه بیرون از کارت) ---
+                  // --- شروع کارت (ارتفاع ثابت روی همه دستگاه‌ها، بدون وابستگی به فونت/متن) ---
                   <div 
                     key={salon.id}
                     onClick={() => router.push(`/salon/${salon.id}`)}
                     dir="ltr"
-                    className="cursor-pointer bg-white rounded-2xl border border-zinc-200 overflow-hidden shadow-[0_1px_4px_rgba(0,0,0,0.06)] hover:shadow-[0_4px_14px_rgba(0,0,0,0.1)] active:scale-[0.99] transition-all flex items-stretch group relative"
+                    className="h-44 cursor-pointer bg-white rounded-2xl border border-zinc-200 overflow-hidden shadow-[0_1px_4px_rgba(0,0,0,0.06)] hover:shadow-[0_4px_14px_rgba(0,0,0,0.1)] active:scale-[0.99] transition-all flex items-stretch group relative"
                   >
-                    {/* تصویر سالن - سمت چپ (با ارتفاع کارت هم‌راستا می‌شود) */}
-                    <div className="w-28 sm:w-32 self-stretch bg-zinc-200 relative overflow-hidden shrink-0">
+                    {/* تصویر سالن - سمت چپ (ارتفاع ثابت = ارتفاع کارت) */}
+                    <div className="w-28 sm:w-32 h-full bg-zinc-200 relative overflow-hidden shrink-0">
                       {salon.imageUrl ? (
                         <img src={salon.imageUrl} alt={salon.name} className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                       ) : (
@@ -492,70 +559,73 @@ export default function DashboardHomePage() {
                       )}
                     </div>
 
-                    {/* محتوا - سمت راست */}
-                    <div dir="rtl" className="flex-1 min-w-0 p-3 flex flex-col">
+                    {/* محتوا - سمت راست (ارتفاع ثابت، محتوای اضافه کلیپ می‌شود تا کارت‌ها یکدست بمانند) */}
+                    <div dir="rtl" className="flex-1 min-w-0 h-full p-3 flex flex-col overflow-hidden">
                       
-                      {/* ردیف بالا: نام (راست) / بوکمارک (چپ) */}
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="flex items-center gap-1.5 min-w-0 flex-1">
-                          {isPinned && (
-                            <span className="shrink-0 flex items-center gap-0.5 bg-amber-50 text-amber-600 rounded-full px-1.5 py-0.5">
-                              <Pin className="w-2.5 h-2.5 fill-amber-500" strokeWidth={2} />
-                            </span>
-                          )}
-                          <h3 className="font-bold text-zinc-900 text-[15px] leading-tight truncate">{salon.name}</h3>
+                      {/* بلوک بالا: نام، آدرس، امتیاز، تگ‌ها - فضای باقی‌مانده را پر می‌کند و اگر زیاد بود کلیپ می‌شود */}
+                      <div className="flex-1 min-h-0 overflow-hidden">
+                        {/* ردیف بالا: نام (راست) / بوکمارک (چپ) */}
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                            {isPinned && (
+                              <span className="shrink-0 flex items-center gap-0.5 bg-amber-50 text-amber-600 rounded-full px-1.5 py-0.5">
+                                <Pin className="w-2.5 h-2.5 fill-amber-500" strokeWidth={2} />
+                              </span>
+                            )}
+                            <h3 className="font-bold text-zinc-900 text-[15px] leading-tight truncate">{salon.name}</h3>
+                          </div>
+
+                          <button 
+                            onClick={(e) => handleBookmarkClick(salon.id, e)}
+                            className={`shrink-0 w-9 h-9 -mt-1.5 -ml-1.5 flex items-center justify-center rounded-full active:bg-zinc-100 transition-colors ${
+                              isCurrentSalonBookmarked(salon.id) ? 'text-[#824c71]' : 'text-zinc-400'
+                            }`}
+                          >
+                            <BookmarkIcon isActive={isCurrentSalonBookmarked(salon.id)} className="w-5 h-5" />
+                          </button>
                         </div>
 
-                        <button 
-                          onClick={(e) => handleBookmarkClick(salon.id, e)}
-                          className={`shrink-0 w-9 h-9 -mt-1.5 -ml-1.5 flex items-center justify-center rounded-full active:bg-zinc-100 transition-colors ${
-                            isCurrentSalonBookmarked(salon.id) ? 'text-[#824c71]' : 'text-zinc-400'
-                          }`}
-                        >
-                          <BookmarkIcon isActive={isCurrentSalonBookmarked(salon.id)} className="w-5 h-5" />
-                        </button>
-                      </div>
-
-                      {/* آدرس */}
-                      <div className="flex items-center gap-1 text-zinc-500 mt-1 min-w-0">
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
-                          <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
-                          <circle cx="12" cy="10" r="3" />
-                        </svg>
-                        <span className="text-[12.5px] truncate">{salon.address || 'بدون آدرس'}</span>
-                      </div>
-
-                      {/* امتیاز */}
-                      {averageRating && (
-                        <div className="flex items-center gap-1 mt-1.5">
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="#EAB308" stroke="#EAB308" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                        {/* آدرس */}
+                        <div className="flex items-center gap-1 text-zinc-500 mt-1 min-w-0">
+                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+                            <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
+                            <circle cx="12" cy="10" r="3" />
                           </svg>
-                          <span className="font-bold text-[12.5px] text-zinc-900">{averageRating}</span>
-                          <span className="text-[11px] text-zinc-500">
-                            ({totalVotes > 0 ? totalVotes : salon.reviewsCount || 0} نظر)
-                          </span>
+                          <span className="text-[12.5px] truncate">{salon.address || 'بدون آدرس'}</span>
                         </div>
-                      )}
 
-                      {/* تگ‌ها */}
-                      {salonTags && salonTags.length > 0 && (
-                        <div className="flex items-center gap-1 mt-2 overflow-hidden flex-nowrap">
-                          {salonTags.slice(0, 2).map((tag: string, idx: number) => (
-                            <span key={idx} className="bg-zinc-100 text-zinc-600 text-[11px] px-2 py-1 rounded-md font-medium whitespace-nowrap shrink-0">
-                              {tag}
+                        {/* امتیاز */}
+                        {averageRating && (
+                          <div className="flex items-center gap-1 mt-1.5">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="#EAB308" stroke="#EAB308" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                            </svg>
+                            <span className="font-bold text-[12.5px] text-zinc-900">{averageRating}</span>
+                            <span className="text-[11px] text-zinc-500">
+                              ({totalVotes > 0 ? totalVotes : salon.reviewsCount || 0} نظر)
                             </span>
-                          ))}
-                          {salonTags.length > 2 && (
-                            <span className="bg-zinc-100 text-zinc-500 text-[11px] px-2 py-1 rounded-md font-medium shrink-0">
-                              +{salonTags.length - 2}
-                            </span>
-                          )}
-                        </div>
-                      )}
+                          </div>
+                        )}
 
-                      {/* دکمه تماس */}
-                      <div className="flex mt-2.5">
+                        {/* تگ‌ها */}
+                        {salonTags && salonTags.length > 0 && (
+                          <div className="flex items-center gap-1 mt-2 overflow-hidden flex-nowrap">
+                            {salonTags.slice(0, 2).map((tag: string, idx: number) => (
+                              <span key={idx} className="bg-zinc-100 text-zinc-600 text-[11px] px-2 py-1 rounded-md font-medium whitespace-nowrap shrink-0">
+                                {tag}
+                              </span>
+                            ))}
+                            {salonTags.length > 2 && (
+                              <span className="bg-zinc-100 text-zinc-500 text-[11px] px-2 py-1 rounded-md font-medium shrink-0">
+                                +{salonTags.length - 2}
+                              </span>
+                            )}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* دکمه تماس - همیشه ته کارت، در ارتفاع ثابت */}
+                      <div className="flex mt-2 shrink-0">
                         {(salon.phone || (salon.phones && salon.phones.length > 0)) && (
                           <a 
                             href={`tel:${salon.phone || salon.phones[0]}`}
@@ -598,7 +668,7 @@ export default function DashboardHomePage() {
         </div>
       </div>
 
-                  <RegionFilterModal 
+      <RegionFilterModal 
         isOpen={isRegionModalOpen} 
         onClose={() => setIsRegionModalOpen(false)} 
         initialProvince={selectedProvince}
@@ -624,6 +694,18 @@ export default function DashboardHomePage() {
         }} 
       />
 
+      <FiltersModal
+        isOpen={isFiltersModalOpen}
+        onClose={() => setIsFiltersModalOpen(false)}
+        homeServiceOnly={homeServiceOnly}
+        onToggleHomeService={() => setHomeServiceOnly((prev) => !prev)}
+        genderFilter={genderFilter}
+        onToggleGender={toggleGender}
+        onClear={() => {
+          setHomeServiceOnly(false);
+          setGenderFilter('ALL');
+        }}
+      />
     </>
   );
 }
