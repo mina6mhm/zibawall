@@ -191,30 +191,23 @@ function FiltersModal({
           </button>
         </div>
 
-        {/* خدمات در منزل */}
-        <button
-          onClick={onToggleHomeService}
-          className={`w-full flex items-center gap-2 px-3.5 py-3 rounded-2xl border text-[14px] font-medium transition-all active:scale-[0.99] ${
-            homeServiceOnly
-              ? 'border-[#824c71] bg-[#824c71]/5 text-[#824c71]'
-              : 'border-zinc-200 text-zinc-600'
-          }`}
-        >
-          <span
-            className={`w-[18px] h-[18px] rounded-[5px] border-[1.5px] flex items-center justify-center shrink-0 transition-colors ${
-              homeServiceOnly ? 'bg-[#824c71] border-[#824c71]' : 'border-zinc-300'
+        {/* خدمات در منزل + مخاطب سالن در یک ردیف */}
+        <div className="flex items-stretch gap-2">
+          {/* خدمات در منزل */}
+          <button
+            onClick={onToggleHomeService}
+            className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-3 rounded-2xl border text-[13px] font-medium transition-all active:scale-[0.99] ${
+              homeServiceOnly
+                ? 'border-[#824c71] bg-[#824c71]/5 text-[#824c71]'
+                : 'border-zinc-200 text-zinc-600'
             }`}
           >
-            {homeServiceOnly && <Check className="w-3 h-3 text-white" strokeWidth={3} />}
-          </span>
-          <Home className="w-4 h-4 shrink-0" strokeWidth={2.3} />
-          خدمات در منزل
-        </button>
+            <Home className="w-4 h-4 shrink-0" strokeWidth={2.3} />
+            خدمات در منزل
+          </button>
 
-        {/* مخاطب سالن */}
-        <div className="mt-3">
-          <p className="text-[13px] font-medium text-zinc-500 mb-2 px-1">مخاطب سالن</p>
-          <div className="flex items-center gap-0.5 bg-zinc-100 rounded-full p-1">
+          {/* مخاطب سالن */}
+          <div className="flex-1 flex items-center gap-0.5 bg-zinc-100 rounded-full p-1">
             <FilterPill
               label="بانوان"
               isActive={genderFilter === 'FEMALE'}
@@ -459,10 +452,10 @@ export default function DashboardHomePage() {
             <button
               onClick={() => setIsFiltersModalOpen(true)}
               aria-label="فیلترها"
-              className={`relative shrink-0 w-11 h-11 flex items-center justify-center rounded-full border transition-all active:scale-95 ${
+              className={`relative shrink-0 w-11 h-11 flex items-center justify-center rounded-full transition-all active:scale-95 ${
                 hasActiveExtraFilters
-                  ? 'border-[#824c71] bg-[#824c71]/5 text-[#824c71]'
-                  : 'border-zinc-200 text-zinc-600 hover:border-zinc-300'
+                  ? 'bg-[#824c71]/10 text-[#824c71]'
+                  : 'bg-zinc-50 text-zinc-600 hover:bg-zinc-100'
               }`}
             >
               <SlidersHorizontal className="w-[18px] h-[18px]" strokeWidth={2.2} />
