@@ -23,9 +23,15 @@ export default function RootPage() {
     // اگه داخل اپ اندروید/iOS (Capacitor) هستیم، یا کاربر اپ رو به‌صورت PWA
     // نصب کرده و standalone بازش کرده، لندینگ اصلاً دیده نشه — مستقیم بره صفحه‌ی ورود
     // (میدل‌ور خودش اگه توکن معتبر باشه، از /login به /dashboard هدایت می‌کنه)
-    if (Capacitor.isNativePlatform() || isStandaloneMode()) {
-      router.replace('/login');
-      return;
+    // این چک تو try/catch گذاشته شده چون اگه isNativePlatform به هر دلیلی خطا بده،
+    // نباید صفحه برای همیشه سفید بمونه (checking هیچ‌وقت false نشه)
+    try {
+      if (Capacitor.isNativePlatform() || isStandaloneMode()) {
+        router.replace('/login');
+        return;
+      }
+    } catch (err) {
+      console.error('خطا در تشخیص پلتفرم:', err);
     }
     setChecking(false);
   }, [router]);
