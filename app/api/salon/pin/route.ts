@@ -4,6 +4,7 @@ import { cookies } from 'next/headers';
 import jwt from 'jsonwebtoken';
 import { prisma } from '@/lib/prisma';
 import { requestZarinpalPayment } from '@/lib/zarinpal';
+import { getSalonForUserId } from '@/lib/salonAccess';
 
 // هزینه و مدت پین کردن سالن — این عدد فقط داخل درخواست به زرین‌پال استفاده می‌شود
 // و در پاسخ این API یا هر جای دیگر رابط کاربری خودمان نمایش داده نمی‌شود؛
@@ -27,15 +28,15 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'توکن نامعتبر است' }, { status: 401 });
     }
 
-    // فقط صاحب اصلی سالن اجازه‌ی پین کردن دارد؛ مدیرها (SalonManager) نه
+    // صاحب اصلی سالن و همچنین مدیرهای اضافه‌شده (SalonManager) اجازه‌ی پین کردن دارند
     const user = await prisma.user.findUnique({ where: { id: decoded.userId } });
     if (!user) {
       return NextResponse.json({ error: 'کاربر یافت نشد' }, { status: 404 });
     }
 
-    const salon = await prisma.salon.findUnique({ where: { userId: user.id } });
+    const salon = await getSalonForUserId(user.id);
     if (!salon) {
-      return NextResponse.json({ error: 'شما مالک هیچ سالنی نیستید' }, { status: 403 });
+      return NextResponse.json({ error: 'شما به هیچ سالنی دسترسی ندارید' }, { status: 403 });
     }
 
     if (salon.status !== 'ACTIVE') {

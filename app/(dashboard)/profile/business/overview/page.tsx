@@ -350,8 +350,8 @@ function BusinessOverviewContent() {
             );
           })}
 
-          {/* پین کردن سالن — نمایش اول در جستجوها، فقط صاحب اصلی می‌تواند پرداخت کند */}
-          {isSalonOwner && salonData.status === 'ACTIVE' && (
+          {/* پین کردن سالن — نمایش اول در جستجوها؛ صاحب اصلی و مدیرهای سالن هر دو می‌توانند پرداخت کنند */}
+          {salonData.status === 'ACTIVE' && (
             <button
               type="button"
               onClick={() => {
