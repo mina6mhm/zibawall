@@ -218,22 +218,6 @@ function FiltersModal({
             />
           </div>
         </div>
-
-        {/* دکمه‌های پایین */}
-        <div className="flex items-center gap-2 mt-5">
-          <button
-            onClick={onClear}
-            className="flex-1 py-3 rounded-xl border border-zinc-200 text-zinc-600 text-[14px] font-medium active:scale-[0.99] transition-all"
-          >
-            پاک کردن فیلترها
-          </button>
-          <button
-            onClick={onClose}
-            className="flex-1 py-3 rounded-xl bg-[#824c71] text-white text-[14px] font-bold active:scale-[0.99] transition-all"
-          >
-            اعمال فیلتر
-          </button>
-        </div>
       </div>
     </div>
   );
