@@ -173,14 +173,12 @@ function FiltersModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center">
+    <div className="fixed inset-0 z-50 flex items-start justify-center">
       {/* پس‌زمینه تیره */}
       <div className="absolute inset-0 bg-black/40" onClick={onClose} />
 
-      {/* کارت فیلترها (باتم‌شیت) */}
-      <div className="relative w-full max-w-md bg-white rounded-t-3xl px-4 pt-3 pb-6 shadow-xl">
-        <div className="w-10 h-1 bg-zinc-200 rounded-full mx-auto mb-4" />
-
+      {/* کارت فیلترها (بالای صفحه) */}
+      <div className="relative w-full max-w-md bg-white rounded-b-3xl px-4 pt-4 pb-6 shadow-xl">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-base font-bold text-zinc-900">فیلترها</h3>
           <button
@@ -196,7 +194,7 @@ function FiltersModal({
           {/* خدمات در منزل */}
           <button
             onClick={onToggleHomeService}
-            className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-3 rounded-2xl border text-[13px] font-medium transition-all active:scale-[0.99] ${
+            className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-3 rounded-full border text-[13px] font-medium transition-all active:scale-[0.99] ${
               homeServiceOnly
                 ? 'border-[#824c71] bg-[#824c71]/5 text-[#824c71]'
                 : 'border-zinc-200 text-zinc-600'
