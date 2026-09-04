@@ -1,0 +1,8 @@
+[{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "com.zibawall.app",
+    "sha256_cert_fingerprints": ["B4:18:61:7E:C4:52:03:AE:62:7B:25:83:A7:AD:C8:C8:84:39:1B:9A:A0:45:19:B6:A5:6C:F5:30:49:D4:3E:4B"]
+  }
+}]
