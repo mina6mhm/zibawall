@@ -9,6 +9,7 @@ import {
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { openPaymentUrl } from '@/lib/openPaymentUrl';
+import { useOnBrowserReturn } from '@/lib/useBrowserReturn';
 
 type SalonManager = {
   id: string;
@@ -79,15 +80,25 @@ function BusinessOverviewContent() {
   }, [router]);
 
   // ── بازگشت از درگاه پرداخت پین ──
+  // «pinResult» زمانی ست می‌شه که verify فهمیده کاربر همون‌جا (وب) لاگین بوده
+  // و مستقیم به این صفحه برگشته؛ روی اپ نیتیو این مسیر طی نمی‌شه (به
+  // middleware.ts نگاه کنید) و به‌جاش لیسنر browserFinished زیر، بعد از
+  // بستنِ مرورگرِ درگاه، پروفایل رو دوباره می‌گیره.
   useEffect(() => {
-    if (searchParams.get('pinSuccess')) {
+    const pinResult = searchParams.get('pinResult');
+    if (pinResult === 'success') {
       setPinNotice({ type: 'success', text: 'پرداخت با موفقیت انجام شد و سالن شما پین شد.' });
       fetchProfile();
-    } else if (searchParams.get('pinFailed')) {
+    } else if (pinResult === 'failed') {
       setPinNotice({ type: 'error', text: 'پرداخت ناموفق بود. سالن شما پین نشد. لطفاً دوباره تلاش کنید.' });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
+
+  // وقتی کاربر از مرورگرِ درگاه پرداخت (که روی اپ نیتیو جدا از خودِ اپ باز
+  // می‌شود) برگشت، بدون نیاز به رفرش دستی یا لاگین دوباره، وضعیت پین را
+  // به‌روزرسانی کن — سشنِ خودِ اپ در این مدت اصلاً از بین نرفته بود.
+  useOnBrowserReturn(fetchProfile);
 
   const isPinned = !!salonData?.pinnedUntil && new Date(salonData.pinnedUntil) > new Date();
   const pinnedUntilLabel = salonData?.pinnedUntil

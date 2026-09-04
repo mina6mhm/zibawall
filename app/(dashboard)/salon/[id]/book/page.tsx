@@ -1,7 +1,7 @@
 // app/(dashboard)/salon/[id]/book/page.tsx
 'use client';
 
-import { useState, useEffect, use, useCallback, useMemo } from 'react';
+import { useState, useEffect, useRef, use, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -17,6 +17,7 @@ import persian_fa from 'react-date-object/locales/persian_fa';
 import { toDateOnlyAnchor } from '@/lib/dateUtils';
 import { BOOKING_APP_FEE } from '@/lib/constants';
 import { openPaymentUrl } from '@/lib/openPaymentUrl';
+import { useOnBrowserReturn } from '@/lib/useBrowserReturn';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -187,6 +188,18 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
 
+  // true فقط وقتی که واقعاً کاربر رو به درگاه پرداخت فرستادیم؛ برای اینکه
+  // بدونیم وقتی از مرورگرِ درگاه برگشت، باید به «نوبت‌های من» ببریمش تا
+  // نتیجه‌ی پرداخت رو ببینه (بدون نیاز به لاگین دوباره — سشنِ اپ دست‌نخورده‌ست).
+  const awaitingPaymentReturn = useRef(false);
+
+  useOnBrowserReturn(() => {
+    if (awaitingPaymentReturn.current) {
+      awaitingPaymentReturn.current = false;
+      router.push('/appointments');
+    }
+  });
+
   const currentIdx = stepOrder.indexOf(step);
 
   // ── بارگذاری ────────────────────────────────────────────────────────────
@@ -326,6 +339,7 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
       // هیچ‌وقت نباید اینو معادل موفقیت در نظر بگیریم، چون status نوبت
       // همچنان PENDING_PAYMENT می‌مونه و باید کاربر واقعاً پرداخت کنه.
       if (payRes.ok && payData.paymentUrl) {
+        awaitingPaymentReturn.current = true;
         await openPaymentUrl(payData.paymentUrl);
         return;
       }

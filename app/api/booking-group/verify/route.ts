@@ -1,5 +1,7 @@
 //app/api/booking-group/verify/route.ts
 import { NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
+import jwt from 'jsonwebtoken';
 import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { verifyZarinpalPayment } from '@/lib/zarinpal';
@@ -12,19 +14,40 @@ export async function GET(req: Request) {
   const groupId = searchParams.get('groupId');
 
   const baseUrl = new URL(req.url).origin;
-  const redirectTo = (query: string) => NextResponse.redirect(`${baseUrl}/appointments?${query}`);
 
-  if (!groupId || !authority) return redirectTo('paymentFailed=1');
+  // این درخواست (برگشت از زرین‌پال) روی اپ‌های نیتیو داخل مرورگرِ سیستم اتفاق
+  // می‌افتد نه WebView خودِ اپ (به lib/openPaymentUrl.ts نگاه کنید)، پس کوکی
+  // لاگینِ اپ آنجا وجود ندارد. اگر همین‌جا کوکی معتبر داشتیم (حالت وب)، مستقیم
+  // به صفحه‌ی محافظت‌شده برمی‌گردیم؛ در غیر این صورت (حالت اپ نیتیو) به
+  // صفحه‌ی عمومی /payment/result که نیازی به لاگین ندارد.
+  const hasValidSession = await (async () => {
+    try {
+      const cookieStore = await cookies();
+      const token = cookieStore.get('token')?.value;
+      if (!token) return false;
+      jwt.verify(token, process.env.JWT_SECRET!);
+      return true;
+    } catch {
+      return false;
+    }
+  })();
+
+  const redirectTo = (result: 'success' | 'failed' | 'slotTaken') =>
+    hasValidSession
+      ? NextResponse.redirect(`${baseUrl}/appointments?paymentResult=${result}`)
+      : NextResponse.redirect(`${baseUrl}/payment/result?status=${result}`);
+
+  if (!groupId || !authority) return redirectTo('failed');
 
   const group = await prisma.bookingGroup.findUnique({
     where: { id: groupId },
     include: { bookings: true },
   });
-  if (!group || group.authority !== authority) return redirectTo('paymentFailed=1');
+  if (!group || group.authority !== authority) return redirectTo('failed');
 
   if (status !== 'OK') {
     await prisma.bookingGroup.update({ where: { id: group.id }, data: { paymentStatus: 'FAILED' } });
-    return redirectTo('paymentFailed=1');
+    return redirectTo('failed');
   }
 
   try {
@@ -68,19 +91,19 @@ export async function GET(req: Request) {
         );
 
         if (!outcome.ok) {
-          return redirectTo('slotTaken=1');
+          return redirectTo('slotTaken');
         }
-        return redirectTo('paymentSuccess=1');
+        return redirectTo('success');
       } catch (txError) {
         console.error('Error confirming booking group after payment:', txError);
-        return redirectTo('slotTaken=1');
+        return redirectTo('slotTaken');
       }
     }
 
     await prisma.bookingGroup.update({ where: { id: group.id }, data: { paymentStatus: 'FAILED' } });
-    return redirectTo('paymentFailed=1');
+    return redirectTo('failed');
   } catch (error) {
     console.error('Error verifying group payment:', error);
-    return redirectTo('paymentFailed=1');
+    return redirectTo('failed');
   }
 }

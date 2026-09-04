@@ -9,12 +9,22 @@ export function middleware(request: NextRequest) {
   const isPublicSalonDetailPath = /^\/salon\/[^\/]+\/?$/.test(path);
 
   // مسیرهای عمومی: لندینگ، صفحه‌ی ورود، بلاگ و صفحه‌ی جزئیات سالن
+  //
+  // صفحه‌ی نتیجه‌ی پرداخت (/payment/result) — مقصدِ برگشت از درگاه است. روی
+  // اپ‌های نیتیو (اندروید/iOS) پرداخت داخل مرورگر سیستم باز می‌شود که کوکی
+  // لاگینِ خودِ اپ را ندارد، پس این صفحه باید بدون لاگین هم قابل مشاهده باشد
+  // — وگرنه کاربر همین‌جا به /login پرت می‌شود و باید دوباره شماره/کد تایید
+  // بزند، با این‌که سشنِ خودِ اپ اصلاً از بین نرفته. (برای جزئیات به
+  // app/payment/result/page.tsx و lib/openPaymentUrl.ts نگاه کنید)
+  const isPaymentResultPath = path === '/payment/result';
+
   const isPublicPath =
     path === '/' ||
     path === '/login' ||
     path === '/blog' ||
     path.startsWith('/blog/') ||
-    isPublicSalonDetailPath;
+    isPublicSalonDetailPath ||
+    isPaymentResultPath;
 
   const token = request.cookies.get('token')?.value || '';
 

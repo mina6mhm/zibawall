@@ -8,6 +8,7 @@ import {
   Loader2, Calendar, Clock, Scissors, User as UserIcon, Store, CalendarX, CheckCircle2, XCircle,
 } from 'lucide-react';
 import { openPaymentUrl } from '@/lib/openPaymentUrl';
+import { useOnBrowserReturn } from '@/lib/useBrowserReturn';
 
 type AppointmentItem = {
   id: string;
@@ -66,16 +67,25 @@ function AppointmentsContent() {
     fetchAppointments();
   }, [fetchAppointments]);
 
+  // وقتی کاربر از مرورگرِ درگاه پرداخت (که روی اپ نیتیو جدا از خودِ اپ باز
+  // می‌شود) برگشت، بدون نیاز به رفرش دستی یا لاگین دوباره، لیست نوبت‌ها را
+  // به‌روزرسانی کن — سشنِ خودِ اپ در این مدت اصلاً از بین نرفته بود.
+  useOnBrowserReturn(fetchAppointments);
+
   useEffect(() => {
-    if (searchParams.get('paymentSuccess')) {
+    // «paymentResult» زمانی ست می‌شه که verify فهمیده کاربر همون‌جا (وب) لاگین
+    // بوده و مستقیم به این صفحه برگشته؛ روی اپ نیتیو این مسیر طی نمی‌شه و
+    // کاربر نتیجه رو توی /payment/result می‌بینه (به middleware.ts نگاه کنید).
+    const result = searchParams.get('paymentResult');
+    if (result === 'success') {
       setNotice({ type: 'success', text: 'پرداخت با موفقیت انجام شد و نوبت شما قطعی شد.' });
-    } else if (searchParams.get('slotTaken')) {
+    } else if (result === 'slotTaken') {
       setNotice({
         type: 'error',
         text:
           'پرداخت شما انجام شد اما متأسفانه این ساعت هم‌زمان توسط شخص دیگری رزرو شده بود، پس این نوبت لغو شد. مبلغ پرداختی‌تان به‌زودی توسط پشتیبانی بازگردانده می‌شود؛ در صورت نیاز از طریق بخش پشتیبانی پیگیری کنید.',
       });
-    } else if (searchParams.get('paymentFailed')) {
+    } else if (result === 'failed') {
       setNotice({ type: 'error', text: 'پرداخت ناموفق بود. لطفاً دوباره تلاش کنید.' });
     }
   }, [searchParams]);
