@@ -1646,9 +1646,9 @@ function ScheduleTab({
           return (
             <div
               key={day}
-              className={`flex items-center gap-3 px-4 py-3 ${idx < WEEK_DAYS.length - 1 ? 'border-b border-zinc-50' : ''}`}
+              className={`flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-3 ${idx < WEEK_DAYS.length - 1 ? 'border-b border-zinc-50' : ''}`}
             >
-              <button onClick={() => toggle(day)}>
+              <button onClick={() => toggle(day)} className="shrink-0">
                 <div className={`relative w-10 h-5 rounded-full transition-colors duration-200 ${d.open ? 'bg-[#824c71]' : 'bg-zinc-200'}`}>
                   <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-all duration-200 ${d.open ? 'right-0.5' : 'right-5'}`} />
                 </div>
@@ -1659,13 +1659,13 @@ function ScheduleTab({
               </span>
 
               {d.open ? (
-                <div className="flex items-center gap-2 flex-1">
+                <div className="flex items-center gap-2 basis-full sm:basis-0 sm:flex-1">
                   <input
                     type="time"
                     dir="ltr"
                     value={d.start}
                     onChange={(e) => setTime(day, 'start', e.target.value)}
-                    className="flex-1 border border-zinc-200 rounded-lg px-2 py-1.5 text-xs text-center focus:outline-none focus:border-[#824c71]"
+                    className="flex-1 min-w-[92px] border border-zinc-200 rounded-lg px-2 py-1.5 text-xs text-center focus:outline-none focus:border-[#824c71]"
                   />
                   <span className="text-zinc-400 text-xs shrink-0">تا</span>
                   <input
@@ -1673,7 +1673,7 @@ function ScheduleTab({
                     dir="ltr"
                     value={d.end}
                     onChange={(e) => setTime(day, 'end', e.target.value)}
-                    className="flex-1 border border-zinc-200 rounded-lg px-2 py-1.5 text-xs text-center focus:outline-none focus:border-[#824c71]"
+                    className="flex-1 min-w-[92px] border border-zinc-200 rounded-lg px-2 py-1.5 text-xs text-center focus:outline-none focus:border-[#824c71]"
                   />
                 </div>
               ) : (
