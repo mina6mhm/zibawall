@@ -47,7 +47,7 @@ export default function DownloadAppModal({ isOpen, onClose }: DownloadAppModalPr
 
           {/* گزینه‌ی دوم: کافه‌بازار — لینک زیر رو با آدرس واقعی صفحه‌ی اپ توی بازار جایگزین کن */}
           <a
-            href="https://cafebazaar.ir/app/ir.zibawall.app"
+            href="https://cafebazaar.ir/app/com.zibawall.app"
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center gap-3 p-4 rounded-xl border border-zinc-200 hover:bg-zinc-50 transition-colors"

@@ -612,7 +612,7 @@ export default function MySalonPage() {
       {/* لیست نوبت‌ها */}
       <div className="mb-8 mt-4">
         <h2 className="text-sm font-bold text-zinc-800 mb-3">
-          نوبت‌های این روز{' '}
+  {isToday ? 'نوبت‌های امروز' : 'نوبت‌های این روز'}{' '}
           {effectiveTab === 'salon'
             ? `(${dayBookings.length.toLocaleString('fa-IR')})`
             : `(${dayStaffBookings.length.toLocaleString('fa-IR')})`}
