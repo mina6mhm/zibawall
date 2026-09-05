@@ -614,8 +614,8 @@ export default function MySalonPage() {
         <h2 className="text-sm font-bold text-zinc-800 mb-3">
           نوبت‌های این روز{' '}
           {effectiveTab === 'salon'
-            ? dayBookings.length > 0 && `(${dayBookings.length.toLocaleString('fa-IR')})`
-            : dayStaffBookings.length > 0 && `(${dayStaffBookings.length.toLocaleString('fa-IR')})`}
+            ? `(${dayBookings.length.toLocaleString('fa-IR')})`
+            : `(${dayStaffBookings.length.toLocaleString('fa-IR')})`}
         </h2>
 
         {effectiveTab === 'salon' ? (
