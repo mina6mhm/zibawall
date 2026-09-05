@@ -1,11 +1,12 @@
 // app/(dashboard)/appointments/page.tsx
 'use client';
 
-import { Suspense, useState, useEffect, useCallback } from 'react';
+import { Suspense, useState, useEffect, useCallback, useMemo } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
   Loader2, Calendar, Clock, Scissors, User as UserIcon, Store, CalendarX, CheckCircle2, XCircle,
+  CalendarClock, History, Ban,
 } from 'lucide-react';
 import { openPaymentUrl } from '@/lib/openPaymentUrl';
 import { useOnBrowserReturn } from '@/lib/useBrowserReturn';
@@ -30,13 +31,33 @@ type Appointment = {
   items: AppointmentItem[];
 };
 
+// یک آیتم نوبت به‌همراه رزرو (گروه) پدرش — چون دکمه‌ی پرداخت و بقیه‌ی
+// اطلاعات سالن از روی خودِ رزرو خونده می‌شه، نه فقط آیتم.
+type FlatItem = { appt: Appointment; item: AppointmentItem };
+
+type TabKey = 'upcoming' | 'past' | 'cancelled';
+
 const STATUS_LABELS: Record<AppointmentItem['status'], { label: string; className: string }> = {
   PENDING_PAYMENT: { label: 'در انتظار پرداخت', className: 'bg-amber-50 text-amber-700' },
   CONFIRMED: { label: 'قطعی شده', className: 'bg-emerald-50 text-emerald-700' },
   CANCELLED: { label: 'لغو شده', className: 'bg-zinc-100 text-zinc-500' },
 };
 
+const TABS: { key: TabKey; label: string; icon: typeof CalendarClock }[] = [
+  { key: 'upcoming', label: 'آینده', icon: CalendarClock },
+  { key: 'past', label: 'گذشته', icon: History },
+  { key: 'cancelled', label: 'لغو‌شده', icon: Ban },
+];
+
 const toPersianDigits = (str: string) => str.replace(/[0-9]/g, (d) => '۰۱۲۳۴۵۶۷۸۹'[Number(d)]);
+
+// تاریخ+ساعت نوبت رو به یک Date واقعی تبدیل می‌کنه تا بشه با «الان» مقایسه کرد.
+function getAppointmentDateTime(item: AppointmentItem): Date {
+  const d = new Date(item.date);
+  const [h, m] = item.startTime.split(':').map(Number);
+  if (!Number.isNaN(h)) d.setHours(h, m || 0, 0, 0);
+  return d;
+}
 
 function AppointmentsContent() {
   const router = useRouter();
@@ -46,6 +67,7 @@ function AppointmentsContent() {
   const [isLoading, setIsLoading] = useState(true);
   const [payingId, setPayingId] = useState<string | null>(null);
   const [notice, setNotice] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [activeTab, setActiveTab] = useState<TabKey>('upcoming');
 
   const fetchAppointments = useCallback(async () => {
     try {
@@ -113,6 +135,105 @@ function AppointmentsContent() {
 
   const formatMoney = (amount: number) => amount.toLocaleString('fa-IR');
 
+  // همه‌ی آیتم‌ها رو صاف می‌کنیم و بر اساس وضعیت + تاریخ به سه دسته تقسیم می‌کنیم.
+  const { upcoming, past, cancelled } = useMemo(() => {
+    const flat: FlatItem[] = appointments.flatMap((appt) =>
+      appt.items.map((item) => ({ appt, item }))
+    );
+
+    const now = new Date();
+    const upcoming: FlatItem[] = [];
+    const past: FlatItem[] = [];
+    const cancelled: FlatItem[] = [];
+
+    for (const f of flat) {
+      if (f.item.status === 'CANCELLED') {
+        cancelled.push(f);
+      } else if (getAppointmentDateTime(f.item) >= now) {
+        upcoming.push(f);
+      } else {
+        past.push(f);
+      }
+    }
+
+    // آینده: نزدیک‌ترین اول. گذشته و لغو‌شده: جدیدترین اول.
+    upcoming.sort((a, b) => getAppointmentDateTime(a.item).getTime() - getAppointmentDateTime(b.item).getTime());
+    past.sort((a, b) => getAppointmentDateTime(b.item).getTime() - getAppointmentDateTime(a.item).getTime());
+    cancelled.sort((a, b) => getAppointmentDateTime(b.item).getTime() - getAppointmentDateTime(a.item).getTime());
+
+    return { upcoming, past, cancelled };
+  }, [appointments]);
+
+  const listByTab: Record<TabKey, FlatItem[]> = { upcoming, past, cancelled };
+  const emptyTextByTab: Record<TabKey, string> = {
+    upcoming: 'نوبت پیش‌روی برای شما ثبت نشده است.',
+    past: 'هنوز نوبت گذشته‌ای ندارید.',
+    cancelled: 'نوبت لغو‌شده‌ای ندارید.',
+  };
+
+  const renderCard = ({ appt, item }: FlatItem) => {
+    const statusInfo = STATUS_LABELS[item.status];
+
+    return (
+      <div key={item.id} className="bg-white border border-zinc-100 rounded-2xl p-4 shadow-sm shadow-zinc-200/50">
+        <div className="flex items-start justify-between gap-2 mb-3">
+          <Link
+            href={`/salon/${appt.salon.id}`}
+            className="flex items-center gap-2 text-zinc-800 hover:text-[#824c71] transition-colors"
+          >
+            <Store className="w-4 h-4 text-[#824c71] shrink-0" />
+            <span className="font-bold text-sm">{appt.salon.name}</span>
+          </Link>
+          <span className={`text-[11px] font-medium px-2.5 py-1 rounded-lg whitespace-nowrap ${statusInfo.className}`}>
+            {statusInfo.label}
+          </span>
+        </div>
+
+        <div className="flex items-center gap-1.5 text-[12px] text-zinc-500 pb-3 mb-1 border-b border-zinc-100">
+          <Calendar className="w-3.5 h-3.5 text-zinc-400" />
+          <span>{formatDate(item.date)}</span>
+          <span className="text-zinc-300">·</span>
+          <Clock className="w-3.5 h-3.5 text-zinc-400" />
+          <span dir="ltr">{toPersianDigits(item.startTime)}</span>
+        </div>
+
+        <div className="divide-y divide-zinc-50">
+          {item.services.map((s, idx) => (
+            <div key={idx} className="py-2.5 first:pt-0 last:pb-0 flex items-center justify-between gap-2">
+              <div className="flex items-center gap-1.5 min-w-0">
+                <Scissors className="w-3 h-3 text-[#824c71]/60 shrink-0" />
+                <p className="text-[12.5px] font-bold text-zinc-800 truncate">{s.name}</p>
+              </div>
+              <div className="flex items-center gap-2.5 shrink-0 text-[11px] text-zinc-500">
+                {s.price != null && (
+                  <span className="font-medium text-zinc-700">{formatMoney(s.price)} تومان</span>
+                )}
+                {s.staffName && (
+                  <span className="flex items-center gap-1">
+                    <UserIcon className="w-3 h-3 text-zinc-400" />
+                    {s.staffName}
+                  </span>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* دکمه پرداخت فقط وقتی کل گروه در انتظار پرداخته — نه برای آیتم‌های لغو‌شده */}
+        {appt.status === 'PENDING_PAYMENT' && item.status !== 'CANCELLED' && (
+          <button
+            onClick={() => handlePay(appt)}
+            disabled={payingId === appt.id}
+            className="w-full flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-[#824c71] text-white text-xs font-bold hover:bg-[#6e3f60] transition disabled:opacity-60 mt-3"
+          >
+            {payingId === appt.id && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+            پرداخت و ثبت قطعی نوبت
+          </button>
+        )}
+      </div>
+    );
+  };
+
   if (isLoading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh]">
@@ -121,6 +242,8 @@ function AppointmentsContent() {
       </div>
     );
   }
+
+  const currentList = listByTab[activeTab];
 
   return (
     <div className="max-w-3xl mx-auto pt-8 pb-32 px-4 md:pt-10 md:px-0">
@@ -146,73 +269,48 @@ function AppointmentsContent() {
           <p className="text-zinc-400 text-sm">هنوز نوبتی برای شما ثبت نشده است.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {appointments.flatMap((appt) =>
-            appt.items.map((it) => {
-              // هر کارت وضعیت خودش رو نشون میده — نه وضعیت کل گروه
-              const statusInfo = STATUS_LABELS[it.status];
-
+        <>
+          {/* تب‌های آینده / گذشته / لغو‌شده */}
+          <div className="flex items-center gap-1.5 mb-5 bg-zinc-100 rounded-xl p-1">
+            {TABS.map((tab) => {
+              const Icon = tab.icon;
+              const count = listByTab[tab.key].length;
+              const isActive = activeTab === tab.key;
               return (
-                <div key={it.id} className="bg-white border border-zinc-100 rounded-2xl p-4 shadow-sm shadow-zinc-200/50">
-                  <div className="flex items-start justify-between gap-2 mb-3">
-                    <Link
-                      href={`/salon/${appt.salon.id}`}
-                      className="flex items-center gap-2 text-zinc-800 hover:text-[#824c71] transition-colors"
+                <button
+                  key={tab.key}
+                  onClick={() => setActiveTab(tab.key)}
+                  className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-bold transition-colors ${
+                    isActive ? 'bg-white text-[#824c71] shadow-sm' : 'text-zinc-500'
+                  }`}
+                >
+                  <Icon className="w-3.5 h-3.5" />
+                  {tab.label}
+                  {count > 0 && (
+                    <span
+                      className={`text-[10px] rounded-full px-1.5 min-w-[18px] ${
+                        isActive ? 'bg-[#824c71]/10 text-[#824c71]' : 'bg-zinc-200 text-zinc-500'
+                      }`}
                     >
-                      <Store className="w-4 h-4 text-[#824c71] shrink-0" />
-                      <span className="font-bold text-sm">{appt.salon.name}</span>
-                    </Link>
-                    <span className={`text-[11px] font-medium px-2.5 py-1 rounded-lg whitespace-nowrap ${statusInfo.className}`}>
-                      {statusInfo.label}
+                      {toPersianDigits(String(count))}
                     </span>
-                  </div>
-
-                  <div className="flex items-center gap-1.5 text-[12px] text-zinc-500 pb-3 mb-1 border-b border-zinc-100">
-                    <Calendar className="w-3.5 h-3.5 text-zinc-400" />
-                    <span>{formatDate(it.date)}</span>
-                    <span className="text-zinc-300">·</span>
-                    <Clock className="w-3.5 h-3.5 text-zinc-400" />
-                    <span dir="ltr">{toPersianDigits(it.startTime)}</span>
-                  </div>
-
-                  <div className="divide-y divide-zinc-50">
-                    {it.services.map((s, idx) => (
-                      <div key={idx} className="py-2.5 first:pt-0 last:pb-0 flex items-center justify-between gap-2">
-                        <div className="flex items-center gap-1.5 min-w-0">
-                          <Scissors className="w-3 h-3 text-[#824c71]/60 shrink-0" />
-                          <p className="text-[12.5px] font-bold text-zinc-800 truncate">{s.name}</p>
-                        </div>
-                        <div className="flex items-center gap-2.5 shrink-0 text-[11px] text-zinc-500">
-                          {s.price != null && (
-                            <span className="font-medium text-zinc-700">{formatMoney(s.price)} تومان</span>
-                          )}
-                          {s.staffName && (
-                            <span className="flex items-center gap-1">
-                              <UserIcon className="w-3 h-3 text-zinc-400" />
-                              {s.staffName}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* دکمه پرداخت فقط وقتی کل گروه در انتظار پرداخته — نه برای آیتم‌های لغو‌شده */}
-                  {appt.status === 'PENDING_PAYMENT' && it.status !== 'CANCELLED' && (
-                    <button
-                      onClick={() => handlePay(appt)}
-                      disabled={payingId === appt.id}
-                      className="w-full flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-[#824c71] text-white text-xs font-bold hover:bg-[#6e3f60] transition disabled:opacity-60 mt-3"
-                    >
-                      {payingId === appt.id && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-                      پرداخت و ثبت قطعی نوبت
-                    </button>
                   )}
-                </div>
+                </button>
               );
-            })
+            })}
+          </div>
+
+          {currentList.length === 0 ? (
+            <div className="text-center py-16 bg-zinc-50 rounded-2xl">
+              <CalendarX className="w-10 h-10 text-zinc-300 mx-auto mb-3" />
+              <p className="text-zinc-400 text-sm">{emptyTextByTab[activeTab]}</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {currentList.map(renderCard)}
+            </div>
           )}
-        </div>
+        </>
       )}
     </div>
   );
