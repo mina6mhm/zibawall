@@ -34,7 +34,7 @@ function LoginPageInner() {
   const [username, setUsername] = useState('');
   const [name, setName] = useState('');
 
-  const [timeLeft, setTimeLeft] = useState(120);
+  const [timeLeft, setTimeLeft] = useState(90);
   const [isTimerActive, setIsTimerActive] = useState(false);
 
   const [otpValues, setOtpValues] = useState(['', '', '', '', '']);
@@ -129,7 +129,7 @@ function LoginPageInner() {
       }
 
       setStep('otp');
-      setTimeLeft(120);
+      setTimeLeft(90);
       setIsTimerActive(true);
       setOtpValues(['', '', '', '', '']);
     } catch {

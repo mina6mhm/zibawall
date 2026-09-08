@@ -1,6 +1,6 @@
 // app/api/auth/send-otp/route.ts
 
-import { NextResponse } from 'next/server';
+import { NextResponse, after } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
 export async function POST(req: Request) {
@@ -51,8 +51,9 @@ export async function POST(req: Request) {
       10000 + Math.random() * 90000
     ).toString();
 
+    // زمان اعتبار کد و فاصله‌ی لازم برای ارسال مجدد: ۹۰ ثانیه
     const expiresAt = new Date(
-      Date.now() + 2 * 60 * 1000
+      Date.now() + 90 * 1000
     );
 
     await prisma.user.upsert({
@@ -104,60 +105,46 @@ export async function POST(req: Request) {
       number_format: 'english'
     };
 
-    console.log(
-      '📤 SMS REQUEST:',
-      JSON.stringify(requestBody)
-    );
+    // نکته‌ی مهم: قبلاً اینجا با await منتظر پاسخ سرویس پیامکی می‌ماندیم و
+    // فقط بعد از آن به کاربر پاسخ می‌دادیم؛ همین باعث می‌شد رفتن به صفحه‌ی
+    // کد تایید در فرانت‌اند چند ثانیه (تا ۱۵ ثانیه در بدترین حالت) طول بکشد.
+    // چون کد OTP از قبل در دیتابیس ذخیره شده، همین الان به کاربر پاسخ موفق
+    // می‌دهیم و ارسال واقعی پیامک را با after() در پس‌زمینه انجام می‌دهیم؛
+    // این‌طوری فرانت‌اند بلافاصله بعد از ثبت کد به مرحله‌ی بعد می‌رود.
+    after(async () => {
+      try {
+        console.log(
+          '📤 SMS REQUEST:',
+          JSON.stringify(requestBody)
+        );
 
-    let smsRes: Response;
+        const smsRes = await fetch(
+          'https://api.iranpayamak.com/ws/v1/sms/pattern',
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Api-Key': apiKey
+            },
+            body: JSON.stringify(requestBody),
+            signal: AbortSignal.timeout(15000)
+          }
+        );
 
-    try {
-      smsRes = await fetch(
-        'https://api.iranpayamak.com/ws/v1/sms/pattern',
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Api-Key': apiKey
-          },
-          body: JSON.stringify(requestBody),
-          signal: AbortSignal.timeout(15000)
+        const smsText = await smsRes.text();
+
+        console.log('====================');
+        console.log('SMS STATUS:', smsRes.status);
+        console.log('SMS RESPONSE:', smsText);
+        console.log('====================');
+
+        if (!smsRes.ok) {
+          console.error('❌ SMS send failed:', smsRes.status, smsText);
         }
-      );
-    } catch (networkError) {
-      console.error(
-        '❌ SMS Network Error:',
-        networkError
-      );
-
-      return NextResponse.json(
-        {
-          error:
-            'ارتباط با سامانه پیامکی برقرار نشد'
-        },
-        {
-          status: 500
-        }
-      );
-    }
-
-    const smsText = await smsRes.text();
-
-    console.log('====================');
-    console.log('SMS STATUS:', smsRes.status);
-    console.log('SMS RESPONSE:', smsText);
-    console.log('====================');
-
-    if (!smsRes.ok) {
-      return NextResponse.json(
-        {
-          error: 'ارسال پیامک با خطا مواجه شد'
-        },
-        {
-          status: 500
-        }
-      );
-    }
+      } catch (smsError) {
+        console.error('❌ SMS Network/Send Error:', smsError);
+      }
+    });
 
     return NextResponse.json(
       {
