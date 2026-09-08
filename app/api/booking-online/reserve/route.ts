@@ -74,13 +74,16 @@ export async function POST(req: Request) {
           return NextResponse.json({ error: 'پرسنل انتخابی برای این خدمت در دسترس نیست' }, { status: 400 });
         }
       } else {
-        assignedStaff = await prisma.staff.findFirst({
+        // این مسیر فقط یه شبکه‌ی امنیتیه (فرانت‌اند همیشه staffId مشخص می‌فرسته)؛
+        // اینجا هم به‌جای همیشه اولین نفر (name asc)، رندوم انتخاب می‌کنیم تا
+        // با منطق فرانت‌اند (پخش عادلانه‌ی نوبت‌ها بین پرسنل) هماهنگ باشه
+        const eligibleStaffList = await prisma.staff.findMany({
           where: { salonId, bookingServices: { some: { bookingServiceId: item.serviceId } } },
-          orderBy: { name: 'asc' },
         });
-        if (!assignedStaff) {
+        if (eligibleStaffList.length === 0) {
           return NextResponse.json({ error: 'پرسنل مناسبی یافت نشد' }, { status: 400 });
         }
+        assignedStaff = eligibleStaffList[Math.floor(Math.random() * eligibleStaffList.length)];
       }
 
       // ── چک ساعت کاری سالن/پرسنل + گذشته نبودن زمان ──────────────────────

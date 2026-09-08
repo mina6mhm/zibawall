@@ -285,10 +285,16 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
 
   const addToCart = () => {
     if (!selectedService || !selectedDate || !selectedSlot) return;
-    const staffId   = selectedStaffId ?? selectedSlot.availableStaff[0]?.id ?? '';
+    // اگه مشتری «تفاوتی ندارد» رو زده باشه، به‌جای همیشه اولین نفر لیست،
+    // یکی از پرسنل‌های واقعاً آزاد توی همین اسلات رو رندوم انتخاب می‌کنیم
+    // تا نوبت‌ها بین پرسنل به‌طور یکنواخت‌تر پخش بشه
+    const randomAvailable = selectedSlot.availableStaff[
+      Math.floor(Math.random() * selectedSlot.availableStaff.length)
+    ];
+    const staffId   = selectedStaffId ?? randomAvailable?.id ?? '';
     const staffName = selectedStaffId
       ? staffOptions.find((s) => s.id === selectedStaffId)?.name ?? ''
-      : selectedSlot.availableStaff[0]?.name ?? '—';
+      : randomAvailable?.name ?? '—';
     setCart((p) => [...p, {
       serviceId: selectedService.id, serviceName: selectedService.name,
       durationMin: selectedService.durationMin, price: selectedService.price,
