@@ -276,29 +276,29 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
   const primaryPhone = salon.phones && salon.phones.length > 0 ? salon.phones[0] : null;
 
   const salonInfoCard = (
-    <div className="bg-white rounded-2xl p-4 sm:p-6 shadow-sm shadow-zinc-200/60">
-      <div className="flex justify-between items-start mb-4 gap-3">
-        <h1 className="text-xl sm:text-2xl font-bold text-zinc-900 leading-snug">{salon.name}</h1>
-        <div className="flex flex-col items-end gap-1 flex-shrink-0">
-          <div className="flex items-center bg-amber-50 px-2 py-1 rounded-lg">
-            <Star className="w-4 h-4 text-amber-500 fill-current ml-1" />
-            <span className="font-bold text-amber-700 text-sm">{averageRating}</span>
+    <div>
+      <div className="flex justify-between items-start mb-3 gap-3">
+        <h1 className="text-2xl sm:text-[26px] font-bold text-zinc-900 leading-snug">{salon.name}</h1>
+        <div className="flex flex-col items-end gap-0.5 flex-shrink-0 pt-1">
+          <div className="flex items-center gap-1">
+            <Star className="w-4 h-4 text-amber-500 fill-current" />
+            <span className="font-bold text-zinc-900 text-sm">{averageRating}</span>
           </div>
-          <span className="text-[11px] sm:text-xs text-zinc-500 font-medium">({totalVotes} رای)</span>
+          <span className="text-[11px] sm:text-xs text-zinc-400">({totalVotes} رای)</span>
         </div>
       </div>
 
       {/* بج‌های خدمات در منزل / مخاطب سالن */}
       {(salon.hasHomeService || salon.genderAudience) && (
-        <div className="flex flex-wrap gap-2 mb-4">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 mb-5 text-[#824c71]">
           {salon.hasHomeService && (
-            <span className="inline-flex items-center gap-1.5 bg-[#824c71]/[0.07] text-[#824c71] px-2.5 py-1 rounded-lg text-[11px] sm:text-xs font-medium">
+            <span className="inline-flex items-center gap-1.5 text-[11px] sm:text-xs font-medium">
               <Home className="w-3.5 h-3.5" />
               خدمات در منزل
             </span>
           )}
           {salon.genderAudience && (
-            <span className="inline-flex items-center gap-1.5 bg-[#824c71]/[0.07] text-[#824c71] px-2.5 py-1 rounded-lg text-[11px] sm:text-xs font-medium">
+            <span className="inline-flex items-center gap-1.5 text-[11px] sm:text-xs font-medium">
               <Users className="w-3.5 h-3.5" />
               {GENDER_AUDIENCE_LABELS[salon.genderAudience] || salon.genderAudience}
             </span>
@@ -309,14 +309,14 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
       {isAdmin && (
         <button
           onClick={() => setShowDeleteModal(true)}
-          className="w-full flex items-center justify-center gap-2 mb-4 py-2.5 rounded-xl bg-red-50 text-red-600 text-sm font-medium hover:bg-red-100 transition-colors"
+          className="w-full flex items-center justify-center gap-2 mb-5 py-2.5 rounded-xl border border-red-200 text-red-600 text-sm font-medium hover:bg-red-50 transition-colors"
         >
           <Trash2 className="w-4 h-4" />
           حذف این کسب‌وکار (ادمین)
         </button>
       )}
 
-      <div className="space-y-3 sm:space-y-4 text-zinc-600 text-[13px] sm:text-sm mb-6">
+      <div className="space-y-3 sm:space-y-3.5 text-zinc-600 text-[13px] sm:text-sm mb-6 pb-6 border-b border-zinc-200">
         <div className="flex items-start">
           <MapPin className="w-4 h-4 sm:w-5 sm:h-5 ml-2 mt-0.5 text-[#824c71] flex-shrink-0" />
           <p className="leading-relaxed">{salon.address}</p>
@@ -339,7 +339,7 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
         )}
 
         {salon.closedDays && salon.closedDays.length > 0 && (
-          <div className="inline-flex items-center text-red-500 bg-red-50 px-3 py-1.5 rounded-lg">
+          <div className="flex items-center text-red-500">
             <CalendarOff className="w-4 h-4 sm:w-5 sm:h-5 ml-2 flex-shrink-0" />
             <p className="font-medium text-xs sm:text-sm">تعطیل: {salon.closedDays.join('، ')}</p>
           </div>
@@ -348,7 +348,7 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
 
       <div 
         onClick={() => setShowRoutingModal(true)}
-        className="relative w-full h-32 sm:h-48 bg-zinc-100 rounded-xl mb-6 overflow-hidden cursor-pointer group"
+        className="relative w-full h-32 sm:h-44 bg-zinc-100 rounded-xl mb-6 overflow-hidden cursor-pointer group"
       >
         {salon.coordinates && salon.coordinates.length === 2 ? (
           <img 
@@ -363,8 +363,6 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
           </div>
         )}
       </div>
-
-
 
       {salon.socials && (
   <div className="flex justify-center flex-wrap gap-3 mb-2 px-2">
@@ -471,7 +469,7 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
 )}
 
 {/*دسکتاپ*/}
-<div className="hidden lg:flex flex-row-reverse gap-2.5 mt-6">
+<div className="hidden lg:flex flex-row-reverse gap-2.5 mt-2">
   {/* هر دو حالت (فعال/غیرفعال) ظاهر یکسان دارن — کلیک روی حالت غیرفعال پاپ‌آپ هشدار رو باز می‌کنه */}
   <button
     onClick={handleBookingButtonClick}
@@ -484,7 +482,7 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
     <a
       href={`tel:${primaryPhone}`}
       onClick={handleCallButtonClick}
-      className="w-12 h-12 flex items-center justify-center rounded-xl bg-zinc-100 text-zinc-600 hover:bg-zinc-200 transition shrink-0"
+      className="w-12 h-12 flex items-center justify-center rounded-xl border border-zinc-200 text-zinc-600 hover:bg-zinc-50 transition shrink-0"
     >
       <Phone className="w-5 h-5" />
     </a>
@@ -675,9 +673,9 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 sm:gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 sm:gap-10">
           
-          <div className="lg:col-span-2 space-y-5 sm:space-y-8">
+          <div className="lg:col-span-2">
             <div className="space-y-3 sm:space-y-4">
               <div 
                 className="w-full h-64 sm:h-80 bg-zinc-200 rounded-2xl overflow-hidden relative cursor-pointer"
@@ -708,39 +706,39 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
               )}
             </div>
 
-            <div className="block lg:hidden">
+            <div className="block lg:hidden pt-8 mt-8 border-t border-zinc-200">
               {salonInfoCard}
             </div>
 
-            <section className="bg-white rounded-2xl p-4 sm:p-6 shadow-sm shadow-zinc-200/60">
+            <section className="pt-8 mt-8 border-t border-zinc-200">
               <h2 className="text-lg sm:text-xl font-bold text-zinc-900 mb-3">درباره سالن</h2>
               <p className="text-zinc-600 text-[13px] sm:text-sm leading-relaxed text-justify">
                 {salon.description || "توضیحاتی ثبت نشده است."}
               </p>
             </section>
 
-            <section className="bg-white rounded-2xl p-4 sm:p-6 shadow-sm shadow-zinc-200/60">
+            <section className="pt-8 mt-8 border-t border-zinc-200">
               <h2 className="text-lg sm:text-xl font-bold text-zinc-900 mb-4">خدمات ما</h2>
-              <div className="space-y-2.5">
+              <div className="divide-y divide-zinc-100">
                 {Object.keys(groupedServices).length > 0 ? (
                   Object.entries(groupedServices).map(([category, services]) => {
                     const isExpanded = expandedCategories.includes(category);
                     return (
-                      <div key={category} className="bg-zinc-50/70 rounded-xl overflow-hidden">
-                        <button type="button" onClick={() => toggleCategory(category)} className="w-full flex items-center justify-between p-3.5 active:bg-zinc-100">
-                          <div className="flex items-center gap-2">
+                      <div key={category} className="py-1">
+                        <button type="button" onClick={() => toggleCategory(category)} className="w-full flex items-center justify-between py-3 text-right">
+                          <div className="flex items-baseline gap-2">
                             <span className="font-bold text-zinc-800 text-[13px] sm:text-sm">{category}</span>
-                            <span className="text-[10px] sm:text-xs bg-white text-zinc-500 px-2 py-0.5 rounded-full">
+                            <span className="text-[11px] sm:text-xs text-zinc-400">
                               {services.length} خدمت
                             </span>
                           </div>
                           {isExpanded ? <ChevronUp size={18} className="text-zinc-400" /> : <ChevronDown size={18} className="text-zinc-400" />}
                         </button>
                         {isExpanded && (
-                          <div className="p-3.5 pt-0 flex flex-wrap gap-2">
+                          <div className="pb-4 flex flex-wrap gap-x-5 gap-y-2.5">
                             {services.map((service, index) => (
-                              <div key={index} className="flex items-center bg-white px-2.5 py-1.5 rounded-md"> 
-                                <CheckCircle2 className="w-3.5 h-3.5 text-[#824c71] ml-1.5" />
+                              <div key={index} className="flex items-center"> 
+                                <CheckCircle2 className="w-3.5 h-3.5 text-[#824c71] ml-1.5 flex-shrink-0" />
                                 <span className="text-zinc-700 text-xs sm:text-[13px]">{service}</span>
                               </div>
                             ))}
@@ -750,24 +748,24 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
                     );
                   })
                 ) : (
-                  <p className="text-zinc-500 text-xs">خدماتی ثبت نشده است.</p>
+                  <p className="text-zinc-500 text-xs py-2">خدماتی ثبت نشده است.</p>
                 )}
               </div>
             </section>
 
-            <section className="bg-white rounded-2xl p-4 sm:p-6 shadow-sm shadow-zinc-200/60">
-              <div className="flex items-center justify-between mb-5">
+            <section className="pt-8 mt-8 border-t border-zinc-200">
+              <div className="flex items-baseline justify-between mb-5">
                 <h2 className="text-lg sm:text-xl font-bold text-zinc-900">نظرات</h2>
-                <span className="text-xs font-medium text-zinc-500 bg-zinc-100 px-2.5 py-1 rounded-md">{textReviews.length} نظر</span>
+                <span className="text-xs font-medium text-zinc-400">{textReviews.length} نظر</span>
               </div>
 
-              <div className="bg-zinc-50 rounded-xl p-4 mb-6">
+              <div className="pb-6 mb-6 border-b border-zinc-200">
                   <h3 className="font-medium text-sm text-zinc-800 mb-3">
                       {hasAlreadyReviewed ? "ثبت نظر جدید" : "امتیاز و نظر خود را ثبت کنید"}
                   </h3>
                   
                   {successMessage && (
-                      <div className="mb-3 p-2.5 bg-[#824c71]/[0.07] text-[#824c71] rounded-md flex items-center gap-2">
+                      <div className="mb-3 flex items-center gap-2 text-[#824c71]">
                           <CheckCircle2 className="w-4 h-4" />
                           <span className="text-xs font-medium">{successMessage}</span>
                       </div>
@@ -785,21 +783,21 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
 
                   <textarea 
                       value={reviewText} onChange={(e) => setReviewText(e.target.value)}
-                      className="w-full bg-white border border-zinc-200 rounded-lg p-3 text-sm focus:outline-none focus:ring-1 focus:ring-[#824c71]/40 mb-3 resize-none"
+                      className="w-full bg-transparent border border-zinc-200 rounded-lg p-3 text-sm focus:outline-none focus:ring-1 focus:ring-[#824c71]/40 mb-3 resize-none"
                       rows={3} placeholder="تجربه خود را بنویسید..."
                   ></textarea>
                   
                   {reviewError && <p className="text-red-600 text-xs font-medium mb-3">{reviewError}</p>}
 
-                  <button onClick={handleReviewSubmit} className="inline-flex items-center justify-center bg-[#824c71]/[0.07] hover:bg-[#824c71]/[0.12] text-[#824c71] px-4 py-1.5 rounded-lg text-xs font-medium transition-colors">
+                  <button onClick={handleReviewSubmit} className="inline-flex items-center justify-center text-[#824c71] font-medium px-1 py-1.5 text-xs hover:underline underline-offset-4">
     {hasAlreadyReviewed ? "ثبت نظر" : "ثبت"}
 </button>
               </div>
 
-              <div className="space-y-4">
+              <div className="divide-y divide-zinc-100">
                 {textReviews.length > 0 ? (
                   textReviews.map((review) => (
-                    <div key={review.id} className="border-b border-zinc-100 pb-4 last:border-0 last:pb-0">
+                    <div key={review.id} className="py-4 first:pt-0 last:pb-0">
                       <div className="flex justify-between items-center mb-1.5">
                         <span className="font-bold text-zinc-800 text-xs sm:text-sm">{review.name}</span>
                         {review.rating > 0 && (
