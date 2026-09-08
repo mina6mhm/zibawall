@@ -250,6 +250,33 @@ export default function DashboardHomePage() {
   // مخاطب سالن: فقط دو گزینه (بانوان / آقایون)؛ اگر هیچ‌کدام انتخاب نشود یعنی «همه»
   const [genderFilter, setGenderFilter] = useState<GenderFilter>('ALL');
 
+  // --- هشدار فیلترشکن: اگر IP کاربر ایران نباشد (یعنی VPN/فیلترشکن روشنه)، چند ثانیه هشدار نشان بده ---
+  const [showVpnWarning, setShowVpnWarning] = useState(false);
+
+  useEffect(() => {
+    let hideTimer: ReturnType<typeof setTimeout>;
+
+    const checkIpLocation = async () => {
+      try {
+        const res = await fetch('https://ipwho.is/');
+        if (!res.ok) return;
+        const data = await res.json();
+
+        // اگر تشخیص کشور موفق بود و کشور، ایران نبود یعنی احتمالاً فیلترشکن روشنه
+        if (data?.success !== false && data?.country_code && data.country_code !== 'IR') {
+          setShowVpnWarning(true);
+          hideTimer = setTimeout(() => setShowVpnWarning(false), 6000);
+        }
+      } catch {
+        // اگر تشخیص موقعیت با خطا مواجه شد، هشدار نمایش داده نمی‌شود (بی‌سروصدا رد می‌شود)
+      }
+    };
+
+    checkIpLocation();
+
+    return () => clearTimeout(hideTimer);
+  }, []);
+
   const toggleGender = (value: Exclude<GenderFilter, 'ALL'>) => {
     setGenderFilter((prev) => (prev === value ? 'ALL' : value));
   };
@@ -378,6 +405,27 @@ export default function DashboardHomePage() {
   return (
     <>
       <div className="flex flex-col min-h-screen bg-white pb-24">
+        {/* هشدار فیلترشکن: فقط وقتی IP خارج از ایران تشخیص داده شود نمایش داده می‌شود */}
+        {showVpnWarning && (
+          <div className="mx-4 mt-3 flex items-center justify-between gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <span className="shrink-0 w-5 h-5 rounded-full bg-amber-400 text-white flex items-center justify-center text-[11px] font-bold">
+                !
+              </span>
+              <p className="text-[13px] font-medium text-zinc-800 leading-snug">
+                برای تجربه بهتر، فیلترشکن خود را خاموش کنید.
+              </p>
+            </div>
+            <button
+              onClick={() => setShowVpnWarning(false)}
+              aria-label="بستن هشدار"
+              className="shrink-0 text-zinc-400 hover:text-zinc-600 transition-colors"
+            >
+              <X className="w-4 h-4" strokeWidth={2.3} />
+            </button>
+          </div>
+        )}
+
         {/* هدر */}
         <div className="sticky top-0 z-20 bg-white px-4 pt-3 md:pt-5 pb-2 md:pb-3">
           {/* انتخاب منطقه - دقیقاً مثل قبل، بالای سرچ‌باکس */}
