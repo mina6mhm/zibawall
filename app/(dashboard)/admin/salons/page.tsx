@@ -5,7 +5,7 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import {
   Store, Filter, ChevronRight, ChevronDown, MapPin, Phone, User,
-  CheckCircle2, XCircle, Loader2, ExternalLink, Users,
+  CheckCircle2, XCircle, Loader2, ExternalLink, Users, Trash2,
 } from 'lucide-react';
 
 type SalonStatus = 'PENDING_PAYMENT' | 'PENDING_APPROVAL' | 'ACTIVE' | 'REJECTED' | 'INACTIVE';
@@ -110,6 +110,24 @@ export default function AdminSalonsPage() {
       } else {
         const data = await res.json().catch(() => ({}));
         alert(data.error || 'خطا در رد کردن سالن');
+      }
+    } catch {
+      alert('خطای شبکه در ارتباط با سرور');
+    } finally {
+      setActioningId(null);
+    }
+  };
+
+  const handleDelete = async (id: string, name: string) => {
+    if (!confirm(`سالن «${name}» برای همیشه حذف می‌شود و قابل بازگشت نیست. مطمئنید؟`)) return;
+    setActioningId(id);
+    try {
+      const res = await fetch(`/api/admin/salons/${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        setSalons((prev) => prev.filter((s) => s.id !== id));
+      } else {
+        const data = await res.json().catch(() => ({}));
+        alert(data.error || 'خطا در حذف سالن');
       }
     } catch {
       alert('خطای شبکه در ارتباط با سرور');
@@ -250,6 +268,18 @@ export default function AdminSalonsPage() {
                   >
                     <ExternalLink className="w-3.5 h-3.5" /> مشاهده صفحه عمومی سالن
                   </Link>
+
+                  <div className="pt-2 border-t border-zinc-100">
+                    <button
+                      type="button"
+                      disabled={isActioning}
+                      onClick={() => handleDelete(salon.id, salon.name)}
+                      className="w-full flex items-center justify-center gap-1.5 bg-red-50 text-red-600 py-2.5 rounded-xl text-sm font-medium hover:bg-red-100 transition-colors disabled:opacity-50"
+                    >
+                      {isActioning ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                      حذف کامل سالن
+                    </button>
+                  </div>
 
                   {(salon.status === 'PENDING_APPROVAL' || salon.status === 'REJECTED') && (
                     <div className="pt-2 border-t border-zinc-100">
