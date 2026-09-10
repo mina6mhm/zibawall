@@ -19,10 +19,11 @@
 // (اگر DATABASE_URL را در متغیرهای محیطی ندارید، این اسکریپت خودش تلاش
 //  می‌کند آن را از فایل .env یا .env.local در ریشه‌ی پروژه بخواند.)
 //
-// این اسکریپت برای عکس‌های واقعی و حرفه‌ای از API رایگان Pexels استفاده
-// می‌کند، پس یک PEXELS_API_KEY هم لازم دارد (رایگان و آنی):
-//   ۱. https://www.pexels.com/api/  -> ثبت‌نام -> گرفتن کلید
-//   ۲. در .env یا .env.local اضافه کنید: PEXELS_API_KEY=your_key_here
+// این اسکریپت هیچ درخواست اینترنتی نمی‌زند (چون هاست به API‌های عکسِ
+// خارجی مثل Pexels/Unsplash دسترسی ندارد). قبل از اجرا باید خودتان چند
+// عکس واقعی سالن زیبایی دانلود کرده و در public/images/fake-salons/<دسته>/
+// گذاشته باشید. جزئیات کامل کمی پایین‌تر، بالای بخش «تصاویر واقعی از
+// فایل‌های لوکال پروژه» را ببینید.
 //
 // --- حذف بعدی ---
 // راه ۱ (توصیه‌شده، یکجا): node scripts/remove-fake-salons.js
@@ -234,89 +235,89 @@ if (salonsData.length === 0) {
   throw new Error('لیست سالن‌های فیک خالی است');
 }
 
-// --- تصاویر واقعی و حرفه‌ای از Pexels ---
-// به‌جای عکس‌های تصادفی/تگ‌محور (picsum یا loremflickr)، اینجا واقعاً با
-// عبارت انگلیسیِ مرتبط با نوع خدمات سالن (hair salon, nail salon, bridal
-// makeup و ...) در Pexels جست‌وجو می‌کنیم و از نتایج واقعیِ جست‌وجو عکس
-// برمی‌داریم. کیفیت و ارتباط عکس‌ها به‌مراتب بهتر از سرویس‌های تگ‌محور است.
-// لازم نیست عکس‌ها ایرانی باشند.
+// --- تصاویر واقعی از فایل‌های لوکال پروژه ---
+// چون هاست دسترسی به Pexels/Unsplash و امثالش رو فیلتر می‌کند، اینجا
+// اسکریپت هیچ درخواست اینترنتی نمی‌زند؛ عکس‌ها را از پوشه‌ی
+//   public/images/fake-salons/<دسته>/
+// می‌خواند. شما باید از قبل، برای هر دسته، چندتا عکس واقعی حرفه‌ای دانلود
+// کرده و در پوشه‌ی همان دسته گذاشته باشید (از روی سیستم خودتان که فیلتر
+// نیست — مثلاً از همون pexels.com — دانلود کنید، بعد commit/push/pull کنید).
 //
-// نیاز به یک کلید رایگان Pexels دارید (چند ثانیه‌ای، بدون هزینه):
-//   ۱. برید https://www.pexels.com/api/  و ثبت‌نام کنید
-//   ۲. کلید API رو کپی کنید
-//   ۳. توی فایل .env یا .env.local این خط رو اضافه کنید:
-//        PEXELS_API_KEY=your_key_here
-const PEXELS_API_KEY = process.env.PEXELS_API_KEY;
+// دسته‌ها و حداقل تعداد پیشنهادی عکس در هر پوشه (هرچی بیشتر، تنوع بیشتر؛
+// اگر عکس کمتر بود، اسکریپت خودش می‌چرخد و از اول استفاده می‌کند):
+//   public/images/fake-salons/hair/     (سالن مو)      — حداقل ۸ عکس
+//   public/images/fake-salons/nails/    (سالن ناخن)    — حداقل ۶ عکس
+//   public/images/fake-salons/spa/      (اسپا/ماساژ)   — حداقل ۴ عکس
+//   public/images/fake-salons/bridal/   (آرایش عروس)   — حداقل ۴ عکس
+//   public/images/fake-salons/skin/     (پوست/فیشیال)  — حداقل ۴ عکس
+//   public/images/fake-salons/waxing/   (موزدایی)      — حداقل ۴ عکس
+//   public/images/fake-salons/makeup/   (آرایش/میکاپ)  — حداقل ۴ عکس
+//   public/images/fake-salons/lashes/   (مژه/ابرو)     — حداقل ۴ عکس
+// فرمت: jpg / jpeg / png / webp
 
-if (!PEXELS_API_KEY) {
-  console.error(
-    '❌ متغیر PEXELS_API_KEY تنظیم نشده.\n' +
-    '   برای عکس‌های واقعی و مرتبط، یک کلید رایگان از https://www.pexels.com/api/ بگیرید\n' +
-    '   و در فایل .env این خط را اضافه کنید:  PEXELS_API_KEY=your_key_here'
-  );
-  process.exit(1);
-}
+const FAKE_SALON_IMAGES_DIR = path.join(process.cwd(), 'public', 'images', 'fake-salons');
+const IMAGE_EXTENSIONS = new Set(['.jpg', '.jpeg', '.png', '.webp']);
 
-const categoryQueries = {
-  hair: 'hair salon interior',
-  nails: 'nail salon manicure',
-  makeup: 'makeup artist beauty',
-  bridal: 'bridal makeup wedding',
-  lashes: 'eyelash extensions salon',
-  skin: 'facial spa treatment',
-  waxing: 'beauty spa treatment room',
-  spa: 'massage spa relax',
+// نگاشت دسته‌ی تگ به پوشه‌ی عکس — بر اساس اولین (اصلی‌ترین) تگ هر سالن
+const TAG_CATEGORY_TO_FOLDER = {
+  'پکیج‌های عروس': 'bridal',
+  'خدمات ماساژ و اسپا': 'spa',
+  'موزدایی و بدن': 'waxing',
+  'خدمات پوست و زیبایی': 'skin',
+  'خدمات ناخن': 'nails',
+  'خدمات آرایش و میکاپ': 'makeup',
+  'خدمات ابرو و مژه': 'lashes',
+  'خدمات مو': 'hair',
 };
 
 function getCategoryKey(s) {
-  const categories = s.tags.map((t) => t.category);
-  if (categories.includes('پکیج‌های عروس')) return 'bridal';
-  if (categories.includes('خدمات ماساژ و اسپا')) return 'spa';
-  if (categories.includes('موزدایی و بدن')) return 'waxing';
-  if (categories.includes('خدمات پوست و زیبایی')) return 'skin';
-  if (categories.includes('خدمات ناخن')) return 'nails';
-  if (categories.includes('خدمات آرایش و میکاپ')) return 'makeup';
-  if (categories.includes('خدمات ابرو و مژه')) return 'lashes';
-  return 'hair'; // پیش‌فرض
+  const primaryCategory = s.tags[0]?.category;
+  return TAG_CATEGORY_TO_FOLDER[primaryCategory] || 'hair';
 }
 
-// یک بار به‌ازای هر دسته، تا ۸۰ عکس واقعی از Pexels می‌گیریم و کش می‌کنیم؛
-// بعد به هر سالنِ همان دسته، ۴ عکسِ متفاوت (۱ اصلی + ۳ نمونه‌کار) از این
-// استخر اختصاص می‌دهیم تا سالن‌های هم‌دسته هم عکس تکراری نداشته باشند.
+// به‌ازای هر دسته، لیست فایل‌های عکس داخل پوشه‌اش را یک‌بار می‌خواند و کش
+// می‌کند؛ بعد به هر سالنِ آن دسته، ۴ عکسِ متفاوت (۱ اصلی + ۳ نمونه‌کار)
+// اختصاص می‌دهد تا سالن‌های هم‌دسته حتی‌الامکان عکس تکراری نداشته باشند.
 const photoPoolCache = {};
 const categoryOffsets = {};
 
-async function getPhotoPool(categoryKey) {
+function getPhotoPool(categoryKey) {
   if (photoPoolCache[categoryKey]) return photoPoolCache[categoryKey];
-  const query = categoryQueries[categoryKey];
-  const res = await fetch(
-    `https://api.pexels.com/v1/search?query=${encodeURIComponent(query)}&per_page=80&orientation=landscape`,
-    { headers: { Authorization: PEXELS_API_KEY } }
-  );
-  if (!res.ok) {
-    throw new Error(`خطای Pexels برای «${query}»: ${res.status} ${res.statusText}`);
+  const dir = path.join(FAKE_SALON_IMAGES_DIR, categoryKey);
+  if (!fs.existsSync(dir)) {
+    throw new Error(
+      `پوشه‌ی عکس برای دسته‌ی «${categoryKey}» پیدا نشد: ${dir}\n` +
+      `چندتا عکس واقعی سالن زیبایی (مرتبط با این دسته) رو دانلود کن و توی این پوشه بذار.`
+    );
   }
-  const data = await res.json();
-  const urls = (data.photos || []).map((p) => p.src.large);
-  if (urls.length === 0) {
-    throw new Error(`Pexels هیچ عکسی برای «${query}» برنگرداند`);
+  const files = fs
+    .readdirSync(dir)
+    .filter((f) => IMAGE_EXTENSIONS.has(path.extname(f).toLowerCase()))
+    .sort();
+  if (files.length === 0) {
+    throw new Error(
+      `پوشه‌ی «${dir}» خالیه.\n` +
+      `چندتا عکس واقعی سالن زیبایی (مرتبط با دسته‌ی «${categoryKey}») توش بذار.`
+    );
   }
+  const urls = files.map((f) => `/images/fake-salons/${categoryKey}/${f}`);
   photoPoolCache[categoryKey] = urls;
   return urls;
 }
 
-async function getSalonPhotos(s) {
+function getSalonPhotos(s) {
   const categoryKey = getCategoryKey(s);
-  const pool = await getPhotoPool(categoryKey);
+  const pool = getPhotoPool(categoryKey);
   const offset = categoryOffsets[categoryKey] || 0;
   categoryOffsets[categoryKey] = offset + 4;
-  // اگر تعداد سالن‌های یک دسته زیاد بود و استخر عکس تمام شد، دوباره از اول می‌چرخیم
+  // اگر عکس‌های پوشه کمتر از نیاز بود، دوباره از اول می‌چرخیم (تکراری میشه ولی خطا نمی‌ده)
   const pick = (n) => pool[(offset + n) % pool.length];
   return {
     main: pick(0),
     portfolio: [pick(1), pick(2), pick(3)],
   };
 }
+
 
 async function main() {
   const farFuture = new Date();
@@ -328,7 +329,7 @@ async function main() {
     const s = salonsData[i];
     const index = i + 1;
     const ownerPhone = `${FAKE_PHONE_PREFIX}${String(index).padStart(4, '0')}`;
-    const photos = await getSalonPhotos(s);
+    const photos = getSalonPhotos(s);
 
     const owner = await prisma.user.upsert({
       where: { phone: ownerPhone },
