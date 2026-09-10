@@ -19,6 +19,11 @@
 // (اگر DATABASE_URL را در متغیرهای محیطی ندارید، این اسکریپت خودش تلاش
 //  می‌کند آن را از فایل .env یا .env.local در ریشه‌ی پروژه بخواند.)
 //
+// این اسکریپت برای عکس‌های واقعی و حرفه‌ای از API رایگان Pexels استفاده
+// می‌کند، پس یک PEXELS_API_KEY هم لازم دارد (رایگان و آنی):
+//   ۱. https://www.pexels.com/api/  -> ثبت‌نام -> گرفتن کلید
+//   ۲. در .env یا .env.local اضافه کنید: PEXELS_API_KEY=your_key_here
+//
 // --- حذف بعدی ---
 // راه ۱ (توصیه‌شده، یکجا): node scripts/remove-fake-salons.js
 // راه ۲ (تکی از پنل ادمین): پنل مدیریت > سالن‌ها > فیلتر «همه» > باز کردن
@@ -229,23 +234,88 @@ if (salonsData.length === 0) {
   throw new Error('لیست سالن‌های فیک خالی است');
 }
 
-// --- تصاویر مرتبط با نوع سالن ---
-// به‌جای عکس کاملاً رندوم (picsum)، از LoremFlickr استفاده می‌کنیم که عکس
-// واقعی و بر اساس کلیدواژه (تگ) برمی‌گرداند، تا حداقل موضوع عکس با نوع
-// خدمات سالن (مو / ناخن / میکاپ / پوست / اسپا و ...) همخوانی داشته باشد.
-// اگر بعداً خواستید عکس‌های واقعی و دقیق‌تر بگذارید، بهترین راه اینه که
-// چندتا عکس واقعی (خریداری‌شده یا از خودتان) را در public/images/fake-salons
-// بریزید و مسیرشان را همین‌جا به‌جای این URLها بگذارید.
-function getImageTags(s) {
+// --- تصاویر واقعی و حرفه‌ای از Pexels ---
+// به‌جای عکس‌های تصادفی/تگ‌محور (picsum یا loremflickr)، اینجا واقعاً با
+// عبارت انگلیسیِ مرتبط با نوع خدمات سالن (hair salon, nail salon, bridal
+// makeup و ...) در Pexels جست‌وجو می‌کنیم و از نتایج واقعیِ جست‌وجو عکس
+// برمی‌داریم. کیفیت و ارتباط عکس‌ها به‌مراتب بهتر از سرویس‌های تگ‌محور است.
+// لازم نیست عکس‌ها ایرانی باشند.
+//
+// نیاز به یک کلید رایگان Pexels دارید (چند ثانیه‌ای، بدون هزینه):
+//   ۱. برید https://www.pexels.com/api/  و ثبت‌نام کنید
+//   ۲. کلید API رو کپی کنید
+//   ۳. توی فایل .env یا .env.local این خط رو اضافه کنید:
+//        PEXELS_API_KEY=your_key_here
+const PEXELS_API_KEY = process.env.PEXELS_API_KEY;
+
+if (!PEXELS_API_KEY) {
+  console.error(
+    '❌ متغیر PEXELS_API_KEY تنظیم نشده.\n' +
+    '   برای عکس‌های واقعی و مرتبط، یک کلید رایگان از https://www.pexels.com/api/ بگیرید\n' +
+    '   و در فایل .env این خط را اضافه کنید:  PEXELS_API_KEY=your_key_here'
+  );
+  process.exit(1);
+}
+
+const categoryQueries = {
+  hair: 'hair salon interior',
+  nails: 'nail salon manicure',
+  makeup: 'makeup artist beauty',
+  bridal: 'bridal makeup wedding',
+  lashes: 'eyelash extensions salon',
+  skin: 'facial spa treatment',
+  waxing: 'beauty spa treatment room',
+  spa: 'massage spa relax',
+};
+
+function getCategoryKey(s) {
   const categories = s.tags.map((t) => t.category);
-  if (categories.includes('پکیج‌های عروس')) return 'bridalmakeup,wedding';
-  if (categories.includes('خدمات ماساژ و اسپا')) return 'spa,massage';
-  if (categories.includes('موزدایی و بدن')) return 'waxing,beautysalon';
-  if (categories.includes('خدمات پوست و زیبایی')) return 'facial,esthetician';
-  if (categories.includes('خدمات ناخن')) return 'nailart,manicure';
-  if (categories.includes('خدمات آرایش و میکاپ')) return 'makeupartist,cosmetics';
-  if (categories.includes('خدمات ابرو و مژه')) return 'eyelashextensions,eyebrow';
-  return 'hairsalon,hairdresser'; // پیش‌فرض: مو
+  if (categories.includes('پکیج‌های عروس')) return 'bridal';
+  if (categories.includes('خدمات ماساژ و اسپا')) return 'spa';
+  if (categories.includes('موزدایی و بدن')) return 'waxing';
+  if (categories.includes('خدمات پوست و زیبایی')) return 'skin';
+  if (categories.includes('خدمات ناخن')) return 'nails';
+  if (categories.includes('خدمات آرایش و میکاپ')) return 'makeup';
+  if (categories.includes('خدمات ابرو و مژه')) return 'lashes';
+  return 'hair'; // پیش‌فرض
+}
+
+// یک بار به‌ازای هر دسته، تا ۸۰ عکس واقعی از Pexels می‌گیریم و کش می‌کنیم؛
+// بعد به هر سالنِ همان دسته، ۴ عکسِ متفاوت (۱ اصلی + ۳ نمونه‌کار) از این
+// استخر اختصاص می‌دهیم تا سالن‌های هم‌دسته هم عکس تکراری نداشته باشند.
+const photoPoolCache = {};
+const categoryOffsets = {};
+
+async function getPhotoPool(categoryKey) {
+  if (photoPoolCache[categoryKey]) return photoPoolCache[categoryKey];
+  const query = categoryQueries[categoryKey];
+  const res = await fetch(
+    `https://api.pexels.com/v1/search?query=${encodeURIComponent(query)}&per_page=80&orientation=landscape`,
+    { headers: { Authorization: PEXELS_API_KEY } }
+  );
+  if (!res.ok) {
+    throw new Error(`خطای Pexels برای «${query}»: ${res.status} ${res.statusText}`);
+  }
+  const data = await res.json();
+  const urls = (data.photos || []).map((p) => p.src.large);
+  if (urls.length === 0) {
+    throw new Error(`Pexels هیچ عکسی برای «${query}» برنگرداند`);
+  }
+  photoPoolCache[categoryKey] = urls;
+  return urls;
+}
+
+async function getSalonPhotos(s) {
+  const categoryKey = getCategoryKey(s);
+  const pool = await getPhotoPool(categoryKey);
+  const offset = categoryOffsets[categoryKey] || 0;
+  categoryOffsets[categoryKey] = offset + 4;
+  // اگر تعداد سالن‌های یک دسته زیاد بود و استخر عکس تمام شد، دوباره از اول می‌چرخیم
+  const pick = (n) => pool[(offset + n) % pool.length];
+  return {
+    main: pick(0),
+    portfolio: [pick(1), pick(2), pick(3)],
+  };
 }
 
 async function main() {
@@ -258,7 +328,7 @@ async function main() {
     const s = salonsData[i];
     const index = i + 1;
     const ownerPhone = `${FAKE_PHONE_PREFIX}${String(index).padStart(4, '0')}`;
-    const imgTags = getImageTags(s);
+    const photos = await getSalonPhotos(s);
 
     const owner = await prisma.user.upsert({
       where: { phone: ownerPhone },
@@ -288,11 +358,9 @@ async function main() {
         genderAudience: s.genderAudience,
         cardNumber: '',
         tags: s.tags,
-        imageUrl: `https://loremflickr.com/800/600/${imgTags}?lock=${1000 + index}`,
+        imageUrl: photos.main,
         description: s.description,
-        portfolios: [1, 2, 3].map(
-          (n) => `https://loremflickr.com/600/600/${imgTags}?lock=${2000 + index * 10 + n}`
-        ),
+        portfolios: photos.portfolio,
         status: 'ACTIVE',
         planId: null,
         subscriptionExpiresAt: farFuture,
