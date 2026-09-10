@@ -275,48 +275,42 @@ function getCategoryKey(s) {
   return TAG_CATEGORY_TO_FOLDER[primaryCategory] || 'hair';
 }
 
-// به‌ازای هر دسته، لیست فایل‌های عکس داخل پوشه‌اش را یک‌بار می‌خواند و کش
-// می‌کند؛ بعد به هر سالنِ آن دسته، ۴ عکسِ متفاوت (۱ اصلی + ۳ نمونه‌کار)
-// اختصاص می‌دهد تا سالن‌های هم‌دسته حتی‌الامکان عکس تکراری نداشته باشند.
-const photoPoolCache = {};
-const categoryOffsets = {};
-
-function getPhotoPool(categoryKey) {
-  if (photoPoolCache[categoryKey]) return photoPoolCache[categoryKey];
-  const dir = path.join(FAKE_SALON_IMAGES_DIR, categoryKey);
-  if (!fs.existsSync(dir)) {
-    throw new Error(
-      `پوشه‌ی عکس برای دسته‌ی «${categoryKey}» پیدا نشد: ${dir}\n` +
-      `چندتا عکس واقعی سالن زیبایی (مرتبط با این دسته) رو دانلود کن و توی این پوشه بذار.`
-    );
-  }
-  const files = fs
-    .readdirSync(dir)
-    .filter((f) => IMAGE_EXTENSIONS.has(path.extname(f).toLowerCase()))
-    .sort();
-  if (files.length === 0) {
-    throw new Error(
-      `پوشه‌ی «${dir}» خالیه.\n` +
-      `چندتا عکس واقعی سالن زیبایی (مرتبط با دسته‌ی «${categoryKey}») توش بذار.`
-    );
-  }
-  const urls = files.map((f) => `/images/fake-salons/${categoryKey}/${f}`);
-  photoPoolCache[categoryKey] = urls;
-  return urls;
-}
+// به‌ازای هر دسته، دو شمارنده‌ی جدا نگه می‌داریم:
+//  - categoryMainIndex: برای کاور اصلی هر سالن، هر بار ۱ واحد جلو می‌رود
+//    (نه ۴ تا) تا وقتی تعداد عکس‌های پوشه از تعداد سالن‌های آن دسته کمتر
+//    نباشد، کاورِ هیچ دو سالنِ هم‌دسته‌ای یکسان نشود.
+//  - categoryPortfolioOffset: برای ۳ عکس نمونه‌کار، از نقطه‌ی دیگری از
+//    استخر عکس شروع می‌شود تا کمتر با کاور یا سالن‌های دیگر تداخل کند.
+const categoryMainIndex = {};
+const categoryPortfolioOffset = {};
+const warnedCategories = new Set();
 
 function getSalonPhotos(s) {
   const categoryKey = getCategoryKey(s);
   const pool = getPhotoPool(categoryKey);
-  const offset = categoryOffsets[categoryKey] || 0;
-  categoryOffsets[categoryKey] = offset + 4;
-  // اگر عکس‌های پوشه کمتر از نیاز بود، دوباره از اول می‌چرخیم (تکراری میشه ولی خطا نمی‌ده)
-  const pick = (n) => pool[(offset + n) % pool.length];
+
+  const mainIdx = categoryMainIndex[categoryKey] || 0;
+  categoryMainIndex[categoryKey] = mainIdx + 1;
+  if (mainIdx >= pool.length && !warnedCategories.has(categoryKey)) {
+    warnedCategories.add(categoryKey);
+    console.warn(
+      `⚠️  تعداد عکس‌های پوشه‌ی «${categoryKey}» (${pool.length} عکس) کمتر از تعداد ` +
+      `سالن‌های این دسته است — از این به بعد کاورِ بعضی سالن‌های این دسته با هم ` +
+      `یکسان می‌شود. برای رفع، چند عکس دیگر به public/images/fake-salons/${categoryKey}/ اضافه کنید.`
+    );
+  }
+  const main = pool[mainIdx % pool.length];
+
+  const pOffset = categoryPortfolioOffset[categoryKey] || 0;
+  categoryPortfolioOffset[categoryKey] = pOffset + 3;
+  const pick = (n) => pool[(pOffset + n) % pool.length];
+
   return {
-    main: pick(0),
-    portfolio: [pick(1), pick(2), pick(3)],
+    main,
+    portfolio: [pick(0), pick(1), pick(2)],
   };
 }
+
 
 
 async function main() {
