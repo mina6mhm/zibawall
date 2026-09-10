@@ -275,15 +275,45 @@ function getCategoryKey(s) {
   return TAG_CATEGORY_TO_FOLDER[primaryCategory] || 'hair';
 }
 
-// به‌ازای هر دسته، دو شمارنده‌ی جدا نگه می‌داریم:
-//  - categoryMainIndex: برای کاور اصلی هر سالن، هر بار ۱ واحد جلو می‌رود
-//    (نه ۴ تا) تا وقتی تعداد عکس‌های پوشه از تعداد سالن‌های آن دسته کمتر
-//    نباشد، کاورِ هیچ دو سالنِ هم‌دسته‌ای یکسان نشود.
-//  - categoryPortfolioOffset: برای ۳ عکس نمونه‌کار، از نقطه‌ی دیگری از
-//    استخر عکس شروع می‌شود تا کمتر با کاور یا سالن‌های دیگر تداخل کند.
+// لیست عکس‌های هر پوشه‌ی دسته را یک‌بار از دیسک می‌خواند و کش می‌کند —
+// مرتب‌شده باشد تا هر بار اجرای اسکریپت همان ترتیب/تخصیص قبلی تکرار شود.
+const photoPoolCache = {};
+
+function getPhotoPool(categoryKey) {
+  if (photoPoolCache[categoryKey]) return photoPoolCache[categoryKey];
+
+  const dirPath = path.join(FAKE_SALON_IMAGES_DIR, categoryKey);
+  let files;
+  try {
+    files = fs.readdirSync(dirPath);
+  } catch (err) {
+    throw new Error(
+      `پوشه‌ی عکس برای دسته‌ی «${categoryKey}» پیدا نشد: ${dirPath}\n` +
+      `قبل از اجرای اسکریپت باید چند عکس واقعی سالن در این پوشه بگذارید.`
+    );
+  }
+
+  const pool = files
+    .filter((f) => IMAGE_EXTENSIONS.has(path.extname(f).toLowerCase()))
+    .sort()
+    .map((f) => `/images/fake-salons/${categoryKey}/${f}`);
+
+  if (pool.length === 0) {
+    throw new Error(
+      `پوشه‌ی «${dirPath}» هیچ عکس معتبری (jpg/jpeg/png/webp) ندارد. ` +
+      `قبل از اجرای اسکریپت باید چند عکس واقعی سالن در این پوشه بگذارید.`
+    );
+  }
+
+  photoPoolCache[categoryKey] = pool;
+  return pool;
+}
+
+// فقط کاور اصلی مهم است که بین سالن‌های هم‌دسته تکراری نشود: به‌ازای هر
+// دسته یک شمارنده نگه می‌داریم که هر سالن جدید ۱ واحد جلوتر از پول عکس‌ها
+// کاور می‌گیرد. نمونه‌کارها (portfolio) اهمیتی ندارد تکراری باشند، پس
+// همیشه از ابتدای پول همان دسته گرفته می‌شوند.
 const categoryMainIndex = {};
-const categoryPortfolioOffset = {};
-const warnedCategories = new Set();
 
 function getSalonPhotos(s) {
   const categoryKey = getCategoryKey(s);
@@ -291,24 +321,11 @@ function getSalonPhotos(s) {
 
   const mainIdx = categoryMainIndex[categoryKey] || 0;
   categoryMainIndex[categoryKey] = mainIdx + 1;
-  if (mainIdx >= pool.length && !warnedCategories.has(categoryKey)) {
-    warnedCategories.add(categoryKey);
-    console.warn(
-      `⚠️  تعداد عکس‌های پوشه‌ی «${categoryKey}» (${pool.length} عکس) کمتر از تعداد ` +
-      `سالن‌های این دسته است — از این به بعد کاورِ بعضی سالن‌های این دسته با هم ` +
-      `یکسان می‌شود. برای رفع، چند عکس دیگر به public/images/fake-salons/${categoryKey}/ اضافه کنید.`
-    );
-  }
   const main = pool[mainIdx % pool.length];
 
-  const pOffset = categoryPortfolioOffset[categoryKey] || 0;
-  categoryPortfolioOffset[categoryKey] = pOffset + 3;
-  const pick = (n) => pool[(pOffset + n) % pool.length];
+  const portfolio = [pool[0], pool[1] || pool[0], pool[2] || pool[0]];
 
-  return {
-    main,
-    portfolio: [pick(0), pick(1), pick(2)],
-  };
+  return { main, portfolio };
 }
 
 
