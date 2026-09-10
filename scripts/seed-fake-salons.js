@@ -73,16 +73,6 @@ const salonsData = [
     rating: 4.8, reviewsCount: 142, instagram: 'rose_talaei_salon',
   },
   {
-    name: 'آرایشگاه مردانه کاپیتان',
-    province: 'تهران', city: 'تهران', neighborhood: 'نیاوران',
-    address: 'تهران، نیاوران، خیابان کامرانیه، پلاک ۸',
-    workingHours: '۰۹:۰۰ صبح تا ۲۲:۰۰ شب', closedDays: [],
-    genderAudience: 'MALE', hasHomeService: false,
-    tags: [tag('کوتاهی ژورنالی', 'خدمات مو'), tag('براشینگ', 'خدمات مو')],
-    description: 'آرایشگاه مردانه کاپیتان، متخصص اصلاح مو و ریش با جدیدترین متدهای روز.',
-    rating: 4.6, reviewsCount: 98, instagram: 'captain_barbershop',
-  },
-  {
     name: 'سالن عروس ماهور',
     province: 'تهران', city: 'تهران', neighborhood: 'تجریش',
     address: 'تهران، تجریش، خیابان دربند، پلاک ۴۵',
@@ -133,16 +123,6 @@ const salonsData = [
     rating: 4.4, reviewsCount: 65, instagram: 'banoo_beauty',
   },
   {
-    name: 'آرایشگاه مردانه الیت',
-    province: 'تهران', city: 'تهران', neighborhood: 'گیشا',
-    address: 'تهران، گیشا، خیابان نهم، پلاک ۱۴',
-    workingHours: '۰۹:۰۰ صبح تا ۲۲:۰۰ شب', closedDays: [],
-    genderAudience: 'MALE', hasHomeService: false,
-    tags: [tag('کوتاهی ژورنالی', 'خدمات مو'), tag('اصلاح و قرینه‌سازی ابرو', 'خدمات ابرو و مژه')],
-    description: 'آرایشگاه الیت، فضایی مدرن برای آقایانی که به ظاهرشان اهمیت می‌دهند.',
-    rating: 4.5, reviewsCount: 112, instagram: 'elite_men_salon',
-  },
-  {
     name: 'سالن زیبایی گلبرگ',
     province: 'تهران', city: 'تهران', neighborhood: 'ستارخان',
     address: 'تهران، ستارخان، خیابان زنجان، نبش کوچه مطهری',
@@ -181,16 +161,6 @@ const salonsData = [
     tags: [tag('کوتاهی ژورنالی', 'خدمات مو'), tag('ژلیش (لاک ژل)', 'خدمات ناخن'), tag('میکاپ محفلی (VIP/ویژه)', 'خدمات آرایش و میکاپ')],
     description: 'سالن ارکیده، خدمات کامل زیبایی زیر یک سقف با قیمت مناسب.',
     rating: 4.5, reviewsCount: 104, instagram: 'orchid_beauty_tehran',
-  },
-  {
-    name: 'آرایشگاه مردانه رویال',
-    province: 'تهران', city: 'تهران', neighborhood: 'پاسداران',
-    address: 'تهران، پاسداران، خیابان گلستان، پلاک ۱۸',
-    workingHours: '۰۹:۰۰ صبح تا ۲۱:۰۰ شب', closedDays: [],
-    genderAudience: 'MALE', hasHomeService: false,
-    tags: [tag('کوتاهی ژورنالی', 'خدمات مو'), tag('براشینگ', 'خدمات مو')],
-    description: 'آرایشگاه رویال، تجربه‌ای متفاوت از اصلاح و پیرایش مردانه.',
-    rating: 4.4, reviewsCount: 76, instagram: 'royal_men_tehran',
   },
   {
     name: 'سالن ناخن نیلای',
@@ -252,20 +222,30 @@ const salonsData = [
     description: 'سالن ستاره، خدمات باکیفیت ناخن با قیمت مناسب.',
     rating: 4.4, reviewsCount: 61, instagram: 'setareh_beauty',
   },
-  {
-    name: 'آرایشگاه مردانه پرشین',
-    province: 'تهران', city: 'تهران', neighborhood: 'پونک',
-    address: 'تهران، پونک، بلوار فردوس شرق، پلاک ۳۰',
-    workingHours: '۰۹:۰۰ صبح تا ۲۱:۳۰ شب', closedDays: [],
-    genderAudience: 'MALE', hasHomeService: false,
-    tags: [tag('کوتاهی ژورنالی', 'خدمات مو'), tag('اصلاح و قرینه‌سازی ابرو', 'خدمات ابرو و مژه')],
-    description: 'آرایشگاه پرشین، سرویس سریع و باکیفیت اصلاح مو و ریش برای آقایان.',
-    rating: 4.5, reviewsCount: 82, instagram: 'persian_barbershop_tehran',
-  },
 ];
 
-if (salonsData.length !== 20) {
-  throw new Error(`انتظار ۲۰ سالن بود، ${salonsData.length} تا پیدا شد`);
+// (سالن‌های آقایون از این لیست حذف شدند؛ طول این آرایه دیگر لزوماً ۲۰ نیست)
+if (salonsData.length === 0) {
+  throw new Error('لیست سالن‌های فیک خالی است');
+}
+
+// --- تصاویر مرتبط با نوع سالن ---
+// به‌جای عکس کاملاً رندوم (picsum)، از LoremFlickr استفاده می‌کنیم که عکس
+// واقعی و بر اساس کلیدواژه (تگ) برمی‌گرداند، تا حداقل موضوع عکس با نوع
+// خدمات سالن (مو / ناخن / میکاپ / پوست / اسپا و ...) همخوانی داشته باشد.
+// اگر بعداً خواستید عکس‌های واقعی و دقیق‌تر بگذارید، بهترین راه اینه که
+// چندتا عکس واقعی (خریداری‌شده یا از خودتان) را در public/images/fake-salons
+// بریزید و مسیرشان را همین‌جا به‌جای این URLها بگذارید.
+function getImageTags(s) {
+  const categories = s.tags.map((t) => t.category);
+  if (categories.includes('پکیج‌های عروس')) return 'bridalmakeup,wedding';
+  if (categories.includes('خدمات ماساژ و اسپا')) return 'spa,massage';
+  if (categories.includes('موزدایی و بدن')) return 'waxing,beautysalon';
+  if (categories.includes('خدمات پوست و زیبایی')) return 'facial,esthetician';
+  if (categories.includes('خدمات ناخن')) return 'nailart,manicure';
+  if (categories.includes('خدمات آرایش و میکاپ')) return 'makeupartist,cosmetics';
+  if (categories.includes('خدمات ابرو و مژه')) return 'eyelashextensions,eyebrow';
+  return 'hairsalon,hairdresser'; // پیش‌فرض: مو
 }
 
 async function main() {
@@ -278,7 +258,7 @@ async function main() {
     const s = salonsData[i];
     const index = i + 1;
     const ownerPhone = `${FAKE_PHONE_PREFIX}${String(index).padStart(4, '0')}`;
-    const imgSeed = `zibawall-demo-${index}`;
+    const imgTags = getImageTags(s);
 
     const owner = await prisma.user.upsert({
       where: { phone: ownerPhone },
@@ -308,14 +288,17 @@ async function main() {
         genderAudience: s.genderAudience,
         cardNumber: '',
         tags: s.tags,
-        imageUrl: `https://picsum.photos/seed/${imgSeed}/800/600`,
+        imageUrl: `https://loremflickr.com/800/600/${imgTags}?lock=${1000 + index}`,
         description: s.description,
-        portfolios: [1, 2, 3].map((n) => `https://picsum.photos/seed/${imgSeed}-${n}/600/600`),
+        portfolios: [1, 2, 3].map(
+          (n) => `https://loremflickr.com/600/600/${imgTags}?lock=${2000 + index * 10 + n}`
+        ),
         status: 'ACTIVE',
         planId: null,
         subscriptionExpiresAt: farFuture,
-        rating: s.rating,
-        reviewsCount: s.reviewsCount,
+        // صفر تا حس فیک‌بودن (امتیاز/نظرات ساختگی) نداشته باشه
+        rating: 0,
+        reviewsCount: 0,
         userId: owner.id,
         socials: {
           create: {
