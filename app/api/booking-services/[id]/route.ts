@@ -16,6 +16,14 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
   const body = await req.json();
   const { name, durationMin, price, depositAmount, isActive } = body;
 
+  const resultingDeposit = depositAmount !== undefined ? Number(depositAmount) || 0 : (existing.depositAmount ?? 0);
+  if (resultingDeposit > 0 && !salon.cardNumber) {
+    return NextResponse.json(
+      { error: 'برای دریافت بیعانه، ابتدا باید شماره کارت سالن را وارد کنید.' },
+      { status: 400 }
+    );
+  }
+
   const updated = await prisma.bookingService.update({
     where: { id },
     data: {

@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
   ArrowRight, Loader2, Store, CalendarClock, Settings2,
-  Plus, Trash2, Pencil, X, Check, ChevronDown, Users, Clock, CalendarOff,
+  Plus, Trash2, Pencil, X, Check, ChevronDown, Users, Clock, CalendarOff, CreditCard,
 } from 'lucide-react';
 import { DateObject } from 'react-multi-date-picker';
 import PersianCalendar, { CalendarDayMarker } from '@/components/ui/PersianCalendar';
@@ -86,6 +86,12 @@ const toEnglishDigits = (str: string) =>
 
 // نمایش با جداکننده سه‌رقمی فارسی
 const formatPrice = (n: number) => n.toLocaleString('fa-IR');
+
+// مخفی‌سازی کامل شماره کارت — هیچ رقمی نمایش داده نمی‌شود، فقط تعداد دسته‌ها مشخص است
+const maskCardNumber = (card: string) => {
+  const groups = Math.max(1, Math.ceil(card.length / 4));
+  return Array.from({ length: groups }, () => '••••').join('  ');
+};
 
 const joinTime = (h: string, m: string) => {
   if (!h && !m) return '';
@@ -225,11 +231,12 @@ function TabBar({
 
 type ServiceFormProps = {
   initial?: Partial<BookingService>;
+  hasCardNumber: boolean;
   onSave: (data: Omit<BookingService, 'id' | 'isActive'>) => Promise<void>;
   onClose: () => void;
 };
 
-function ServiceFormModal({ initial, onSave, onClose }: ServiceFormProps) {
+function ServiceFormModal({ initial, hasCardNumber, onSave, onClose }: ServiceFormProps) {
   const [name, setName] = useState(initial?.name ?? '');
   const [durHour, setDurHour] = useState(
     initial?.durationMin != null ? String(Math.floor(initial.durationMin / 60)) : '1'
@@ -259,6 +266,9 @@ function ServiceFormModal({ initial, onSave, onClose }: ServiceFormProps) {
     const depositNum = depositRaw ? Number(depositRaw) : 0;
     if (depositNum && priceNum && depositNum > priceNum) {
       return setErr('بیعانه نمی‌تواند از قیمت خدمت بیشتر باشد');
+    }
+    if (depositNum && !hasCardNumber) {
+      return setErr('برای دریافت بیعانه، ابتدا باید شماره کارت سالن را از بالای همین صفحه وارد کنید.');
     }
     setErr('');
     setSaving(true);
@@ -360,6 +370,11 @@ function ServiceFormModal({ initial, onSave, onClose }: ServiceFormProps) {
             <p className="text-[10px] text-zinc-400 mt-1">
               اگر پر شود، مشتری هنگام رزرو این خدمت باید این مبلغ را به‌عنوان بیعانه پرداخت کند
             </p>
+            {!hasCardNumber && (
+              <p className="text-[10px] text-amber-600 bg-amber-50 rounded-lg px-2 py-1.5 mt-1.5">
+                ⚠️ شماره کارت سالن هنوز ثبت نشده. برای دریافت بیعانه، اول از بالای صفحه شماره کارت را وارد کنید.
+              </p>
+            )}
           </div>
 
           {err && <p className="text-red-500 text-xs font-medium">{err}</p>}
@@ -383,10 +398,12 @@ function ServiceFormModal({ initial, onSave, onClose }: ServiceFormProps) {
 function ServicesTab({
   services,
   staff,
+  hasCardNumber,
   onRefresh,
 }: {
   services: BookingService[];
   staff: StaffMember[];
+  hasCardNumber: boolean;
   onRefresh: () => void;
 }) {
   const [showForm, setShowForm] = useState(false);
@@ -458,11 +475,11 @@ function ServicesTab({
                       </span>
                     )}
                   </div>
-                  <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-[12px] text-zinc-500 mb-1">
-                    <span>⏱ {minToDuration(s.durationMin)}</span>
-                    {s.price > 0 && <span>💰 {formatPrice(s.price)} تومان</span>}
+                  <div className="flex items-center flex-nowrap gap-x-3 overflow-x-auto text-[12px] text-zinc-500 mb-1">
+                    <span className="shrink-0">⏱ {minToDuration(s.durationMin)}</span>
+                    {s.price > 0 && <span className="shrink-0">💰 {formatPrice(s.price)} تومان</span>}
                     {!!s.depositAmount && (
-                      <span className="text-[#824c71]">🔒 بیعانه {formatPrice(s.depositAmount)} تومان</span>
+                      <span className="text-[#824c71] shrink-0">🔒 بیعانه {formatPrice(s.depositAmount)} تومان</span>
                     )}
                   </div>
                   {s.isActive && !servicesWithStaff.has(s.id) && (
@@ -518,6 +535,7 @@ function ServicesTab({
       {showForm && (
         <ServiceFormModal
           initial={editing ?? undefined}
+          hasCardNumber={hasCardNumber}
           onSave={handleSave}
           onClose={() => { setShowForm(false); setEditing(null); }}
         />
@@ -1735,12 +1753,91 @@ function ScheduleTab({
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
+// ─── Card Number Modal ─────────────────────────────────────────────────────────
+
+function CardNumberModal({
+  initial,
+  onSave,
+  onClose,
+}: {
+  initial: string;
+  onSave: (card: string) => Promise<void>;
+  onClose: () => void;
+}) {
+  const [value, setValue] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [err, setErr] = useState('');
+
+  const handleChange = (val: string) => setValue(toEnglishDigits(val).slice(0, 16));
+
+  const handleSave = async () => {
+    if (value.length !== 16) return setErr('شماره کارت باید دقیقاً ۱۶ رقم باشد');
+    setErr('');
+    setSaving(true);
+    try {
+      await onSave(value);
+      onClose();
+    } catch (e: any) {
+      setErr(e.message || 'خطا در ذخیره');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-[120] flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm sm:p-4" onClick={onClose}>
+      <div className="bg-white w-full sm:max-w-md rounded-t-2xl sm:rounded-2xl p-5 pb-8 sm:pb-5" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between mb-5">
+          <h3 className="text-base font-bold text-zinc-900">
+            {initial ? 'ویرایش شماره کارت' : 'ثبت شماره کارت'}
+          </h3>
+          <button onClick={onClose} className="p-1.5 text-zinc-400 bg-zinc-50 rounded-full">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        <div className="space-y-4">
+          <div>
+            <label className="block text-xs font-medium text-zinc-600 mb-1.5">
+              شماره کارت (۱۶ رقم) <span className="text-red-500">*</span>
+            </label>
+            <input
+              value={value}
+              onChange={(e) => handleChange(e.target.value)}
+              placeholder="6037________"
+              dir="ltr"
+              inputMode="numeric"
+              className="w-full border border-zinc-200 rounded-xl px-3.5 py-2.5 text-sm text-left tracking-widest focus:outline-none focus:border-[#824c71] focus:ring-1 focus:ring-[#824c71]/20"
+            />
+            <p className="text-[10px] text-zinc-400 mt-1">
+              مبلغ بیعانه‌ی مشتریان توسط پشتیبانی به همین شماره کارت واریز می‌شود. فقط شما و مدیران سالن به این شماره دسترسی دارید.
+            </p>
+          </div>
+
+          {err && <p className="text-red-500 text-xs font-medium">{err}</p>}
+
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="w-full bg-[#824c71] text-white rounded-xl py-3 text-sm font-bold disabled:opacity-60 flex items-center justify-center gap-2"
+          >
+            {saving && <Loader2 className="w-4 h-4 animate-spin" />}
+            {saving ? 'در حال ذخیره...' : 'ذخیره شماره کارت'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function BookingSettingsPage() {
   const router = useRouter();
 
   const [hasSalon, setHasSalon] = useState<boolean | null>(null);
   const [salonName, setSalonName] = useState('');
   const [bookingEnabled, setBookingEnabled] = useState(false);
+  const [cardNumber, setCardNumber] = useState('');
+  const [showCardModal, setShowCardModal] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -1764,6 +1861,7 @@ export default function BookingSettingsPage() {
       setHasSalon(true);
       setSalonName(profileData.salon.name);
       setBookingEnabled(!!profileData.salon.bookingEnabled);
+      setCardNumber(profileData.salon.cardNumber || '');
 
       const [svcRes, staffRes, schedRes] = await Promise.all([
         fetch('/api/booking-services'),
@@ -1814,6 +1912,19 @@ export default function BookingSettingsPage() {
     });
     if (res.ok) setBookingEnabled(newVal);
     setIsSaving(false);
+  };
+
+  const handleSaveCardNumber = async (card: string) => {
+    const res = await fetch('/api/salon/booking-settings', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ cardNumber: card }),
+    });
+    if (!res.ok) {
+      const d = await res.json();
+      throw new Error(d.error || 'خطا در ذخیره شماره کارت');
+    }
+    setCardNumber(card);
   };
 
   const handleSaveSchedule = async (s: WeeklySchedule, g: number) => {
@@ -1867,6 +1978,35 @@ export default function BookingSettingsPage() {
           <h1 className="text-xl md:text-2xl font-bold text-zinc-900">نوبت‌دهی آنلاین</h1>
           <p className="text-zinc-500 text-xs md:text-sm mt-0.5">{salonName}</p>
         </div>
+      </div>
+
+      {/* شماره کارت سالن — همیشه به‌صورت مخفی نمایش داده می‌شود */}
+      <div className="border border-zinc-100 rounded-2xl p-4 mb-6 bg-white">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-10 h-10 rounded-xl bg-zinc-100 text-zinc-500 flex items-center justify-center shrink-0">
+              <CreditCard className="w-5 h-5" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-sm font-bold text-zinc-900">شماره کارت سالن</p>
+              <p className="text-xs text-zinc-500 mt-0.5" dir="ltr">
+                {cardNumber ? maskCardNumber(cardNumber) : 'ثبت نشده'}
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() => setShowCardModal(true)}
+            className="shrink-0 w-9 h-9 rounded-xl bg-zinc-100 text-zinc-600 flex items-center justify-center hover:bg-zinc-200 transition-colors"
+            title="ویرایش شماره کارت"
+          >
+            <Pencil className="w-3.5 h-3.5" />
+          </button>
+        </div>
+        {!cardNumber && (
+          <p className="text-[11px] text-amber-600 bg-amber-50 rounded-lg px-2.5 py-1.5 mt-3">
+            ⚠️ برای دریافت مبلغ بیعانه از مشتریان، ابتدا شماره کارت خود را ثبت کنید.
+          </p>
+        )}
       </div>
 
       {/* Toggle Card */}
@@ -1927,7 +2067,7 @@ export default function BookingSettingsPage() {
       />
 
       {tab === 0 && (
-        <ServicesTab services={services} staff={staff} onRefresh={fetchAll} />
+        <ServicesTab services={services} staff={staff} hasCardNumber={!!cardNumber} onRefresh={fetchAll} />
       )}
       {tab === 1 && (
         <StaffTab staff={staff} services={services} onRefresh={fetchAll} />
@@ -1937,6 +2077,14 @@ export default function BookingSettingsPage() {
       )}
       {tab === 3 && (
         <StaffScheduleTab staff={staff} onRefresh={fetchAll} />
+      )}
+
+      {showCardModal && (
+        <CardNumberModal
+          initial={cardNumber}
+          onSave={handleSaveCardNumber}
+          onClose={() => setShowCardModal(false)}
+        />
       )}
     </div>
   );

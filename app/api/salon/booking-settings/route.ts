@@ -22,6 +22,19 @@ export async function PATCH(req: Request) {
     if (!salon) return NextResponse.json({ error: 'سالنی یافت نشد' }, { status: 404 });
 
     const body = await req.json();
+
+    if (body.cardNumber !== undefined) {
+      const card = String(body.cardNumber || '').trim();
+      if (card && !/^\d{16}$/.test(card)) {
+        return NextResponse.json({ error: 'شماره کارت باید دقیقاً ۱۶ رقم باشد' }, { status: 400 });
+      }
+      const updated = await prisma.salon.update({
+        where: { id: salon.id },
+        data: { cardNumber: card },
+      });
+      return NextResponse.json({ success: true, cardNumber: updated.cardNumber }, { status: 200 });
+    }
+
     if (typeof body.bookingEnabled !== 'boolean') {
       return NextResponse.json({ error: 'مقدار نامعتبر است' }, { status: 400 });
     }

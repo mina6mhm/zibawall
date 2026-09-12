@@ -28,6 +28,13 @@ export async function POST(req: Request) {
   if (!name?.trim()) return NextResponse.json({ error: 'نام خدمات الزامی است' }, { status: 400 });
   if (!durationMin || durationMin < 1) return NextResponse.json({ error: 'مدت زمان نامعتبر است' }, { status: 400 });
 
+  if (depositAmount && !salon.cardNumber) {
+    return NextResponse.json(
+      { error: 'برای دریافت بیعانه، ابتدا باید شماره کارت سالن را وارد کنید.' },
+      { status: 400 }
+    );
+  }
+
   const service = await prisma.bookingService.create({
     data: {
       salonId: salon.id,
