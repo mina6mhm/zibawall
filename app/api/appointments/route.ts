@@ -44,7 +44,12 @@ export async function GET() {
       startTime: b.startTime,
       status: b.status, // ← status هر نوبت جداگانه
       services: Array.isArray(b.services)
-        ? (b.services as any[]).map((s) => ({ name: s.name, price: s.price, staffName: s.staffName }))
+        ? (b.services as any[]).map((s) => ({
+            name: s.name,
+            price: s.price,
+            staffName: s.staffName,
+            depositAmount: s.depositAmount,
+          }))
         : [],
     });
 
