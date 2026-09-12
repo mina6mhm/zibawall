@@ -93,6 +93,9 @@ const maskCardNumber = (card: string) => {
   return Array.from({ length: groups }, () => '••••').join('  ');
 };
 
+// نمایش شماره کارت به‌صورت دسته‌های ۴رقمی هنگام تایپ، مثلاً 1234 5678 9012 3456
+const formatCardInput = (digits: string) => digits.replace(/(.{4})(?=.)/g, '$1 ');
+
 const joinTime = (h: string, m: string) => {
   if (!h && !m) return '';
   return `${(h || '0').padStart(2, '0')}:${(m || '0').padStart(2, '0')}`;
@@ -465,27 +468,13 @@ function ServicesTab({
                 s.isActive ? 'bg-white border-zinc-100' : 'bg-zinc-50 border-zinc-100 opacity-60'
               }`}
             >
-              <div className="flex items-start justify-between gap-3">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <p className="text-sm font-bold text-zinc-900 truncate">{s.name}</p>
-                    {!s.isActive && (
-                      <span className="text-[10px] bg-zinc-200 text-zinc-500 px-1.5 py-0.5 rounded-md font-medium shrink-0">
-                        غیرفعال
-                      </span>
-                    )}
-                  </div>
-                  <div className="flex items-center flex-nowrap gap-x-3 overflow-x-auto text-[12px] text-zinc-500 mb-1">
-                    <span className="shrink-0">⏱ {minToDuration(s.durationMin)}</span>
-                    {s.price > 0 && <span className="shrink-0">💰 {formatPrice(s.price)} تومان</span>}
-                    {!!s.depositAmount && (
-                      <span className="text-[#824c71] shrink-0">🔒 بیعانه {formatPrice(s.depositAmount)} تومان</span>
-                    )}
-                  </div>
-                  {s.isActive && !servicesWithStaff.has(s.id) && (
-                    <p className="text-[11px] text-amber-600 bg-amber-50 rounded-lg px-2 py-1 inline-flex items-center gap-1 mt-0.5">
-                      ⚠️ هیچ پرسنلی این خدمت را انجام نمی‌دهد
-                    </p>
+              <div className="flex items-center justify-between gap-3 mb-2">
+                <div className="flex items-center gap-2 min-w-0">
+                  <p className="text-sm font-bold text-zinc-900 truncate">{s.name}</p>
+                  {!s.isActive && (
+                    <span className="text-[10px] bg-zinc-200 text-zinc-500 px-1.5 py-0.5 rounded-md font-medium shrink-0">
+                      غیرفعال
+                    </span>
                   )}
                 </div>
                 <div className="flex items-center gap-1.5 shrink-0">
@@ -519,6 +508,18 @@ function ServicesTab({
                   </button>
                 </div>
               </div>
+              <div className="flex items-center flex-nowrap gap-x-3 overflow-x-auto text-[12px] text-zinc-500 mb-1">
+                <span className="shrink-0">⏱ {minToDuration(s.durationMin)}</span>
+                {s.price > 0 && <span className="shrink-0">💰 {formatPrice(s.price)} تومان</span>}
+                {!!s.depositAmount && (
+                  <span className="text-[#824c71] shrink-0">🔒 بیعانه {formatPrice(s.depositAmount)} تومان</span>
+                )}
+              </div>
+              {s.isActive && !servicesWithStaff.has(s.id) && (
+                <p className="text-[11px] text-amber-600 bg-amber-50 rounded-lg px-2 py-1 inline-flex items-center gap-1 mt-0.5">
+                  ⚠️ هیچ پرسنلی این خدمت را انجام نمی‌دهد
+                </p>
+              )}
             </div>
           ))}
         </div>
@@ -752,47 +753,49 @@ function StaffTab({
 
             return (
               <div key={s.id} className="border border-zinc-100 rounded-2xl overflow-hidden bg-white self-start">
-                <button
-                  className="w-full flex items-center justify-between px-4 py-3.5 text-right"
+                <div
+                  className="w-full px-4 py-3.5 text-right cursor-pointer"
                   onClick={() => setExpanded(isOpen ? null : s.id)}
                 >
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    <div className="w-8 h-8 rounded-full bg-[#824c71]/10 text-[#824c71] flex items-center justify-center text-xs font-bold shrink-0">
-                      {s.name.slice(0, 1)}
-                    </div>
-                    <div className="min-w-0">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                      <div className="w-8 h-8 rounded-full bg-[#824c71]/10 text-[#824c71] flex items-center justify-center text-xs font-bold shrink-0">
+                        {s.name.slice(0, 1)}
+                      </div>
                       <p className="text-sm font-bold text-zinc-800 truncate">{s.name}</p>
-                      {assignedIds.size === 0 ? (
-                        <p className="text-[11px] text-amber-600 font-medium">⚠️ هیچ خدمتی تخصیص داده نشده</p>
-                      ) : (
-                        <p className="text-[11px] text-zinc-400 flex items-center gap-1.5 truncate">
-                          <span>{assignedIds.size} خدمات تخصیص‌یافته</span>
-                          {s.commissionPercent != null && (
-                            <span className="text-[#824c71] font-medium">· {s.commissionPercent}٪ سهم پرسنل</span>
-                          )}
-                        </p>
-                      )}
+                    </div>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <button
+                        onClick={(e) => { e.stopPropagation(); setEditingStaff(s); setShowForm(true); }}
+                        className="w-7 h-7 flex items-center justify-center rounded-lg bg-zinc-100 text-zinc-500"
+                      >
+                        <Pencil className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); handleDeleteStaff(s.id); }}
+                        disabled={deletingStaffId === s.id}
+                        className="w-7 h-7 flex items-center justify-center rounded-lg bg-red-50 text-red-400 disabled:opacity-40"
+                      >
+                        {deletingStaffId === s.id
+                          ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          : <Trash2 className="w-3.5 h-3.5" />}
+                      </button>
+                      <ChevronDown className={`w-4 h-4 text-zinc-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
                     </div>
                   </div>
-                  <div className="flex items-center gap-1.5 shrink-0">
-                    <button
-                      onClick={(e) => { e.stopPropagation(); setEditingStaff(s); setShowForm(true); }}
-                      className="w-7 h-7 flex items-center justify-center rounded-lg bg-zinc-100 text-zinc-500"
-                    >
-                      <Pencil className="w-3.5 h-3.5" />
-                    </button>
-                    <button
-                      onClick={(e) => { e.stopPropagation(); handleDeleteStaff(s.id); }}
-                      disabled={deletingStaffId === s.id}
-                      className="w-7 h-7 flex items-center justify-center rounded-lg bg-red-50 text-red-400 disabled:opacity-40"
-                    >
-                      {deletingStaffId === s.id
-                        ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                        : <Trash2 className="w-3.5 h-3.5" />}
-                    </button>
-                    <ChevronDown className={`w-4 h-4 text-zinc-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+                  <div className="mt-1.5">
+                    {assignedIds.size === 0 ? (
+                      <p className="text-[11px] text-amber-600 font-medium">⚠️ هیچ خدمتی تخصیص داده نشده</p>
+                    ) : (
+                      <p className="text-[11px] text-zinc-400 flex items-center flex-wrap gap-x-1.5 gap-y-0.5">
+                        <span>{assignedIds.size} خدمات تخصیص‌یافته</span>
+                        {s.commissionPercent != null && (
+                          <span className="text-[#824c71] font-medium">· {s.commissionPercent}٪ سهم پرسنل</span>
+                        )}
+                      </p>
+                    )}
                   </div>
-                </button>
+                </div>
 
                 {isOpen && (
                   <div className="px-4 pb-4 border-t border-zinc-50">
@@ -1802,9 +1805,9 @@ function CardNumberModal({
               شماره کارت (۱۶ رقم) <span className="text-red-500">*</span>
             </label>
             <input
-              value={value}
+              value={formatCardInput(value)}
               onChange={(e) => handleChange(e.target.value)}
-              placeholder="6037________"
+              placeholder="---- ---- ---- ----"
               dir="ltr"
               inputMode="numeric"
               className="w-full border border-zinc-200 rounded-xl px-3.5 py-2.5 text-sm text-left tracking-widest focus:outline-none focus:border-[#824c71] focus:ring-1 focus:ring-[#824c71]/20"
