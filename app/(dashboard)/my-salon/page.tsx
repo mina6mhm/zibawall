@@ -671,7 +671,7 @@ export default function MySalonPage() {
                 <Loader2 className="w-6 h-6 text-[#824c71] animate-spin" />
               </div>
             ) : (
-              <div className="space-y-1.5">
+               <div className="space-y-1.5 max-h-[60vh] overflow-y-auto">
                 {mySalons.map((s) => (
                   <button
                     key={s.id}
