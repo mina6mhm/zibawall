@@ -26,7 +26,6 @@ type BookingService = {
   name: string;
   durationMin: number;
   price: number;
-  depositAmount?: number | null;
 };
 
 type StaffOption = { id: string; name: string };
@@ -41,7 +40,6 @@ type CartItem = {
   serviceName: string;
   durationMin: number;
   price: number;
-  depositAmount: number;
   date: string;
   startTime: string;
   staffId: string;
@@ -300,7 +298,6 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
     setCart((p) => [...p, {
       serviceId: selectedService.id, serviceName: selectedService.name,
       durationMin: selectedService.durationMin, price: selectedService.price,
-      depositAmount: selectedService.depositAmount || 0,
       date: selectedDate, startTime: selectedSlot.time, staffId, staffName,
     }]);
     startNew();
@@ -366,9 +363,6 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
 
   const appFee       = cart.length > 0 ? BOOKING_APP_FEE : 0;
   const totalPayable = appFee;
-  // فقط اطلاعاتی — در مبلغ قابل‌پرداختِ فعلی (appFee) دخالتی ندارد؛
-  // مرحله‌ی پرداختِ واقعیِ بیعانه بعداً اضافه می‌شود
-  const totalDepositInfo = cart.reduce((sum, item) => sum + (item.depositAmount || 0), 0);
   const closedMarkers = useMemo(() => ({
     ...buildClosedDayMarkers(closedWeekDays),
     ...buildClosedDateMarkers(closedDates),
@@ -437,11 +431,6 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
                     <User className="w-3.5 h-3.5 text-stone-300" />
                     {item.staffName}
                   </span>
-                  {!!item.depositAmount && (
-                    <span className="flex items-center gap-1 bg-white rounded-lg px-2.5 py-1.5 border border-stone-100 text-[11px] text-[#824c71]">
-                      بیعانه: {toPersian(formatPrice(item.depositAmount))} تومان
-                    </span>
-                  )}
                 </div>
                 <div className="mt-3 pt-3 border-t border-stone-100 flex justify-end">
                   <button
@@ -702,11 +691,6 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
                           <User className="w-3.5 h-3.5 text-stone-300" />
                           {item.staffName}
                         </span>
-                        {!!item.depositAmount && (
-                          <span className="flex items-center gap-1 text-[11px] text-[#824c71] bg-white rounded-lg px-2.5 py-1.5 border border-stone-100">
-                            بیعانه: {toPersian(formatPrice(item.depositAmount))} تومان
-                          </span>
-                        )}
                       </div>
                     </div>
                   ))}
@@ -719,13 +703,6 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
                   <Plus className="w-4 h-4" />
                   افزودن نوبت دیگر
                 </button>
-
-                {totalDepositInfo > 0 && (
-                  <div className="flex items-center justify-between gap-2 bg-[#824c71]/5 border border-[#824c71]/15 rounded-2xl px-4 py-3 mb-4 text-[#824c71]">
-                    <span className="text-xs font-bold">مجموع بیعانه</span>
-                    <span className="text-sm font-bold">{toPersian(formatPrice(totalDepositInfo))} تومان</span>
-                  </div>
-                )}
 
                 {submitError && (
                   <p className="text-center text-xs text-red-400 mb-4">{submitError}</p>

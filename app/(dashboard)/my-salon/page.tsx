@@ -23,7 +23,6 @@ type ServiceItem = {
   staffName?: string;
   staffPercentage?: number;
   durationMin?: number;
-  depositAmount?: number;
 };
 
 type Booking = {
@@ -305,24 +304,17 @@ export default function MySalonPage() {
 
         <div className="divide-y divide-zinc-50">
           {booking.services.map((s, idx) => (
-            <div key={idx} className="py-2.5 first:pt-0 last:pb-0">
-              <div className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-1.5 min-w-0">
-                  <Scissors className="w-3 h-3 text-[#824c71]/60 shrink-0" />
-                  <p className="text-[12.5px] font-bold text-zinc-800 truncate">{s.name}</p>
-                </div>
-                <div className="flex items-center gap-2.5 shrink-0 text-[11px] text-zinc-500">
-                  {s.price != null && <span className="font-medium text-zinc-700">{formatMoney(s.price)} تومان</span>}
-                  {s.staffName && (
-                    <span>{s.staffName}{s.staffPercentage ? ` (${s.staffPercentage.toLocaleString('fa-IR')}٪)` : ''}</span>
-                  )}
-                </div>
+            <div key={idx} className="py-2.5 first:pt-0 last:pb-0 flex items-center justify-between gap-2">
+              <div className="flex items-center gap-1.5 min-w-0">
+                <Scissors className="w-3 h-3 text-[#824c71]/60 shrink-0" />
+                <p className="text-[12.5px] font-bold text-zinc-800 truncate">{s.name}</p>
               </div>
-              {!!s.depositAmount && (
-                <p className="text-[11px] text-[#824c71] mt-1">
-                  بیعانه: {formatMoney(s.depositAmount)} تومان
-                </p>
-              )}
+              <div className="flex items-center gap-2.5 shrink-0 text-[11px] text-zinc-500">
+                {s.price != null && <span className="font-medium text-zinc-700">{formatMoney(s.price)} تومان</span>}
+                {s.staffName && (
+                  <span>{s.staffName}{s.staffPercentage ? ` (${s.staffPercentage.toLocaleString('fa-IR')}٪)` : ''}</span>
+                )}
+              </div>
             </div>
           ))}
         </div>

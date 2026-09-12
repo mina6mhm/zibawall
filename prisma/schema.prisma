@@ -402,7 +402,6 @@ model BookingService {
   name          String
   durationMin   Int      // مدت به دقیقه، مثلاً 90
   price         Int      // قیمت کل
-  depositAmount Int?     // بیعانه، اختیاری — اگر خالی باشد یعنی این خدمت بیعانه ندارد
   isActive      Boolean  @default(true)
   staffMembers  StaffBookingService[]
   createdAt     DateTime @default(now())

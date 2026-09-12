@@ -108,11 +108,10 @@ export async function POST(req: Request) {
     }
 
     // محاسبه مبالغ کل سبد — هزینه پلتفرم فقط یک بار روی کل گروه
-    // نکته: فعلاً منطق واقعیِ دریافت/تسویه‌ی بیعانه پیاده نشده — همچنان
-    // totalDeposit صفر است و مبلغ قابل‌پرداخت فقط appFee است. بیعانه‌ی هر
-    // خدمت (service.depositAmount) فقط به‌صورت اطلاعاتی روی خودِ نوبت
-    // اسنپ‌شات می‌شود تا در «نوبت‌های من» و «سالن من» نمایش داده شود؛
-    // این مقدار در totalAmount/totalDeposit دخالتی ندارد.
+    // نکته: BookingService فیلد depositAmount ندارد (فقط مدل Booking این فیلد
+    // را دارد)، پس فعلاً بیعانه‌ی سطح خدمت وجود ندارد و همیشه صفر است.
+    // اگر در آینده بیعانه‌ی واقعی روی خدمات اضافه شد، اینجا باید از
+    // service.depositAmount خوانده شود (بعد از افزودن فیلد به schema.prisma).
     const totalDeposit = 0;
     const appFee = BOOKING_APP_FEE;
     const totalAmount = totalDeposit + appFee;
@@ -245,8 +244,6 @@ export async function POST(req: Request) {
                     // درصد پیش‌فرض پرسنل (در صورت تعریف) به‌صورت اسنپ‌شات ثبت می‌شود؛
                     // سالن‌دار بعداً می‌تواند از صفحه‌ی نوبت‌ها برای این نوبت خاص تغییرش دهد
                     ...(p.staff.commissionPercent != null ? { staffPercentage: p.staff.commissionPercent } : {}),
-                    // بیعانه‌ی همین خدمت در لحظه‌ی رزرو — فقط نمایشی، در مبلغ قابل‌پرداخت اثر ندارد
-                    ...(p.service.depositAmount ? { depositAmount: p.service.depositAmount } : {}),
                   },
                 ],
                 depositAmount: 0,

@@ -23,17 +23,10 @@ export async function POST(req: Request) {
   if (!salon) return NextResponse.json({ error: 'دسترسی ندارید' }, { status: 401 });
 
   const body = await req.json();
-  const { name, durationMin, price, depositAmount } = body;
+  const { name, durationMin, price } = body;
 
   if (!name?.trim()) return NextResponse.json({ error: 'نام خدمات الزامی است' }, { status: 400 });
   if (!durationMin || durationMin < 1) return NextResponse.json({ error: 'مدت زمان نامعتبر است' }, { status: 400 });
-
-  if (depositAmount && !salon.cardNumber) {
-    return NextResponse.json(
-      { error: 'برای دریافت بیعانه، ابتدا باید شماره کارت سالن را وارد کنید.' },
-      { status: 400 }
-    );
-  }
 
   const service = await prisma.bookingService.create({
     data: {
@@ -41,7 +34,6 @@ export async function POST(req: Request) {
       name: name.trim(),
       durationMin: Number(durationMin),
       price: price ? Number(price) : 0,
-      depositAmount: depositAmount ? Number(depositAmount) : null,
     },
   });
 
