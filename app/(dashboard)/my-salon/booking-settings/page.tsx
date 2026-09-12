@@ -21,6 +21,7 @@ type BookingService = {
   name: string;
   durationMin: number;
   price: number;
+  depositAmount: number | null;
   isActive: boolean;
 };
 
@@ -237,10 +238,12 @@ function ServiceFormModal({ initial, onSave, onClose }: ServiceFormProps) {
     initial?.durationMin != null ? String(initial.durationMin % 60).padStart(2, '0') : '00'
   );
   const [priceRaw, setPriceRaw] = useState(initial?.price ? String(initial.price) : '');
+  const [depositRaw, setDepositRaw] = useState(initial?.depositAmount ? String(initial.depositAmount) : '');
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState('');
 
   const handlePriceChange = (val: string) => setPriceRaw(toEnglishDigits(val));
+  const handleDepositChange = (val: string) => setDepositRaw(toEnglishDigits(val));
   const sanitizeHour = (val: string) => toEnglishDigits(val).slice(0, 2);
   const sanitizeMinute = (val: string) => {
     let digits = toEnglishDigits(val).slice(0, 2);
@@ -252,13 +255,19 @@ function ServiceFormModal({ initial, onSave, onClose }: ServiceFormProps) {
     if (!name.trim()) return setErr('نام خدمات الزامی است');
     const dMin = (Number(durHour) || 0) * 60 + (Number(durMin) || 0);
     if (!dMin) return setErr('مدت زمان معتبر وارد کنید');
+    const priceNum = priceRaw ? Number(priceRaw) : 0;
+    const depositNum = depositRaw ? Number(depositRaw) : 0;
+    if (depositNum && priceNum && depositNum > priceNum) {
+      return setErr('بیعانه نمی‌تواند از قیمت خدمت بیشتر باشد');
+    }
     setErr('');
     setSaving(true);
     try {
       await onSave({
         name: name.trim(),
         durationMin: dMin,
-        price: priceRaw ? Number(priceRaw) : 0,
+        price: priceNum,
+        depositAmount: depositNum || null,
       });
       onClose();
     } catch (e: any) {
@@ -333,6 +342,24 @@ function ServiceFormModal({ initial, onSave, onClose }: ServiceFormProps) {
                 className="w-full border border-zinc-200 rounded-xl px-3.5 py-2.5 text-sm text-left focus:outline-none focus:border-[#824c71] focus:ring-1 focus:ring-[#824c71]/20"
               />
             </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-zinc-600 mb-1.5">
+              بیعانه (تومان)
+              <span className="text-zinc-400 font-normal mr-1">اختیاری</span>
+            </label>
+            <input
+              value={displayNumber(depositRaw)}
+              onChange={(e) => handleDepositChange(e.target.value)}
+              placeholder="مثلاً 100,000"
+              dir="ltr"
+              inputMode="numeric"
+              className="w-full border border-zinc-200 rounded-xl px-3.5 py-2.5 text-sm text-left focus:outline-none focus:border-[#824c71] focus:ring-1 focus:ring-[#824c71]/20"
+            />
+            <p className="text-[10px] text-zinc-400 mt-1">
+              اگر پر شود، مشتری هنگام رزرو این خدمت باید این مبلغ را به‌عنوان بیعانه پرداخت کند
+            </p>
           </div>
 
           {err && <p className="text-red-500 text-xs font-medium">{err}</p>}
@@ -434,6 +461,9 @@ function ServicesTab({
                   <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-[12px] text-zinc-500 mb-1">
                     <span>⏱ {minToDuration(s.durationMin)}</span>
                     {s.price > 0 && <span>💰 {formatPrice(s.price)} تومان</span>}
+                    {!!s.depositAmount && (
+                      <span className="text-[#824c71]">🔒 بیعانه {formatPrice(s.depositAmount)} تومان</span>
+                    )}
                   </div>
                   {s.isActive && !servicesWithStaff.has(s.id) && (
                     <p className="text-[11px] text-amber-600 bg-amber-50 rounded-lg px-2 py-1 inline-flex items-center gap-1 mt-0.5">

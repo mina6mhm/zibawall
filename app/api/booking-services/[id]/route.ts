@@ -14,7 +14,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     return NextResponse.json({ error: 'خدمتی یافت نشد' }, { status: 404 });
 
   const body = await req.json();
-  const { name, durationMin, price, isActive } = body;
+  const { name, durationMin, price, depositAmount, isActive } = body;
 
   const updated = await prisma.bookingService.update({
     where: { id },
@@ -22,6 +22,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       ...(name !== undefined && { name: String(name).trim() }),
       ...(durationMin !== undefined && { durationMin: Number(durationMin) }),
       ...(price !== undefined && { price: Number(price) }),
+      ...(depositAmount !== undefined && { depositAmount: depositAmount ? Number(depositAmount) : null }),
       ...(isActive !== undefined && { isActive: Boolean(isActive) }),
     },
   });
