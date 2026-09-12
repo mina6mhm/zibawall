@@ -512,7 +512,7 @@ function ServicesTab({
                 <span className="shrink-0">⏱ {minToDuration(s.durationMin)}</span>
                 {s.price > 0 && <span className="shrink-0">💰 {formatPrice(s.price)} تومان</span>}
                 {!!s.depositAmount && (
-                  <span className="text-[#824c71] shrink-0">🔒 بیعانه {formatPrice(s.depositAmount)} تومان</span>
+                  <span className="text-[#824c71] shrink-0">بیعانه {formatPrice(s.depositAmount)} تومان</span>
                 )}
               </div>
               {s.isActive && !servicesWithStaff.has(s.id) && (

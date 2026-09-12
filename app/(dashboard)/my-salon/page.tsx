@@ -320,7 +320,7 @@ export default function MySalonPage() {
               </div>
               {!!s.depositAmount && (
                 <p className="text-[11px] text-[#824c71] mt-1">
-                  🔒 بیعانه: {formatMoney(s.depositAmount)} تومان
+                  بیعانه: {formatMoney(s.depositAmount)} تومان
                 </p>
               )}
             </div>
