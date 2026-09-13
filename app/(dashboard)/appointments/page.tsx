@@ -36,10 +36,10 @@ type FlatItem = { appt: Appointment; item: AppointmentItem };
 
 type TabKey = 'upcoming' | 'past' | 'cancelled';
 
-const STATUS_LABELS: Record<AppointmentItem['status'], { label: string; dotClassName: string; textClassName: string }> = {
-  PENDING_PAYMENT: { label: 'در انتظار پرداخت', dotClassName: 'bg-amber-500', textClassName: 'text-amber-600' },
-  CONFIRMED: { label: 'قطعی شده', dotClassName: 'bg-emerald-500', textClassName: 'text-emerald-600' },
-  CANCELLED: { label: 'لغو شده', dotClassName: 'bg-zinc-400', textClassName: 'text-zinc-500' },
+const STATUS_LABELS: Record<AppointmentItem['status'], { label: string; bgClassName: string; textClassName: string }> = {
+  PENDING_PAYMENT: { label: 'در انتظار پرداخت', bgClassName: 'bg-amber-50', textClassName: 'text-amber-600' },
+  CONFIRMED: { label: 'درخواست موفق', bgClassName: 'bg-emerald-50', textClassName: 'text-emerald-600' },
+  CANCELLED: { label: 'لغو شده', bgClassName: 'bg-zinc-100', textClassName: 'text-zinc-500' },
 };
 
 const TABS: { key: TabKey; label: string }[] = [
@@ -170,62 +170,68 @@ function AppointmentsContent() {
     cancelled: 'نوبت لغو‌شده‌ای ندارید.',
   };
 
-  // یک ردیفِ نوبت — دقیقاً با زبان بصریِ صفحه‌ی پروفایل: بدون کارت/بوردر/شدو،
-  // فقط یک آواتار دایره‌ای بنفش کم‌رنگ و جداکننده‌ی مویی (divide-y) بین ردیف‌ها.
-  const renderRow = ({ appt, item }: FlatItem) => {
+  // یک کارتِ نوبت — دقیقاً با ساختار کارت سفارش‌های اسنپ: کارت سفید با بوردر
+  // نازک، آیکون+اسم+وضعیت در هدر، ردیف‌های اطلاعاتی با نشانگر رنگی، و یک
+  // فوتر جداشده با خط بالا برای عملیات/مبلغ.
+  const renderCard = ({ appt, item }: FlatItem) => {
     const statusInfo = STATUS_LABELS[item.status];
     const isCancelled = item.status === 'CANCELLED';
+    const isPending = appt.status === 'PENDING_PAYMENT' && item.status !== 'CANCELLED';
+    const itemTotal = item.services.reduce((sum, s) => sum + (s.price || 0), 0);
 
     return (
-      <div key={item.id} className={`py-5 first:pt-0 last:pb-0 ${isCancelled ? 'opacity-60' : ''}`}>
-        <div className="flex items-start justify-between gap-3 mb-3">
-          <Link href={`/salon/${appt.salon.id}`} className="flex items-center gap-3 min-w-0 group">
-            {appt.salon.imageUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={appt.salon.imageUrl}
-                alt=""
-                className="w-11 h-11 rounded-full object-cover shrink-0 bg-zinc-100"
-              />
-            ) : (
-              <span className="w-11 h-11 rounded-full bg-[#824c71]/10 flex items-center justify-center text-[#824c71] shrink-0">
-                <Store className="w-5 h-5" strokeWidth={1.5} />
-              </span>
-            )}
-            <span className="min-w-0">
-              <span className="block text-sm font-bold text-zinc-800 truncate group-hover:text-[#824c71] transition-colors">
-                {appt.salon.name}
-              </span>
-              {appt.salon.address && (
-                <span className="block text-[11px] text-zinc-500 mt-0.5 truncate">{appt.salon.address}</span>
-              )}
+      <div
+        key={item.id}
+        className={`bg-white border border-zinc-200 rounded-2xl p-4 ${isCancelled ? 'opacity-70' : ''}`}
+      >
+        {/* هدر: آیکون سالن + اسم + وضعیت (شبیه ردیف اسنپ/آیکون) */}
+        <div className="flex items-center gap-3 mb-3.5">
+          {appt.salon.imageUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={appt.salon.imageUrl}
+              alt=""
+              className="w-12 h-12 rounded-2xl object-cover shrink-0 bg-zinc-100"
+            />
+          ) : (
+            <span className="w-12 h-12 rounded-2xl bg-[#824c71]/10 flex items-center justify-center text-[#824c71] shrink-0">
+              <Store className="w-5 h-5" strokeWidth={1.5} />
             </span>
-          </Link>
-
-          <span className={`flex items-center gap-1.5 text-[11px] font-medium whitespace-nowrap pt-1 ${statusInfo.textClassName}`}>
-            <span className={`w-1.5 h-1.5 rounded-full ${statusInfo.dotClassName}`} />
-            {statusInfo.label}
-          </span>
+          )}
+          <div className="min-w-0 flex-1">
+            <Link
+              href={`/salon/${appt.salon.id}`}
+              className="block text-[15px] font-bold text-zinc-900 truncate hover:text-[#824c71] transition-colors"
+            >
+              {appt.salon.name}
+            </Link>
+            <span className={`inline-flex items-center mt-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium ${statusInfo.bgClassName} ${statusInfo.textClassName}`}>
+              {statusInfo.label}
+            </span>
+          </div>
         </div>
 
-        <div className="flex items-center gap-1.5 text-xs text-zinc-500 mb-3">
-          <span className="flex items-center gap-1">
-            <Calendar className="w-3.5 h-3.5" />
-            {formatDate(item.date)}
-          </span>
-          <span className="text-zinc-300">|</span>
-          <span className="flex items-center gap-1" dir="ltr">
-            <Clock className="w-3.5 h-3.5" />
-            {toPersianDigits(item.startTime)}
-          </span>
+        {/* بدنه: تاریخ و ساعت با نشانگر رنگی، مثل ردیف‌های مبدأ/مقصد اسنپ */}
+        <div className="flex flex-col gap-2 mb-3.5">
+          <div className="flex items-center gap-2 text-xs text-zinc-600">
+            <span className="w-2 h-2 rounded-full bg-[#824c71] shrink-0" />
+            <Calendar className="w-3.5 h-3.5 text-zinc-400 shrink-0" />
+            <span className="truncate">{formatDate(item.date)}</span>
+          </div>
+          <div className="flex items-center gap-2 text-xs text-zinc-600">
+            <span className="w-2 h-2 rounded-sm bg-zinc-400 shrink-0" />
+            <Clock className="w-3.5 h-3.5 text-zinc-400 shrink-0" />
+            <span dir="ltr">{toPersianDigits(item.startTime)}</span>
+          </div>
         </div>
 
-        <div className="flex flex-col gap-2">
+        {/* خدمات */}
+        <div className="flex flex-col gap-2 mb-1">
           {item.services.map((s, idx) => (
             <div key={idx} className="flex items-center justify-between gap-2">
               <div className="flex items-center gap-1.5 min-w-0">
-                <Scissors className="w-3.5 h-3.5 text-[#824c71] shrink-0" strokeWidth={1.75} />
-                <p className="text-[13px] font-bold text-zinc-800 truncate">{s.name}</p>
+                <Scissors className="w-3.5 h-3.5 text-[#824c71]/60 shrink-0" strokeWidth={1.75} />
+                <p className="text-[12.5px] font-bold text-zinc-800 truncate">{s.name}</p>
               </div>
               <div className="flex items-center gap-2.5 shrink-0 text-[11px] text-zinc-500">
                 {s.price != null && (
@@ -242,17 +248,26 @@ function AppointmentsContent() {
           ))}
         </div>
 
-        {/* دکمه پرداخت فقط وقتی کل گروه در انتظار پرداخته — نه برای آیتم‌های لغو‌شده */}
-        {appt.status === 'PENDING_PAYMENT' && item.status !== 'CANCELLED' && (
-          <button
-            onClick={() => handlePay(appt)}
-            disabled={payingId === appt.id}
-            className="w-full flex items-center justify-center gap-1.5 py-2.5 rounded-[10px] bg-[#824c71] text-white text-xs font-bold hover:bg-[#6e3f60] transition disabled:opacity-60 mt-4"
-          >
-            {payingId === appt.id && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-            پرداخت و ثبت قطعی نوبت
-          </button>
-        )}
+        {/* فوتر: جدا شده با خط بالا — عملیات پرداخت راست، مبلغ چپ (مثل «مشاهدهٔ جزئیات» و قیمت در کارت اسنپ) */}
+        <div className="flex items-center justify-between pt-3.5 mt-3.5 border-t border-zinc-100">
+          {isPending ? (
+            <button
+              onClick={() => handlePay(appt)}
+              disabled={payingId === appt.id}
+              className="flex items-center gap-1.5 text-[13px] font-bold text-[#824c71] disabled:opacity-60"
+            >
+              {payingId === appt.id && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+              پرداخت و ثبت قطعی نوبت
+            </button>
+          ) : (
+            <span className="text-[12px] text-zinc-400">
+              {isCancelled ? 'این نوبت لغو شده' : 'نوبت شما قطعی است'}
+            </span>
+          )}
+          {itemTotal > 0 && (
+            <span className="text-sm font-bold text-zinc-900">{formatMoney(itemTotal)} تومان</span>
+          )}
+        </div>
       </div>
     );
   };
@@ -331,8 +346,8 @@ function AppointmentsContent() {
                 <p className="text-zinc-500 text-sm">{emptyTextByTab[activeTab]}</p>
               </div>
             ) : (
-              <div className="divide-y divide-zinc-200">
-                {currentList.map(renderRow)}
+              <div className="flex flex-col gap-4">
+                {currentList.map(renderCard)}
               </div>
             )}
           </>
