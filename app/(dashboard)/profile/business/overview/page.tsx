@@ -517,7 +517,7 @@ function BusinessOverviewContent() {
                 type="button"
                 onClick={handlePin}
                 disabled={isPinning}
-                className="flex-1 py-2 rounded-[6px] text-sm font-bold text-white bg-[#824c71] hover:bg-[#6f3f5f] transition-colors disabled:opacity-50 flex items-center justify-center gap-1.5"
+                className="flex-1 py-2.5 rounded-[8px] text-sm font-bold text-white bg-[#824c71] hover:bg-[#6f3f5f] transition-colors disabled:opacity-50 flex items-center justify-center gap-1.5"
               >
                 {isPinning ? <Loader2 className="w-4 h-4 animate-spin" /> : 'پرداخت و ادامه'}
               </button>
