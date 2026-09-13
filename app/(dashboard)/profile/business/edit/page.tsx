@@ -56,7 +56,6 @@ export default function BusinessEditPage() {
   const [socials, setSocials] = useState<Socials>({
     instagram: '', whatsapp: '', telegram: '', rubika: '', bale: '', website: ''
   });
-  const [cardNumber, setCardNumber] = useState('');
 
   // تابع حدس دسته‌بندی تگ‌های اختصاصی از روی کلمات
   const guessCategory = (tag: string) => {
@@ -70,16 +69,6 @@ export default function BusinessEditPage() {
     if (/(لیزر|اپیلاسیون|وکس|بند|موزدایی)/.test(lowerTag)) return 'موزدایی و بدن';
     if (/(ماساژ|اسپا)/.test(lowerTag)) return 'خدمات ماساژ و اسپا';
     return 'سایر خدمات';
-  };
-
-  const toEnglishDigitsCard = (str: string) =>
-    str
-      .replace(/[۰-۹]/g, (d) => String(d.charCodeAt(0) - '۰'.charCodeAt(0)))
-      .replace(/[٠-٩]/g, (d) => String(d.charCodeAt(0) - '٠'.charCodeAt(0)))
-      .replace(/[^0-9]/g, '');
-
-  const handleCardNumberChange = (value: string) => {
-    setCardNumber(toEnglishDigitsCard(value).slice(0, 16));
   };
 
   useEffect(() => {
@@ -105,7 +94,6 @@ export default function BusinessEditPage() {
             setClosedDays(salon.closedDays || []);
             setHasHomeService(!!salon.hasHomeService);
             setGenderAudience(salon.genderAudience || 'BOTH');
-            setCardNumber(salon.cardNumber || '');
 
             if (salon.tags && salon.tags.length > 0) {
               const extractedNames = salon.tags.map((t: any) => typeof t === 'string' ? t : t.name);
@@ -297,11 +285,6 @@ export default function BusinessEditPage() {
       return;
     }
 
-    if (cardNumber.length > 0 && cardNumber.length !== 16) {
-      alert('اگر شماره کارت وارد می‌کنید، باید دقیقاً ۱۶ رقم باشد.');
-      return;
-    }
-
     if (!coverImage && !existingCover) {
       alert('لطفا یک عکس به عنوان کاور اصلی انتخاب کنید.');
       return;
@@ -357,7 +340,7 @@ export default function BusinessEditPage() {
       const payload = {
   userPhone: user.phone,
   name, workingHours, description, address, phones, closedDays,
-  hasHomeService, genderAudience, cardNumber,
+  hasHomeService, genderAudience,
   tags: formattedTags, province: selectedProvince, city: selectedCity,
   neighborhoods: selectedProvince === 'تهران' && selectedCity === 'تهران' ? selectedNeighborhoods : [],
   coordinates, imageUrl: finalCoverUrl, portfolios: finalPortfolios, socials
@@ -446,8 +429,6 @@ export default function BusinessEditPage() {
           hasLocation={!!(coordinates && coordinates[0] !== 0 && coordinates[1] !== 0)}
           coordinates={coordinates}
           onOpenMapModal={openMapModal}
-          cardNumber={cardNumber}
-          onCardNumberChange={handleCardNumberChange}
         />
       )}
 

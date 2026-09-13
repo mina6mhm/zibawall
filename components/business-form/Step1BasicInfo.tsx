@@ -42,9 +42,6 @@ type Props = {
   hasLocation: boolean;
   coordinates: [number, number] | null;
   onOpenMapModal: () => void;
-
-  cardNumber: string;
-  onCardNumberChange: (v: string) => void;
 };
 
 export default function Step1BasicInfo({
@@ -59,7 +56,6 @@ export default function Step1BasicInfo({
   selectedNeighborhoods, onRemoveNeighborhood,
   address, onAddressChange,
   hasLocation, coordinates, onOpenMapModal,
-  cardNumber, onCardNumberChange,
 }: Props) {
   return (
     <div className="space-y-6 md:space-y-8 animate-fade-in">
@@ -187,27 +183,6 @@ export default function Step1BasicInfo({
             </div>
             <p className="text-[10px] md:text-xs text-zinc-400">
               اگر سالن شما به هر دو گروه خدمات می‌دهد، هر دو گزینه را انتخاب کنید.
-            </p>
-          </div>
-
-          <div className="space-y-1.5 md:space-y-2 md:col-span-2">
-            <label className="block text-xs md:text-sm font-medium text-zinc-700">
-              شماره کارت (برای واریز بیعانه)
-              <span className="text-zinc-400 font-normal mr-1 text-[10px] md:text-xs">اختیاری</span>
-            </label>
-            <input
-              type="text"
-              inputMode="numeric"
-              value={cardNumber}
-              onChange={(e) => onCardNumberChange(e.target.value)}
-              placeholder="۶۰۳۷۹۹۱۲۳۴۵۶۷۸۹۰"
-              className="w-full px-3 py-2.5 md:px-4 md:py-3 text-sm md:text-base rounded-lg md:rounded-xl border border-zinc-200 focus:border-zinc-300 focus:ring-1 focus:ring-zinc-300 outline-none transition-all text-left dir-ltr"
-            />
-            {cardNumber.length > 0 && cardNumber.length !== 16 && (
-              <p className="text-[10px] md:text-xs text-red-500">شماره کارت باید دقیقاً ۱۶ رقم باشد ({cardNumber.length.toLocaleString('fa-IR')} رقم وارد شده)</p>
-            )}
-            <p className="text-[10px] md:text-xs text-zinc-400">
-              بیعانه‌ی پرداختی مشتریان توسط تیم پشتیبانی به این شماره کارت واریز می‌شود.
             </p>
           </div>
 

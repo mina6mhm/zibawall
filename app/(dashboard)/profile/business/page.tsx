@@ -24,7 +24,6 @@ export default function BusinessRegistrationPage() {
   const [isMapModalOpen, setIsMapModalOpen] = useState(false);
   const [isRegionModalOpen, setIsRegionModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [cardNumber, setCardNumber] = useState('');
 
   const maxPortfolios = 15; // سقف ثابت نمونه‌کار برای همه — ثبت‌نام کاملاً رایگانه و پلنی وجود نداره
 
@@ -32,16 +31,6 @@ export default function BusinessRegistrationPage() {
   const [workingHours, setWorkingHours] = useState('');
   const [description, setDescription] = useState('');
   const [address, setAddress] = useState('');
-
-  const toEnglishDigitsCard = (str: string) =>
-    str
-      .replace(/[۰-۹]/g, (d) => String(d.charCodeAt(0) - '۰'.charCodeAt(0)))
-      .replace(/[٠-٩]/g, (d) => String(d.charCodeAt(0) - '٠'.charCodeAt(0)))
-      .replace(/[^0-9]/g, '');
-
-  const handleCardNumberChange = (value: string) => {
-    setCardNumber(toEnglishDigitsCard(value).slice(0, 16));
-  };
 
   const [customServices, setCustomServices] = useState<Record<string, string[]>>({});
   const [newTagInputs, setNewTagInputs] = useState<Record<string, string>>({});
@@ -158,10 +147,9 @@ export default function BusinessRegistrationPage() {
         !selectedCity ||
         !address.trim() ||
         !hasValidPhone ||
-        !genderAudience ||
-        (cardNumber.length > 0 && cardNumber.length !== 16)
+        !genderAudience
       ) {
-        alert('لطفاً تمامی کادرهای ستاره‌دار را پر کنید، مشخص کنید سالن مخصوص بانوان، آقایون یا هر دو است. اگر شماره کارت وارد کرده‌اید باید دقیقاً ۱۶ رقم باشد.');
+        alert('لطفاً تمامی کادرهای ستاره‌دار را پر کنید و مشخص کنید سالن مخصوص بانوان، آقایون یا هر دو است.');
         return;
       }
     }
@@ -199,11 +187,6 @@ export default function BusinessRegistrationPage() {
 
     if (!genderAudience) {
       alert('لطفاً مشخص کنید سالن شما مخصوص بانوان، آقایون یا هر دو است.');
-      return;
-    }
-
-    if (cardNumber.length > 0 && cardNumber.length !== 16) {
-      alert('اگر شماره کارت وارد می‌کنید، باید دقیقاً ۱۶ رقم باشد.');
       return;
     }
 
@@ -275,7 +258,6 @@ export default function BusinessRegistrationPage() {
         closedDays,
         hasHomeService,
         genderAudience,
-        cardNumber,
         tags: formattedTags,
         description: description || 'توضیحات پیش‌فرض سالن',
         socials,
@@ -359,7 +341,6 @@ export default function BusinessRegistrationPage() {
           selectedNeighborhoods={selectedNeighborhoods} onRemoveNeighborhood={removeNeighborhood}
           address={address} onAddressChange={setAddress}
           hasLocation={locationSelected} coordinates={coordinates} onOpenMapModal={openMapModal}
-          cardNumber={cardNumber} onCardNumberChange={handleCardNumberChange}
         />
       )}
 
