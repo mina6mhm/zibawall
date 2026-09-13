@@ -3,7 +3,7 @@
 
 import React, { useState, useEffect, Suspense } from 'react';
 import {
-  Store, Edit, Trash2, ArrowRight, Loader2, MapPin, ChevronLeft, ChevronDown,
+  Store, Edit, Trash2, Loader2, MapPin, ChevronLeft, ChevronDown,
   CalendarClock, Clock, XCircle, ShieldCheck, UserPlus, Phone, X, Pin, CheckCircle2,
 } from 'lucide-react';
 import Link from 'next/link';
@@ -246,18 +246,10 @@ function BusinessOverviewContent() {
     <div className="flex flex-col min-h-screen bg-white pb-24">
       <div className="max-w-lg mx-auto w-full px-4 pt-6">
 
-        <button
-          type="button"
-          onClick={() => router.back()}
-          className="inline-flex items-center gap-1.5 text-sm text-zinc-500 hover:text-zinc-700 transition-colors mb-5"
-        >
-          <ArrowRight className="w-4 h-4" /> بازگشت
-        </button>
-
         {/* اعلان نتیجه‌ی بازگشت از درگاه پرداخت پین */}
         {pinNotice && (
           <div
-            className={`flex items-center gap-2 rounded-xl p-3 mb-5 text-sm font-medium ${
+            className={`flex items-center gap-2 rounded-[8px] p-3 mb-5 text-sm font-medium ${
               pinNotice.type === 'success' ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-600'
             }`}
           >
@@ -272,7 +264,7 @@ function BusinessOverviewContent() {
 
         {/* وضعیت تایید سالن توسط ادمین */}
         {salonData.status === 'PENDING_APPROVAL' && (
-          <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-2xl px-4 py-3.5 mb-5">
+          <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-[8px] px-4 py-3.5 mb-5">
             <Clock className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" strokeWidth={1.5} />
             <div>
               <p className="text-sm font-bold text-amber-800">در انتظار تایید ادمین</p>
@@ -284,7 +276,7 @@ function BusinessOverviewContent() {
         )}
 
         {salonData.status === 'REJECTED' && (
-          <div className="flex items-start gap-3 bg-red-50 border border-red-200 rounded-2xl px-4 py-3.5 mb-5">
+          <div className="flex items-start gap-3 bg-red-50 border border-red-200 rounded-[8px] px-4 py-3.5 mb-5">
             <XCircle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" strokeWidth={1.5} />
             <div>
               <p className="text-sm font-bold text-red-800">ثبت کسب‌وکار رد شد</p>
@@ -297,7 +289,7 @@ function BusinessOverviewContent() {
 
         {/* اگر کاربر مدیرِ اضافه‌شده است نه صاحب اصلی، همین‌جا بهش گفته می‌شود */}
         {!isSalonOwner && (
-          <div className="flex items-start gap-3 bg-violet-50 border border-violet-200 rounded-2xl px-4 py-3.5 mb-5">
+          <div className="flex items-start gap-3 bg-violet-50 border border-violet-200 rounded-[8px] px-4 py-3.5 mb-5">
             <ShieldCheck className="w-5 h-5 text-violet-600 shrink-0 mt-0.5" strokeWidth={1.5} />
             <div>
               <p className="text-sm font-bold text-violet-800">شما مدیر این کسب‌وکار هستید</p>
@@ -311,10 +303,10 @@ function BusinessOverviewContent() {
         {/* کارت سالن — با زدن روی آن، صفحه عمومی سالن باز می‌شود */}
         <Link
           href={`/salon/${salonData.id}`}
-          className="block bg-gradient-to-br from-[#824c71] to-[#6d3f5e] rounded-3xl p-5 shadow-lg shadow-[#824c71]/20 mb-5 active:opacity-90 transition-opacity"
+          className="block bg-gradient-to-br from-[#824c71] to-[#6d3f5e] rounded-[8px] p-5 mb-5 active:opacity-90 transition-opacity"
         >
           <div className="flex items-center gap-4">
-            <div className="w-14 h-14 bg-white/15 backdrop-blur rounded-2xl flex items-center justify-center shrink-0 border border-white/20">
+            <div className="w-14 h-14 bg-white/15 backdrop-blur rounded-[8px] flex items-center justify-center shrink-0 border border-white/20">
               <Store className="w-6 h-6 text-white" strokeWidth={1.5} />
             </div>
             <div className="flex-1 min-w-0">
@@ -328,24 +320,22 @@ function BusinessOverviewContent() {
           </div>
         </Link>
 
-        {/* اکشن‌ها */}
-        <div className="space-y-2.5">
+        {/* اکشن‌ها — لیست ساده، بدون کارت/بوردر/شدو، دقیقاً مثل صفحه‌ی پروفایل */}
+        <div className="divide-y divide-zinc-200">
           {actions.map((action) => {
             const Icon = action.icon;
             return (
               <Link
                 key={action.key}
                 href={action.href}
-                className="group w-full flex items-center gap-3.5 px-4 py-3.5 rounded-2xl bg-white border border-zinc-100 hover:border-zinc-200 hover:shadow-sm transition-all text-right"
+                className="flex items-center gap-3 py-3.5 hover:bg-zinc-50 transition-colors"
               >
-                <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-zinc-100 text-zinc-600">
-                  <Icon className="w-4.5 h-4.5" strokeWidth={1.75} />
+                <Icon className="w-5 h-5 text-[#824c71] shrink-0" strokeWidth={1.75} />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-bold text-zinc-800">{action.label}</p>
+                  <p className="text-[11px] text-zinc-500 mt-0.5 truncate">{action.description}</p>
                 </div>
-                <div className="flex-1 min-w-0 text-right">
-                  <p className="text-sm font-bold text-zinc-900">{action.label}</p>
-                  <p className="text-xs mt-0.5 truncate text-zinc-400">{action.description}</p>
-                </div>
-                <ChevronLeft className="w-4 h-4 text-zinc-300 group-hover:-translate-x-0.5 transition-transform shrink-0" />
+                <ChevronLeft className="w-4.5 h-4.5 text-zinc-400 shrink-0" />
               </Link>
             );
           })}
@@ -358,58 +348,50 @@ function BusinessOverviewContent() {
                 setPinError('');
                 setShowPinModal(true);
               }}
-              className="group w-full flex items-center gap-3.5 px-4 py-3.5 rounded-2xl bg-white border border-zinc-100 hover:border-zinc-200 hover:shadow-sm transition-all text-right"
+              className="w-full flex items-center gap-3 py-3.5 hover:bg-zinc-50 transition-colors text-right"
             >
-              <div
-                className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
-                  isPinned ? 'bg-amber-50 text-amber-600' : 'bg-zinc-100 text-zinc-600'
-                }`}
-              >
-                <Pin className="w-4.5 h-4.5" strokeWidth={1.75} />
-              </div>
-              <div className="flex-1 min-w-0 text-right">
-                <p className="text-sm font-bold text-zinc-900">
+              <Pin className={`w-5 h-5 shrink-0 ${isPinned ? 'text-amber-600' : 'text-[#824c71]'}`} strokeWidth={1.75} />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-bold text-zinc-800">
                   {isPinned ? 'سالن شما پین است' : 'پین کردن سالن'}
                 </p>
-                <p className="text-xs mt-0.5 truncate text-zinc-400">
+                <p className="text-[11px] text-zinc-500 mt-0.5 truncate">
                   {isPinned ? `تا ${pinnedUntilLabel} در جستجوها اول نمایش داده می‌شوید` : 'همیشه اولین سالن در جستجوها باشید'}
                 </p>
               </div>
-              <ChevronLeft className="w-4 h-4 text-zinc-300 group-hover:-translate-x-0.5 transition-transform shrink-0" />
+              <ChevronLeft className="w-4.5 h-4.5 text-zinc-400 shrink-0" />
             </button>
           )}
 
           {/* مدیران سالن — فقط صاحب اصلی می‌بیند، به‌صورت آکاردئون همین‌جا باز می‌شود */}
           {isSalonOwner && (
-            <div className="rounded-2xl bg-white border border-zinc-100 overflow-hidden">
+            <div>
               <button
                 type="button"
                 onClick={toggleManagers}
-                className="w-full flex items-center gap-3.5 px-4 py-3.5 text-right"
+                className="w-full flex items-center gap-3 py-3.5 hover:bg-zinc-50 transition-colors text-right"
               >
-                <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-zinc-100 text-zinc-600">
-                  <ShieldCheck className="w-4.5 h-4.5" strokeWidth={1.75} />
-                </div>
-                <div className="flex-1 min-w-0 text-right">
-                  <p className="text-sm font-bold text-zinc-900">مدیران سالن</p>
-                  <p className="text-xs mt-0.5 truncate text-zinc-400">
+                <ShieldCheck className="w-5 h-5 text-[#824c71] shrink-0" strokeWidth={1.75} />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-bold text-zinc-800">مدیران سالن</p>
+                  <p className="text-[11px] text-zinc-500 mt-0.5 truncate">
                     افزودن شماره‌هایی که مثل خودتان به همه‌چیز دسترسی داشته باشند
                   </p>
                 </div>
                 <ChevronDown
-                  className={`w-4 h-4 text-zinc-300 shrink-0 transition-transform ${managersOpen ? 'rotate-180' : ''}`}
+                  className={`w-4.5 h-4.5 text-zinc-400 shrink-0 transition-transform ${managersOpen ? 'rotate-180' : ''}`}
                 />
               </button>
 
               {managersOpen && (
-                <div className="px-4 pb-4 pt-1 border-t border-zinc-100">
-                  <p className="text-[11px] text-zinc-400 leading-relaxed mb-3">
+                <div className="pb-4 -mt-1">
+                  <p className="text-[11px] text-zinc-500 leading-relaxed mb-3">
                     شماره موبایلی که وارد کنید، دقیقاً مثل خودتان به نوبت‌ها، پرسنل و تنظیمات این سالن دسترسی خواهد داشت — هر کاربری که با آن شماره وارد شود.
                   </p>
 
                   {/* فرم افزودن — یک ردیف جمع‌وجور، نه یک صفحه‌ی جدا */}
                   <div className="flex items-stretch gap-2 mb-3">
-                    <div className="flex items-center gap-1.5 border border-zinc-200 rounded-lg bg-zinc-50/50 px-3 h-10 flex-1 min-w-0 focus-within:ring-1 focus-within:ring-[#824c71]/40 focus-within:border-[#824c71]">
+                    <div className="flex items-center gap-1.5 border-[1.5px] border-zinc-300 rounded-[8px] px-3 h-10 flex-1 min-w-0 focus-within:ring-1 focus-within:ring-[#824c71]/40 focus-within:border-[#824c71]">
                       <Phone className="w-3.5 h-3.5 text-zinc-400 shrink-0" />
                       <input
                         type="tel"
@@ -428,12 +410,12 @@ function BusinessOverviewContent() {
                       onChange={(e) => setNewLabel(e.target.value)}
                       onKeyDown={(e) => e.key === 'Enter' && handleAddManager()}
                       placeholder="یادداشت (اختیاری)"
-                      className="w-28 shrink-0 border border-zinc-200 rounded-lg bg-zinc-50/50 px-2.5 h-10 text-xs focus:outline-none focus:ring-1 focus:ring-[#824c71]/40 focus:border-[#824c71]"
+                      className="w-28 shrink-0 border-[1.5px] border-zinc-300 rounded-[8px] px-2.5 h-10 text-xs focus:outline-none focus:ring-1 focus:ring-[#824c71]/40 focus:border-[#824c71]"
                     />
                     <button
                       onClick={handleAddManager}
                       disabled={isAddingManager || !newPhoneDigits}
-                      className="w-10 h-10 shrink-0 flex items-center justify-center rounded-lg bg-[#824c71] text-white disabled:opacity-50"
+                      className="w-10 h-10 shrink-0 flex items-center justify-center rounded-[8px] bg-[#824c71] text-white disabled:opacity-50"
                       title="افزودن مدیر"
                     >
                       {isAddingManager ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserPlus className="w-4 h-4" />}
@@ -451,11 +433,11 @@ function BusinessOverviewContent() {
                       {managers.map((m) => (
                         <div
                           key={m.id}
-                          className="flex items-center gap-1.5 bg-zinc-50 border border-zinc-100 rounded-full pl-1.5 pr-3 py-1.5"
+                          className="flex items-center gap-1.5 bg-zinc-50 border border-zinc-200 rounded-full pl-1.5 pr-3 py-1.5"
                         >
                           <div className="text-right leading-tight">
                             <span dir="ltr" className="block text-[11px] font-medium text-zinc-700">{m.phone}</span>
-                            {m.label && <span className="block text-[10px] text-zinc-400">{m.label}</span>}
+                            {m.label && <span className="block text-[10px] text-zinc-500">{m.label}</span>}
                           </div>
                           <button
                             onClick={() => handleRemoveManager(m.id)}
@@ -468,7 +450,7 @@ function BusinessOverviewContent() {
                       ))}
                     </div>
                   ) : (
-                    <p className="text-[11px] text-zinc-400 text-center py-4">هنوز مدیری اضافه نکرده‌اید.</p>
+                    <p className="text-[11px] text-zinc-500 text-center py-4">هنوز مدیری اضافه نکرده‌اید.</p>
                   )}
                 </div>
               )}
@@ -479,16 +461,14 @@ function BusinessOverviewContent() {
           {isSalonOwner && (
             <button
               onClick={() => setShowDeleteConfirm(true)}
-              className="group w-full flex items-center gap-3.5 px-4 py-3.5 rounded-2xl bg-white border border-zinc-100 hover:border-red-200 hover:bg-red-50/50 transition-all text-right"
+              className="w-full flex items-center gap-3 py-3.5 hover:bg-red-50 transition-colors text-right"
             >
-              <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-red-50 text-red-500">
-                <Trash2 className="w-4.5 h-4.5" strokeWidth={1.75} />
-              </div>
-              <div className="flex-1 min-w-0 text-right">
+              <Trash2 className="w-5 h-5 text-red-500 shrink-0" strokeWidth={1.75} />
+              <div className="flex-1 min-w-0">
                 <p className="text-sm font-bold text-red-600">حذف کسب‌وکار</p>
-                <p className="text-xs mt-0.5 truncate text-red-400">این عمل غیرقابل بازگشت است</p>
+                <p className="text-[11px] text-red-400 mt-0.5 truncate">این عمل غیرقابل بازگشت است</p>
               </div>
-              <ChevronLeft className="w-4 h-4 text-red-200 group-hover:-translate-x-0.5 transition-transform shrink-0" />
+              <ChevronLeft className="w-4.5 h-4.5 text-red-300 shrink-0" />
             </button>
           )}
         </div>
@@ -501,10 +481,10 @@ function BusinessOverviewContent() {
           onClick={() => !isPinning && setShowPinModal(false)}
         >
           <div
-            className="w-full max-w-sm bg-white rounded-3xl p-5 shadow-2xl"
+            className="w-full max-w-sm bg-white rounded-[8px] p-5"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center mb-4">
+            <div className="w-12 h-12 rounded-[8px] bg-amber-50 text-amber-600 flex items-center justify-center mb-4">
               <Pin className="w-5 h-5" />
             </div>
             <h3 className="text-base font-bold text-zinc-900 mb-1.5">
@@ -514,11 +494,11 @@ function BusinessOverviewContent() {
               با پرداخت، به مدت ۳۰ روز سالن «{salonData.name}» در جستجوها و فیلترها همیشه به‌عنوان اولین سالن نمایش داده می‌شود.
             </p>
             {isPinned && (
-              <p className="text-xs text-amber-700 bg-amber-50 rounded-xl px-3 py-2 mb-2 leading-5">
+              <p className="text-xs text-amber-700 bg-amber-50 rounded-[8px] px-3 py-2 mb-2 leading-5">
                 سالن شما الان تا {pinnedUntilLabel} پین است. با پرداخت مجدد، ۳۰ روز به همین تاریخ اضافه می‌شود.
               </p>
             )}
-            <p className="text-xs text-zinc-400 leading-5 mb-5">
+            <p className="text-xs text-zinc-500 leading-5 mb-5">
               مبلغ در صفحه‌ی پرداخت زرین‌پال به شما نمایش داده خواهد شد.
             </p>
 
@@ -529,7 +509,7 @@ function BusinessOverviewContent() {
                 type="button"
                 onClick={() => setShowPinModal(false)}
                 disabled={isPinning}
-                className="flex-1 py-2.5 rounded-xl text-sm font-bold text-zinc-600 bg-zinc-100 hover:bg-zinc-200 transition-colors disabled:opacity-50"
+                className="flex-1 py-2.5 rounded-[8px] text-sm font-bold text-zinc-600 bg-zinc-100 hover:bg-zinc-200 transition-colors disabled:opacity-50"
               >
                 انصراف
               </button>
@@ -537,7 +517,7 @@ function BusinessOverviewContent() {
                 type="button"
                 onClick={handlePin}
                 disabled={isPinning}
-                className="flex-1 py-2.5 rounded-xl text-sm font-bold text-white bg-[#824c71] hover:bg-[#6f3f5f] transition-colors disabled:opacity-50 flex items-center justify-center gap-1.5"
+                className="flex-1 py-2.5 rounded-[8px] text-sm font-bold text-white bg-[#824c71] hover:bg-[#6f3f5f] transition-colors disabled:opacity-50 flex items-center justify-center gap-1.5"
               >
                 {isPinning ? <Loader2 className="w-4 h-4 animate-spin" /> : 'پرداخت و ادامه'}
               </button>
@@ -553,10 +533,10 @@ function BusinessOverviewContent() {
           onClick={() => !isLoading && setShowDeleteConfirm(false)}
         >
           <div
-            className="w-full max-w-sm bg-white rounded-3xl p-5 shadow-2xl"
+            className="w-full max-w-sm bg-white rounded-[8px] p-5"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="w-12 h-12 rounded-2xl bg-red-50 text-red-500 flex items-center justify-center mb-4">
+            <div className="w-12 h-12 rounded-[8px] bg-red-50 text-red-500 flex items-center justify-center mb-4">
               <Trash2 className="w-5 h-5" />
             </div>
             <h3 className="text-base font-bold text-zinc-900 mb-1.5">حذف کامل کسب‌وکار</h3>
@@ -568,7 +548,7 @@ function BusinessOverviewContent() {
                 type="button"
                 onClick={() => setShowDeleteConfirm(false)}
                 disabled={isLoading}
-                className="flex-1 py-2.5 rounded-xl text-sm font-bold text-zinc-600 bg-zinc-100 hover:bg-zinc-200 transition-colors disabled:opacity-50"
+                className="flex-1 py-2.5 rounded-[8px] text-sm font-bold text-zinc-600 bg-zinc-100 hover:bg-zinc-200 transition-colors disabled:opacity-50"
               >
                 انصراف
               </button>
@@ -576,7 +556,7 @@ function BusinessOverviewContent() {
                 type="button"
                 onClick={handleDeleteBusiness}
                 disabled={isLoading}
-                className="flex-1 py-2.5 rounded-xl text-sm font-bold text-white bg-red-500 hover:bg-red-600 transition-colors disabled:opacity-50 flex items-center justify-center gap-1.5"
+                className="flex-1 py-2.5 rounded-[8px] text-sm font-bold text-white bg-red-500 hover:bg-red-600 transition-colors disabled:opacity-50 flex items-center justify-center gap-1.5"
               >
                 {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'بله، حذف شود'}
               </button>
