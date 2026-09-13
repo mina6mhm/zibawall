@@ -170,37 +170,34 @@ function AppointmentsContent() {
     cancelled: 'نوبت لغو‌شده‌ای ندارید.',
   };
 
-  const renderCard = ({ appt, item }: FlatItem) => {
+  // یک ردیفِ نوبت — دقیقاً با زبان بصریِ صفحه‌ی پروفایل: بدون کارت/بوردر/شدو،
+  // فقط یک آواتار دایره‌ای بنفش کم‌رنگ و جداکننده‌ی مویی (divide-y) بین ردیف‌ها.
+  const renderRow = ({ appt, item }: FlatItem) => {
     const statusInfo = STATUS_LABELS[item.status];
     const isCancelled = item.status === 'CANCELLED';
 
     return (
-      <div
-        key={item.id}
-        className={`bg-white rounded-[22px] p-5 shadow-[0_1px_2px_rgba(24,24,27,0.03),0_3px_8px_-4px_rgba(24,24,27,0.08)] transition-shadow hover:shadow-[0_1px_2px_rgba(24,24,27,0.04),0_5px_12px_-4px_rgba(24,24,27,0.10)] ${
-          isCancelled ? 'opacity-70' : ''
-        }`}
-      >
-        <div className="flex items-start justify-between gap-3 mb-4">
-          <Link href={`/salon/${appt.salon.id}`} className="flex items-center gap-2.5 min-w-0 group">
+      <div key={item.id} className={`py-5 first:pt-0 last:pb-0 ${isCancelled ? 'opacity-60' : ''}`}>
+        <div className="flex items-start justify-between gap-3 mb-3">
+          <Link href={`/salon/${appt.salon.id}`} className="flex items-center gap-3 min-w-0 group">
             {appt.salon.imageUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={appt.salon.imageUrl}
                 alt=""
-                className="w-10 h-10 rounded-full object-cover shrink-0 bg-zinc-100"
+                className="w-11 h-11 rounded-full object-cover shrink-0 bg-zinc-100"
               />
             ) : (
-              <span className="w-10 h-10 rounded-full bg-[#824c71]/10 flex items-center justify-center shrink-0">
-                <Store className="w-4 h-4 text-[#824c71]" />
+              <span className="w-11 h-11 rounded-full bg-[#824c71]/10 flex items-center justify-center text-[#824c71] shrink-0">
+                <Store className="w-5 h-5" strokeWidth={1.5} />
               </span>
             )}
             <span className="min-w-0">
-              <span className="block font-bold text-[14px] text-zinc-900 truncate group-hover:text-[#824c71] transition-colors">
+              <span className="block text-sm font-bold text-zinc-800 truncate group-hover:text-[#824c71] transition-colors">
                 {appt.salon.name}
               </span>
               {appt.salon.address && (
-                <span className="block text-[11px] text-zinc-400 truncate">{appt.salon.address}</span>
+                <span className="block text-[11px] text-zinc-500 mt-0.5 truncate">{appt.salon.address}</span>
               )}
             </span>
           </Link>
@@ -211,20 +208,24 @@ function AppointmentsContent() {
           </span>
         </div>
 
-        <div className="flex items-center gap-1.5 text-[12px] text-zinc-500 mb-4">
-          <Calendar className="w-3.5 h-3.5 text-zinc-400" />
-          <span>{formatDate(item.date)}</span>
-          <span className="text-zinc-300">•</span>
-          <Clock className="w-3.5 h-3.5 text-zinc-400" />
-          <span dir="ltr">{toPersianDigits(item.startTime)}</span>
+        <div className="flex items-center gap-1.5 text-xs text-zinc-500 mb-3">
+          <span className="flex items-center gap-1">
+            <Calendar className="w-3.5 h-3.5" />
+            {formatDate(item.date)}
+          </span>
+          <span className="text-zinc-300">|</span>
+          <span className="flex items-center gap-1" dir="ltr">
+            <Clock className="w-3.5 h-3.5" />
+            {toPersianDigits(item.startTime)}
+          </span>
         </div>
 
-        <div className="flex flex-col gap-2.5">
+        <div className="flex flex-col gap-2">
           {item.services.map((s, idx) => (
-            <div key={idx} className="flex items-center justify-between gap-2 bg-[#824c71]/[0.05] rounded-2xl px-3.5 py-2.5">
+            <div key={idx} className="flex items-center justify-between gap-2">
               <div className="flex items-center gap-1.5 min-w-0">
-                <Scissors className="w-3 h-3 text-[#824c71]/50 shrink-0" />
-                <p className="text-[12.5px] font-bold text-zinc-800 truncate">{s.name}</p>
+                <Scissors className="w-3.5 h-3.5 text-[#824c71] shrink-0" strokeWidth={1.75} />
+                <p className="text-[13px] font-bold text-zinc-800 truncate">{s.name}</p>
               </div>
               <div className="flex items-center gap-2.5 shrink-0 text-[11px] text-zinc-500">
                 {s.price != null && (
@@ -246,7 +247,7 @@ function AppointmentsContent() {
           <button
             onClick={() => handlePay(appt)}
             disabled={payingId === appt.id}
-            className="w-full flex items-center justify-center gap-1.5 py-2.5 rounded-full bg-[#824c71] text-white text-xs font-bold hover:bg-[#6e3f60] transition disabled:opacity-60 mt-4"
+            className="w-full flex items-center justify-center gap-1.5 py-2.5 rounded-[10px] bg-[#824c71] text-white text-xs font-bold hover:bg-[#6e3f60] transition disabled:opacity-60 mt-4"
           >
             {payingId === appt.id && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
             پرداخت و ثبت قطعی نوبت
@@ -268,71 +269,74 @@ function AppointmentsContent() {
   const currentList = listByTab[activeTab];
 
   return (
-    <div className="max-w-3xl mx-auto pb-32">
-      <div className="bg-[#FBF8FA] rounded-[28px] px-4 py-8 md:px-8 md:py-10">
-      <div className="mb-6">
-        <h1 className="text-xl md:text-2xl font-bold text-zinc-900">نوبت‌های من</h1>
-        <p className="text-zinc-500 text-xs md:text-sm mt-0.5">نوبت‌هایی که برای شما ثبت شده است</p>
+    <div className="flex flex-col min-h-screen bg-white pb-24">
+      {/* هدر — دقیقاً هم‌سبک با هدر صفحه‌ی پروفایل */}
+      <div className="bg-white px-4 pt-6 pb-5">
+        <div className="max-w-lg mx-auto">
+          <h1 className="text-base font-bold text-zinc-900">نوبت‌های من</h1>
+          <p className="text-xs text-zinc-500 mt-1">نوبت‌هایی که برای شما ثبت شده است</p>
+        </div>
       </div>
 
-      {notice && (
-        <div
-          className={`flex items-center gap-2 rounded-2xl p-3.5 mb-5 text-sm font-medium ${
-            notice.type === 'success' ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-600'
-          }`}
-        >
-          {notice.type === 'success' ? <CheckCircle2 className="w-4 h-4 shrink-0" /> : <XCircle className="w-4 h-4 shrink-0" />}
-          {notice.text}
-        </div>
-      )}
-
-      {appointments.length === 0 ? (
-        <div className="text-center py-20 bg-white rounded-[24px]">
-          <span className="w-14 h-14 rounded-full bg-[#824c71]/10 flex items-center justify-center mx-auto mb-4">
-            <CalendarX className="w-6 h-6 text-[#824c71]/60" />
-          </span>
-          <p className="text-zinc-500 text-sm">هنوز نوبتی برای شما ثبت نشده است.</p>
-        </div>
-      ) : (
-        <>
-          {/* تب‌های آینده / گذشته / لغو‌شده */}
-          <div className="inline-flex items-center gap-1 bg-white rounded-full p-1 mb-6">
-            {TABS.map((tab) => {
-              const count = listByTab[tab.key].length;
-              const isActive = activeTab === tab.key;
-              return (
-                <button
-                  key={tab.key}
-                  onClick={() => setActiveTab(tab.key)}
-                  className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-bold transition-colors ${
-                    isActive ? 'bg-[#824c71] text-white' : 'text-zinc-500'
-                  }`}
-                >
-                  {tab.label}
-                  {count > 0 && (
-                    <span className={isActive ? 'text-white/70' : 'text-zinc-400'}>
-                      {toPersianDigits(String(count))}
-                    </span>
-                  )}
-                </button>
-              );
-            })}
+      <div className="max-w-lg mx-auto w-full px-4 mt-1">
+        {notice && (
+          <div
+            className={`flex items-center gap-2 rounded-[10px] p-3.5 mb-5 text-sm font-medium ${
+              notice.type === 'success' ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-600'
+            }`}
+          >
+            {notice.type === 'success' ? <CheckCircle2 className="w-4 h-4 shrink-0" /> : <XCircle className="w-4 h-4 shrink-0" />}
+            {notice.text}
           </div>
+        )}
 
-          {currentList.length === 0 ? (
-            <div className="text-center py-20 bg-white rounded-[24px]">
-              <span className="w-14 h-14 rounded-full bg-[#824c71]/10 flex items-center justify-center mx-auto mb-4">
-                <CalendarX className="w-6 h-6 text-[#824c71]/60" />
-              </span>
-              <p className="text-zinc-500 text-sm">{emptyTextByTab[activeTab]}</p>
+        {appointments.length === 0 ? (
+          <div className="text-center py-16">
+            <div className="w-16 h-16 rounded-full bg-[#824c71]/10 flex items-center justify-center text-[#824c71] mx-auto mb-4">
+              <CalendarX className="w-8 h-8" strokeWidth={1.5} />
             </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {currentList.map(renderCard)}
+            <p className="text-zinc-500 text-sm">هنوز نوبتی برای شما ثبت نشده است.</p>
+          </div>
+        ) : (
+          <>
+            {/* تب‌های آینده / گذشته / لغو‌شده */}
+            <div className="inline-flex items-center gap-1 bg-zinc-100 rounded-full p-1 mb-2">
+              {TABS.map((tab) => {
+                const count = listByTab[tab.key].length;
+                const isActive = activeTab === tab.key;
+                return (
+                  <button
+                    key={tab.key}
+                    onClick={() => setActiveTab(tab.key)}
+                    className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-bold transition-colors ${
+                      isActive ? 'bg-[#824c71] text-white' : 'text-zinc-500'
+                    }`}
+                  >
+                    {tab.label}
+                    {count > 0 && (
+                      <span className={isActive ? 'text-white/70' : 'text-zinc-400'}>
+                        {toPersianDigits(String(count))}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
             </div>
-          )}
-        </>
-      )}
+
+            {currentList.length === 0 ? (
+              <div className="text-center py-16">
+                <div className="w-16 h-16 rounded-full bg-[#824c71]/10 flex items-center justify-center text-[#824c71] mx-auto mb-4">
+                  <CalendarX className="w-8 h-8" strokeWidth={1.5} />
+                </div>
+                <p className="text-zinc-500 text-sm">{emptyTextByTab[activeTab]}</p>
+              </div>
+            ) : (
+              <div className="divide-y divide-zinc-200">
+                {currentList.map(renderRow)}
+              </div>
+            )}
+          </>
+        )}
       </div>
     </div>
   );
