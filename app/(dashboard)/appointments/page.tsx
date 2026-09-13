@@ -5,7 +5,7 @@ import { Suspense, useState, useEffect, useCallback, useMemo } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
-  Loader2, Scissors, User as UserIcon, Store, CalendarX, CheckCircle2, XCircle,
+  Loader2, Scissors, User as UserIcon, CalendarX, CheckCircle2, XCircle,
 } from 'lucide-react';
 import { openPaymentUrl } from '@/lib/openPaymentUrl';
 import { useOnBrowserReturn } from '@/lib/useBrowserReturn';
@@ -43,9 +43,9 @@ const STATUS_LABELS: Record<AppointmentItem['status'], { label: string; bgClassN
 };
 
 const TABS: { key: TabKey; label: string }[] = [
-  { key: 'upcoming', label: 'آینده' },
-  { key: 'past', label: 'گذشته' },
-  { key: 'cancelled', label: 'لغو‌شده' },
+  { key: 'upcoming', label: 'نوبت‌های آینده' },
+  { key: 'past', label: 'نوبت‌های گذشته' },
+  { key: 'cancelled', label: 'نوبت‌های لغو شده' },
 ];
 
 const toPersianDigits = (str: string) => str.replace(/[0-9]/g, (d) => '۰۱۲۳۴۵۶۷۸۹'[Number(d)]);
@@ -182,22 +182,10 @@ function AppointmentsContent() {
     return (
       <div
         key={item.id}
-        className={`bg-white shadow-sm shadow-zinc-200/70 rounded-2xl p-4 ${isCancelled ? 'opacity-70' : ''}`}
+        className={`bg-white rounded-2xl p-4 shadow-[0_2px_14px_rgba(0,0,0,0.09)] ${isCancelled ? 'opacity-70' : ''}`}
       >
-        {/* ردیف ۱: عکس سالن + اسم سالن */}
-        <Link href={`/salon/${appt.salon.id}`} className="flex items-center gap-3 mb-3.5 group">
-          {appt.salon.imageUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={appt.salon.imageUrl}
-              alt=""
-              className="w-12 h-12 rounded-2xl object-cover shrink-0 bg-zinc-100"
-            />
-          ) : (
-            <span className="w-12 h-12 rounded-2xl bg-[#824c71]/10 flex items-center justify-center text-[#824c71] shrink-0">
-              <Store className="w-5 h-5" strokeWidth={1.5} />
-            </span>
-          )}
+        {/* ردیف ۱: فقط اسم سالن */}
+        <Link href={`/salon/${appt.salon.id}`} className="block mb-3.5 group">
           <p className="text-[15px] font-bold text-zinc-900 truncate group-hover:text-[#824c71] transition-colors">
             {appt.salon.name}
           </p>
@@ -215,16 +203,16 @@ function AppointmentsContent() {
           </span>
         </div>
 
-        {/* ردیف‌های ۳ و ۴: اسم خدمت (آیکون قیچی) و اسم پرسنل (آیکون یوزر) — دقیقاً هم‌رنگ، برای هر خدمت */}
+        {/* ردیف‌های خدمات: اسم خدمت (آیکون قیچی) و اسم پرسنل (آیکون یوزر) در یک ردیف، هم‌رنگ */}
         <div className="flex flex-col gap-2 mb-3.5">
           {item.services.map((s, idx) => (
-            <div key={idx} className="flex flex-col gap-2">
-              <div className="flex items-center gap-2 text-xs text-zinc-700">
+            <div key={idx} className="flex items-center gap-4 flex-wrap">
+              <div className="flex items-center gap-2 text-xs text-zinc-700 min-w-0">
                 <Scissors className="w-3.5 h-3.5 text-[#824c71] shrink-0" strokeWidth={1.75} />
                 <span className="font-bold truncate">{s.name}</span>
               </div>
               {s.staffName && (
-                <div className="flex items-center gap-2 text-xs text-zinc-700">
+                <div className="flex items-center gap-2 text-xs text-zinc-700 min-w-0">
                   <UserIcon className="w-3.5 h-3.5 text-[#824c71] shrink-0" strokeWidth={1.75} />
                   <span className="font-bold truncate">{s.staffName}</span>
                 </div>
@@ -303,9 +291,10 @@ function AppointmentsContent() {
           </div>
         ) : (
           <>
-            {/* تب‌های آینده / گذشته / لغو‌شده */}
-            <div className="inline-flex items-center gap-1 bg-zinc-100 rounded-full p-1 mb-2">
-              {TABS.map((tab) => {
+            {/* تب‌های نوبت‌های آینده / گذشته / لغو‌شده — دقیقاً وسط صفحه */}
+            <div className="flex justify-center mb-2">
+              <div className="inline-flex items-center gap-1 bg-zinc-100 rounded-full p-1">
+                {TABS.map((tab) => {
                 const count = listByTab[tab.key].length;
                 const isActive = activeTab === tab.key;
                 return (
@@ -325,6 +314,7 @@ function AppointmentsContent() {
                   </button>
                 );
               })}
+              </div>
             </div>
 
             {currentList.length === 0 ? (
