@@ -2,8 +2,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { AtSign, ChevronRight } from 'lucide-react';
-import Link from 'next/link';
+import { AtSign } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 export default function ProfileInfoPage() {
@@ -56,10 +55,6 @@ export default function ProfileInfoPage() {
   return (
     <div className="flex flex-col min-h-screen bg-white pb-24">
       <div className="max-w-lg mx-auto w-full px-4 pt-6">
-        <Link href="/profile" className="inline-flex items-center gap-1 text-sm text-zinc-500 mb-4">
-          <ChevronRight className="w-4 h-4" /> بازگشت
-        </Link>
-
         <h1 className="text-base font-bold text-zinc-900 mb-4">اطلاعات کاربری</h1>
 
         <div className="space-y-4">
@@ -69,7 +64,7 @@ export default function ProfileInfoPage() {
               value={userData.phone}
               disabled
               dir="ltr"
-              className="w-full border-[1.5px] border-zinc-200 bg-zinc-50 rounded-xl px-3.5 py-2.5 text-sm text-zinc-400 cursor-not-allowed text-left"
+              className="w-full border-[1.5px] border-zinc-200 bg-zinc-50 rounded-[10px] px-3.5 py-3 text-sm text-zinc-400 cursor-not-allowed text-left"
             />
           </div>
           <div>
@@ -77,7 +72,7 @@ export default function ProfileInfoPage() {
             <input
               value={userData.name}
               onChange={(e) => setUserData({ ...userData, name: e.target.value })}
-              className="w-full border-[1.5px] border-zinc-300 rounded-xl px-3.5 py-2.5 text-sm focus:border-[#824c71] focus:ring-2 focus:ring-[#824c71]/10 outline-none transition-all"
+              className="w-full border-[1.5px] border-zinc-300 rounded-[10px] px-3.5 py-3 text-sm focus:border-[#824c71] focus:ring-2 focus:ring-[#824c71]/10 outline-none transition-all"
               placeholder="نام خود را وارد کنید"
             />
           </div>
@@ -90,14 +85,14 @@ export default function ProfileInfoPage() {
                 onChange={(e) => setUserData({ ...userData, username: e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '') })}
                 placeholder="username"
                 dir="ltr"
-                className="w-full border-[1.5px] border-zinc-300 rounded-xl px-3.5 py-2.5 pl-10 text-sm text-left focus:border-[#824c71] focus:ring-2 focus:ring-[#824c71]/10 outline-none transition-all"
+                className="w-full border-[1.5px] border-zinc-300 rounded-[10px] px-3.5 py-3 pl-10 text-sm text-left focus:border-[#824c71] focus:ring-2 focus:ring-[#824c71]/10 outline-none transition-all"
               />
             </div>
           </div>
           <button
             onClick={handleSaveChanges}
             disabled={isLoading}
-            className="w-full bg-[#824c71] text-white py-2.5 rounded-xl text-sm font-medium hover:bg-[#6d3f5e] transition-colors disabled:opacity-50 mt-2"
+            className="w-full bg-[#824c71] text-white py-2.5 rounded-[10px] text-sm font-medium hover:bg-[#6d3f5e] transition-colors disabled:opacity-50 mt-2"
           >
             {isLoading ? 'در حال ذخیره...' : 'ذخیره تغییرات'}
           </button>
