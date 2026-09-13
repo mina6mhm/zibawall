@@ -27,6 +27,10 @@ export default function ProfilePage() {
   // ── وضعیت نوتیف مرورگر — یه سوییچ ساده، بدون رفتن به صفحه‌ی جدید ──
   const [pushState, setPushState] = useState<PushState>('checking');
   const [pushBusy, setPushBusy] = useState(false);
+
+  // ── تایید خروج از حساب — به‌جای window.confirm پیش‌فرض مرورگر ──
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
  
   useEffect(() => {
     const fetchProfile = async () => {
@@ -78,7 +82,7 @@ export default function ProfilePage() {
   }, []);
  
   const handleLogout = async () => {
-    if (!window.confirm('آیا می‌خواهید از حساب خود خارج شوید؟')) return;
+    setIsLoggingOut(true);
     try {
       await fetch('/api/auth/logout', { method: 'POST' });
     } catch {}
@@ -313,8 +317,9 @@ export default function ProfilePage() {
             <ChevronLeft className="w-4.5 h-4.5 text-zinc-400 shrink-0" />
           </Link>
 
+          {/* خروج از حساب کاربری — با پاپ‌آپ تایید، به‌جای window.confirm */}
           <button
-            onClick={handleLogout}
+            onClick={() => setShowLogoutConfirm(true)}
             className="w-full flex items-center gap-3 py-3.5 hover:bg-zinc-50 transition-colors text-right"
           >
             <LogOut className="w-5 h-5 text-[#824c71] shrink-0" strokeWidth={1.75} />
@@ -326,6 +331,45 @@ export default function ProfilePage() {
           </button>
         </div>
       </div>
+
+      {/* پاپ‌آپ تایید خروج از حساب کاربری */}
+      {showLogoutConfirm && (
+        <div
+          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 backdrop-blur-sm px-4"
+          onClick={() => !isLoggingOut && setShowLogoutConfirm(false)}
+        >
+          <div
+            className="w-full max-w-sm bg-white rounded-[8px] p-5"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="w-12 h-12 rounded-[8px] bg-[#824c71]/10 text-[#824c71] flex items-center justify-center mb-4">
+              <LogOut className="w-5 h-5" />
+            </div>
+            <h3 className="text-base font-bold text-zinc-900 mb-1.5">خروج از حساب کاربری</h3>
+            <p className="text-sm text-zinc-500 leading-6 mb-5">
+              آیا می‌خواهید از حساب خود خارج شوید؟
+            </p>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setShowLogoutConfirm(false)}
+                disabled={isLoggingOut}
+                className="flex-1 py-2.5 rounded-[8px] text-sm font-bold text-zinc-600 bg-zinc-100 hover:bg-zinc-200 transition-colors disabled:opacity-50"
+              >
+                انصراف
+              </button>
+              <button
+                type="button"
+                onClick={handleLogout}
+                disabled={isLoggingOut}
+                className="flex-1 py-2.5 rounded-[8px] text-sm font-bold text-white bg-[#824c71] hover:bg-[#6f3f5f] transition-colors disabled:opacity-50 flex items-center justify-center gap-1.5"
+              >
+                {isLoggingOut ? <Loader2 className="w-4 h-4 animate-spin" /> : 'بله، خارج شو'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
