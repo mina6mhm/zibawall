@@ -303,11 +303,11 @@ function BusinessOverviewContent() {
         {/* کارت سالن — با زدن روی آن، صفحه عمومی سالن باز می‌شود */}
         <Link
           href={`/salon/${salonData.id}`}
-          className="block bg-gradient-to-br from-[#824c71] to-[#6d3f5e] rounded-[8px] p-5 mb-5 active:opacity-90 transition-opacity"
+          className="block bg-gradient-to-br from-[#824c71] to-[#6d3f5e] rounded-[16px] p-4 mb-5 active:opacity-90 transition-opacity"
         >
-          <div className="flex items-center gap-4">
-            <div className="w-14 h-14 bg-white/15 backdrop-blur rounded-[8px] flex items-center justify-center shrink-0 border border-white/20">
-              <Store className="w-6 h-6 text-white" strokeWidth={1.5} />
+          <div className="flex items-center gap-3.5">
+            <div className="w-12 h-12 bg-white/15 backdrop-blur rounded-[10px] flex items-center justify-center shrink-0 border border-white/20">
+              <Store className="w-5 h-5 text-white" strokeWidth={1.5} />
             </div>
             <div className="flex-1 min-w-0">
               <h1 className="text-white font-bold text-base truncate">{salonData.name}</h1>
@@ -517,7 +517,7 @@ function BusinessOverviewContent() {
                 type="button"
                 onClick={handlePin}
                 disabled={isPinning}
-                className="flex-1 py-2.5 rounded-[8px] text-sm font-bold text-white bg-[#824c71] hover:bg-[#6f3f5f] transition-colors disabled:opacity-50 flex items-center justify-center gap-1.5"
+                className="flex-1 py-2 rounded-[6px] text-sm font-bold text-white bg-[#824c71] hover:bg-[#6f3f5f] transition-colors disabled:opacity-50 flex items-center justify-center gap-1.5"
               >
                 {isPinning ? <Loader2 className="w-4 h-4 animate-spin" /> : 'پرداخت و ادامه'}
               </button>
