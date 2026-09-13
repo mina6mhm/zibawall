@@ -40,7 +40,7 @@ type TabKey = 'upcoming' | 'past' | 'cancelled';
 const STATUS_LABELS: Record<AppointmentItem['status'], { label: string; className: string }> = {
   PENDING_PAYMENT: { label: 'در انتظار پرداخت', className: 'bg-amber-50 text-amber-700' },
   CONFIRMED: { label: 'قطعی شده', className: 'bg-emerald-50 text-emerald-700' },
-  CANCELLED: { label: 'لغو شده', className: 'bg-zinc-100 text-zinc-500' },
+  CANCELLED: { label: 'لغو شده', className: 'bg-zinc-200 text-zinc-600' },
 };
 
 const TABS: { key: TabKey; label: string; icon: typeof CalendarClock }[] = [
@@ -175,7 +175,7 @@ function AppointmentsContent() {
     const statusInfo = STATUS_LABELS[item.status];
 
     return (
-      <div key={item.id} className="bg-white border border-zinc-100 rounded-2xl p-4 shadow-sm shadow-zinc-200/50">
+      <div key={item.id} className="bg-white border border-zinc-300 rounded-[10px] p-4">
         <div className="flex items-start justify-between gap-2 mb-3">
           <Link
             href={`/salon/${appt.salon.id}`}
@@ -184,20 +184,20 @@ function AppointmentsContent() {
             <Store className="w-4 h-4 text-[#824c71] shrink-0" />
             <span className="font-bold text-sm">{appt.salon.name}</span>
           </Link>
-          <span className={`text-[11px] font-medium px-2.5 py-1 rounded-lg whitespace-nowrap ${statusInfo.className}`}>
+          <span className={`text-[11px] font-medium px-2.5 py-1 rounded-[6px] whitespace-nowrap ${statusInfo.className}`}>
             {statusInfo.label}
           </span>
         </div>
 
-        <div className="flex items-center gap-1.5 text-[12px] text-zinc-500 pb-3 mb-1 border-b border-zinc-100">
-          <Calendar className="w-3.5 h-3.5 text-zinc-400" />
+        <div className="flex items-center gap-1.5 text-[12px] text-zinc-600 pb-3 mb-1 border-b border-zinc-200">
+          <Calendar className="w-3.5 h-3.5 text-zinc-500" />
           <span>{formatDate(item.date)}</span>
-          <span className="text-zinc-300">·</span>
-          <Clock className="w-3.5 h-3.5 text-zinc-400" />
+          <span className="text-zinc-400">·</span>
+          <Clock className="w-3.5 h-3.5 text-zinc-500" />
           <span dir="ltr">{toPersianDigits(item.startTime)}</span>
         </div>
 
-        <div className="divide-y divide-zinc-50">
+        <div className="divide-y divide-zinc-100">
           {item.services.map((s, idx) => (
             <div key={idx} className="py-2.5 first:pt-0 last:pb-0 flex items-center justify-between gap-2">
               <div className="flex items-center gap-1.5 min-w-0">
@@ -210,7 +210,7 @@ function AppointmentsContent() {
                 )}
                 {s.staffName && (
                   <span className="flex items-center gap-1">
-                    <UserIcon className="w-3 h-3 text-zinc-400" />
+                    <UserIcon className="w-3 h-3 text-zinc-500" />
                     {s.staffName}
                   </span>
                 )}
@@ -224,7 +224,7 @@ function AppointmentsContent() {
           <button
             onClick={() => handlePay(appt)}
             disabled={payingId === appt.id}
-            className="w-full flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-[#824c71] text-white text-xs font-bold hover:bg-[#6e3f60] transition disabled:opacity-60 mt-3"
+            className="w-full flex items-center justify-center gap-1.5 py-2.5 rounded-[8px] bg-[#824c71] text-white text-xs font-bold hover:bg-[#6e3f60] transition disabled:opacity-60 mt-3"
           >
             {payingId === appt.id && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
             پرداخت و ثبت قطعی نوبت
@@ -254,7 +254,7 @@ function AppointmentsContent() {
 
       {notice && (
         <div
-          className={`flex items-center gap-2 rounded-xl p-3 mb-5 text-sm font-medium ${
+          className={`flex items-center gap-2 rounded-[8px] p-3 mb-5 text-sm font-medium ${
             notice.type === 'success' ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-600'
           }`}
         >
@@ -264,14 +264,14 @@ function AppointmentsContent() {
       )}
 
       {appointments.length === 0 ? (
-        <div className="text-center py-16 bg-zinc-50 rounded-2xl">
-          <CalendarX className="w-10 h-10 text-zinc-300 mx-auto mb-3" />
-          <p className="text-zinc-400 text-sm">هنوز نوبتی برای شما ثبت نشده است.</p>
+        <div className="text-center py-16 bg-white border border-zinc-200 rounded-[10px]">
+          <CalendarX className="w-10 h-10 text-zinc-400 mx-auto mb-3" />
+          <p className="text-zinc-500 text-sm">هنوز نوبتی برای شما ثبت نشده است.</p>
         </div>
       ) : (
         <>
           {/* تب‌های آینده / گذشته / لغو‌شده */}
-          <div className="flex items-center gap-1.5 mb-5 bg-zinc-100 rounded-xl p-1">
+          <div className="flex items-center gap-1.5 mb-5 bg-zinc-100 border border-zinc-200 rounded-[10px] p-1">
             {TABS.map((tab) => {
               const Icon = tab.icon;
               const count = listByTab[tab.key].length;
@@ -280,8 +280,8 @@ function AppointmentsContent() {
                 <button
                   key={tab.key}
                   onClick={() => setActiveTab(tab.key)}
-                  className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-bold transition-colors ${
-                    isActive ? 'bg-white text-[#824c71] shadow-sm' : 'text-zinc-500'
+                  className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-[8px] text-xs font-bold transition-colors ${
+                    isActive ? 'bg-white text-[#824c71] border border-zinc-200' : 'text-zinc-500'
                   }`}
                 >
                   <Icon className="w-3.5 h-3.5" />
@@ -289,7 +289,7 @@ function AppointmentsContent() {
                   {count > 0 && (
                     <span
                       className={`text-[10px] rounded-full px-1.5 min-w-[18px] ${
-                        isActive ? 'bg-[#824c71]/10 text-[#824c71]' : 'bg-zinc-200 text-zinc-500'
+                        isActive ? 'bg-[#824c71]/10 text-[#824c71]' : 'bg-zinc-200 text-zinc-600'
                       }`}
                     >
                       {toPersianDigits(String(count))}
@@ -301,9 +301,9 @@ function AppointmentsContent() {
           </div>
 
           {currentList.length === 0 ? (
-            <div className="text-center py-16 bg-zinc-50 rounded-2xl">
-              <CalendarX className="w-10 h-10 text-zinc-300 mx-auto mb-3" />
-              <p className="text-zinc-400 text-sm">{emptyTextByTab[activeTab]}</p>
+            <div className="text-center py-16 bg-white border border-zinc-200 rounded-[10px]">
+              <CalendarX className="w-10 h-10 text-zinc-400 mx-auto mb-3" />
+              <p className="text-zinc-500 text-sm">{emptyTextByTab[activeTab]}</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
