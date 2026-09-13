@@ -218,12 +218,12 @@ export default function ProfilePage() {
       </div>
  
       {/* منو */}
-      <div className="max-w-lg mx-auto w-full px-4 mt-1 space-y-3">
+      <div className="max-w-lg mx-auto w-full px-4 mt-1">
 
         {userData.role === 'ADMIN' && (
           <Link
             href="/admin"
-            className="flex items-center gap-3 bg-[#824c71] px-4 py-3.5 rounded-2xl shadow-sm shadow-[#824c71]/20"
+            className="flex items-center gap-3 bg-[#824c71] px-4 py-3.5 rounded-2xl mb-3"
           >
             <div className="w-10 h-10 rounded-xl bg-white/15 flex items-center justify-center text-white shrink-0">
               <ShieldCheck className="w-5 h-5" />
@@ -236,41 +236,42 @@ export default function ProfilePage() {
           </Link>
         )}
 
-        <div className="bg-white border border-zinc-200 rounded-2xl divide-y divide-zinc-100 overflow-hidden shadow-sm shadow-zinc-200/40">
+        <div className="divide-y divide-zinc-100">
           {/* اطلاعات کاربری */}
           <Link
             href={menuItems[0].href}
-            className="flex items-center gap-3 px-4 py-3.5 hover:bg-zinc-50 transition-colors"
+            className="flex items-center gap-3 py-3.5 hover:bg-zinc-50 transition-colors"
           >
+            <User className="w-5 h-5 text-[#824c71] shrink-0" strokeWidth={1.75} />
             <div className="flex-1 min-w-0">
               <p className="text-sm font-bold text-zinc-800">{menuItems[0].label}</p>
               <p className="text-[11px] text-zinc-400 mt-0.5">{menuItems[0].desc}</p>
             </div>
-            <User className="w-5 h-5 text-[#824c71] shrink-0" strokeWidth={1.75} />
             <ChevronLeft className="w-4.5 h-4.5 text-zinc-300 shrink-0" />
           </Link>
 
           {/* کسب‌وکار من */}
           <Link
             href={menuItems[1].href}
-            className="flex items-center gap-3 px-4 py-3.5 hover:bg-zinc-50 transition-colors"
+            className="flex items-center gap-3 py-3.5 hover:bg-zinc-50 transition-colors"
           >
+            <Store className="w-5 h-5 text-[#824c71] shrink-0" strokeWidth={1.75} />
             <div className="flex-1 min-w-0">
               <p className="text-sm font-bold text-zinc-800">{menuItems[1].label}</p>
               <p className="text-[11px] text-zinc-400 mt-0.5">{menuItems[1].desc}</p>
             </div>
-            <Store className="w-5 h-5 text-[#824c71] shrink-0" strokeWidth={1.75} />
             <ChevronLeft className="w-4.5 h-4.5 text-zinc-300 shrink-0" />
           </Link>
 
-          {/* اعلان‌ها — فقط یه سوییچ ساده، بدون رفتن به صفحه‌ی جدید */}
+          {/* اعلان‌ها — آیکون راست، سوییچ چپ، بدون رفتن به صفحه‌ی جدید */}
           {pushState !== 'unsupported' && (
             <button
               type="button"
               onClick={handleTogglePush}
               disabled={pushBusy || pushState === 'checking'}
-              className="w-full flex items-center gap-3 px-4 py-3.5 hover:bg-zinc-50 transition-colors text-right disabled:opacity-60"
+              className="w-full flex items-center gap-3 py-3.5 hover:bg-zinc-50 transition-colors text-right disabled:opacity-60"
             >
+              <Bell className="w-5 h-5 text-[#824c71] shrink-0" strokeWidth={1.75} />
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-bold text-zinc-800">اعلان‌ها</p>
                 <p className="text-[11px] text-zinc-400 mt-0.5">
@@ -281,7 +282,6 @@ export default function ProfilePage() {
                     : 'اعلان‌ها غیرفعاله'}
                 </p>
               </div>
-              <Bell className="w-5 h-5 text-[#824c71] shrink-0" strokeWidth={1.75} />
               {pushBusy ? (
                 <Loader2 className="w-5 h-5 text-zinc-300 shrink-0 animate-spin" />
               ) : (
@@ -291,7 +291,7 @@ export default function ProfilePage() {
                   style={{ backgroundColor: pushIsOn ? '#824c71' : '#e4e4e7' }}
                 >
                   <span
-                    className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 ${
+                    className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform duration-200 ${
                       pushIsOn ? 'translate-x-5' : 'translate-x-0'
                     }`}
                   />
@@ -303,25 +303,25 @@ export default function ProfilePage() {
           {/* پشتیبانی */}
           <Link
             href={menuItems[2].href}
-            className="flex items-center gap-3 px-4 py-3.5 hover:bg-zinc-50 transition-colors"
+            className="flex items-center gap-3 py-3.5 hover:bg-zinc-50 transition-colors"
           >
+            <MessageCircle className="w-5 h-5 text-[#824c71] shrink-0" strokeWidth={1.75} />
             <div className="flex-1 min-w-0">
               <p className="text-sm font-bold text-zinc-800">{menuItems[2].label}</p>
               <p className="text-[11px] text-zinc-400 mt-0.5">{menuItems[2].desc}</p>
             </div>
-            <MessageCircle className="w-5 h-5 text-[#824c71] shrink-0" strokeWidth={1.75} />
             <ChevronLeft className="w-4.5 h-4.5 text-zinc-300 shrink-0" />
           </Link>
 
           <button
             onClick={handleLogout}
-            className="w-full flex items-center gap-3 px-4 py-3.5 hover:bg-zinc-50 transition-colors text-right"
+            className="w-full flex items-center gap-3 py-3.5 hover:bg-zinc-50 transition-colors text-right"
           >
+            <LogOut className="w-5 h-5 text-[#824c71] shrink-0" strokeWidth={1.75} />
             <div className="flex-1 min-w-0">
               <p className="text-sm font-bold text-zinc-800">خروج از حساب کاربری</p>
               <p className="text-[11px] text-zinc-400 mt-0.5">خروج از حساب کاربری فعلی</p>
             </div>
-            <LogOut className="w-5 h-5 text-[#824c71] shrink-0" strokeWidth={1.75} />
             <ChevronLeft className="w-4.5 h-4.5 text-zinc-300 shrink-0" />
           </button>
         </div>
