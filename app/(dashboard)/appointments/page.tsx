@@ -5,7 +5,7 @@ import { Suspense, useState, useEffect, useCallback, useMemo } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
-  Loader2, Calendar, Clock, Scissors, User as UserIcon, Store, CalendarX, CheckCircle2, XCircle,
+  Loader2, Scissors, User as UserIcon, Store, CalendarX, CheckCircle2, XCircle,
 } from 'lucide-react';
 import { openPaymentUrl } from '@/lib/openPaymentUrl';
 import { useOnBrowserReturn } from '@/lib/useBrowserReturn';
@@ -170,8 +170,8 @@ function AppointmentsContent() {
     cancelled: 'نوبت لغو‌شده‌ای ندارید.',
   };
 
-  // یک کارتِ نوبت — ترتیب دقیق درخواستی: عکس+اسم سالن، تاریخ/ساعت با نشانگر
-  // رنگی برند، اسم خدمت با آیکون قیچی، اسم پرسنل با آیکون یوزر، بعد بوردر،
+  // یک کارتِ نوبت — عکس+اسم سالن، تاریخ/ساعت با نشانگر رنگی برند در یک ردیف،
+  // اسم خدمت و اسم پرسنل هر دو با آیکون + رنگ برند یکسان، بعد بوردر،
   // و زیر بوردر وضعیت درخواست + قیمت.
   const renderCard = ({ appt, item }: FlatItem) => {
     const statusInfo = STATUS_LABELS[item.status];
@@ -182,7 +182,7 @@ function AppointmentsContent() {
     return (
       <div
         key={item.id}
-        className={`bg-white border border-zinc-200 rounded-2xl p-4 ${isCancelled ? 'opacity-70' : ''}`}
+        className={`bg-white shadow-sm shadow-zinc-200/70 rounded-2xl p-4 ${isCancelled ? 'opacity-70' : ''}`}
       >
         {/* ردیف ۱: عکس سالن + اسم سالن */}
         <Link href={`/salon/${appt.salon.id}`} className="flex items-center gap-3 mb-3.5 group">
@@ -203,21 +203,19 @@ function AppointmentsContent() {
           </p>
         </Link>
 
-        {/* ردیف ۲: تاریخ و ساعت با نشانگر رنگی برند */}
-        <div className="flex flex-col gap-2 mb-3.5">
-          <div className="flex items-center gap-2 text-xs text-zinc-600">
+        {/* ردیف ۲: تاریخ و ساعت — هر دو در یک ردیف، فقط با نشانگر رنگی برند */}
+        <div className="flex items-center gap-4 text-xs text-zinc-600 mb-3.5">
+          <span className="flex items-center gap-2 min-w-0">
             <span className="w-2 h-2 rounded-full bg-[#824c71] shrink-0" />
-            <Calendar className="w-3.5 h-3.5 text-zinc-400 shrink-0" />
             <span className="truncate">{formatDate(item.date)}</span>
-          </div>
-          <div className="flex items-center gap-2 text-xs text-zinc-600">
+          </span>
+          <span className="flex items-center gap-2 shrink-0">
             <span className="w-2 h-2 rounded-full bg-[#824c71] shrink-0" />
-            <Clock className="w-3.5 h-3.5 text-zinc-400 shrink-0" />
             <span dir="ltr">{toPersianDigits(item.startTime)}</span>
-          </div>
+          </span>
         </div>
 
-        {/* ردیف‌های ۳ و ۴: اسم خدمت (آیکون قیچی) و اسم پرسنل (آیکون یوزر) — برای هر خدمت */}
+        {/* ردیف‌های ۳ و ۴: اسم خدمت (آیکون قیچی) و اسم پرسنل (آیکون یوزر) — دقیقاً هم‌رنگ، برای هر خدمت */}
         <div className="flex flex-col gap-2 mb-3.5">
           {item.services.map((s, idx) => (
             <div key={idx} className="flex flex-col gap-2">
@@ -226,9 +224,9 @@ function AppointmentsContent() {
                 <span className="font-bold truncate">{s.name}</span>
               </div>
               {s.staffName && (
-                <div className="flex items-center gap-2 text-xs text-zinc-600">
-                  <UserIcon className="w-3.5 h-3.5 text-zinc-400 shrink-0" />
-                  <span className="truncate">{s.staffName}</span>
+                <div className="flex items-center gap-2 text-xs text-zinc-700">
+                  <UserIcon className="w-3.5 h-3.5 text-[#824c71] shrink-0" strokeWidth={1.75} />
+                  <span className="font-bold truncate">{s.staffName}</span>
                 </div>
               )}
             </div>
