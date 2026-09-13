@@ -64,7 +64,7 @@ export default function ProfileInfoPage() {
               value={userData.phone}
               disabled
               dir="ltr"
-              className="w-full border-[1.5px] border-zinc-200 bg-zinc-50 rounded-[10px] px-3.5 py-3 text-sm text-zinc-400 cursor-not-allowed text-left"
+              className="w-full border-[1.5px] border-zinc-200 bg-zinc-50 rounded-[8px] px-3.5 py-3 text-sm text-zinc-400 cursor-not-allowed text-left"
             />
           </div>
           <div>
@@ -72,7 +72,7 @@ export default function ProfileInfoPage() {
             <input
               value={userData.name}
               onChange={(e) => setUserData({ ...userData, name: e.target.value })}
-              className="w-full border-[1.5px] border-zinc-300 rounded-[10px] px-3.5 py-3 text-sm focus:border-[#824c71] focus:ring-2 focus:ring-[#824c71]/10 outline-none transition-all"
+              className="w-full border-[1.5px] border-zinc-300 rounded-[8px] px-3.5 py-3 text-sm focus:border-[#824c71] focus:ring-2 focus:ring-[#824c71]/10 outline-none transition-all"
               placeholder="نام خود را وارد کنید"
             />
           </div>
@@ -85,14 +85,14 @@ export default function ProfileInfoPage() {
                 onChange={(e) => setUserData({ ...userData, username: e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '') })}
                 placeholder="username"
                 dir="ltr"
-                className="w-full border-[1.5px] border-zinc-300 rounded-[10px] px-3.5 py-3 pl-10 text-sm text-left focus:border-[#824c71] focus:ring-2 focus:ring-[#824c71]/10 outline-none transition-all"
+                className="w-full border-[1.5px] border-zinc-300 rounded-[8px] px-3.5 py-3 pl-10 text-sm text-left focus:border-[#824c71] focus:ring-2 focus:ring-[#824c71]/10 outline-none transition-all"
               />
             </div>
           </div>
           <button
             onClick={handleSaveChanges}
             disabled={isLoading}
-            className="w-full bg-[#824c71] text-white py-2.5 rounded-[10px] text-sm font-medium hover:bg-[#6d3f5e] transition-colors disabled:opacity-50 mt-2"
+            className="w-full bg-[#824c71] text-white py-3 rounded-[8px] text-sm font-medium hover:bg-[#6d3f5e] transition-colors disabled:opacity-50 mt-2"
           >
             {isLoading ? 'در حال ذخیره...' : 'ذخیره تغییرات'}
           </button>
