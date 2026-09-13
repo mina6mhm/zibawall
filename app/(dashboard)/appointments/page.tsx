@@ -43,9 +43,9 @@ const STATUS_LABELS: Record<AppointmentItem['status'], { label: string; bgClassN
 };
 
 const TABS: { key: TabKey; label: string }[] = [
-  { key: 'upcoming', label: 'نوبت‌های آینده' },
-  { key: 'past', label: 'نوبت‌های گذشته' },
-  { key: 'cancelled', label: 'نوبت‌های لغو شده' },
+  { key: 'upcoming', label: 'پیش رو' },
+  { key: 'past', label: 'گذشته' },
+  { key: 'cancelled', label: 'لغو شده' },
 ];
 
 const toPersianDigits = (str: string) => str.replace(/[0-9]/g, (d) => '۰۱۲۳۴۵۶۷۸۹'[Number(d)]);
@@ -292,7 +292,7 @@ function AppointmentsContent() {
         ) : (
           <>
             {/* تب‌های نوبت‌های آینده / گذشته / لغو‌شده — دقیقاً وسط صفحه */}
-            <div className="flex justify-center mb-2">
+            <div className="flex justify-center mb-5">
               <div className="inline-flex items-center gap-1 bg-zinc-100 rounded-full p-1">
                 {TABS.map((tab) => {
                 const count = listByTab[tab.key].length;
