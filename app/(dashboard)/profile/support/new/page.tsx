@@ -41,7 +41,7 @@ export default function NewSupportMessagePage() {
     <div className="flex flex-col min-h-screen bg-white">
 
       {/* هدر */}
-      <div className="sticky top-0 z-10 bg-white border-b border-zinc-100 px-4 py-3.5 flex items-center gap-3">
+      <div className="sticky top-0 z-10 bg-white border-b border-zinc-200 px-4 py-3.5 flex items-center gap-3">
         <Link
           href="/profile/support"
           className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-zinc-100 transition-colors shrink-0"
@@ -58,14 +58,14 @@ export default function NewSupportMessagePage() {
           placeholder="سوال یا مشکلتون رو اینجا بنویسید..."
           rows={8}
           autoFocus
-          className="w-full bg-white border border-zinc-200 rounded-xl px-4 py-3 text-[14px] resize-none focus:border-[#824c71] focus:ring-2 focus:ring-[#824c71]/15 outline-none transition-all"
+          className="w-full bg-white border border-zinc-300 rounded-[8px] px-4 py-3 text-[14px] resize-none focus:border-[#824c71] focus:ring-2 focus:ring-[#824c71]/15 outline-none transition-all"
         />
         <div className="flex items-center justify-between mt-3">
-          <span className="text-[11px] text-zinc-400">{message.length}/۲۰۰۰</span>
+          <span className="text-[11px] text-zinc-500">{message.length}/۲۰۰۰</span>
           <button
             onClick={handleSend}
             disabled={isLoading || !message.trim()}
-            className="bg-[#824c71] text-white px-5 py-2.5 rounded-xl shadow-sm shadow-[#824c71]/30 hover:bg-[#6d3f5e] hover:shadow-md hover:shadow-[#824c71]/40 transition-all active:scale-[0.98] disabled:opacity-40 disabled:shadow-none disabled:cursor-not-allowed flex items-center gap-2 text-[14px] font-semibold"
+            className="bg-[#824c71] text-white px-5 py-2.5 rounded-[8px] shadow-sm shadow-[#824c71]/30 hover:bg-[#6d3f5e] hover:shadow-md hover:shadow-[#824c71]/40 transition-all active:scale-[0.98] disabled:opacity-40 disabled:shadow-none disabled:cursor-not-allowed flex items-center gap-2 text-[14px] font-semibold"
           >
             <Send className="w-4 h-4" />
             {isLoading ? 'در حال ارسال...' : 'ارسال پیام'}

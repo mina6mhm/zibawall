@@ -227,7 +227,7 @@ export default function ProfilePage() {
         {userData.role === 'ADMIN' && (
           <Link
             href="/admin"
-            className="flex items-center gap-3 bg-[#824c71] px-4 py-3.5 rounded-[10px] mb-3"
+            className="flex items-center gap-3 bg-[#824c71] px-4 py-3.5 rounded-[16px] mb-3"
           >
             <div className="w-10 h-10 rounded-[10px] bg-white/15 flex items-center justify-center text-white shrink-0">
               <ShieldCheck className="w-5 h-5" />
