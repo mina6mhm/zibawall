@@ -62,14 +62,14 @@ export default function ProfileInfoPage() {
 
         <h1 className="text-base font-bold text-zinc-900 mb-4">اطلاعات کاربری</h1>
 
-        <div className="bg-white border border-zinc-100 rounded-2xl p-4 space-y-4">
+        <div className="space-y-4">
           <div>
             <label className="block text-xs font-medium text-zinc-500 mb-1.5">شماره موبایل</label>
             <input
               value={userData.phone}
               disabled
               dir="ltr"
-              className="w-full border border-zinc-100 bg-zinc-50 rounded-xl px-3.5 py-2.5 text-sm text-zinc-400 cursor-not-allowed text-left"
+              className="w-full border-[1.5px] border-zinc-200 bg-zinc-50 rounded-xl px-3.5 py-2.5 text-sm text-zinc-400 cursor-not-allowed text-left"
             />
           </div>
           <div>
@@ -77,7 +77,7 @@ export default function ProfileInfoPage() {
             <input
               value={userData.name}
               onChange={(e) => setUserData({ ...userData, name: e.target.value })}
-              className="w-full border border-zinc-200 rounded-xl px-3.5 py-2.5 text-sm focus:border-[#824c71] focus:ring-2 focus:ring-[#824c71]/10 outline-none transition-all"
+              className="w-full border-[1.5px] border-zinc-300 rounded-xl px-3.5 py-2.5 text-sm focus:border-[#824c71] focus:ring-2 focus:ring-[#824c71]/10 outline-none transition-all"
               placeholder="نام خود را وارد کنید"
             />
           </div>
@@ -90,7 +90,7 @@ export default function ProfileInfoPage() {
                 onChange={(e) => setUserData({ ...userData, username: e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '') })}
                 placeholder="username"
                 dir="ltr"
-                className="w-full border border-zinc-200 rounded-xl px-3.5 py-2.5 pl-10 text-sm text-left focus:border-[#824c71] focus:ring-2 focus:ring-[#824c71]/10 outline-none transition-all"
+                className="w-full border-[1.5px] border-zinc-300 rounded-xl px-3.5 py-2.5 pl-10 text-sm text-left focus:border-[#824c71] focus:ring-2 focus:ring-[#824c71]/10 outline-none transition-all"
               />
             </div>
           </div>
