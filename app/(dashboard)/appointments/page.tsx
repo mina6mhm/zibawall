@@ -170,9 +170,9 @@ function AppointmentsContent() {
     cancelled: 'نوبت لغو‌شده‌ای ندارید.',
   };
 
-  // یک کارتِ نوبت — دقیقاً با ساختار کارت سفارش‌های اسنپ: کارت سفید با بوردر
-  // نازک، آیکون+اسم+وضعیت در هدر، ردیف‌های اطلاعاتی با نشانگر رنگی، و یک
-  // فوتر جداشده با خط بالا برای عملیات/مبلغ.
+  // یک کارتِ نوبت — ترتیب دقیق درخواستی: عکس+اسم سالن، تاریخ/ساعت با نشانگر
+  // رنگی برند، اسم خدمت با آیکون قیچی، اسم پرسنل با آیکون یوزر، بعد بوردر،
+  // و زیر بوردر وضعیت درخواست + قیمت.
   const renderCard = ({ appt, item }: FlatItem) => {
     const statusInfo = STATUS_LABELS[item.status];
     const isCancelled = item.status === 'CANCELLED';
@@ -184,8 +184,8 @@ function AppointmentsContent() {
         key={item.id}
         className={`bg-white border border-zinc-200 rounded-2xl p-4 ${isCancelled ? 'opacity-70' : ''}`}
       >
-        {/* هدر: آیکون سالن + اسم + وضعیت (شبیه ردیف اسنپ/آیکون) */}
-        <div className="flex items-center gap-3 mb-3.5">
+        {/* ردیف ۱: عکس سالن + اسم سالن */}
+        <Link href={`/salon/${appt.salon.id}`} className="flex items-center gap-3 mb-3.5 group">
           {appt.salon.imageUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
@@ -198,20 +198,12 @@ function AppointmentsContent() {
               <Store className="w-5 h-5" strokeWidth={1.5} />
             </span>
           )}
-          <div className="min-w-0 flex-1">
-            <Link
-              href={`/salon/${appt.salon.id}`}
-              className="block text-[15px] font-bold text-zinc-900 truncate hover:text-[#824c71] transition-colors"
-            >
-              {appt.salon.name}
-            </Link>
-            <span className={`inline-flex items-center mt-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium ${statusInfo.bgClassName} ${statusInfo.textClassName}`}>
-              {statusInfo.label}
-            </span>
-          </div>
-        </div>
+          <p className="text-[15px] font-bold text-zinc-900 truncate group-hover:text-[#824c71] transition-colors">
+            {appt.salon.name}
+          </p>
+        </Link>
 
-        {/* بدنه: تاریخ و ساعت با نشانگر رنگی، مثل ردیف‌های مبدأ/مقصد اسنپ */}
+        {/* ردیف ۲: تاریخ و ساعت با نشانگر رنگی برند */}
         <div className="flex flex-col gap-2 mb-3.5">
           <div className="flex items-center gap-2 text-xs text-zinc-600">
             <span className="w-2 h-2 rounded-full bg-[#824c71] shrink-0" />
@@ -219,53 +211,52 @@ function AppointmentsContent() {
             <span className="truncate">{formatDate(item.date)}</span>
           </div>
           <div className="flex items-center gap-2 text-xs text-zinc-600">
-            <span className="w-2 h-2 rounded-sm bg-zinc-400 shrink-0" />
+            <span className="w-2 h-2 rounded-full bg-[#824c71] shrink-0" />
             <Clock className="w-3.5 h-3.5 text-zinc-400 shrink-0" />
             <span dir="ltr">{toPersianDigits(item.startTime)}</span>
           </div>
         </div>
 
-        {/* خدمات */}
-        <div className="flex flex-col gap-2 mb-1">
+        {/* ردیف‌های ۳ و ۴: اسم خدمت (آیکون قیچی) و اسم پرسنل (آیکون یوزر) — برای هر خدمت */}
+        <div className="flex flex-col gap-2 mb-3.5">
           {item.services.map((s, idx) => (
-            <div key={idx} className="flex items-center justify-between gap-2">
-              <div className="flex items-center gap-1.5 min-w-0">
-                <Scissors className="w-3.5 h-3.5 text-[#824c71]/60 shrink-0" strokeWidth={1.75} />
-                <p className="text-[12.5px] font-bold text-zinc-800 truncate">{s.name}</p>
+            <div key={idx} className="flex flex-col gap-2">
+              <div className="flex items-center gap-2 text-xs text-zinc-700">
+                <Scissors className="w-3.5 h-3.5 text-[#824c71] shrink-0" strokeWidth={1.75} />
+                <span className="font-bold truncate">{s.name}</span>
               </div>
-              <div className="flex items-center gap-2.5 shrink-0 text-[11px] text-zinc-500">
-                {s.price != null && (
-                  <span className="font-medium text-zinc-700">{formatMoney(s.price)} تومان</span>
-                )}
-                {s.staffName && (
-                  <span className="flex items-center gap-1">
-                    <UserIcon className="w-3 h-3 text-zinc-400" />
-                    {s.staffName}
-                  </span>
-                )}
-              </div>
+              {s.staffName && (
+                <div className="flex items-center gap-2 text-xs text-zinc-600">
+                  <UserIcon className="w-3.5 h-3.5 text-zinc-400 shrink-0" />
+                  <span className="truncate">{s.staffName}</span>
+                </div>
+              )}
             </div>
           ))}
         </div>
 
-        {/* فوتر: جدا شده با خط بالا — عملیات پرداخت راست، مبلغ چپ (مثل «مشاهدهٔ جزئیات» و قیمت در کارت اسنپ) */}
-        <div className="flex items-center justify-between pt-3.5 mt-3.5 border-t border-zinc-100">
-          {isPending ? (
+        {/* بوردر جداکننده */}
+        <div className="border-t border-zinc-100 pt-3.5">
+          {/* زیر بوردر: وضعیت درخواست + قیمت */}
+          <div className="flex items-center justify-between">
+            <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-medium ${statusInfo.bgClassName} ${statusInfo.textClassName}`}>
+              {statusInfo.label}
+            </span>
+            {itemTotal > 0 && (
+              <span className="text-sm font-bold text-zinc-900">{formatMoney(itemTotal)} تومان</span>
+            )}
+          </div>
+
+          {/* دکمه پرداخت فقط وقتی کل گروه در انتظار پرداخته — نه برای آیتم‌های لغو‌شده */}
+          {isPending && (
             <button
               onClick={() => handlePay(appt)}
               disabled={payingId === appt.id}
-              className="flex items-center gap-1.5 text-[13px] font-bold text-[#824c71] disabled:opacity-60"
+              className="w-full flex items-center justify-center gap-1.5 py-2.5 rounded-[10px] bg-[#824c71] text-white text-xs font-bold hover:bg-[#6e3f60] transition disabled:opacity-60 mt-3.5"
             >
               {payingId === appt.id && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
               پرداخت و ثبت قطعی نوبت
             </button>
-          ) : (
-            <span className="text-[12px] text-zinc-400">
-              {isCancelled ? 'این نوبت لغو شده' : 'نوبت شما قطعی است'}
-            </span>
-          )}
-          {itemTotal > 0 && (
-            <span className="text-sm font-bold text-zinc-900">{formatMoney(itemTotal)} تومان</span>
           )}
         </div>
       </div>
