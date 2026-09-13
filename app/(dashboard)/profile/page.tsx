@@ -204,7 +204,7 @@ export default function ProfilePage() {
                   </span>
                 )}
                 {userData.phone && userData.username && (
-                  <span className="text-zinc-300">|</span>
+                  <span className="text-zinc-400">|</span>
                 )}
                 {userData.username && (
                   <span className="flex items-center gap-1">
@@ -236,7 +236,7 @@ export default function ProfilePage() {
           </Link>
         )}
 
-        <div className="divide-y divide-zinc-100">
+        <div className="divide-y divide-zinc-200">
           {/* اطلاعات کاربری */}
           <Link
             href={menuItems[0].href}
@@ -245,9 +245,9 @@ export default function ProfilePage() {
             <User className="w-5 h-5 text-[#824c71] shrink-0" strokeWidth={1.75} />
             <div className="flex-1 min-w-0">
               <p className="text-sm font-bold text-zinc-800">{menuItems[0].label}</p>
-              <p className="text-[11px] text-zinc-400 mt-0.5">{menuItems[0].desc}</p>
+              <p className="text-[11px] text-zinc-500 mt-0.5">{menuItems[0].desc}</p>
             </div>
-            <ChevronLeft className="w-4.5 h-4.5 text-zinc-300 shrink-0" />
+            <ChevronLeft className="w-4.5 h-4.5 text-zinc-400 shrink-0" />
           </Link>
 
           {/* کسب‌وکار من */}
@@ -258,9 +258,9 @@ export default function ProfilePage() {
             <Store className="w-5 h-5 text-[#824c71] shrink-0" strokeWidth={1.75} />
             <div className="flex-1 min-w-0">
               <p className="text-sm font-bold text-zinc-800">{menuItems[1].label}</p>
-              <p className="text-[11px] text-zinc-400 mt-0.5">{menuItems[1].desc}</p>
+              <p className="text-[11px] text-zinc-500 mt-0.5">{menuItems[1].desc}</p>
             </div>
-            <ChevronLeft className="w-4.5 h-4.5 text-zinc-300 shrink-0" />
+            <ChevronLeft className="w-4.5 h-4.5 text-zinc-400 shrink-0" />
           </Link>
 
           {/* اعلان‌ها — آیکون راست، سوییچ چپ، بدون رفتن به صفحه‌ی جدید */}
@@ -274,7 +274,7 @@ export default function ProfilePage() {
               <Bell className="w-5 h-5 text-[#824c71] shrink-0" strokeWidth={1.75} />
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-bold text-zinc-800">اعلان‌ها</p>
-                <p className="text-[11px] text-zinc-400 mt-0.5">
+                <p className="text-[11px] text-zinc-500 mt-0.5">
                   {pushState === 'denied'
                     ? 'مسدود شده — از تنظیمات مرورگر فعالش کن'
                     : pushIsOn
@@ -283,7 +283,7 @@ export default function ProfilePage() {
                 </p>
               </div>
               {pushBusy ? (
-                <Loader2 className="w-5 h-5 text-zinc-300 shrink-0 animate-spin" />
+                <Loader2 className="w-5 h-5 text-zinc-400 shrink-0 animate-spin" />
               ) : (
                 <span
                   dir="ltr"
@@ -308,9 +308,9 @@ export default function ProfilePage() {
             <MessageCircle className="w-5 h-5 text-[#824c71] shrink-0" strokeWidth={1.75} />
             <div className="flex-1 min-w-0">
               <p className="text-sm font-bold text-zinc-800">{menuItems[2].label}</p>
-              <p className="text-[11px] text-zinc-400 mt-0.5">{menuItems[2].desc}</p>
+              <p className="text-[11px] text-zinc-500 mt-0.5">{menuItems[2].desc}</p>
             </div>
-            <ChevronLeft className="w-4.5 h-4.5 text-zinc-300 shrink-0" />
+            <ChevronLeft className="w-4.5 h-4.5 text-zinc-400 shrink-0" />
           </Link>
 
           <button
@@ -320,9 +320,9 @@ export default function ProfilePage() {
             <LogOut className="w-5 h-5 text-[#824c71] shrink-0" strokeWidth={1.75} />
             <div className="flex-1 min-w-0">
               <p className="text-sm font-bold text-zinc-800">خروج از حساب کاربری</p>
-              <p className="text-[11px] text-zinc-400 mt-0.5">خروج از حساب کاربری فعلی</p>
+              <p className="text-[11px] text-zinc-500 mt-0.5">خروج از حساب کاربری فعلی</p>
             </div>
-            <ChevronLeft className="w-4.5 h-4.5 text-zinc-300 shrink-0" />
+            <ChevronLeft className="w-4.5 h-4.5 text-zinc-400 shrink-0" />
           </button>
         </div>
       </div>
