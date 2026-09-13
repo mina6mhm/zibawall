@@ -177,7 +177,7 @@ function AppointmentsContent() {
     return (
       <div
         key={item.id}
-        className={`bg-white rounded-[22px] p-5 shadow-[0_1px_2px_rgba(24,24,27,0.04),0_10px_24px_-16px_rgba(24,24,27,0.18)] transition-shadow hover:shadow-[0_1px_2px_rgba(24,24,27,0.04),0_14px_28px_-14px_rgba(24,24,27,0.22)] ${
+        className={`bg-white rounded-[22px] p-5 shadow-[0_1px_2px_rgba(24,24,27,0.03),0_3px_8px_-4px_rgba(24,24,27,0.08)] transition-shadow hover:shadow-[0_1px_2px_rgba(24,24,27,0.04),0_5px_12px_-4px_rgba(24,24,27,0.10)] ${
           isCancelled ? 'opacity-70' : ''
         }`}
       >
@@ -221,7 +221,7 @@ function AppointmentsContent() {
 
         <div className="flex flex-col gap-2.5">
           {item.services.map((s, idx) => (
-            <div key={idx} className="flex items-center justify-between gap-2 bg-zinc-50/70 rounded-2xl px-3.5 py-2.5">
+            <div key={idx} className="flex items-center justify-between gap-2 bg-[#824c71]/[0.05] rounded-2xl px-3.5 py-2.5">
               <div className="flex items-center gap-1.5 min-w-0">
                 <Scissors className="w-3 h-3 text-[#824c71]/50 shrink-0" />
                 <p className="text-[12.5px] font-bold text-zinc-800 truncate">{s.name}</p>
@@ -268,7 +268,8 @@ function AppointmentsContent() {
   const currentList = listByTab[activeTab];
 
   return (
-    <div className="max-w-3xl mx-auto pt-8 pb-32 px-4 md:pt-10 md:px-0">
+    <div className="max-w-3xl mx-auto pb-32">
+      <div className="bg-[#FBF8FA] rounded-[28px] px-4 py-8 md:px-8 md:py-10">
       <div className="mb-6">
         <h1 className="text-xl md:text-2xl font-bold text-zinc-900">نوبت‌های من</h1>
         <p className="text-zinc-500 text-xs md:text-sm mt-0.5">نوبت‌هایی که برای شما ثبت شده است</p>
@@ -286,16 +287,16 @@ function AppointmentsContent() {
       )}
 
       {appointments.length === 0 ? (
-        <div className="text-center py-20 bg-zinc-50 rounded-[28px]">
-          <span className="w-14 h-14 rounded-full bg-white shadow-sm shadow-black/5 flex items-center justify-center mx-auto mb-4">
-            <CalendarX className="w-6 h-6 text-zinc-400" />
+        <div className="text-center py-20 bg-white rounded-[24px]">
+          <span className="w-14 h-14 rounded-full bg-[#824c71]/10 flex items-center justify-center mx-auto mb-4">
+            <CalendarX className="w-6 h-6 text-[#824c71]/60" />
           </span>
           <p className="text-zinc-500 text-sm">هنوز نوبتی برای شما ثبت نشده است.</p>
         </div>
       ) : (
         <>
           {/* تب‌های آینده / گذشته / لغو‌شده */}
-          <div className="inline-flex items-center gap-1 bg-zinc-100 rounded-full p-1 mb-6">
+          <div className="inline-flex items-center gap-1 bg-white rounded-full p-1 mb-6">
             {TABS.map((tab) => {
               const count = listByTab[tab.key].length;
               const isActive = activeTab === tab.key;
@@ -304,12 +305,12 @@ function AppointmentsContent() {
                   key={tab.key}
                   onClick={() => setActiveTab(tab.key)}
                   className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-bold transition-colors ${
-                    isActive ? 'bg-white text-[#824c71] shadow-sm shadow-black/5' : 'text-zinc-500'
+                    isActive ? 'bg-[#824c71] text-white' : 'text-zinc-500'
                   }`}
                 >
                   {tab.label}
                   {count > 0 && (
-                    <span className={isActive ? 'text-[#824c71]/50' : 'text-zinc-400'}>
+                    <span className={isActive ? 'text-white/70' : 'text-zinc-400'}>
                       {toPersianDigits(String(count))}
                     </span>
                   )}
@@ -319,9 +320,9 @@ function AppointmentsContent() {
           </div>
 
           {currentList.length === 0 ? (
-            <div className="text-center py-20 bg-zinc-50 rounded-[28px]">
-              <span className="w-14 h-14 rounded-full bg-white shadow-sm shadow-black/5 flex items-center justify-center mx-auto mb-4">
-                <CalendarX className="w-6 h-6 text-zinc-400" />
+            <div className="text-center py-20 bg-white rounded-[24px]">
+              <span className="w-14 h-14 rounded-full bg-[#824c71]/10 flex items-center justify-center mx-auto mb-4">
+                <CalendarX className="w-6 h-6 text-[#824c71]/60" />
               </span>
               <p className="text-zinc-500 text-sm">{emptyTextByTab[activeTab]}</p>
             </div>
@@ -332,6 +333,7 @@ function AppointmentsContent() {
           )}
         </>
       )}
+      </div>
     </div>
   );
 }
