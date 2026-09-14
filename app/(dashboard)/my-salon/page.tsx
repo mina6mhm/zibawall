@@ -258,16 +258,19 @@ export default function MySalonPage() {
     [staffBookings, selectedDateStr]
   );
 
+  // کارت نوبت — هم‌سبک با کارت‌های صفحه‌ی «نوبت‌های من»: گوشه‌ها کمتر گرد،
+  // سایه‌ی نرم مخصوص آن صفحه. اینجا به تاریخ نیازی نیست ولی شماره تماس
+  // مشتری و سهم پرسنل (که آن صفحه ندارد) نگه داشته می‌شود.
   const renderBookingCard = (booking: Booking) => {
     const statusInfo = STATUS_LABELS[booking.status];
     return (
-      <div key={booking.id} className="bg-white border border-zinc-100 rounded-2xl p-4 shadow-sm shadow-zinc-200/50">
+      <div key={booking.id} className="bg-white border border-zinc-100 rounded-xl p-4 shadow-[0_2px_14px_rgba(0,0,0,0.06)]">
         <div className="flex items-start justify-between gap-2 mb-3">
           <div className="flex items-center gap-2 text-zinc-800">
             <UserIcon className="w-4 h-4 text-[#824c71]" />
             <span className="font-bold text-sm">{booking.customerName || 'بدون نام'}</span>
           </div>
-          <span className={`text-[11px] font-medium px-2.5 py-1 rounded-lg whitespace-nowrap ${statusInfo.className}`}>
+          <span className={`text-[11px] font-medium px-2.5 py-1 rounded-md whitespace-nowrap ${statusInfo.className}`}>
             {statusInfo.label}
           </span>
         </div>
@@ -286,7 +289,7 @@ export default function MySalonPage() {
           <div className="flex items-center gap-1.5 shrink-0">
             <button
               onClick={() => openEditBookingModal(booking)}
-              className="w-7 h-7 flex items-center justify-center rounded-lg bg-zinc-100 text-zinc-500"
+              className="w-7 h-7 flex items-center justify-center rounded-lg bg-[#824c71]/10 text-[#824c71]"
               title="ویرایش این خدمت"
             >
               <Pencil className="w-3 h-3" />
@@ -323,7 +326,7 @@ export default function MySalonPage() {
   };
 
   const renderStaffBookingCard = (booking: StaffBooking) => (
-    <div key={booking.id} className="bg-white border border-zinc-100 rounded-2xl p-4 shadow-sm shadow-zinc-200/50">
+    <div key={booking.id} className="bg-white border border-zinc-100 rounded-xl p-4 shadow-[0_2px_14px_rgba(0,0,0,0.06)]">
       <div className="flex items-center gap-2 text-zinc-800 mb-3">
         <UserIcon className="w-4 h-4 text-[#824c71]" />
         <span className="font-bold text-sm">{booking.customerName || 'بدون نام'}</span>
@@ -427,10 +430,10 @@ export default function MySalonPage() {
             <p className="text-zinc-500 text-xs md:text-sm mt-0.5">مدیریت نوبت‌های سالن</p>
           </div>
           <div className="flex items-center gap-2 shrink-0">
-            <Link href="/my-salon/reports" aria-label="گزارش درآمد" className="w-10 h-10 flex items-center justify-center rounded-xl bg-zinc-100 text-zinc-600 hover:bg-zinc-200 transition-colors">
+            <Link href="/my-salon/reports" aria-label="گزارش درآمد" className="w-10 h-10 flex items-center justify-center rounded-xl bg-[#824c71]/10 text-[#824c71] hover:bg-[#824c71]/15 transition-colors">
               <BarChart3 className="w-4.5 h-4.5" />
             </Link>
-            <Link href="/profile/business/overview" aria-label="تنظیمات" className="w-10 h-10 flex items-center justify-center rounded-xl bg-zinc-100 text-zinc-600 hover:bg-zinc-200 transition-colors">
+            <Link href="/profile/business/overview" aria-label="تنظیمات" className="w-10 h-10 flex items-center justify-center rounded-xl bg-[#824c71]/10 text-[#824c71] hover:bg-[#824c71]/15 transition-colors">
               <Settings className="w-4.5 h-4.5" />
             </Link>
           </div>
@@ -478,23 +481,22 @@ export default function MySalonPage() {
         </div>
       )}
 
-      {/* دکمه‌ی نوبت‌دهی آنلاین — فقط تب سالن */}
+      {/* دکمه‌ی نوبت‌دهی آنلاین — فقط تب سالن، هم‌سبک با کارت پنل مدیریت در صفحه پروفایل */}
       {effectiveTab === 'salon' && (
         <Link
           href="/my-salon/booking-settings"
-          className={`w-full flex items-center justify-between gap-3 px-4 py-3.5 rounded-xl border transition-colors mb-6 ${
-            bookingEnabled ? 'bg-[#824c71]/5 border-[#824c71]/30 text-[#824c71]' : 'bg-white border-zinc-200 text-zinc-700'
-          }`}
+          className="w-full flex items-center gap-3 bg-[#824c71] px-4 py-3.5 rounded-xl mb-6 hover:bg-[#6e3f60] transition-colors"
         >
-          <div className="flex items-center gap-2.5">
-            <CalendarClock className="w-4.5 h-4.5 shrink-0" />
-            <p className="text-sm font-bold">نوبت‌دهی آنلاین</p>
+          <div className="w-10 h-10 rounded-[10px] bg-white/15 flex items-center justify-center text-white shrink-0">
+            <CalendarClock className="w-5 h-5" />
           </div>
-          <span className={`text-[11px] font-bold px-2.5 py-1 rounded-lg shrink-0 ${
-            bookingEnabled ? 'bg-emerald-50 text-emerald-600' : 'bg-zinc-100 text-zinc-400'
-          }`}>
-            {bookingEnabled ? 'فعال' : 'غیرفعال'}
-          </span>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-bold text-white">نوبت‌دهی آنلاین</p>
+            <p className="text-[11px] text-white/70 mt-0.5">
+              {bookingEnabled ? 'نوبت‌دهی آنلاین برای مشتریان فعال است' : 'نوبت‌دهی آنلاین غیرفعال است'}
+            </p>
+          </div>
+          <ChevronLeft className="w-4.5 h-4.5 text-white/70 shrink-0" />
         </Link>
       )}
 
@@ -517,7 +519,7 @@ export default function MySalonPage() {
             </div>
           )}
           {currentStaffOption && (
-            <div className="bg-[#824c71]/5 border border-[#824c71]/20 rounded-2xl p-3.5 mb-5 flex items-center gap-2.5">
+            <div className="bg-[#824c71]/5 border border-[#824c71]/20 rounded-xl p-3.5 mb-5 flex items-center gap-2.5">
               <div className="w-8 h-8 rounded-full bg-[#824c71]/10 text-[#824c71] flex items-center justify-center text-xs font-bold shrink-0">
                 {currentStaffOption.staffName.slice(0, 1)}
               </div>
@@ -574,7 +576,7 @@ export default function MySalonPage() {
       {/* آمار روزانه — فقط تب سالن */}
       {effectiveTab === 'salon' && dayBookings.length > 0 && (
         <div className="grid grid-cols-3 gap-2 mb-6">
-          <div className="bg-white border border-zinc-100 rounded-2xl p-3 shadow-sm shadow-zinc-200/50">
+          <div className="bg-white border border-zinc-100 rounded-xl p-3 shadow-sm shadow-zinc-200/50">
             <div className="flex items-center gap-1.5 mb-1.5">
               <TrendingUp className="w-3.5 h-3.5 text-emerald-600" />
               <span className="text-[11px] font-medium text-zinc-500">درآمد کل</span>
@@ -585,7 +587,7 @@ export default function MySalonPage() {
             </p>
           </div>
 
-          <button type="button" onClick={() => setIsStaffModalOpen(true)} className="bg-white border border-zinc-100 rounded-2xl p-3 shadow-sm shadow-zinc-200/50 text-right">
+          <button type="button" onClick={() => setIsStaffModalOpen(true)} className="bg-white border border-zinc-100 rounded-xl p-3 shadow-sm shadow-zinc-200/50 text-right">
             <div className="flex items-center gap-1.5 mb-1.5">
               <Users className="w-3.5 h-3.5 text-[#824c71]" />
               <span className="text-[11px] font-medium text-zinc-500">سهم پرسنل</span>
@@ -596,7 +598,7 @@ export default function MySalonPage() {
             </p>
           </button>
 
-          <div className="bg-white border border-zinc-100 rounded-2xl p-3 shadow-sm shadow-zinc-200/50">
+          <div className="bg-white border border-zinc-100 rounded-xl p-3 shadow-sm shadow-zinc-200/50">
             <div className="flex items-center gap-1.5 mb-1.5">
               <Wallet className="w-3.5 h-3.5 text-amber-600" />
               <span className="text-[11px] font-medium text-zinc-500">سود خالص</span>
@@ -622,7 +624,7 @@ export default function MySalonPage() {
           dayBookings.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">{dayBookings.map(renderBookingCard)}</div>
           ) : (
-            <div className="text-center py-10 bg-zinc-50 rounded-2xl">
+            <div className="text-center py-10 bg-zinc-50 rounded-xl">
               <p className="text-zinc-400 text-sm">نوبتی برای این روز ثبت نشده است.</p>
             </div>
           )
@@ -633,7 +635,7 @@ export default function MySalonPage() {
         ) : dayStaffBookings.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">{dayStaffBookings.map(renderStaffBookingCard)}</div>
         ) : (
-          <div className="text-center py-10 bg-zinc-50 rounded-2xl">
+          <div className="text-center py-10 bg-zinc-50 rounded-xl">
             <CalendarX className="w-8 h-8 text-zinc-300 mx-auto mb-2" />
             <p className="text-zinc-400 text-sm">نوبتی برای این روز ثبت نشده است.</p>
           </div>
@@ -660,7 +662,7 @@ export default function MySalonPage() {
           onClick={() => !isSwitchingSalon && setIsSalonSwitcherOpen(false)}
         >
           <div
-            className="w-full bg-white rounded-t-3xl p-4 pb-6 shadow-2xl"
+            className="w-full bg-white rounded-t-2xl p-4 pb-6 shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="w-10 h-1 bg-zinc-200 rounded-full mx-auto mb-3" />
@@ -676,11 +678,11 @@ export default function MySalonPage() {
                   <button
                     key={s.id}
                     onClick={() => handleSwitchSalon(s.id)}
-                    className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-2xl text-right transition-colors ${
+                    className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-right transition-colors ${
                       s.isActive ? 'bg-[#824c71]/8' : 'hover:bg-zinc-50'
                     }`}
                   >
-                    <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
+                    <div className={`w-9 h-9 rounded-[10px] flex items-center justify-center shrink-0 ${
                       s.isActive ? 'bg-[#824c71] text-white' : 'bg-zinc-100 text-zinc-500'
                     }`}>
                       {s.isOwner ? <Store className="w-4 h-4" /> : <ShieldCheck className="w-4 h-4" />}
@@ -700,9 +702,9 @@ export default function MySalonPage() {
                 <Link
                   href="/profile/business"
                   onClick={() => setIsSalonSwitcherOpen(false)}
-                  className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-2xl text-right hover:bg-zinc-50 transition-colors mt-1 border-t border-zinc-100 pt-3.5"
+                  className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-right hover:bg-zinc-50 transition-colors mt-1 border-t border-zinc-100 pt-3.5"
                 >
-                  <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 bg-zinc-100 text-zinc-500">
+                  <div className="w-9 h-9 rounded-[10px] flex items-center justify-center shrink-0 bg-zinc-100 text-zinc-500">
                     <Plus className="w-4 h-4" />
                   </div>
                   <p className="text-sm font-bold text-zinc-700">ثبت‌نام کسب‌وکار جدید</p>
