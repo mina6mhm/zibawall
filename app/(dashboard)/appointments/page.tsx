@@ -179,9 +179,9 @@ function AppointmentsContent() {
   };
 
   // یک کارتِ نوبت — ردیف ۱: اسم سالن (راست) و قیمت کل (چپ، فقط اگر ثبت
-  // شده باشه)؛ ردیف ۲: برای هر خدمت — اسم خدمت + پرسنل (با آیکون) و همون
-  // تاریخ+ساعت (با یک دایره‌ی رنگ برند) در همون ردیف، همگی با استایل یکسان؛
-  // بعد یک بوردر؛ زیر بوردر وضعیت نوبت (راست) و لینک «مشاهده سالن» (چپ).
+  // شده باشه)؛ ردیف ۲: برای هر خدمت — تاریخ+ساعت (با یک دایره‌ی رنگ برند)، بعد
+  // اسم خدمت و بعد اسم پرسنل (با آیکون)، همگی با استایل یکسان؛ بعد یک بوردر؛
+  // زیر بوردر وضعیت نوبت (راست) و لینک «مشاهده سالن» (چپ).
   const renderCard = ({ appt, item }: FlatItem) => {
     const statusInfo = STATUS_LABELS[item.status];
     const isCancelled = item.status === 'CANCELLED';
@@ -194,17 +194,23 @@ function AppointmentsContent() {
         className={`bg-white rounded-2xl p-4 shadow-[0_2px_14px_rgba(0,0,0,0.09)] ${isCancelled ? 'opacity-70' : ''}`}
       >
         {/* ردیف ۱: اسم سالن سمت راست، قیمت کل سمت چپ (ریز و خاکستری) */}
-        <div className="flex items-center justify-between gap-3 mb-3">
+        <div className="flex items-center justify-between gap-3 mb-4">
           <p className="text-[15px] font-bold text-zinc-900 truncate">{appt.salon.name}</p>
           {itemTotal > 0 && (
             <span className="text-xs font-medium text-zinc-400 shrink-0">{formatMoney(itemTotal)} تومان</span>
           )}
         </div>
 
-        {/* ردیف ۲: خدمت + پرسنل + تاریخ/ساعت، همگی با یک استایل (آیکون بنفش + متن پررنگ) */}
+        {/* ردیف ۲: تاریخ/ساعت، سپس خدمت، سپس پرسنل، همگی با یک استایل (آیکون بنفش + متن پررنگ) */}
         <div className="flex flex-col gap-1.5 mb-3">
           {item.services.map((s, idx) => (
             <div key={idx} className="flex items-center gap-3 flex-wrap text-xs text-zinc-700">
+              <span className="flex items-center gap-1.5 shrink-0">
+                <span className="w-2 h-2 rounded-full bg-[#824c71] shrink-0" />
+                <span className="font-bold whitespace-nowrap">
+                  {formatDate(item.date)} - <span dir="ltr">{toPersianDigits(item.startTime)}</span>
+                </span>
+              </span>
               <span className="flex items-center gap-1.5 min-w-0">
                 <Scissors className="w-3.5 h-3.5 text-[#824c71] shrink-0" strokeWidth={1.75} />
                 <span className="font-bold truncate">{s.name}</span>
@@ -215,12 +221,6 @@ function AppointmentsContent() {
                   <span className="font-bold truncate">{s.staffName}</span>
                 </span>
               )}
-              <span className="flex items-center gap-1.5 shrink-0">
-                <span className="w-2 h-2 rounded-full bg-[#824c71] shrink-0" />
-                <span className="font-bold whitespace-nowrap">
-                  {formatDate(item.date)} - <span dir="ltr">{toPersianDigits(item.startTime)}</span>
-                </span>
-              </span>
             </div>
           ))}
         </div>
