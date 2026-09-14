@@ -34,6 +34,8 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
   const [userRating, setUserRating] = useState(0);
   const [reviewText, setReviewText] = useState("");
   const [reviewError, setReviewError] = useState("");
+  const [ratingError, setRatingError] = useState("");
+  const [isSubmittingRating, setIsSubmittingRating] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
   const [localReviews, setLocalReviews] = useState<any[]>([]);
   const [expandedCategories, setExpandedCategories] = useState<string[]>([]);
@@ -213,6 +215,9 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
 
   const textReviews = localReviews.filter(review => review.comment && review.comment.trim() !== "");
 
+  // امتیازی که خودِ همین کاربر قبلاً ثبت کرده (برای پر نگه‌داشتن ستاره‌ها بعد از رفرش)
+  const myRating = userRating || (ratedReviews.find(r => r.name === loggedInUserName)?.rating ?? 0);
+
   const toggleBookmark = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (!salon) return;
@@ -226,24 +231,58 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
     setIsBookmarked(!isBookmarked);
   };
 
+  // --- ثبت امتیاز ستاره‌ای — هر کاربر فقط یک بار می‌تواند امتیاز بدهد ---
+  const handleRatingSubmit = async (star: number) => {
+    if (hasAlreadyReviewed) return;
+    setRatingError("");
+    setUserRating(star);
+    setIsSubmittingRating(true);
+
+    try {
+      const response = await fetch(`/api/salon/${salon.id}/reviews`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: loggedInUserName,
+          rating: star,
+          comment: ""
+        })
+      });
+
+      const result = await response.json();
+      if (!response.ok) {
+        if (response.status === 403) {
+          setUserRating(0);
+          return setRatingError(result.error);
+        }
+        throw new Error(result.error || "خطا در ثبت امتیاز");
+      }
+
+      setLocalReviews([result, ...localReviews]);
+      setHasAlreadyReviewed(true);
+      localStorage.setItem(`has_reviewed_${salon.id}_${loggedInUserName}`, "true");
+    } catch (error: any) {
+      setUserRating(0);
+      setRatingError(error.message || "مشکلی پیش آمد. لطفاً دوباره تلاش کنید.");
+    } finally {
+      setIsSubmittingRating(false);
+    }
+  };
+
+  // --- ثبت نظر متنی — بدون محدودیت تعداد، کاملاً مستقل از امتیاز ستاره‌ای ---
   const handleReviewSubmit = async () => {
     setReviewError(""); 
     setSuccessMessage("");
-    const isTextEmpty = !reviewText.trim();
 
-    if (hasAlreadyReviewed) {
-      if (isTextEmpty) return setReviewError("لطفاً متن نظر خود را بنویسید.");
-    } else {
-      if (userRating === 0 && isTextEmpty) return setReviewError("لطفاً حداقل یک امتیاز بدهید یا نظر خود را بنویسید.");
-    }
-    
+    if (!reviewText.trim()) return setReviewError("لطفاً متن نظر خود را بنویسید.");
+
     try {
         const response = await fetch(`/api/salon/${salon.id}/reviews`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ 
             name: loggedInUserName,
-            rating: hasAlreadyReviewed ? 0 : userRating, 
+            rating: 0, 
             comment: reviewText.trim() 
           })
         });
@@ -257,11 +296,6 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
         setLocalReviews([result, ...localReviews]); 
         setSuccessMessage("نظر شما با موفقیت ثبت شد!");
         setReviewText(""); 
-        
-        if (!hasAlreadyReviewed && userRating > 0) {
-          setHasAlreadyReviewed(true);
-          localStorage.setItem(`has_reviewed_${salon.id}_${loggedInUserName}`, "true");
-        }
     } catch (error: any) {
         setReviewError(error.message || "مشکلی پیش آمد. لطفاً دوباره تلاش کنید.");
     }
@@ -288,8 +322,39 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
 
   const salonInfoCard = (
     <div>
-      <div className="mb-5">
+      <div className="mb-4">
         <h1 className="text-2xl sm:text-[28px] font-bold text-zinc-900 leading-snug">{salon.name}</h1>
+
+        {/* امتیازدهی ستاره‌ای — کاملاً مستقل از نظر متنی، هر کاربر فقط یک بار */}
+        <div className="flex items-center gap-2 mt-2 flex-wrap">
+          <div className="flex items-center">
+            {[1, 2, 3, 4, 5].map((star) => (
+              <button
+                key={star}
+                type="button"
+                disabled={hasAlreadyReviewed || isSubmittingRating}
+                onClick={() => handleRatingSubmit(star)}
+                aria-label={`${star} ستاره`}
+                className={`p-0.5 ${hasAlreadyReviewed ? 'cursor-default' : 'active:scale-90 transition-transform'}`}
+              >
+                <Star
+                  className={`w-5 h-5 ${star <= myRating ? 'text-amber-400 fill-current' : 'text-zinc-300'}`}
+                />
+              </button>
+            ))}
+          </div>
+          <span className="text-xs text-zinc-500">
+            <span className="font-bold text-zinc-800">{toPersianDigits(averageRating)}</span>
+            {' '}· {toPersianDigits(String(totalVotes))} رای
+          </span>
+        </div>
+
+        {hasAlreadyReviewed ? (
+          <p className="text-[11px] text-zinc-400 mt-1.5">امتیاز شما ثبت شده است.</p>
+        ) : (
+          <p className="text-[11px] text-zinc-400 mt-1.5">برای ثبت امتیاز روی ستاره‌ها بزنید.</p>
+        )}
+        {ratingError && <p className="text-red-600 text-[11px] font-medium mt-1.5">{ratingError}</p>}
       </div>
 
       {/* بج‌های خدمات در منزل / مخاطب سالن */}
@@ -678,7 +743,7 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
                 {/* سایه‌ی ملایم بالای عکس برای خوانایی بهتر دکمه‌های شناور */}
                 <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-black/35 to-transparent pointer-events-none" />
 
-                {/* نوار شناور بالا: بازگشت (راست) + اشتراک‌گذاری و نشان کردن (چپ) */}
+                {/* نوار شناور بالا: اشتراک‌گذاری و نشان کردن */}
                 <div className="absolute top-4 inset-x-4 flex items-center justify-end" onClick={(e) => e.stopPropagation()}>
                   <div className="flex items-center gap-2">
                     <button
@@ -700,12 +765,6 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
                   </div>
                 </div>
 
-                {/* بج امتیاز شناور پایین سمت راست عکس */}
-                <div className="absolute bottom-3 right-3 flex items-center gap-1.5 bg-white/95 backdrop-blur-md px-3 py-1.5 rounded-full shadow-sm">
-                  <Star className="w-3.5 h-3.5 text-amber-500 fill-current" />
-                  <span className="font-bold text-zinc-900 text-xs">{toPersianDigits(averageRating)}</span>
-                  <span className="text-[10px] text-zinc-400">({toPersianDigits(String(totalVotes))} رای)</span>
-                </div>
               </div>
               
               {salon.portfolios && salon.portfolios.length > 0 && (
@@ -723,18 +782,18 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
               )}
             </div>
 
-            <div className="block lg:hidden pt-8 mt-8">
+            <div className="block lg:hidden mt-6">
               {salonInfoCard}
             </div>
 
-            <section className="pt-8 mt-8">
+            <section className="mt-6">
               <h2 className="text-lg sm:text-xl font-bold text-zinc-900 mb-3">درباره سالن</h2>
               <p className="text-zinc-600 text-[13px] sm:text-sm leading-relaxed text-justify">
                 {salon.description || "توضیحاتی ثبت نشده است."}
               </p>
             </section>
 
-            <section className="pt-8 mt-8 border-t border-zinc-200">
+            <section className="mt-8">
               <h2 className="text-lg sm:text-xl font-bold text-zinc-900 mb-4">خدمات ما</h2>
               <div className="space-y-2">
                 {Object.keys(groupedServices).length > 0 ? (
@@ -770,49 +829,22 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
               </div>
             </section>
 
-            <section className="pt-8 mt-8">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="text-3xl font-bold text-zinc-900">{toPersianDigits(averageRating)}</div>
-                <div>
-                  <div className="flex">
-                    {[...Array(5)].map((_, i) => (
-                      <Star key={i} className={`w-3.5 h-3.5 ${i < Math.round(Number(averageRating)) ? 'text-amber-400 fill-current' : 'text-zinc-200'}`} />
-                    ))}
-                  </div>
-                  <p className="text-[11px] text-zinc-400 mt-0.5">
-                    از {totalVotes.toLocaleString('fa-IR')} رای · {textReviews.length.toLocaleString('fa-IR')} نظر
-                  </p>
-                </div>
-              </div>
+            <section className="mt-8">
+              <h2 className="text-lg sm:text-xl font-bold text-zinc-900 mb-4">
+                نظرات
+                <span className="text-xs font-medium text-zinc-400 mr-2">
+                  {toPersianDigits(String(textReviews.length))} نظر
+                </span>
+              </h2>
 
-              <div className="pb-6 mb-6">
-                  <h3 className="font-medium text-sm text-zinc-800 mb-3">
-                      {hasAlreadyReviewed ? "ثبت نظر جدید" : "امتیاز و نظر خود را ثبت کنید"}
-                  </h3>
-                  
+              <div className="mb-6">
+                  <h3 className="font-medium text-sm text-zinc-800 mb-3">ثبت نظر</h3>
+
                   {successMessage && (
                       <div className="mb-3 flex items-center gap-2 text-[#824c71]">
                           <CheckCircle2 className="w-4 h-4" />
                           <span className="text-xs font-medium">{successMessage}</span>
                       </div>
-                  )}
-
-                  {!hasAlreadyReviewed ? (
-                      <div className="flex items-center gap-1 mb-3">
-                          {[1, 2, 3, 4, 5].map((star) => (
-                            <button
-                              key={star}
-                              type="button"
-                              onClick={() => setUserRating(star)}
-                              aria-label={`${star} ستاره`}
-                              className="p-0.5"
-                            >
-                              <Star className={`w-6 h-6 sm:w-7 sm:h-7 ${star <= userRating ? 'text-amber-400 fill-current' : 'text-zinc-300'}`} />
-                            </button>
-                          ))}
-                      </div>
-                  ) : (
-                      <p className="text-xs text-[#824c71] mb-3 font-medium">قبلاً امتیاز داده‌اید. ثبت نظر متنی:</p>
                   )}
 
                   <textarea 
@@ -827,7 +859,7 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
                     onClick={handleReviewSubmit}
                     className="bg-[#824c71] hover:bg-[#6e3f60] text-white font-medium px-5 py-2.5 rounded-md text-xs sm:text-sm transition-colors"
                   >
-                    {hasAlreadyReviewed ? "ثبت نظر" : "ثبت"}
+                    ثبت نظر
                   </button>
               </div>
 
