@@ -308,9 +308,14 @@ export default function SalonReportsPage() {
                   key={d.dateStr}
                   type="button"
                   onClick={() => setSelectedDay((prev) => (prev === d.dateStr ? null : d.dateStr))}
-                  className="flex flex-col items-center justify-end h-full shrink-0 group"
+                  className="relative flex flex-col items-center justify-end h-full shrink-0 group"
                   style={{ width: 18 }}
                 >
+                  {isSelected && (
+                    <div className="absolute top-0 left-1/2 -translate-x-1/2 z-10 whitespace-nowrap bg-[#824c71] text-white text-[10px] font-bold px-2 py-1 rounded-lg shadow-md">
+                      روز {d.dayNumber.toLocaleString('fa-IR')}: {formatMoney(d.revenue)} تومان
+                    </div>
+                  )}
                   <div
                     className={`w-full rounded-t-sm transition-all ${
                       isSelected || isBest ? 'bg-[#824c71]' : 'bg-[#824c71]/25 group-hover:bg-[#824c71]/40'
