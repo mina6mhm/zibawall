@@ -129,8 +129,16 @@ function AppointmentsContent() {
     }
   };
 
-  const formatDate = (isoDate: string) =>
-    new Date(isoDate).toLocaleDateString('fa-IR', { year: 'numeric', month: 'long', day: 'numeric' });
+  // تاریخ به شکل عددی شمسی، مثلاً «۱۴۰۵/۰۶/۱۵» — ماه و روز همیشه دو رقمی
+  const formatDate = (isoDate: string) => {
+    const parts = new Intl.DateTimeFormat('fa-IR-u-ca-persian', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).formatToParts(new Date(isoDate));
+    const get = (type: string) => parts.find((p) => p.type === type)?.value ?? '';
+    return `${get('year')}/${get('month')}/${get('day')}`;
+  };
 
   const formatMoney = (amount: number) => amount.toLocaleString('fa-IR');
 
@@ -170,32 +178,30 @@ function AppointmentsContent() {
     cancelled: 'نوبت لغو‌شده‌ای ندارید.',
   };
 
-  // یک کارتِ نوبت — ردیف ۱: اسم سالن (راست) و تاریخ+ساعت با یک دایره‌ی
-  // رنگ برند (چپ) در همون ردیف؛ ردیف ۲: خدمت + پرسنل (با آیکون) و قیمت
-  // (اگر بود) همه در یک ردیف؛ بعد یک بوردر؛ زیر بوردر وضعیت نوبت (راست) و
-  // لینک «مشاهده سالن» با رنگ برند (چپ).
+  // یک کارتِ نوبت — ردیف ۱: اسم سالن (راست) و قیمت کل (چپ، فقط اگر ثبت
+  // شده باشه)؛ ردیف ۲: برای هر خدمت — اسم خدمت + پرسنل (با آیکون) و همون
+  // تاریخ+ساعت (با یک دایره‌ی رنگ برند) در همون ردیف؛ بعد یک بوردر؛ زیر
+  // بوردر وضعیت نوبت (راست) و لینک «مشاهده سالن» با رنگ برند (چپ).
   const renderCard = ({ appt, item }: FlatItem) => {
     const statusInfo = STATUS_LABELS[item.status];
     const isCancelled = item.status === 'CANCELLED';
     const isPending = appt.status === 'PENDING_PAYMENT' && item.status !== 'CANCELLED';
+    const itemTotal = item.services.reduce((sum, s) => sum + (s.price || 0), 0);
 
     return (
       <div
         key={item.id}
         className={`bg-white rounded-2xl p-4 shadow-[0_2px_14px_rgba(0,0,0,0.09)] ${isCancelled ? 'opacity-70' : ''}`}
       >
-        {/* ردیف ۱: اسم سالن سمت راست، تاریخ و ساعت سمت چپ */}
+        {/* ردیف ۱: اسم سالن سمت راست، قیمت کل سمت چپ */}
         <div className="flex items-center justify-between gap-3 mb-3">
           <p className="text-[15px] font-bold text-zinc-900 truncate">{appt.salon.name}</p>
-          <div className="flex items-center gap-1.5 text-xs text-zinc-500 shrink-0">
-            <span className="w-2 h-2 rounded-full bg-[#824c71] shrink-0" />
-            <span className="whitespace-nowrap">
-              {formatDate(item.date)} - <span dir="ltr">{toPersianDigits(item.startTime)}</span>
-            </span>
-          </div>
+          {itemTotal > 0 && (
+            <span className="text-sm font-bold text-zinc-900 shrink-0">{formatMoney(itemTotal)} تومان</span>
+          )}
         </div>
 
-        {/* ردیف ۲: خدمت + پرسنل (با آیکون) و قیمت، همه در یک ردیف */}
+        {/* ردیف ۲: خدمت + پرسنل (با آیکون) و تاریخ+ساعت، همه در یک ردیف */}
         <div className="flex flex-col gap-1.5 mb-3">
           {item.services.map((s, idx) => (
             <div key={idx} className="flex items-center gap-3 flex-wrap text-xs text-zinc-700">
@@ -209,9 +215,12 @@ function AppointmentsContent() {
                   <span className="font-bold truncate">{s.staffName}</span>
                 </span>
               )}
-              {!!s.price && (
-                <span className="text-zinc-400">قیمت {formatMoney(s.price)} تومان</span>
-              )}
+              <span className="flex items-center gap-1.5 text-zinc-500 shrink-0">
+                <span className="w-2 h-2 rounded-full bg-[#824c71] shrink-0" />
+                <span className="whitespace-nowrap">
+                  {formatDate(item.date)} - <span dir="ltr">{toPersianDigits(item.startTime)}</span>
+                </span>
+              </span>
             </div>
           ))}
         </div>
