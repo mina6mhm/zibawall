@@ -181,17 +181,13 @@ export default function SalonReportsPage() {
 
   const staffModalRows = monthStats.staffBreakdown.map((s) => ({ name: s.name, amount: s.share }));
 
-  // اطلاعاتی که بالای نمودار نشون داده می‌شه: یا روزی که کاربر کلیک کرده، یا پیش‌فرض پردرآمدترین روز
+  // بالای نمودار همیشه پردرآمدترین روز ماه رو نشون می‌ده
   const activeDayInfo = useMemo(() => {
-    if (selectedDay) {
-      const d = monthStats.dailyBreakdown.find((x) => x.dateStr === selectedDay);
-      if (d) return { dayNumber: d.dayNumber, revenue: d.revenue, isSelected: true };
-    }
     if (monthStats.bestDay.revenue > 0) {
-      return { dayNumber: monthStats.bestDay.dayNumber, revenue: monthStats.bestDay.revenue, isSelected: false };
+      return { dayNumber: monthStats.bestDay.dayNumber, revenue: monthStats.bestDay.revenue };
     }
     return null;
-  }, [selectedDay, monthStats]);
+  }, [monthStats]);
 
   if (isLoading) {
     return (
@@ -291,18 +287,8 @@ export default function SalonReportsPage() {
 
         {activeDayInfo && (
           <p className="text-[11px] text-zinc-400 mb-4">
-            {activeDayInfo.isSelected ? 'روز انتخاب‌شده' : 'پردرآمدترین روز'}:{' '}
-            {activeDayInfo.dayNumber.toLocaleString('fa-IR')} {selectedMonth.month.name} با{' '}
+            پردرآمدترین روز: {activeDayInfo.dayNumber.toLocaleString('fa-IR')} {selectedMonth.month.name} با{' '}
             <span className="font-bold text-[#824c71]">{formatMoney(activeDayInfo.revenue)} تومان</span>
-            {activeDayInfo.isSelected && (
-              <button
-                type="button"
-                onClick={() => setSelectedDay(null)}
-                className="mr-2 text-[10px] text-zinc-400 underline underline-offset-2"
-              >
-                پاک کردن
-              </button>
-            )}
           </p>
         )}
 
@@ -316,7 +302,6 @@ export default function SalonReportsPage() {
               const isSelected = d.dateStr === selectedDay;
               const isBest = !selectedDay && d.dayNumber === monthStats.bestDay.dayNumber && d.revenue > 0;
               const heightPct = Math.max((d.revenue / maxDailyRevenue) * 100, d.revenue > 0 ? 4 : 0);
-              const showTick = d.dayNumber === 1 || d.dayNumber % 5 === 0 || d.dayNumber === monthStats.dailyBreakdown.length;
 
               return (
                 <button
@@ -324,7 +309,7 @@ export default function SalonReportsPage() {
                   type="button"
                   onClick={() => setSelectedDay((prev) => (prev === d.dateStr ? null : d.dateStr))}
                   className="flex flex-col items-center justify-end h-full shrink-0 group"
-                  style={{ width: 16 }}
+                  style={{ width: 18 }}
                 >
                   <div
                     className={`w-full rounded-t-sm transition-all ${
@@ -332,8 +317,8 @@ export default function SalonReportsPage() {
                     }`}
                     style={{ height: `${heightPct}%` }}
                   />
-                  <span className={`text-[9px] mt-1 ${showTick ? 'text-zinc-400' : 'text-transparent'}`}>
-                    {d.dayNumber.toLocaleString('fa-IR')}
+                  <span className="text-[9px] mt-1 text-zinc-400">
+                    {d.revenue > 0 ? d.dayNumber.toLocaleString('fa-IR') : '\u00A0'}
                   </span>
                 </button>
               );
