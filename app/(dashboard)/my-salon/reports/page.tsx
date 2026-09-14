@@ -299,31 +299,34 @@ export default function SalonReportsPage() {
         ) : (
           <div dir="ltr" className="flex items-end gap-1.5 h-56 overflow-x-auto hide-scrollbar pb-1">
             {monthStats.dailyBreakdown.map((d) => {
-              const isSelected = d.dateStr === selectedDay;
-              const isBest = !selectedDay && d.dayNumber === monthStats.bestDay.dayNumber && d.revenue > 0;
-              const heightPct = Math.max((d.revenue / maxDailyRevenue) * 100, d.revenue > 0 ? 4 : 0);
+              const hasRevenue = d.revenue > 0;
+              // اگه کاربر روی روزی کلیک نکرده، پیش‌فرض همیشه پردرآمدترین روزه
+              const displayedDateStr = selectedDay ?? (monthStats.bestDay.revenue > 0 ? monthStats.bestDay.dateStr : null);
+              const isHighlighted = hasRevenue && d.dateStr === displayedDateStr;
+              const heightPct = Math.max((d.revenue / maxDailyRevenue) * 100, hasRevenue ? 4 : 0);
 
               return (
                 <button
                   key={d.dateStr}
                   type="button"
-                  onClick={() => setSelectedDay((prev) => (prev === d.dateStr ? null : d.dateStr))}
-                  className="relative flex flex-col items-center justify-end h-full shrink-0 group"
+                  disabled={!hasRevenue}
+                  onClick={() => hasRevenue && setSelectedDay((prev) => (prev === d.dateStr ? null : d.dateStr))}
+                  className={`relative flex flex-col items-center justify-end h-full shrink-0 ${hasRevenue ? 'group' : 'cursor-default'}`}
                   style={{ width: 18 }}
                 >
-                  {isSelected && (
-                    <div className="absolute top-0 left-1/2 -translate-x-1/2 z-10 whitespace-nowrap bg-[#824c71] text-white text-[10px] font-bold px-2 py-1 rounded-lg shadow-md">
+                  {isHighlighted && (
+                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10 whitespace-nowrap bg-[#824c71] text-white text-[10px] font-bold px-2 py-1 rounded-lg shadow-md">
                       روز {d.dayNumber.toLocaleString('fa-IR')}: {formatMoney(d.revenue)} تومان
                     </div>
                   )}
                   <div
                     className={`w-full rounded-t-sm transition-all ${
-                      isSelected || isBest ? 'bg-[#824c71]' : 'bg-[#824c71]/25 group-hover:bg-[#824c71]/40'
+                      isHighlighted ? 'bg-[#824c71]' : 'bg-[#824c71]/25 group-hover:bg-[#824c71]/40'
                     }`}
                     style={{ height: `${heightPct}%` }}
                   />
                   <span className="text-[9px] mt-1 text-zinc-400">
-                    {d.revenue > 0 ? d.dayNumber.toLocaleString('fa-IR') : '\u00A0'}
+                    {hasRevenue ? d.dayNumber.toLocaleString('fa-IR') : '\u00A0'}
                   </span>
                 </button>
               );
