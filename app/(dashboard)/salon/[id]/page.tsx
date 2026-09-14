@@ -19,6 +19,9 @@ const GENDER_AUDIENCE_LABELS: Record<string, string> = {
   BOTH: 'خانم‌ها و آقایون',
 };
 
+// اعداد لاتین رو به فارسی تبدیل می‌کنه — برای نمایش تعداد آرا/نظرات و امتیاز
+const toPersianDigits = (str: string) => str.replace(/[0-9]/g, (d) => '۰۱۲۳۴۵۶۷۸۹'[Number(d)]);
+
 export default function SalonDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params);
   const router = useRouter();
@@ -169,7 +172,7 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
         <p className="text-sm text-zinc-500 max-w-xs">این سالن حذف شده یا لینکش اشتباهه.</p>
         <button
           onClick={() => router.push("/")}
-          className="mt-2 bg-[#824c71]/8 hover:bg-[#824c71]/14 text-[#824c71] font-medium text-sm px-5 py-2.5 rounded-xl transition-colors"
+          className="mt-2 bg-[#824c71]/8 hover:bg-[#824c71]/14 text-[#824c71] font-medium text-sm px-5 py-2.5 rounded-[10px] transition-colors"
         >
           بازگشت به صفحه اصلی
         </button>
@@ -306,14 +309,14 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
       {isAdmin && (
         <button
           onClick={() => setShowDeleteModal(true)}
-          className="w-full flex items-center justify-center gap-2 mb-5 py-2.5 rounded-xl border border-red-200 text-red-600 text-sm font-medium hover:bg-red-50 transition-colors"
+          className="w-full flex items-center justify-center gap-2 mb-5 py-2.5 rounded-[10px] border border-red-200 text-red-600 text-sm font-medium hover:bg-red-50 transition-colors"
         >
           <Trash2 className="w-4 h-4" />
           حذف این کسب‌وکار (ادمین)
         </button>
       )}
 
-      <div className="space-y-3 sm:space-y-3.5 text-zinc-600 text-[13px] sm:text-sm mb-6 pb-6 border-b border-[#824c71]/10">
+      <div className="space-y-3 sm:space-y-3.5 text-zinc-600 text-[13px] sm:text-sm mb-6 pb-6 border-b border-zinc-100">
         <div className="flex items-start">
           <MapPin className="w-4 h-4 sm:w-5 sm:h-5 ml-2 mt-0.5 text-[#824c71] flex-shrink-0" />
           <p className="leading-relaxed">{salon.address}</p>
@@ -345,7 +348,7 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
 
       <div 
         onClick={() => setShowRoutingModal(true)}
-        className="relative w-full h-32 sm:h-44 bg-[#824c71]/5 rounded-xl mb-6 overflow-hidden cursor-pointer group"
+        className="relative w-full h-32 sm:h-44 bg-[#824c71]/5 rounded-2xl mb-6 overflow-hidden cursor-pointer group"
       >
         {salon.coordinates && salon.coordinates.length === 2 ? (
           <>
@@ -354,7 +357,7 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
               alt={`موقعیت ${salon.name}`} 
               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
             />
-            <div className="absolute bottom-2.5 right-2.5 flex items-center gap-1.5 bg-white/90 backdrop-blur-md px-2.5 py-1.5 rounded-lg text-[11px] font-medium text-[#824c71] shadow-sm">
+            <div className="absolute bottom-2.5 right-2.5 flex items-center gap-1.5 bg-white/90 backdrop-blur-md px-2.5 py-1.5 rounded-[10px] text-[11px] font-medium text-[#824c71] shadow-sm">
               <Map className="w-3.5 h-3.5" />
               نمایش مسیر
             </div>
@@ -476,7 +479,7 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
   {/* هر دو حالت (فعال/غیرفعال) ظاهر یکسان دارن — کلیک روی حالت غیرفعال پاپ‌آپ هشدار رو باز می‌کنه */}
   <button
     onClick={handleBookingButtonClick}
-    className="flex-1 bg-[#824c71] hover:bg-[#6e3f60] text-white font-bold py-3 rounded-xl text-center transition flex items-center justify-center gap-2 text-sm shadow-sm shadow-[#824c71]/20"
+    className="flex-1 bg-[#824c71] hover:bg-[#6e3f60] text-white font-bold py-3 rounded-[10px] text-center transition flex items-center justify-center gap-2 text-sm shadow-sm shadow-[#824c71]/20"
   >
     <CalendarClock className="w-4 h-4" />
     نوبت‌دهی آنلاین
@@ -485,7 +488,7 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
     <a
       href={`tel:${primaryPhone}`}
       onClick={handleCallButtonClick}
-      className="w-12 h-12 flex items-center justify-center rounded-xl border border-[#824c71]/15 text-[#824c71] hover:bg-[#824c71]/5 transition shrink-0"
+      className="w-12 h-12 flex items-center justify-center rounded-[10px] bg-[#824c71]/10 text-[#824c71] hover:bg-[#824c71]/15 transition shrink-0"
     >
       <Phone className="w-5 h-5" />
     </a>
@@ -513,7 +516,7 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
             </div>
 
             <div className="hidden sm:flex items-center justify-center w-full h-full">
-              <img src={selectedImage} alt="بزرگنمایی" className="max-w-full max-h-[85vh] object-contain rounded-lg" onClick={(e) => e.stopPropagation()} />
+              <img src={selectedImage} alt="بزرگنمایی" className="max-w-full max-h-[85vh] object-contain rounded-[10px]" onClick={(e) => e.stopPropagation()} />
             </div>
           </div>
         </div>
@@ -531,15 +534,15 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
             </div>
             
             <div className="flex flex-col gap-2.5">
-              <a href={`https://neshan.org/maps/routing?dest_lat=${salon.coordinates[0]}&dest_lng=${salon.coordinates[1]}`} target="_blank" rel="noopener noreferrer" className="flex items-center justify-between p-3.5 rounded-xl bg-[#824c71]/5 active:bg-[#824c71]/10">
+              <a href={`https://neshan.org/maps/routing?dest_lat=${salon.coordinates[0]}&dest_lng=${salon.coordinates[1]}`} target="_blank" rel="noopener noreferrer" className="flex items-center justify-between p-3.5 rounded-[10px] bg-[#824c71]/5 active:bg-[#824c71]/10">
                 <span className="font-bold text-sm text-zinc-800">نشان (Neshan)</span>
                 <img src="/neshan.png" alt="نشان" className="w-6 h-6 object-contain" />
               </a>
-              <a href={`https://balad.ir/?lat=${salon.coordinates[0]}&lng=${salon.coordinates[1]}&title=${encodeURIComponent(salon.name)}`} target="_blank" rel="noopener noreferrer" className="flex items-center justify-between p-3.5 rounded-xl bg-[#824c71]/5 active:bg-[#824c71]/10">
+              <a href={`https://balad.ir/?lat=${salon.coordinates[0]}&lng=${salon.coordinates[1]}&title=${encodeURIComponent(salon.name)}`} target="_blank" rel="noopener noreferrer" className="flex items-center justify-between p-3.5 rounded-[10px] bg-[#824c71]/5 active:bg-[#824c71]/10">
                 <span className="font-bold text-sm text-zinc-800">بلد (Balad)</span>
                 <img src="/balad.png" alt="بلد" className="w-6 h-6 object-contain" />
               </a>
-              <a href={`https://www.google.com/maps/dir/?api=1&destination=${salon.coordinates[0]},${salon.coordinates[1]}`} target="_blank" rel="noopener noreferrer" className="flex items-center justify-between p-3.5 rounded-xl bg-[#824c71]/5 active:bg-[#824c71]/10">
+              <a href={`https://www.google.com/maps/dir/?api=1&destination=${salon.coordinates[0]},${salon.coordinates[1]}`} target="_blank" rel="noopener noreferrer" className="flex items-center justify-between p-3.5 rounded-[10px] bg-[#824c71]/5 active:bg-[#824c71]/10">
                 <span className="font-bold text-sm text-zinc-800">گوگل مپ (Google Maps)</span>
                 <img src="/google-maps.png" alt="گوگل مپ" className="w-6 h-6 object-contain" />
               </a>
@@ -565,7 +568,7 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
                   key={idx}
                   href={`tel:${phone}`}
                   onClick={() => setShowPhoneModal(false)}
-                  className="flex items-center justify-between p-3.5 rounded-xl bg-[#824c71]/5 active:bg-[#824c71]/10"
+                  className="flex items-center justify-between p-3.5 rounded-[10px] bg-[#824c71]/5 active:bg-[#824c71]/10"
                 >
                   <span dir="ltr" className="font-bold text-sm text-zinc-800">{phone}</span>
                   <span className="w-8 h-8 rounded-full bg-[#824c71]/10 flex items-center justify-center">
@@ -595,14 +598,14 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
               <button
                 onClick={() => setShowDeleteModal(false)}
                 disabled={isDeleting}
-                className="flex-1 py-2.5 rounded-xl bg-[#824c71]/8 text-zinc-700 text-sm font-medium disabled:opacity-50"
+                className="flex-1 py-2.5 rounded-[10px] bg-[#824c71]/8 text-zinc-700 text-sm font-medium disabled:opacity-50"
               >
                 انصراف
               </button>
               <button
                 onClick={handleDeleteSalon}
                 disabled={isDeleting}
-                className="flex-1 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white text-sm font-medium disabled:opacity-50"
+                className="flex-1 py-2.5 rounded-[10px] bg-red-600 hover:bg-red-700 text-white text-sm font-medium disabled:opacity-50"
               >
                 {isDeleting ? "در حال حذف..." : "بله، حذف شود"}
               </button>
@@ -621,7 +624,7 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
             className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-xl"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="w-12 h-12 bg-amber-50 rounded-2xl flex items-center justify-center mb-4 mx-auto">
+            <div className="w-12 h-12 bg-amber-50 rounded-[10px] flex items-center justify-center mb-4 mx-auto">
               <CalendarClock className="w-6 h-6 text-amber-500" />
             </div>
             <h3 className="text-base font-bold text-zinc-900 text-center mb-2">
@@ -633,7 +636,7 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
             </p>
             <button
               onClick={() => setShowBookingAlert(false)}
-              className="w-full bg-[#824c71]/[0.07] hover:bg-[#824c71]/[0.12] text-[#824c71] rounded-xl py-3 text-sm font-semibold"
+              className="w-full bg-[#824c71]/[0.07] hover:bg-[#824c71]/[0.12] text-[#824c71] rounded-[10px] py-3 text-sm font-semibold"
             >
               متوجه شدم
             </button>
@@ -659,7 +662,7 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
             <div className="space-y-3 sm:space-y-4">
               {/* گالری اصلی: تصویر بزرگ با نوار شناور بازگشت/اشتراک‌گذاری/نشان + بج امتیاز روی خودِ عکس */}
               <div
-                className="relative w-full h-72 sm:h-96 rounded-[28px] overflow-hidden cursor-pointer bg-gradient-to-br from-[#fdf8fb] via-[#f7edf3] to-[#f3e6ee]"
+                className="relative w-full h-72 sm:h-96 rounded-2xl overflow-hidden cursor-pointer bg-gradient-to-br from-[#fdf8fb] via-[#f7edf3] to-[#f3e6ee]"
                 onClick={() => salon.imageUrl && setSelectedImage(salon.imageUrl)}
               >
                 {salon.imageUrl ? (
@@ -704,8 +707,8 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
                 {/* بج امتیاز شناور پایین سمت راست عکس */}
                 <div className="absolute bottom-3 right-3 flex items-center gap-1.5 bg-white/95 backdrop-blur-md px-3 py-1.5 rounded-full shadow-sm">
                   <Star className="w-3.5 h-3.5 text-amber-500 fill-current" />
-                  <span className="font-bold text-zinc-900 text-xs">{averageRating}</span>
-                  <span className="text-[10px] text-zinc-400">({totalVotes} رای)</span>
+                  <span className="font-bold text-zinc-900 text-xs">{toPersianDigits(averageRating)}</span>
+                  <span className="text-[10px] text-zinc-400">({toPersianDigits(String(totalVotes))} رای)</span>
                 </div>
               </div>
               
@@ -715,7 +718,7 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
                       <div 
                       key={index} 
                       onClick={() => setSelectedImage(imgUrl)}
-                      className="w-24 h-24 sm:w-32 sm:h-32 flex-shrink-0 bg-[#824c71]/5 rounded-xl overflow-hidden snap-start cursor-pointer ring-1 ring-[#824c71]/10"
+                      className="w-24 h-24 sm:w-32 sm:h-32 flex-shrink-0 bg-[#824c71]/5 rounded-[10px] overflow-hidden snap-start cursor-pointer shadow-sm"
                       >
                         <img src={imgUrl} alt={`نمونه کار ${index + 1}`} className="w-full h-full object-cover" />
                       </div>
@@ -724,30 +727,30 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
               )}
             </div>
 
-            <div className="block lg:hidden pt-8 mt-8 border-t border-[#824c71]/10">
+            <div className="block lg:hidden pt-8 mt-8 border-t border-zinc-100">
               {salonInfoCard}
             </div>
 
-            <section className="pt-8 mt-8 border-t border-[#824c71]/10">
+            <section className="pt-8 mt-8 border-t border-zinc-100">
               <h2 className="text-lg sm:text-xl font-bold text-zinc-900 mb-3">درباره سالن</h2>
               <p className="text-zinc-600 text-[13px] sm:text-sm leading-relaxed text-justify">
                 {salon.description || "توضیحاتی ثبت نشده است."}
               </p>
             </section>
 
-            <section className="pt-8 mt-8 border-t border-[#824c71]/10">
+            <section className="pt-8 mt-8 border-t border-zinc-100">
               <h2 className="text-lg sm:text-xl font-bold text-zinc-900 mb-4">خدمات ما</h2>
               <div className="space-y-2">
                 {Object.keys(groupedServices).length > 0 ? (
                   Object.entries(groupedServices).map(([category, services]) => {
                     const isExpanded = expandedCategories.includes(category);
                     return (
-                      <div key={category} className="rounded-xl border border-[#824c71]/10 overflow-hidden">
+                      <div key={category} className="rounded-[10px] bg-white shadow-[0_1px_8px_rgba(0,0,0,0.05)] overflow-hidden">
                         <button type="button" onClick={() => toggleCategory(category)} className="w-full flex items-center justify-between px-4 py-3.5 text-right">
                           <div className="flex items-baseline gap-2">
                             <span className="font-bold text-zinc-800 text-[13px] sm:text-sm">{category}</span>
                             <span className="text-[11px] sm:text-xs text-zinc-400">
-                              {services.length} خدمت
+                              {toPersianDigits(String(services.length))} خدمت
                             </span>
                           </div>
                           {isExpanded ? <ChevronUp size={18} className="text-[#824c71]" /> : <ChevronDown size={18} className="text-zinc-400" />}
@@ -771,9 +774,9 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
               </div>
             </section>
 
-            <section className="pt-8 mt-8 border-t border-[#824c71]/10">
+            <section className="pt-8 mt-8 border-t border-zinc-100">
               <div className="flex items-center gap-3 mb-6">
-                <div className="text-3xl font-bold text-zinc-900">{averageRating}</div>
+                <div className="text-3xl font-bold text-zinc-900">{toPersianDigits(averageRating)}</div>
                 <div>
                   <div className="flex">
                     {[...Array(5)].map((_, i) => (
@@ -786,7 +789,7 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
                 </div>
               </div>
 
-              <div className="pb-6 mb-6 border-b border-[#824c71]/10">
+              <div className="pb-6 mb-6">
                   <h3 className="font-medium text-sm text-zinc-800 mb-3">
                       {hasAlreadyReviewed ? "ثبت نظر جدید" : "امتیاز و نظر خود را ثبت کنید"}
                   </h3>
@@ -818,7 +821,7 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
 
                   <textarea 
                       value={reviewText} onChange={(e) => setReviewText(e.target.value)}
-                      className="w-full bg-transparent border border-[#824c71]/15 rounded-xl p-3 text-sm focus:outline-none focus:ring-1 focus:ring-[#824c71]/40 mb-3 resize-none"
+                      className="w-full bg-white border border-zinc-200 rounded-[10px] p-3 text-sm focus:outline-none focus:ring-1 focus:ring-[#824c71]/40 focus:border-[#824c71]/40 mb-3 resize-none"
                       rows={3} placeholder="تجربه خود را بنویسید..."
                   ></textarea>
                   
@@ -826,7 +829,7 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
 
                   <button
                     onClick={handleReviewSubmit}
-                    className="bg-[#824c71] hover:bg-[#6e3f60] text-white font-medium px-5 py-2.5 rounded-xl text-xs sm:text-sm transition-colors"
+                    className="bg-[#824c71] hover:bg-[#6e3f60] text-white font-medium px-5 py-2.5 rounded-[10px] text-xs sm:text-sm transition-colors"
                   >
                     {hasAlreadyReviewed ? "ثبت نظر" : "ثبت"}
                   </button>
@@ -835,7 +838,7 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
               <div className="space-y-3">
                 {textReviews.length > 0 ? (
                   textReviews.map((review) => (
-                    <div key={review.id} className="p-4 rounded-xl bg-[#824c71]/[0.03] border border-[#824c71]/8">
+                    <div key={review.id} className="p-4 rounded-[10px] bg-white shadow-[0_1px_8px_rgba(0,0,0,0.05)]">
                       <div className="flex justify-between items-center mb-1.5">
                         <span className="font-bold text-zinc-800 text-xs sm:text-sm">{review.name}</span>
                         {review.rating > 0 && (
@@ -869,7 +872,7 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
   {/* هر دو حالت (فعال/غیرفعال) ظاهر یکسان دارن — کلیک روی حالت غیرفعال پاپ‌آپ هشدار رو باز می‌کنه */}
   <button
     onClick={handleBookingButtonClick}
-    className="flex-1 bg-[#824c71] hover:bg-[#824c71]/90 text-white font-bold py-4 rounded-xl text-sm flex items-center justify-center gap-2 shadow-lg shadow-[#824c71]/20 active:scale-95 transition-transform"
+    className="flex-1 bg-[#824c71] hover:bg-[#824c71]/90 text-white font-bold py-4 rounded-[10px] text-sm flex items-center justify-center gap-2 shadow-lg shadow-[#824c71]/20 active:scale-95 transition-transform"
   >
     <CalendarClock className="w-4 h-4" />
     نوبت‌دهی آنلاین
@@ -878,7 +881,7 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
     <a
       href={`tel:${primaryPhone}`}
       onClick={handleCallButtonClick}
-      className="w-14 h-14 flex items-center justify-center rounded-xl bg-[#824c71] hover:bg-[#824c71]/90 text-white shadow-lg shadow-[#824c71]/20 active:scale-95 transition-transform shrink-0"
+      className="w-14 h-14 flex items-center justify-center rounded-[10px] bg-[#824c71] hover:bg-[#824c71]/90 text-white shadow-lg shadow-[#824c71]/20 active:scale-95 transition-transform shrink-0"
     >
       <Phone className="w-5 h-5" />
     </a>
