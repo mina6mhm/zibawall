@@ -5,8 +5,8 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
-  Loader2, ArrowRight, ChevronRight, ChevronLeft,
-  TrendingUp, Wallet, Users, Trophy, Store,
+  Loader2, ChevronRight, ChevronLeft,
+  TrendingUp, Wallet, Users, Trophy, Store, Scissors,
 } from 'lucide-react';
 import { DateObject } from 'react-multi-date-picker';
 import persian from 'react-date-object/calendars/persian';
@@ -32,6 +32,9 @@ export default function SalonReportsPage() {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isStaffModalOpen, setIsStaffModalOpen] = useState(false);
+
+  // روزی که با کلیک روی نمودار ستونی انتخاب شده — برای نمایش دقیق تاریخ و درآمدش
+  const [selectedDay, setSelectedDay] = useState<string | null>(null);
 
   // ماه انتخاب‌شده به تقویم شمسی — پیش‌فرض ماه جاری
   const [selectedMonth, setSelectedMonth] = useState<DateObject>(
@@ -71,11 +74,23 @@ export default function SalonReportsPage() {
     fetchData();
   }, [fetchData]);
 
-  const goToPrevMonth = () => setSelectedMonth((prev) => new DateObject(prev).subtract(1, 'month'));
-  const goToNextMonth = () => setSelectedMonth((prev) => new DateObject(prev).add(1, 'month'));
-  const goToCurrentMonth = () => setSelectedMonth(new DateObject({ calendar: persian, locale: persian_fa }));
-
-  const handleJumpToMonth = (d: DateObject) => setSelectedMonth(d);
+  // با هر تغییر ماه، انتخاب روز قبلی روی نمودار پاک می‌شود
+  const goToPrevMonth = () => {
+    setSelectedDay(null);
+    setSelectedMonth((prev) => new DateObject(prev).subtract(1, 'month'));
+  };
+  const goToNextMonth = () => {
+    setSelectedDay(null);
+    setSelectedMonth((prev) => new DateObject(prev).add(1, 'month'));
+  };
+  const goToCurrentMonth = () => {
+    setSelectedDay(null);
+    setSelectedMonth(new DateObject({ calendar: persian, locale: persian_fa }));
+  };
+  const handleJumpToMonth = (d: DateObject) => {
+    setSelectedDay(null);
+    setSelectedMonth(d);
+  };
 
   const monthLabel = `${selectedMonth.month.name} ${selectedMonth.year.toLocaleString('fa-IR')}`;
 
@@ -108,6 +123,7 @@ export default function SalonReportsPage() {
     let totalRevenue = 0;
     let totalStaffShare = 0;
     const staffMap: Record<string, { revenue: number; share: number }> = {};
+    const serviceMap: Record<string, { count: number; revenue: number }> = {};
 
     bookings
       .filter((b) => b.status !== 'CANCELLED' && dateSet.has(b.date.slice(0, 10)))
@@ -117,6 +133,10 @@ export default function SalonReportsPage() {
           const price = s.price || 0;
           totalRevenue += price;
           dailyRevenueMap[dStr] = (dailyRevenueMap[dStr] || 0) + price;
+
+          if (!serviceMap[s.name]) serviceMap[s.name] = { count: 0, revenue: 0 };
+          serviceMap[s.name].count += 1;
+          serviceMap[s.name].revenue += price;
 
           if (s.staffName) {
             if (!staffMap[s.staffName]) staffMap[s.staffName] = { revenue: 0, share: 0 };
@@ -135,6 +155,10 @@ export default function SalonReportsPage() {
       .map(([name, v]) => ({ name, ...v }))
       .sort((a, b) => b.revenue - a.revenue);
 
+    const topServices = Object.entries(serviceMap)
+      .map(([name, v]) => ({ name, ...v }))
+      .sort((a, b) => b.count - a.count);
+
     const dailyBreakdown = monthDays.map((d) => ({ ...d, revenue: dailyRevenueMap[d.dateStr] || 0 }));
 
     const bestDay = dailyBreakdown.reduce(
@@ -147,6 +171,7 @@ export default function SalonReportsPage() {
       totalStaffShare,
       netProfit: totalRevenue - totalStaffShare,
       staffBreakdown,
+      topServices,
       dailyBreakdown,
       bestDay,
     };
@@ -155,6 +180,18 @@ export default function SalonReportsPage() {
   const maxDailyRevenue = Math.max(1, ...monthStats.dailyBreakdown.map((d) => d.revenue));
 
   const staffModalRows = monthStats.staffBreakdown.map((s) => ({ name: s.name, amount: s.share }));
+
+  // اطلاعاتی که بالای نمودار نشون داده می‌شه: یا روزی که کاربر کلیک کرده، یا پیش‌فرض پردرآمدترین روز
+  const activeDayInfo = useMemo(() => {
+    if (selectedDay) {
+      const d = monthStats.dailyBreakdown.find((x) => x.dateStr === selectedDay);
+      if (d) return { dayNumber: d.dayNumber, revenue: d.revenue, isSelected: true };
+    }
+    if (monthStats.bestDay.revenue > 0) {
+      return { dayNumber: monthStats.bestDay.dayNumber, revenue: monthStats.bestDay.revenue, isSelected: false };
+    }
+    return null;
+  }, [selectedDay, monthStats]);
 
   if (isLoading) {
     return (
@@ -182,28 +219,20 @@ export default function SalonReportsPage() {
 
   return (
     <div className="max-w-3xl mx-auto pt-8 pb-32 px-4 md:pt-10 md:px-0">
-      <div className="flex items-center gap-3 mb-7">
-        <Link
-          href="/my-salon"
-          className="w-10 h-10 flex items-center justify-center rounded-xl bg-zinc-100 text-zinc-600 hover:bg-zinc-200 transition-colors shrink-0"
-        >
-          <ArrowRight className="w-4.5 h-4.5" />
-        </Link>
-        <div>
-          <h1 className="text-xl md:text-2xl font-bold text-zinc-900">گزارش درآمد</h1>
-          <p className="text-zinc-500 text-xs md:text-sm mt-0.5">{salonName}</p>
-        </div>
+      <div className="mb-7">
+        <h1 className="text-xl md:text-2xl font-bold text-zinc-900">گزارش درآمد</h1>
+        <p className="text-zinc-500 text-xs md:text-sm mt-0.5">{salonName}</p>
       </div>
 
       {/* ناوبری ماه: قبل / انتخاب ماه یا سال / بعد */}
       <div className="flex items-center gap-2 mb-3 mt-1">
-        <button onClick={goToNextMonth} aria-label="ماه بعد" className="w-11 h-11 flex items-center justify-center rounded-xl bg-zinc-100 text-zinc-600 hover:bg-zinc-200 transition shrink-0">
+        <button onClick={goToNextMonth} aria-label="ماه بعد" className="w-11 h-11 flex items-center justify-center rounded-xl bg-[#824c71]/10 text-[#824c71] hover:bg-[#824c71]/15 transition shrink-0">
           <ChevronRight className="w-5 h-5" />
         </button>
 
         <PersianMonthYearPicker value={selectedMonth} onChange={handleJumpToMonth} className="flex-1" />
 
-        <button onClick={goToPrevMonth} aria-label="ماه قبل" className="w-11 h-11 flex items-center justify-center rounded-xl bg-zinc-100 text-zinc-600 hover:bg-zinc-200 transition shrink-0">
+        <button onClick={goToPrevMonth} aria-label="ماه قبل" className="w-11 h-11 flex items-center justify-center rounded-xl bg-[#824c71]/10 text-[#824c71] hover:bg-[#824c71]/15 transition shrink-0">
           <ChevronLeft className="w-5 h-5" />
         </button>
       </div>
@@ -218,7 +247,7 @@ export default function SalonReportsPage() {
 
       {/* کارت‌های خلاصه ماه */}
       <div className="grid grid-cols-3 gap-2 mb-6">
-        <div className="bg-white border border-zinc-100 rounded-2xl p-3 shadow-sm shadow-zinc-200/50">
+        <div className="bg-white border border-[#824c71]/10 rounded-xl p-3 shadow-sm shadow-[#824c71]/5">
           <div className="flex items-center gap-1.5 mb-1.5">
             <TrendingUp className="w-3.5 h-3.5 text-emerald-600" />
             <span className="text-[11px] font-medium text-zinc-500">درآمد کل ماه</span>
@@ -232,7 +261,7 @@ export default function SalonReportsPage() {
         <button
           type="button"
           onClick={() => setIsStaffModalOpen(true)}
-          className="bg-white border border-zinc-100 rounded-2xl p-3 shadow-sm shadow-zinc-200/50 text-right"
+          className="bg-white border border-[#824c71]/10 rounded-xl p-3 shadow-sm shadow-[#824c71]/5 text-right"
         >
           <div className="flex items-center gap-1.5 mb-1.5">
             <Users className="w-3.5 h-3.5 text-[#824c71]" />
@@ -244,7 +273,7 @@ export default function SalonReportsPage() {
           </p>
         </button>
 
-        <div className="bg-white border border-zinc-100 rounded-2xl p-3 shadow-sm shadow-zinc-200/50">
+        <div className="bg-white border border-[#824c71]/10 rounded-xl p-3 shadow-sm shadow-[#824c71]/5">
           <div className="flex items-center gap-1.5 mb-1.5">
             <Wallet className="w-3.5 h-3.5 text-amber-600" />
             <span className="text-[11px] font-medium text-zinc-500">سود خالص</span>
@@ -257,40 +286,95 @@ export default function SalonReportsPage() {
       </div>
 
       {/* نمودار روند درآمد روز به روز */}
-      <div className="bg-white border border-zinc-100 rounded-2xl p-4 mb-6 shadow-sm shadow-zinc-200/50">
-        <h2 className="text-sm font-bold text-zinc-800 mb-1">روند درآمد روزانه</h2>
-        {monthStats.bestDay.revenue > 0 && (
+      <div className="bg-white border border-[#824c71]/10 rounded-xl p-4 mb-6 shadow-sm shadow-[#824c71]/5">
+        <h2 className="text-sm font-bold text-zinc-800 mb-1">روند درآمد روزانه {selectedMonth.month.name}</h2>
+
+        {activeDayInfo && (
           <p className="text-[11px] text-zinc-400 mb-4">
-            پردرآمدترین روز: {monthStats.bestDay.dayNumber.toLocaleString('fa-IR')} {selectedMonth.month.name} با{' '}
-            <span className="font-bold text-[#824c71]">{formatMoney(monthStats.bestDay.revenue)} تومان</span>
+            {activeDayInfo.isSelected ? 'روز انتخاب‌شده' : 'پردرآمدترین روز'}:{' '}
+            {activeDayInfo.dayNumber.toLocaleString('fa-IR')} {selectedMonth.month.name} با{' '}
+            <span className="font-bold text-[#824c71]">{formatMoney(activeDayInfo.revenue)} تومان</span>
+            {activeDayInfo.isSelected && (
+              <button
+                type="button"
+                onClick={() => setSelectedDay(null)}
+                className="mr-2 text-[10px] text-zinc-400 underline underline-offset-2"
+              >
+                پاک کردن
+              </button>
+            )}
           </p>
         )}
 
         {monthStats.totalRevenue === 0 ? (
-          <div className="text-center py-10 bg-zinc-50 rounded-xl">
+          <div className="text-center py-10 bg-[#824c71]/5 rounded-xl">
             <p className="text-zinc-400 text-sm">درآمدی برای این ماه ثبت نشده است.</p>
           </div>
         ) : (
-          <div className="flex items-end gap-[3px] h-36 overflow-x-auto pb-1">
+          <div dir="ltr" className="flex items-end gap-1.5 h-56 overflow-x-auto hide-scrollbar pb-1">
             {monthStats.dailyBreakdown.map((d) => {
-              const isBest = d.dayNumber === monthStats.bestDay.dayNumber && d.revenue > 0;
+              const isSelected = d.dateStr === selectedDay;
+              const isBest = !selectedDay && d.dayNumber === monthStats.bestDay.dayNumber && d.revenue > 0;
               const heightPct = Math.max((d.revenue / maxDailyRevenue) * 100, d.revenue > 0 ? 4 : 0);
+              const showTick = d.dayNumber === 1 || d.dayNumber % 5 === 0 || d.dayNumber === monthStats.dailyBreakdown.length;
+
               return (
-                <div key={d.dateStr} className="flex flex-col items-center justify-end h-full shrink-0" style={{ width: 9 }}>
+                <button
+                  key={d.dateStr}
+                  type="button"
+                  onClick={() => setSelectedDay((prev) => (prev === d.dateStr ? null : d.dateStr))}
+                  className="flex flex-col items-center justify-end h-full shrink-0 group"
+                  style={{ width: 16 }}
+                >
                   <div
-                    title={`روز ${d.dayNumber.toLocaleString('fa-IR')} — ${formatMoney(d.revenue)} تومان`}
-                    className={`w-full rounded-t-[3px] transition-all ${isBest ? 'bg-[#824c71]' : 'bg-[#824c71]/25'}`}
+                    className={`w-full rounded-t-sm transition-all ${
+                      isSelected || isBest ? 'bg-[#824c71]' : 'bg-[#824c71]/25 group-hover:bg-[#824c71]/40'
+                    }`}
                     style={{ height: `${heightPct}%` }}
                   />
-                </div>
+                  <span className={`text-[9px] mt-1 ${showTick ? 'text-zinc-400' : 'text-transparent'}`}>
+                    {d.dayNumber.toLocaleString('fa-IR')}
+                  </span>
+                </button>
               );
             })}
           </div>
         )}
-        <div className="flex items-center justify-between mt-2 text-[10px] text-zinc-400">
-          <span>روز ۱</span>
-          <span>روز {monthStats.dailyBreakdown.length.toLocaleString('fa-IR')}</span>
-        </div>
+      </div>
+
+      {/* پرتقاضاترین خدمات ماه */}
+      <div className="mb-8">
+        <h2 className="text-sm font-bold text-zinc-800 mb-3 flex items-center gap-1.5">
+          <Scissors className="w-4 h-4 text-[#824c71]" />
+          پرتقاضاترین خدمات این ماه
+        </h2>
+
+        {monthStats.topServices.length === 0 ? (
+          <div className="text-center py-10 bg-[#824c71]/5 rounded-xl">
+            <Scissors className="w-8 h-8 text-zinc-300 mx-auto mb-2" />
+            <p className="text-zinc-400 text-sm">برای این ماه خدمتی ثبت نشده است.</p>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {monthStats.topServices.slice(0, 8).map((s, idx) => (
+              <div
+                key={s.name}
+                className="flex items-center justify-between bg-white border border-[#824c71]/10 rounded-xl p-3 shadow-sm shadow-[#824c71]/5"
+              >
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-full bg-[#824c71]/10 text-[#824c71] flex items-center justify-center text-xs font-bold shrink-0">
+                    {idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : (idx + 1).toLocaleString('fa-IR')}
+                  </div>
+                  <span className="text-sm font-medium text-zinc-700">{s.name}</span>
+                </div>
+                <div className="text-left">
+                  <p className="text-xs font-bold text-zinc-800">{s.count.toLocaleString('fa-IR')} بار رزرو</p>
+                  <p className="text-[10px] text-zinc-400">{formatMoney(s.revenue)} تومان</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* رتبه‌بندی پرسنل */}
@@ -301,7 +385,7 @@ export default function SalonReportsPage() {
         </h2>
 
         {monthStats.staffBreakdown.length === 0 ? (
-          <div className="text-center py-10 bg-zinc-50 rounded-2xl">
+          <div className="text-center py-10 bg-[#824c71]/5 rounded-xl">
             <Users className="w-8 h-8 text-zinc-300 mx-auto mb-2" />
             <p className="text-zinc-400 text-sm">برای این ماه سهمی ثبت نشده است.</p>
           </div>
@@ -310,7 +394,7 @@ export default function SalonReportsPage() {
             {monthStats.staffBreakdown.map((s, idx) => (
               <div
                 key={s.name}
-                className="flex items-center justify-between bg-white border border-zinc-100 rounded-xl p-3 shadow-sm shadow-zinc-200/40"
+                className="flex items-center justify-between bg-white border border-[#824c71]/10 rounded-xl p-3 shadow-sm shadow-[#824c71]/5"
               >
                 <div className="flex items-center gap-2.5">
                   <div className="w-8 h-8 rounded-full bg-[#824c71]/10 text-[#824c71] flex items-center justify-center text-xs font-bold shrink-0">
