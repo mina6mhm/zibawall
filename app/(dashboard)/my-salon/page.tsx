@@ -545,30 +545,6 @@ export default function MySalonPage() {
         </div>
       )}
 
-      {/* سوییچ تب — فقط وقتی هم سالن‌دار و هم پرسنل است — هم‌سبک با تب‌های صفحه‌ی «نوبت‌های من» */}
-      {showTabs && (
-        <div className="flex justify-center mb-6">
-          <div className="inline-flex items-center gap-1 bg-zinc-100 rounded-full p-1">
-            <button
-              onClick={() => setActiveTab('salon')}
-              className={`px-4 py-2 rounded-full text-xs font-bold transition-colors ${
-                activeTab === 'salon' ? 'bg-[#824c71] text-white' : 'text-zinc-500'
-              }`}
-            >
-              سالن من
-            </button>
-            <button
-              onClick={() => setActiveTab('staff')}
-              className={`px-4 py-2 rounded-full text-xs font-bold transition-colors ${
-                activeTab === 'staff' ? 'bg-[#824c71] text-white' : 'text-zinc-500'
-              }`}
-            >
-              برنامه پرسنلی
-            </button>
-          </div>
-        </div>
-      )}
-
       {/* دکمه‌ی نوبت‌دهی آنلاین */}
       {effectiveTab === 'salon' && (
         <Link
@@ -701,12 +677,42 @@ export default function MySalonPage() {
 
       {/* لیست نوبت‌ها */}
       <div className="mb-8 mt-4">
-        <h2 className="text-sm font-bold text-zinc-800 mb-3">
-          {isToday ? 'نوبت‌های امروز' : 'نوبت‌های این روز'}{' '}
-          {effectiveTab === 'salon'
-            ? `(${dayBookings.length.toLocaleString('fa-IR')})`
-            : `(${dayStaffBookings.length.toLocaleString('fa-IR')})`}
-        </h2>
+        <div className="flex items-center justify-between gap-2 flex-wrap mb-3">
+          <h2 className="text-sm font-bold text-zinc-800">
+            {isToday ? 'نوبت‌های امروز' : 'نوبت‌های این روز'}{' '}
+            {effectiveTab === 'salon'
+              ? `(${dayBookings.length.toLocaleString('fa-IR')})`
+              : `(${dayStaffBookings.length.toLocaleString('fa-IR')})`}
+          </h2>
+
+          {/* سوییچ سالن‌من / برنامه‌پرسنلی — فقط وقتی کاربر هم مالک سالن است هم جایی پرسنل است */}
+          {showTabs && (
+            <div className="inline-flex items-center gap-0.5 bg-zinc-100 rounded-full p-0.5 shrink-0">
+              <button
+                type="button"
+                onClick={() => setActiveTab('salon')}
+                title="سالن من"
+                className={`flex items-center gap-1 px-2.5 py-1.5 rounded-full text-[11px] font-bold whitespace-nowrap transition-colors ${
+                  activeTab === 'salon' ? 'bg-white text-[#824c71] shadow-sm' : 'text-zinc-500'
+                }`}
+              >
+                <Store className="w-3 h-3" strokeWidth={2} />
+                سالن من
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab('staff')}
+                title="برنامه پرسنلی"
+                className={`flex items-center gap-1 px-2.5 py-1.5 rounded-full text-[11px] font-bold whitespace-nowrap transition-colors ${
+                  activeTab === 'staff' ? 'bg-white text-[#824c71] shadow-sm' : 'text-zinc-500'
+                }`}
+              >
+                <Users className="w-3 h-3" strokeWidth={2} />
+                پرسنلی
+              </button>
+            </div>
+          )}
+        </div>
 
         {effectiveTab === 'salon' ? (
           dayBookings.length > 0 ? (
