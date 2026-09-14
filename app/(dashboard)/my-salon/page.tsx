@@ -676,7 +676,7 @@ export default function MySalonPage() {
       )}
 
       {/* لیست نوبت‌ها */}
-      <div className="mb-8 mt-4">
+      <div className={`mb-8 ${showTabs ? 'mt-8' : 'mt-4'}`}>
         <div className="flex items-center justify-between gap-2 flex-wrap mb-3">
           <h2 className="text-sm font-bold text-zinc-800">
             {isToday ? 'نوبت‌های امروز' : 'نوبت‌های این روز'}{' '}
@@ -718,8 +718,11 @@ export default function MySalonPage() {
           dayBookings.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">{dayBookings.map(renderBookingCard)}</div>
           ) : (
-            <div className="text-center py-10 bg-zinc-50 rounded-[10px]">
-              <p className="text-zinc-400 text-sm">نوبتی برای این روز ثبت نشده است.</p>
+            <div className="text-center py-16">
+              <div className="w-16 h-16 rounded-full bg-[#824c71]/10 flex items-center justify-center text-[#824c71] mx-auto mb-4">
+                <CalendarX className="w-8 h-8" strokeWidth={1.5} />
+              </div>
+              <p className="text-zinc-500 text-sm">نوبتی برای این روز ثبت نشده است.</p>
             </div>
           )
         ) : isLoadingStaffBookings ? (
@@ -729,9 +732,11 @@ export default function MySalonPage() {
         ) : dayStaffBookings.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">{dayStaffBookings.map(renderStaffBookingCard)}</div>
         ) : (
-          <div className="text-center py-10 bg-zinc-50 rounded-[10px]">
-            <CalendarX className="w-8 h-8 text-zinc-300 mx-auto mb-2" />
-            <p className="text-zinc-400 text-sm">نوبتی برای این روز ثبت نشده است.</p>
+          <div className="text-center py-16">
+            <div className="w-16 h-16 rounded-full bg-[#824c71]/10 flex items-center justify-center text-[#824c71] mx-auto mb-4">
+              <CalendarX className="w-8 h-8" strokeWidth={1.5} />
+            </div>
+            <p className="text-zinc-500 text-sm">نوبتی برای این روز ثبت نشده است.</p>
           </div>
         )}
       </div>
