@@ -25,35 +25,33 @@ export async function POST(
     }
 
 
-    // بررسی اینکه آیا کاربر با این نام قبلاً برای این سالن نظر داده است یا خیر
-    const existingReviews = await prisma.review.findMany({
-      where: {
-        salonId: salonId,
-        name: name,
-      },
-    });
+    let resultReview;
 
-    const hasRatedBefore = existingReviews.some((r) => r.rating > 0);
+    if (rating > 0) {
+      // --- امتیازدهی ستاره‌ای: هر کاربر یک رکورد امتیاز دارد، اما می‌تواند آن را تغییر دهد ---
+      // (رکوردهای نظر متنی صرف، rating=0 دارند و اینجا دست‌نخورده می‌مانند)
+      const existingRating = await prisma.review.findFirst({
+        where: { salonId, name, rating: { gt: 0 } },
+      });
 
-    if (hasRatedBefore && rating > 0) {
-      return NextResponse.json(
-        { error: "شما قبلاً امتیاز خود را ثبت کرده‌اید. فقط می‌توانید نظر متنی ارسال کنید." },
-        { status: 403 }
-      );
+      if (existingRating) {
+        resultReview = await prisma.review.update({
+          where: { id: existingRating.id },
+          data: { rating },
+        });
+      } else {
+        resultReview = await prisma.review.create({
+          data: { name, rating, comment: comment || "", salonId },
+        });
+      }
+    } else {
+      // --- نظر متنی: همیشه یک رکورد جدید، بدون هیچ محدودیتی در تعداد ---
+      resultReview = await prisma.review.create({
+        data: { name, rating: 0, comment, salonId },
+      });
     }
 
-    const finalRating = hasRatedBefore ? 0 : rating;
-
-    const newReview = await prisma.review.create({
-      data: {
-        name,
-        rating: finalRating,
-        comment,
-        salonId,
-      },
-    });
-
-    // محاسبه میانگین امتیازات
+    // محاسبه میانگین امتیازات (پس از آپدیت/ساخت بالا، همیشه به‌روز است)
     const allValidReviews = await prisma.review.findMany({
       where: {
         salonId: salonId,
@@ -71,7 +69,7 @@ export async function POST(
       data: { rating: averageRating },
     });
 
-    return NextResponse.json(newReview, { status: 201 });
+    return NextResponse.json(resultReview, { status: 201 });
   } catch (error) {
     console.error("Error creating review:", error);
     return NextResponse.json(
