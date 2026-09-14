@@ -304,18 +304,24 @@ export default function SalonReportsPage() {
               const displayedDateStr = selectedDay ?? (monthStats.bestDay.revenue > 0 ? monthStats.bestDay.dateStr : null);
               const isHighlighted = hasRevenue && d.dateStr === displayedDateStr;
               const heightPct = Math.max((d.revenue / maxDailyRevenue) * 100, hasRevenue ? 4 : 0);
+              // موقعیت برچسب: کمی پایین‌تر از نوک همون ستون، متناسب با ارتفاعش (نه همیشه وسط نمودار)
+              const barHeightPx = (heightPct / 100) * 224; // h-56 = 224px
+              const tooltipBottomPx = Math.max(barHeightPx - 26, 6);
 
               return (
                 <button
                   key={d.dateStr}
                   type="button"
                   disabled={!hasRevenue}
-                  onClick={() => hasRevenue && setSelectedDay((prev) => (prev === d.dateStr ? null : d.dateStr))}
+                  onClick={() => hasRevenue && setSelectedDay(d.dateStr)}
                   className={`relative flex flex-col items-center justify-end h-full shrink-0 ${hasRevenue ? 'group' : 'cursor-default'}`}
                   style={{ width: 18 }}
                 >
                   {isHighlighted && (
-                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10 whitespace-nowrap bg-[#824c71] text-white text-[10px] font-bold px-2 py-1 rounded-lg shadow-md">
+                    <div
+                      className="absolute left-1/2 -translate-x-1/2 z-10 whitespace-nowrap bg-[#824c71] text-white text-[10px] font-bold px-2 py-1 rounded-lg shadow-md"
+                      style={{ bottom: `${tooltipBottomPx}px` }}
+                    >
                       روز {d.dayNumber.toLocaleString('fa-IR')}: {formatMoney(d.revenue)} تومان
                     </div>
                   )}
