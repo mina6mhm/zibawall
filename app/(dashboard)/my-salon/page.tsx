@@ -68,10 +68,11 @@ type StaffBooking = {
   bookingGroupId: string | null;
 };
 
-const STATUS_LABELS: Record<Booking['status'], { label: string; className: string }> = {
-  PENDING_PAYMENT: { label: 'در انتظار پرداخت مشتری', className: 'bg-amber-50 text-amber-700' },
-  CONFIRMED: { label: 'قطعی شده', className: 'bg-emerald-50 text-emerald-700' },
-  CANCELLED: { label: 'لغو شده', className: 'bg-zinc-100 text-zinc-500' },
+// هم‌سبک با STATUS_LABELS صفحه‌ی «نوبت‌های من»
+const STATUS_LABELS: Record<Booking['status'], { label: string; bgClassName: string; textClassName: string }> = {
+  PENDING_PAYMENT: { label: 'در انتظار پرداخت مشتری', bgClassName: 'bg-amber-50', textClassName: 'text-amber-600' },
+  CONFIRMED: { label: 'قطعی شده', bgClassName: 'bg-emerald-50', textClassName: 'text-emerald-600' },
+  CANCELLED: { label: 'لغو شده', bgClassName: 'bg-zinc-100', textClassName: 'text-zinc-500' },
 };
 
 const toPersianDigits = (str: string) => str.replace(/[0-9]/g, (d) => '۰۱۲۳۴۵۶۷۸۹'[Number(d)]);
@@ -258,104 +259,131 @@ export default function MySalonPage() {
     [staffBookings, selectedDateStr]
   );
 
-  // کارت نوبت — هم‌سبک با کارت‌های صفحه‌ی «نوبت‌های من»: گوشه‌ها کمتر گرد،
-  // سایه‌ی نرم مخصوص آن صفحه. اینجا به تاریخ نیازی نیست ولی شماره تماس
-  // مشتری و سهم پرسنل (که آن صفحه ندارد) نگه داشته می‌شود.
+  // کارت نوبت — دقیقاً هم‌ساختار با کارت صفحه‌ی «نوبت‌های من»: بدون بوردر،
+  // سایه‌ی نرم، ردیف اول اسم مشتری + قیمت کل، ردیف دوم ساعت/تماس/خدمات با
+  // آیکون بنفش، بعد بوردر جداکننده و زیرش وضعیت + اکشن‌های ویرایش/لغو.
   const renderBookingCard = (booking: Booking) => {
     const statusInfo = STATUS_LABELS[booking.status];
+    const bookingTotal = booking.services.reduce((sum, s) => sum + (s.price || 0), 0);
+
     return (
-      <div key={booking.id} className="bg-white border border-zinc-100 rounded-xl p-4 shadow-[0_2px_14px_rgba(0,0,0,0.06)]">
-        <div className="flex items-start justify-between gap-2 mb-3">
-          <div className="flex items-center gap-2 text-zinc-800">
-            <UserIcon className="w-4 h-4 text-[#824c71]" />
-            <span className="font-bold text-sm">{booking.customerName || 'بدون نام'}</span>
-          </div>
-          <span className={`text-[11px] font-medium px-2.5 py-1 rounded-md whitespace-nowrap ${statusInfo.className}`}>
-            {statusInfo.label}
-          </span>
+      <div key={booking.id} className="bg-white rounded-2xl p-4 shadow-[0_2px_14px_rgba(0,0,0,0.09)]">
+        {/* ردیف ۱: اسم مشتری سمت راست، قیمت کل سمت چپ */}
+        <div className="flex items-center justify-between gap-3 mb-4">
+          <p className="text-[15px] font-bold text-zinc-900 truncate">{booking.customerName || 'بدون نام'}</p>
+          {bookingTotal > 0 && (
+            <span className="text-xs font-medium text-zinc-400 shrink-0">{formatMoney(bookingTotal)} تومان</span>
+          )}
         </div>
 
-        <div className="flex items-center justify-between gap-2 pb-3 mb-1 border-b border-zinc-100">
-          <div className="flex items-center gap-3 text-[12.5px] text-zinc-600">
-            <span className="flex items-center gap-1.5">
-              <Phone className="w-3.5 h-3.5 text-zinc-400" />
-              <span dir="ltr">{booking.customerPhone}</span>
+        {/* ردیف ۲: ساعت و تماس (لمسی برای تماس مستقیم)، بعد هر خدمت با پرسنل و سهمش */}
+        <div className="flex flex-col gap-1.5 mb-3">
+          <div className="flex items-center gap-3 flex-wrap text-xs text-zinc-700">
+            <span className="flex items-center gap-1.5 shrink-0">
+              <span className="w-2 h-2 rounded-full bg-[#824c71] shrink-0" />
+              <span className="font-bold whitespace-nowrap" dir="ltr">{toPersianDigits(booking.startTime)}</span>
             </span>
-            <span className="flex items-center gap-1.5">
-              <Clock className="w-3.5 h-3.5 text-zinc-400" />
-              <span dir="ltr">{booking.startTime}</span>
-            </span>
+            <a
+              href={`tel:${booking.customerPhone}`}
+              className="flex items-center gap-1.5 min-w-0 active:opacity-60"
+            >
+              <Phone className="w-3.5 h-3.5 text-[#824c71] shrink-0" strokeWidth={1.75} />
+              <span className="font-bold truncate" dir="ltr">{booking.customerPhone}</span>
+            </a>
           </div>
-          <div className="flex items-center gap-1.5 shrink-0">
+          {booking.services.map((s, idx) => (
+            <div key={idx} className="flex items-center gap-3 flex-wrap text-xs text-zinc-700">
+              <span className="flex items-center gap-1.5 min-w-0">
+                <Scissors className="w-3.5 h-3.5 text-[#824c71] shrink-0" strokeWidth={1.75} />
+                <span className="font-bold truncate">{s.name}</span>
+              </span>
+              {s.staffName && (
+                <span className="flex items-center gap-1.5 min-w-0">
+                  <UserIcon className="w-3.5 h-3.5 text-[#824c71] shrink-0" strokeWidth={1.75} />
+                  <span className="font-bold truncate">
+                    {s.staffName}{s.staffPercentage ? ` (${toPersianDigits(String(s.staffPercentage))}٪)` : ''}
+                  </span>
+                </span>
+              )}
+              {s.price != null && (
+                <span className="text-zinc-400 font-medium shrink-0 mr-auto">{formatMoney(s.price)} تومان</span>
+              )}
+            </div>
+          ))}
+        </div>
+
+        {/* بوردر جداکننده — وضعیت راست، اکشن‌های ویرایش/لغو چپ */}
+        <div className="border-t border-zinc-100 pt-3 flex items-center justify-between">
+          <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-medium ${statusInfo.bgClassName} ${statusInfo.textClassName}`}>
+            {statusInfo.label}
+          </span>
+          <div className="flex items-center gap-1">
             <button
               onClick={() => openEditBookingModal(booking)}
-              className="w-7 h-7 flex items-center justify-center rounded-lg bg-[#824c71]/10 text-[#824c71]"
-              title="ویرایش این خدمت"
+              className="w-8 h-8 flex items-center justify-center rounded-full text-[#824c71] hover:bg-[#824c71]/10 transition-colors"
+              title="ویرایش این نوبت"
             >
-              <Pencil className="w-3 h-3" />
+              <Pencil className="w-3.5 h-3.5" />
             </button>
             <button
               onClick={() => handleCancel(booking.id)}
               disabled={deletingId === booking.id}
-              className="w-7 h-7 flex items-center justify-center rounded-lg bg-red-50 text-red-500 disabled:opacity-50"
+              className="w-8 h-8 flex items-center justify-center rounded-full text-red-500 hover:bg-red-50 transition-colors disabled:opacity-50"
               title="لغو این نوبت"
             >
-              {deletingId === booking.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3 h-3" />}
+              {deletingId === booking.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
             </button>
           </div>
         </div>
+      </div>
+    );
+  };
 
-        <div className="divide-y divide-zinc-50">
+  // کارت برنامه‌ی پرسنلی — همون زبان بصری، بدون ردیف اکشن (کاری برای ویرایش/لغو نیست)
+  const renderStaffBookingCard = (booking: StaffBooking) => {
+    const bookingTotal = booking.services.reduce((sum, s) => sum + (s.price || 0), 0);
+
+    return (
+      <div key={booking.id} className="bg-white rounded-2xl p-4 shadow-[0_2px_14px_rgba(0,0,0,0.09)]">
+        <div className="flex items-center justify-between gap-3 mb-4">
+          <p className="text-[15px] font-bold text-zinc-900 truncate">{booking.customerName || 'بدون نام'}</p>
+          {bookingTotal > 0 && (
+            <span className="text-xs font-medium text-zinc-400 shrink-0">{formatMoney(bookingTotal)} تومان</span>
+          )}
+        </div>
+
+        <div className="flex flex-col gap-1.5">
+          <div className="flex items-center gap-3 flex-wrap text-xs text-zinc-700">
+            <span className="flex items-center gap-1.5 shrink-0">
+              <span className="w-2 h-2 rounded-full bg-[#824c71] shrink-0" />
+              <span className="font-bold whitespace-nowrap" dir="ltr">{toPersianDigits(booking.startTime)}</span>
+            </span>
+            <a
+              href={`tel:${booking.customerPhone}`}
+              className="flex items-center gap-1.5 min-w-0 active:opacity-60"
+            >
+              <Phone className="w-3.5 h-3.5 text-[#824c71] shrink-0" strokeWidth={1.75} />
+              <span className="font-bold truncate" dir="ltr">{booking.customerPhone}</span>
+            </a>
+          </div>
           {booking.services.map((s, idx) => (
-            <div key={idx} className="py-2.5 first:pt-0 last:pb-0 flex items-center justify-between gap-2">
-              <div className="flex items-center gap-1.5 min-w-0">
-                <Scissors className="w-3 h-3 text-[#824c71]/60 shrink-0" />
-                <p className="text-[12.5px] font-bold text-zinc-800 truncate">{s.name}</p>
-              </div>
-              <div className="flex items-center gap-2.5 shrink-0 text-[11px] text-zinc-500">
-                {s.price != null && <span className="font-medium text-zinc-700">{formatMoney(s.price)} تومان</span>}
-                {s.staffName && (
-                  <span>{s.staffName}{s.staffPercentage ? ` (${s.staffPercentage.toLocaleString('fa-IR')}٪)` : ''}</span>
-                )}
-              </div>
+            <div key={idx} className="flex items-center gap-3 flex-wrap text-xs text-zinc-700">
+              <span className="flex items-center gap-1.5 min-w-0">
+                <Scissors className="w-3.5 h-3.5 text-[#824c71] shrink-0" strokeWidth={1.75} />
+                <span className="font-bold truncate">{s.name}</span>
+              </span>
+              {s.durationMin != null && (
+                <span className="text-zinc-400 font-medium shrink-0">{toPersianDigits(String(s.durationMin))} دقیقه</span>
+              )}
+              {s.price != null && (
+                <span className="text-zinc-400 font-medium shrink-0 mr-auto">{formatMoney(s.price)} تومان</span>
+              )}
             </div>
           ))}
         </div>
       </div>
     );
   };
-
-  const renderStaffBookingCard = (booking: StaffBooking) => (
-    <div key={booking.id} className="bg-white border border-zinc-100 rounded-xl p-4 shadow-[0_2px_14px_rgba(0,0,0,0.06)]">
-      <div className="flex items-center gap-2 text-zinc-800 mb-3">
-        <UserIcon className="w-4 h-4 text-[#824c71]" />
-        <span className="font-bold text-sm">{booking.customerName || 'بدون نام'}</span>
-      </div>
-
-      <div className="flex items-center gap-1.5 text-[13px] text-zinc-600 pb-3 mb-1 border-b border-zinc-100">
-        <Phone className="w-3.5 h-3.5 text-zinc-400" />
-        <span dir="ltr">{booking.customerPhone}</span>
-        <span className="text-zinc-300">·</span>
-        <Clock className="w-3.5 h-3.5 text-zinc-400" />
-        <span dir="ltr">{toPersianDigits(booking.startTime)}</span>
-      </div>
-
-      <div className="divide-y divide-zinc-50">
-        {booking.services.map((s, idx) => (
-          <div key={idx} className="py-2.5 first:pt-0 last:pb-0 flex items-center justify-between gap-2">
-            <div className="flex items-center gap-1.5 min-w-0">
-              <Scissors className="w-3 h-3 text-[#824c71]/60 shrink-0" />
-              <p className="text-[12.5px] font-bold text-zinc-800 truncate">{s.name}</p>
-            </div>
-            <div className="flex items-center gap-2.5 shrink-0 text-[11px] text-zinc-500">
-              {s.price != null && <span className="font-medium text-zinc-700">{formatMoney(s.price)} تومان</span>}
-              {s.durationMin != null && <span>{toPersianDigits(String(s.durationMin))} دقیقه</span>}
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
 
   type StaffShareRow = { name: string; amount: number };
 
@@ -400,7 +428,7 @@ export default function MySalonPage() {
         <p className="text-zinc-600 font-medium">شما هنوز کسب‌وکاری ثبت نکرده‌اید.</p>
         <Link
           href="/profile/business"
-          className="bg-[#824c71] text-white px-5 py-2.5 rounded-xl text-sm font-medium hover:bg-[#6e3f60] transition"
+          className="bg-[#824c71] text-white px-5 py-2.5 rounded-[10px] text-sm font-medium hover:bg-[#6e3f60] transition"
         >
           ثبت نام کسب‌وکار
         </Link>
@@ -424,21 +452,20 @@ export default function MySalonPage() {
               className="flex items-center gap-1.5 max-w-full"
             >
               <h1 className="text-xl md:text-2xl font-bold text-zinc-900 truncate">{salonName}</h1>
-              {/* این آیکون همیشه نمایش داده می‌شود، حتی وقتی کاربر فقط یک سالن دارد */}
               <ChevronDown className="w-5 h-5 text-zinc-900 shrink-0" />
             </button>
             <p className="text-zinc-500 text-xs md:text-sm mt-0.5">مدیریت نوبت‌های سالن</p>
           </div>
           <div className="flex items-center gap-2 shrink-0">
-            <Link href="/my-salon/reports" aria-label="گزارش درآمد" className="w-10 h-10 flex items-center justify-center rounded-xl bg-[#824c71]/10 text-[#824c71] hover:bg-[#824c71]/15 transition-colors">
+            <Link href="/my-salon/reports" aria-label="گزارش درآمد" className="w-10 h-10 flex items-center justify-center rounded-[10px] bg-[#824c71]/10 text-[#824c71] hover:bg-[#824c71]/15 transition-colors">
               <BarChart3 className="w-4.5 h-4.5" />
             </Link>
-            <Link href="/profile/business/overview" aria-label="تنظیمات" className="w-10 h-10 flex items-center justify-center rounded-xl bg-[#824c71]/10 text-[#824c71] hover:bg-[#824c71]/15 transition-colors">
+            <Link href="/profile/business/overview" aria-label="تنظیمات" className="w-10 h-10 flex items-center justify-center rounded-[10px] bg-[#824c71]/10 text-[#824c71] hover:bg-[#824c71]/15 transition-colors">
               <Settings className="w-4.5 h-4.5" />
             </Link>
           </div>
         </div>
-              ) : (
+      ) : (
         <div className="flex items-center justify-between gap-2 mb-7">
           <div>
             <h1 className="text-xl md:text-2xl font-bold text-zinc-900">برنامه پرسنلی</h1>
@@ -461,10 +488,10 @@ export default function MySalonPage() {
 
       {/* سوییچ تب — فقط وقتی هم سالن‌دار و هم پرسنل است */}
       {showTabs && (
-        <div className="flex gap-2 mb-6 bg-zinc-100 p-1 rounded-xl">
+        <div className="flex gap-1 mb-6 bg-zinc-100 p-1 rounded-full">
           <button
             onClick={() => setActiveTab('salon')}
-            className={`flex-1 py-2 rounded-lg text-xs font-bold transition-colors ${
+            className={`flex-1 py-2 rounded-full text-xs font-bold transition-colors ${
               activeTab === 'salon' ? 'bg-white text-[#824c71] shadow-sm' : 'text-zinc-500'
             }`}
           >
@@ -472,7 +499,7 @@ export default function MySalonPage() {
           </button>
           <button
             onClick={() => setActiveTab('staff')}
-            className={`flex-1 py-2 rounded-lg text-xs font-bold transition-colors ${
+            className={`flex-1 py-2 rounded-full text-xs font-bold transition-colors ${
               activeTab === 'staff' ? 'bg-white text-[#824c71] shadow-sm' : 'text-zinc-500'
             }`}
           >
@@ -481,7 +508,7 @@ export default function MySalonPage() {
         </div>
       )}
 
-      {/* دکمه‌ی نوبت‌دهی آنلاین — فقط تب سالن، هم‌سبک با کارت پنل مدیریت در صفحه پروفایل */}
+      {/* دکمه‌ی نوبت‌دهی آنلاین */}
       {effectiveTab === 'salon' && (
         <Link
           href="/my-salon/booking-settings"
@@ -509,7 +536,7 @@ export default function MySalonPage() {
                 <button
                   key={opt.staffId}
                   onClick={() => setSelectedStaffId(opt.staffId)}
-                  className={`shrink-0 px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-colors ${
+                  className={`shrink-0 px-3.5 py-2 rounded-full text-xs font-bold whitespace-nowrap transition-colors ${
                     selectedStaffId === opt.staffId ? 'bg-[#824c71] text-white' : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'
                   }`}
                 >
@@ -519,7 +546,7 @@ export default function MySalonPage() {
             </div>
           )}
           {currentStaffOption && (
-            <div className="bg-[#824c71]/5 border border-[#824c71]/20 rounded-xl p-3.5 mb-5 flex items-center gap-2.5">
+            <div className="bg-[#824c71]/5 border border-[#824c71]/20 rounded-[10px] p-3.5 mb-5 flex items-center gap-2.5">
               <div className="w-8 h-8 rounded-full bg-[#824c71]/10 text-[#824c71] flex items-center justify-center text-xs font-bold shrink-0">
                 {currentStaffOption.staffName.slice(0, 1)}
               </div>
@@ -532,16 +559,16 @@ export default function MySalonPage() {
         </>
       )}
 
-      {/* ناوبری روز — مشترک */}
+      {/* ناوبری روز — مشترک، فلش‌ها بنفش کمرنگ برند */}
       <div className="flex items-center gap-2 mb-3 mt-1">
-        <button onClick={goToNextDay} aria-label="روز بعد" className="w-11 h-11 flex items-center justify-center rounded-xl bg-zinc-100 text-zinc-600 hover:bg-zinc-200 transition shrink-0">
+        <button onClick={goToNextDay} aria-label="روز بعد" className="w-11 h-11 flex items-center justify-center rounded-[10px] bg-[#824c71]/10 text-[#824c71] hover:bg-[#824c71]/15 transition shrink-0">
           <ChevronRight className="w-5 h-5" />
         </button>
         <div ref={datePickerRef} className="relative flex-1">
           <button
             type="button"
             onClick={() => setIsDatePickerOpen((o) => !o)}
-            className="w-full h-11 flex items-center justify-center gap-2 rounded-xl bg-white border border-zinc-200 px-2"
+            className="w-full h-11 flex items-center justify-center gap-2 rounded-[10px] bg-white border border-zinc-200 px-2"
           >
             <CalendarDays className="w-4 h-4 text-[#824c71] shrink-0" />
             <span className="text-xs sm:text-sm font-bold text-zinc-800 truncate">{dayLabel}</span>
@@ -560,7 +587,7 @@ export default function MySalonPage() {
             </div>
           )}
         </div>
-        <button onClick={goToPrevDay} aria-label="روز قبل" className="w-11 h-11 flex items-center justify-center rounded-xl bg-zinc-100 text-zinc-600 hover:bg-zinc-200 transition shrink-0">
+        <button onClick={goToPrevDay} aria-label="روز قبل" className="w-11 h-11 flex items-center justify-center rounded-[10px] bg-[#824c71]/10 text-[#824c71] hover:bg-[#824c71]/15 transition shrink-0">
           <ChevronLeft className="w-5 h-5" />
         </button>
       </div>
@@ -576,7 +603,7 @@ export default function MySalonPage() {
       {/* آمار روزانه — فقط تب سالن */}
       {effectiveTab === 'salon' && dayBookings.length > 0 && (
         <div className="grid grid-cols-3 gap-2 mb-6">
-          <div className="bg-white border border-zinc-100 rounded-xl p-3 shadow-sm shadow-zinc-200/50">
+          <div className="bg-white border border-zinc-100 rounded-[10px] p-3 shadow-sm shadow-zinc-200/50">
             <div className="flex items-center gap-1.5 mb-1.5">
               <TrendingUp className="w-3.5 h-3.5 text-emerald-600" />
               <span className="text-[11px] font-medium text-zinc-500">درآمد کل</span>
@@ -587,7 +614,7 @@ export default function MySalonPage() {
             </p>
           </div>
 
-          <button type="button" onClick={() => setIsStaffModalOpen(true)} className="bg-white border border-zinc-100 rounded-xl p-3 shadow-sm shadow-zinc-200/50 text-right">
+          <button type="button" onClick={() => setIsStaffModalOpen(true)} className="bg-white border border-zinc-100 rounded-[10px] p-3 shadow-sm shadow-zinc-200/50 text-right">
             <div className="flex items-center gap-1.5 mb-1.5">
               <Users className="w-3.5 h-3.5 text-[#824c71]" />
               <span className="text-[11px] font-medium text-zinc-500">سهم پرسنل</span>
@@ -598,7 +625,7 @@ export default function MySalonPage() {
             </p>
           </button>
 
-          <div className="bg-white border border-zinc-100 rounded-xl p-3 shadow-sm shadow-zinc-200/50">
+          <div className="bg-white border border-zinc-100 rounded-[10px] p-3 shadow-sm shadow-zinc-200/50">
             <div className="flex items-center gap-1.5 mb-1.5">
               <Wallet className="w-3.5 h-3.5 text-amber-600" />
               <span className="text-[11px] font-medium text-zinc-500">سود خالص</span>
@@ -614,7 +641,7 @@ export default function MySalonPage() {
       {/* لیست نوبت‌ها */}
       <div className="mb-8 mt-4">
         <h2 className="text-sm font-bold text-zinc-800 mb-3">
-  {isToday ? 'نوبت‌های امروز' : 'نوبت‌های این روز'}{' '}
+          {isToday ? 'نوبت‌های امروز' : 'نوبت‌های این روز'}{' '}
           {effectiveTab === 'salon'
             ? `(${dayBookings.length.toLocaleString('fa-IR')})`
             : `(${dayStaffBookings.length.toLocaleString('fa-IR')})`}
@@ -624,7 +651,7 @@ export default function MySalonPage() {
           dayBookings.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">{dayBookings.map(renderBookingCard)}</div>
           ) : (
-            <div className="text-center py-10 bg-zinc-50 rounded-xl">
+            <div className="text-center py-10 bg-zinc-50 rounded-[10px]">
               <p className="text-zinc-400 text-sm">نوبتی برای این روز ثبت نشده است.</p>
             </div>
           )
@@ -635,7 +662,7 @@ export default function MySalonPage() {
         ) : dayStaffBookings.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">{dayStaffBookings.map(renderStaffBookingCard)}</div>
         ) : (
-          <div className="text-center py-10 bg-zinc-50 rounded-xl">
+          <div className="text-center py-10 bg-zinc-50 rounded-[10px]">
             <CalendarX className="w-8 h-8 text-zinc-300 mx-auto mb-2" />
             <p className="text-zinc-400 text-sm">نوبتی برای این روز ثبت نشده است.</p>
           </div>
@@ -655,7 +682,7 @@ export default function MySalonPage() {
         </>
       )}
 
-      {/* پاپ‌آپ سوییچ سالن — لیست سالن‌هایی که کاربر بهشون دسترسی داره + ثبت‌نام کسب‌وکار جدید */}
+      {/* پاپ‌آپ سوییچ سالن */}
       {isSalonSwitcherOpen && (
         <div
           className="fixed inset-0 z-[9999] flex items-end justify-center bg-black/40 backdrop-blur-sm"
@@ -673,12 +700,12 @@ export default function MySalonPage() {
                 <Loader2 className="w-6 h-6 text-[#824c71] animate-spin" />
               </div>
             ) : (
-               <div className="space-y-1.5 max-h-[60vh] overflow-y-auto">
+              <div className="space-y-1.5 max-h-[60vh] overflow-y-auto">
                 {mySalons.map((s) => (
                   <button
                     key={s.id}
                     onClick={() => handleSwitchSalon(s.id)}
-                    className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-right transition-colors ${
+                    className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-[10px] text-right transition-colors ${
                       s.isActive ? 'bg-[#824c71]/8' : 'hover:bg-zinc-50'
                     }`}
                   >
@@ -702,7 +729,7 @@ export default function MySalonPage() {
                 <Link
                   href="/profile/business"
                   onClick={() => setIsSalonSwitcherOpen(false)}
-                  className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-right hover:bg-zinc-50 transition-colors mt-1 border-t border-zinc-100 pt-3.5"
+                  className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-[10px] text-right hover:bg-zinc-50 transition-colors mt-1 border-t border-zinc-100 pt-3.5"
                 >
                   <div className="w-9 h-9 rounded-[10px] flex items-center justify-center shrink-0 bg-zinc-100 text-zinc-500">
                     <Plus className="w-4 h-4" />
