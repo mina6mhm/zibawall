@@ -5,7 +5,7 @@ import { useEffect, useState, use } from "react";
 import { useRouter } from "next/navigation";
 import { CATEGORY_MAPPING } from "@/lib/data";
 import { 
-  ArrowRight, Star, MapPin, Clock, Phone,
+  Star, MapPin, Clock, Phone,
   CheckCircle2, CalendarOff, X, MessageCircle, CalendarClock, ChevronDown, ChevronUp, Map, Trash2,
   Home, Users, Share2
 } from "lucide-react";
@@ -203,9 +203,13 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
 
   const ratedReviews = localReviews.filter(review => review.rating > 0);
   const totalVotes = ratedReviews.length;
-  const averageRating = totalVotes > 0 
-    ? (ratedReviews.reduce((acc, review) => acc + review.rating, 0) / totalVotes).toFixed(1)
-    : "0.0";
+  const avgRatingNum = totalVotes > 0
+    ? ratedReviews.reduce((acc, review) => acc + review.rating, 0) / totalVotes
+    : 0;
+  // عدد صحیح (۵، ۴، ۳...) بدون اعشار نشون داده می‌شه، غیرصحیح با یک رقم اعشار، و بدون رای اصلاً "0"
+  const averageRating = totalVotes === 0
+    ? "0"
+    : Number.isInteger(avgRatingNum) ? String(avgRatingNum) : avgRatingNum.toFixed(1);
 
   const textReviews = localReviews.filter(review => review.comment && review.comment.trim() !== "");
 
@@ -316,7 +320,7 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
         </button>
       )}
 
-      <div className="space-y-3 sm:space-y-3.5 text-zinc-600 text-[13px] sm:text-sm mb-6 pb-6 border-b border-zinc-100">
+      <div className="space-y-3 sm:space-y-3.5 text-zinc-600 text-[13px] sm:text-sm mb-6">
         <div className="flex items-start">
           <MapPin className="w-4 h-4 sm:w-5 sm:h-5 ml-2 mt-0.5 text-[#824c71] flex-shrink-0" />
           <p className="leading-relaxed">{salon.address}</p>
@@ -675,15 +679,7 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
                 <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-black/35 to-transparent pointer-events-none" />
 
                 {/* نوار شناور بالا: بازگشت (راست) + اشتراک‌گذاری و نشان کردن (چپ) */}
-                <div className="absolute top-4 inset-x-4 flex items-center justify-between" onClick={(e) => e.stopPropagation()}>
-                  <button
-                    onClick={() => router.push('/')}
-                    aria-label="بازگشت"
-                    className="w-10 h-10 flex items-center justify-center rounded-full bg-white/90 backdrop-blur-md text-zinc-700 shadow-sm active:scale-90 transition-transform"
-                  >
-                    <ArrowRight className="w-4.5 h-4.5" />
-                  </button>
-
+                <div className="absolute top-4 inset-x-4 flex items-center justify-end" onClick={(e) => e.stopPropagation()}>
                   <div className="flex items-center gap-2">
                     <button
                       onClick={handleShare}
@@ -727,18 +723,18 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
               )}
             </div>
 
-            <div className="block lg:hidden pt-8 mt-8 border-t border-zinc-100">
+            <div className="block lg:hidden pt-8 mt-8">
               {salonInfoCard}
             </div>
 
-            <section className="pt-8 mt-8 border-t border-zinc-100">
+            <section className="pt-8 mt-8">
               <h2 className="text-lg sm:text-xl font-bold text-zinc-900 mb-3">درباره سالن</h2>
               <p className="text-zinc-600 text-[13px] sm:text-sm leading-relaxed text-justify">
                 {salon.description || "توضیحاتی ثبت نشده است."}
               </p>
             </section>
 
-            <section className="pt-8 mt-8 border-t border-zinc-100">
+            <section className="pt-8 mt-8 border-t border-zinc-200">
               <h2 className="text-lg sm:text-xl font-bold text-zinc-900 mb-4">خدمات ما</h2>
               <div className="space-y-2">
                 {Object.keys(groupedServices).length > 0 ? (
@@ -774,7 +770,7 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
               </div>
             </section>
 
-            <section className="pt-8 mt-8 border-t border-zinc-100">
+            <section className="pt-8 mt-8">
               <div className="flex items-center gap-3 mb-6">
                 <div className="text-3xl font-bold text-zinc-900">{toPersianDigits(averageRating)}</div>
                 <div>
@@ -821,7 +817,7 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
 
                   <textarea 
                       value={reviewText} onChange={(e) => setReviewText(e.target.value)}
-                      className="w-full bg-white border border-zinc-200 rounded-[10px] p-3 text-sm focus:outline-none focus:ring-1 focus:ring-[#824c71]/40 focus:border-[#824c71]/40 mb-3 resize-none"
+                      className="w-full bg-white border border-zinc-300 rounded-[10px] p-3 text-sm focus:outline-none focus:ring-1 focus:ring-[#824c71]/40 focus:border-[#824c71]/40 mb-3 resize-none"
                       rows={3} placeholder="تجربه خود را بنویسید..."
                   ></textarea>
                   
@@ -829,7 +825,7 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
 
                   <button
                     onClick={handleReviewSubmit}
-                    className="bg-[#824c71] hover:bg-[#6e3f60] text-white font-medium px-5 py-2.5 rounded-[10px] text-xs sm:text-sm transition-colors"
+                    className="bg-[#824c71] hover:bg-[#6e3f60] text-white font-medium px-5 py-2.5 rounded-md text-xs sm:text-sm transition-colors"
                   >
                     {hasAlreadyReviewed ? "ثبت نظر" : "ثبت"}
                   </button>
@@ -838,7 +834,7 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
               <div className="space-y-3">
                 {textReviews.length > 0 ? (
                   textReviews.map((review) => (
-                    <div key={review.id} className="p-4 rounded-[10px] bg-white shadow-[0_1px_8px_rgba(0,0,0,0.05)]">
+                    <div key={review.id} className="p-4 rounded-[10px] bg-[#824c71]/[0.06]">
                       <div className="flex justify-between items-center mb-1.5">
                         <span className="font-bold text-zinc-800 text-xs sm:text-sm">{review.name}</span>
                         {review.rating > 0 && (
