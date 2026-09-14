@@ -170,14 +170,14 @@ function AppointmentsContent() {
     cancelled: 'نوبت لغو‌شده‌ای ندارید.',
   };
 
-  // یک کارتِ نوبت — عکس+اسم سالن، تاریخ/ساعت با نشانگر رنگی برند در یک ردیف،
-  // اسم خدمت و اسم پرسنل هر دو با آیکون + رنگ برند یکسان، بعد بوردر،
-  // و زیر بوردر وضعیت درخواست + قیمت.
+  // یک کارتِ نوبت — فشرده: اسم سالن، تاریخ/ساعت، بعد برای هر خدمت یک ردیف
+  // (اسم خدمت + پرسنل، و قیمت فقط اگر ثبت شده باشه کنارش می‌شینه، نه
+  // به‌صورت یک ردیف مجزا که وقتی قیمتی نیست خالی بمونه)، و در پایین فقط
+  // وضعیت درخواست.
   const renderCard = ({ appt, item }: FlatItem) => {
     const statusInfo = STATUS_LABELS[item.status];
     const isCancelled = item.status === 'CANCELLED';
     const isPending = appt.status === 'PENDING_PAYMENT' && item.status !== 'CANCELLED';
-    const itemTotal = item.services.reduce((sum, s) => sum + (s.price || 0), 0);
 
     return (
       <div
@@ -185,14 +185,14 @@ function AppointmentsContent() {
         className={`bg-white rounded-2xl p-4 shadow-[0_2px_14px_rgba(0,0,0,0.09)] ${isCancelled ? 'opacity-70' : ''}`}
       >
         {/* ردیف ۱: فقط اسم سالن */}
-        <Link href={`/salon/${appt.salon.id}`} className="block mb-3.5 group">
+        <Link href={`/salon/${appt.salon.id}`} className="block mb-4 group">
           <p className="text-[15px] font-bold text-zinc-900 truncate group-hover:text-[#824c71] transition-colors">
             {appt.salon.name}
           </p>
         </Link>
 
         {/* ردیف ۲: تاریخ و ساعت — هر دو در یک ردیف، فقط با نشانگر رنگی برند */}
-        <div className="flex items-center gap-4 text-xs text-zinc-600 mb-3.5">
+        <div className="flex items-center gap-4 text-xs text-zinc-600 mb-2.5">
           <span className="flex items-center gap-2 min-w-0">
             <span className="w-2 h-2 rounded-full bg-[#824c71] shrink-0" />
             <span className="truncate">{formatDate(item.date)}</span>
@@ -203,48 +203,45 @@ function AppointmentsContent() {
           </span>
         </div>
 
-        {/* ردیف‌های خدمات: اسم خدمت (آیکون قیچی) و اسم پرسنل (آیکون یوزر) در یک ردیف، هم‌رنگ */}
-        <div className="flex flex-col gap-2 mb-3.5">
+        {/* ردیف‌های خدمات: اسم خدمت + پرسنل در یک سمت، قیمت (اگر بود) همون‌جا کنارش */}
+        <div className="flex flex-col gap-1.5 mb-3">
           {item.services.map((s, idx) => (
-            <div key={idx} className="flex items-center gap-4 flex-wrap">
-              <div className="flex items-center gap-2 text-xs text-zinc-700 min-w-0">
-                <Scissors className="w-3.5 h-3.5 text-[#824c71] shrink-0" strokeWidth={1.75} />
-                <span className="font-bold truncate">{s.name}</span>
+            <div key={idx} className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-3 flex-wrap min-w-0">
+                <span className="flex items-center gap-1.5 text-xs text-zinc-700 min-w-0">
+                  <Scissors className="w-3.5 h-3.5 text-[#824c71] shrink-0" strokeWidth={1.75} />
+                  <span className="font-bold truncate">{s.name}</span>
+                </span>
+                {s.staffName && (
+                  <span className="flex items-center gap-1.5 text-xs text-zinc-700 min-w-0">
+                    <UserIcon className="w-3.5 h-3.5 text-[#824c71] shrink-0" strokeWidth={1.75} />
+                    <span className="font-bold truncate">{s.staffName}</span>
+                  </span>
+                )}
               </div>
-              {s.staffName && (
-                <div className="flex items-center gap-2 text-xs text-zinc-700 min-w-0">
-                  <UserIcon className="w-3.5 h-3.5 text-[#824c71] shrink-0" strokeWidth={1.75} />
-                  <span className="font-bold truncate">{s.staffName}</span>
-                </div>
+              {!!s.price && (
+                <span className="text-[11px] text-zinc-400 shrink-0">{formatMoney(s.price)} تومان</span>
               )}
             </div>
           ))}
         </div>
 
-        {/* بوردر جداکننده */}
-        <div className="border-t border-zinc-100 pt-3.5">
-          {/* زیر بوردر: وضعیت درخواست + قیمت */}
-          <div className="flex items-center justify-between">
-            <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-medium ${statusInfo.bgClassName} ${statusInfo.textClassName}`}>
-              {statusInfo.label}
-            </span>
-            {itemTotal > 0 && (
-              <span className="text-sm font-bold text-zinc-900">{formatMoney(itemTotal)} تومان</span>
-            )}
-          </div>
+        {/* پایین: فقط وضعیت درخواست */}
+        <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-medium ${statusInfo.bgClassName} ${statusInfo.textClassName}`}>
+          {statusInfo.label}
+        </span>
 
-          {/* دکمه پرداخت فقط وقتی کل گروه در انتظار پرداخته — نه برای آیتم‌های لغو‌شده */}
-          {isPending && (
-            <button
-              onClick={() => handlePay(appt)}
-              disabled={payingId === appt.id}
-              className="w-full flex items-center justify-center gap-1.5 py-2.5 rounded-[10px] bg-[#824c71] text-white text-xs font-bold hover:bg-[#6e3f60] transition disabled:opacity-60 mt-3.5"
-            >
-              {payingId === appt.id && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-              پرداخت و ثبت قطعی نوبت
-            </button>
-          )}
-        </div>
+        {/* دکمه پرداخت فقط وقتی کل گروه در انتظار پرداخته — نه برای آیتم‌های لغو‌شده */}
+        {isPending && (
+          <button
+            onClick={() => handlePay(appt)}
+            disabled={payingId === appt.id}
+            className="w-full flex items-center justify-center gap-1.5 py-2.5 rounded-[10px] bg-[#824c71] text-white text-xs font-bold hover:bg-[#6e3f60] transition disabled:opacity-60 mt-3"
+          >
+            {payingId === appt.id && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+            پرداخت و ثبت قطعی نوبت
+          </button>
+        )}
       </div>
     );
   };
@@ -292,7 +289,7 @@ function AppointmentsContent() {
         ) : (
           <>
             {/* تب‌های نوبت‌های آینده / گذشته / لغو‌شده — دقیقاً وسط صفحه */}
-            <div className="flex justify-center mb-5">
+            <div className="flex justify-center mb-7">
               <div className="inline-flex items-center gap-1 bg-zinc-100 rounded-full p-1">
                 {TABS.map((tab) => {
                 const count = listByTab[tab.key].length;
