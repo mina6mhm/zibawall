@@ -170,10 +170,10 @@ function AppointmentsContent() {
     cancelled: 'نوبت لغو‌شده‌ای ندارید.',
   };
 
-  // یک کارتِ نوبت — فشرده: اسم سالن، تاریخ/ساعت، بعد برای هر خدمت یک ردیف
-  // (اسم خدمت + پرسنل، و قیمت فقط اگر ثبت شده باشه کنارش می‌شینه، نه
-  // به‌صورت یک ردیف مجزا که وقتی قیمتی نیست خالی بمونه)، و در پایین فقط
-  // وضعیت درخواست.
+  // یک کارتِ نوبت — ردیف ۱: اسم سالن (راست) و تاریخ+ساعت با یک دایره‌ی
+  // رنگ برند (چپ) در همون ردیف؛ ردیف ۲: خدمت + پرسنل (با آیکون) و قیمت
+  // (اگر بود) همه در یک ردیف؛ بعد یک بوردر؛ زیر بوردر وضعیت نوبت (راست) و
+  // لینک «مشاهده سالن» با رنگ برند (چپ).
   const renderCard = ({ appt, item }: FlatItem) => {
     const statusInfo = STATUS_LABELS[item.status];
     const isCancelled = item.status === 'CANCELLED';
@@ -184,52 +184,47 @@ function AppointmentsContent() {
         key={item.id}
         className={`bg-white rounded-2xl p-4 shadow-[0_2px_14px_rgba(0,0,0,0.09)] ${isCancelled ? 'opacity-70' : ''}`}
       >
-        {/* ردیف ۱: فقط اسم سالن */}
-        <Link href={`/salon/${appt.salon.id}`} className="block mb-4 group">
-          <p className="text-[15px] font-bold text-zinc-900 truncate group-hover:text-[#824c71] transition-colors">
-            {appt.salon.name}
-          </p>
-        </Link>
-
-        {/* ردیف ۲: تاریخ و ساعت — هر دو در یک ردیف، فقط با نشانگر رنگی برند */}
-        <div className="flex items-center gap-4 text-xs text-zinc-600 mb-2.5">
-          <span className="flex items-center gap-2 min-w-0">
+        {/* ردیف ۱: اسم سالن سمت راست، تاریخ و ساعت سمت چپ */}
+        <div className="flex items-center justify-between gap-3 mb-3">
+          <p className="text-[15px] font-bold text-zinc-900 truncate">{appt.salon.name}</p>
+          <div className="flex items-center gap-1.5 text-xs text-zinc-500 shrink-0">
             <span className="w-2 h-2 rounded-full bg-[#824c71] shrink-0" />
-            <span className="truncate">{formatDate(item.date)}</span>
-          </span>
-          <span className="flex items-center gap-2 shrink-0">
-            <span className="w-2 h-2 rounded-full bg-[#824c71] shrink-0" />
-            <span dir="ltr">{toPersianDigits(item.startTime)}</span>
-          </span>
+            <span className="whitespace-nowrap">
+              {formatDate(item.date)} - <span dir="ltr">{toPersianDigits(item.startTime)}</span>
+            </span>
+          </div>
         </div>
 
-        {/* ردیف‌های خدمات: اسم خدمت + پرسنل در یک سمت، قیمت (اگر بود) همون‌جا کنارش */}
+        {/* ردیف ۲: خدمت + پرسنل (با آیکون) و قیمت، همه در یک ردیف */}
         <div className="flex flex-col gap-1.5 mb-3">
           {item.services.map((s, idx) => (
-            <div key={idx} className="flex items-center justify-between gap-2">
-              <div className="flex items-center gap-3 flex-wrap min-w-0">
-                <span className="flex items-center gap-1.5 text-xs text-zinc-700 min-w-0">
-                  <Scissors className="w-3.5 h-3.5 text-[#824c71] shrink-0" strokeWidth={1.75} />
-                  <span className="font-bold truncate">{s.name}</span>
+            <div key={idx} className="flex items-center gap-3 flex-wrap text-xs text-zinc-700">
+              <span className="flex items-center gap-1.5 min-w-0">
+                <Scissors className="w-3.5 h-3.5 text-[#824c71] shrink-0" strokeWidth={1.75} />
+                <span className="font-bold truncate">{s.name}</span>
+              </span>
+              {s.staffName && (
+                <span className="flex items-center gap-1.5 min-w-0">
+                  <UserIcon className="w-3.5 h-3.5 text-[#824c71] shrink-0" strokeWidth={1.75} />
+                  <span className="font-bold truncate">{s.staffName}</span>
                 </span>
-                {s.staffName && (
-                  <span className="flex items-center gap-1.5 text-xs text-zinc-700 min-w-0">
-                    <UserIcon className="w-3.5 h-3.5 text-[#824c71] shrink-0" strokeWidth={1.75} />
-                    <span className="font-bold truncate">{s.staffName}</span>
-                  </span>
-                )}
-              </div>
+              )}
               {!!s.price && (
-                <span className="text-[11px] text-zinc-400 shrink-0">{formatMoney(s.price)} تومان</span>
+                <span className="text-zinc-400">قیمت {formatMoney(s.price)} تومان</span>
               )}
             </div>
           ))}
         </div>
 
-        {/* پایین: فقط وضعیت درخواست */}
-        <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-medium ${statusInfo.bgClassName} ${statusInfo.textClassName}`}>
-          {statusInfo.label}
-        </span>
+        {/* بوردر جداکننده */}
+        <div className="border-t border-zinc-100 pt-3 flex items-center justify-between">
+          <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-medium ${statusInfo.bgClassName} ${statusInfo.textClassName}`}>
+            {statusInfo.label}
+          </span>
+          <Link href={`/salon/${appt.salon.id}`} className="text-xs font-bold text-[#824c71] hover:text-[#6e3f60] transition-colors">
+            مشاهده سالن
+          </Link>
+        </div>
 
         {/* دکمه پرداخت فقط وقتی کل گروه در انتظار پرداخته — نه برای آیتم‌های لغو‌شده */}
         {isPending && (
