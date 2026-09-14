@@ -263,81 +263,118 @@ export default function MySalonPage() {
   // سایه‌ی نرم، ردیف اول اسم مشتری + قیمت کل، ردیف دوم ساعت/تماس/خدمات با
   // آیکون بنفش، بعد بوردر جداکننده و زیرش وضعیت + اکشن‌های ویرایش/لغو.
   const renderBookingCard = (booking: Booking) => {
-    const statusInfo = STATUS_LABELS[booking.status];
-    const bookingTotal = booking.services.reduce((sum, s) => sum + (s.price || 0), 0);
+  const statusInfo = STATUS_LABELS[booking.status];
+  const bookingTotal = booking.services.reduce((sum, s) => sum + (s.price || 0), 0);
 
-    return (
-      <div key={booking.id} className="bg-white rounded-2xl p-4 shadow-[0_2px_14px_rgba(0,0,0,0.09)]">
-        {/* ردیف ۱: اسم مشتری سمت راست، قیمت کل سمت چپ */}
-        <div className="flex items-center justify-between gap-3 mb-4">
-          <p className="text-[15px] font-bold text-zinc-900 truncate">{booking.customerName || 'بدون نام'}</p>
+  return (
+    <div key={booking.id} className="bg-white rounded-2xl p-4 shadow-[0_2px_14px_rgba(0,0,0,0.09)]">
+      {/* ردیف ۱: اسم مشتری راست، شماره مشتری چپ */}
+      <div className="flex items-center justify-between gap-3 mb-4">
+        <p className="text-[15px] font-bold text-zinc-900 truncate">
+          {booking.customerName || 'بدون نام'}
+        </p>
+
+        <a
+          href={`tel:${booking.customerPhone}`}
+          className="flex items-center gap-1.5 min-w-0 active:opacity-60 shrink-0"
+        >
+          <Phone
+            className="w-3.5 h-3.5 text-[#824c71] shrink-0"
+            strokeWidth={1.75}
+          />
+          <span className="text-xs font-bold truncate" dir="ltr">
+            {booking.customerPhone}
+          </span>
+        </a>
+      </div>
+
+      {/* ردیف ۲: ساعت + خدمت + پرسنل و درصد */}
+      <div className="flex items-center gap-3 flex-wrap text-xs text-zinc-700 mb-4">
+        <span className="flex items-center gap-1.5 shrink-0">
+          <span className="w-2 h-2 rounded-full bg-[#824c71] shrink-0" />
+          <span
+            className="font-bold whitespace-nowrap"
+            dir="ltr"
+          >
+            {toPersianDigits(booking.startTime)}
+          </span>
+        </span>
+
+        {booking.services.map((s, idx) => (
+          <div
+            key={idx}
+            className="flex items-center gap-3 flex-wrap min-w-0"
+          >
+            <span className="flex items-center gap-1.5 min-w-0">
+              <Scissors
+                className="w-3.5 h-3.5 text-[#824c71] shrink-0"
+                strokeWidth={1.75}
+              />
+              <span className="font-bold truncate">
+                {s.name}
+              </span>
+            </span>
+
+            {s.staffName && (
+              <span className="flex items-center gap-1.5 min-w-0">
+                <UserIcon
+                  className="w-3.5 h-3.5 text-[#824c71] shrink-0"
+                  strokeWidth={1.75}
+                />
+                <span className="font-bold truncate">
+                  {s.staffName}
+                  {s.staffPercentage
+                    ? ` (${toPersianDigits(String(s.staffPercentage))}٪)`
+                    : ''}
+                </span>
+              </span>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {/* ردیف ۳ + ۴: بوردر، سپس وضعیت و قیمت راست / اکشن‌ها چپ */}
+      <div className="border-t border-zinc-100 pt-3 flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2 min-w-0">
+          <span
+            className={`inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-medium shrink-0 ${statusInfo.bgClassName} ${statusInfo.textClassName}`}
+          >
+            {statusInfo.label}
+          </span>
+
           {bookingTotal > 0 && (
-            <span className="text-xs font-medium text-zinc-400 shrink-0">{formatMoney(bookingTotal)} تومان</span>
+            <span className="text-xs font-bold text-zinc-700 whitespace-nowrap">
+              {formatMoney(bookingTotal)} تومان
+            </span>
           )}
         </div>
 
-        {/* ردیف ۲: ساعت و تماس (لمسی برای تماس مستقیم)، بعد هر خدمت با پرسنل و سهمش */}
-        <div className="flex flex-col gap-1.5 mb-3">
-          <div className="flex items-center gap-3 flex-wrap text-xs text-zinc-700">
-            <span className="flex items-center gap-1.5 shrink-0">
-              <span className="w-2 h-2 rounded-full bg-[#824c71] shrink-0" />
-              <span className="font-bold whitespace-nowrap" dir="ltr">{toPersianDigits(booking.startTime)}</span>
-            </span>
-            <a
-              href={`tel:${booking.customerPhone}`}
-              className="flex items-center gap-1.5 min-w-0 active:opacity-60"
-            >
-              <Phone className="w-3.5 h-3.5 text-[#824c71] shrink-0" strokeWidth={1.75} />
-              <span className="font-bold truncate" dir="ltr">{booking.customerPhone}</span>
-            </a>
-          </div>
-          {booking.services.map((s, idx) => (
-            <div key={idx} className="flex items-center gap-3 flex-wrap text-xs text-zinc-700">
-              <span className="flex items-center gap-1.5 min-w-0">
-                <Scissors className="w-3.5 h-3.5 text-[#824c71] shrink-0" strokeWidth={1.75} />
-                <span className="font-bold truncate">{s.name}</span>
-              </span>
-              {s.staffName && (
-                <span className="flex items-center gap-1.5 min-w-0">
-                  <UserIcon className="w-3.5 h-3.5 text-[#824c71] shrink-0" strokeWidth={1.75} />
-                  <span className="font-bold truncate">
-                    {s.staffName}{s.staffPercentage ? ` (${toPersianDigits(String(s.staffPercentage))}٪)` : ''}
-                  </span>
-                </span>
-              )}
-              {s.price != null && (
-                <span className="text-zinc-400 font-medium shrink-0 mr-auto">{formatMoney(s.price)} تومان</span>
-              )}
-            </div>
-          ))}
-        </div>
+        <div className="flex items-center gap-1 shrink-0">
+          <button
+            onClick={() => openEditBookingModal(booking)}
+            className="w-8 h-8 flex items-center justify-center rounded-full text-[#824c71] hover:bg-[#824c71]/10 transition-colors"
+            title="ویرایش این نوبت"
+          >
+            <Pencil className="w-3.5 h-3.5" />
+          </button>
 
-        {/* بوردر جداکننده — وضعیت راست، اکشن‌های ویرایش/لغو چپ */}
-        <div className="border-t border-zinc-100 pt-3 flex items-center justify-between">
-          <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-medium ${statusInfo.bgClassName} ${statusInfo.textClassName}`}>
-            {statusInfo.label}
-          </span>
-          <div className="flex items-center gap-1">
-            <button
-              onClick={() => openEditBookingModal(booking)}
-              className="w-8 h-8 flex items-center justify-center rounded-full text-[#824c71] hover:bg-[#824c71]/10 transition-colors"
-              title="ویرایش این نوبت"
-            >
-              <Pencil className="w-3.5 h-3.5" />
-            </button>
-            <button
-              onClick={() => handleCancel(booking.id)}
-              disabled={deletingId === booking.id}
-              className="w-8 h-8 flex items-center justify-center rounded-full text-red-500 hover:bg-red-50 transition-colors disabled:opacity-50"
-              title="لغو این نوبت"
-            >
-              {deletingId === booking.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
-            </button>
-          </div>
+          <button
+            onClick={() => handleCancel(booking.id)}
+            disabled={deletingId === booking.id}
+            className="w-8 h-8 flex items-center justify-center rounded-full text-red-500 hover:bg-red-50 transition-colors disabled:opacity-50"
+            title="لغو این نوبت"
+          >
+            {deletingId === booking.id ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            ) : (
+              <Trash2 className="w-3.5 h-3.5" />
+            )}
+          </button>
         </div>
       </div>
-    );
-  };
+    </div>
+  );
+};
 
   // کارت برنامه‌ی پرسنلی — همون زبان بصری، بدون ردیف اکشن (کاری برای ویرایش/لغو نیست)
   const renderStaffBookingCard = (booking: StaffBooking) => {
