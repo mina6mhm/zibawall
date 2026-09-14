@@ -66,6 +66,7 @@ type StaffBooking = {
   customerPhone: string;
   services: ServiceItem[];
   bookingGroupId: string | null;
+  status: Booking['status'];
 };
 
 // هم‌سبک با STATUS_LABELS صفحه‌ی «نوبت‌های من»
@@ -376,47 +377,68 @@ export default function MySalonPage() {
   );
 };
 
-  // کارت برنامه‌ی پرسنلی — همون زبان بصری، بدون ردیف اکشن (کاری برای ویرایش/لغو نیست)
+  // کارت برنامه‌ی پرسنلی — دقیقاً هم‌ساختار با کارت «سالن من»: ردیف ۱ اسم
+  // مشتری + شماره تماس، ردیف ۲ ساعت + خدمت + پرسنل/درصد، بوردر، و زیرش
+  // وضعیت + قیمت — بدون دکمه‌های ویرایش/لغو (پرسنل نمی‌تونه نوبت رو مدیریت کنه)
   const renderStaffBookingCard = (booking: StaffBooking) => {
+    const statusInfo = STATUS_LABELS[booking.status];
     const bookingTotal = booking.services.reduce((sum, s) => sum + (s.price || 0), 0);
 
     return (
       <div key={booking.id} className="bg-white rounded-2xl p-4 shadow-[0_2px_14px_rgba(0,0,0,0.09)]">
+        {/* ردیف ۱: اسم مشتری راست، شماره مشتری چپ */}
         <div className="flex items-center justify-between gap-3 mb-4">
-          <p className="text-[15px] font-bold text-zinc-900 truncate">{booking.customerName || 'بدون نام'}</p>
-          {bookingTotal > 0 && (
-            <span className="text-xs font-medium text-zinc-400 shrink-0">{formatMoney(bookingTotal)} تومان</span>
-          )}
+          <p className="text-[15px] font-bold text-zinc-900 truncate">
+            {booking.customerName || 'بدون نام'}
+          </p>
+
+          <a
+            href={`tel:${booking.customerPhone}`}
+            className="flex items-center gap-1.5 min-w-0 active:opacity-60 shrink-0"
+          >
+            <Phone className="w-3.5 h-3.5 text-[#824c71] shrink-0" strokeWidth={1.75} />
+            <span className="text-xs font-bold truncate" dir="ltr">{booking.customerPhone}</span>
+          </a>
         </div>
 
-        <div className="flex flex-col gap-1.5">
-          <div className="flex items-center gap-3 flex-wrap text-xs text-zinc-700">
-            <span className="flex items-center gap-1.5 shrink-0">
-              <span className="w-2 h-2 rounded-full bg-[#824c71] shrink-0" />
-              <span className="font-bold whitespace-nowrap" dir="ltr">{toPersianDigits(booking.startTime)}</span>
-            </span>
-            <a
-              href={`tel:${booking.customerPhone}`}
-              className="flex items-center gap-1.5 min-w-0 active:opacity-60"
-            >
-              <Phone className="w-3.5 h-3.5 text-[#824c71] shrink-0" strokeWidth={1.75} />
-              <span className="font-bold truncate" dir="ltr">{booking.customerPhone}</span>
-            </a>
-          </div>
+        {/* ردیف ۲: ساعت + خدمت + پرسنل و درصد */}
+        <div className="flex items-center gap-3 flex-wrap text-xs text-zinc-700 mb-4">
+          <span className="flex items-center gap-1.5 shrink-0">
+            <span className="w-2 h-2 rounded-full bg-[#824c71] shrink-0" />
+            <span className="font-bold whitespace-nowrap" dir="ltr">{toPersianDigits(booking.startTime)}</span>
+          </span>
+
           {booking.services.map((s, idx) => (
-            <div key={idx} className="flex items-center gap-3 flex-wrap text-xs text-zinc-700">
+            <div key={idx} className="flex items-center gap-3 flex-wrap min-w-0">
               <span className="flex items-center gap-1.5 min-w-0">
                 <Scissors className="w-3.5 h-3.5 text-[#824c71] shrink-0" strokeWidth={1.75} />
                 <span className="font-bold truncate">{s.name}</span>
               </span>
-              {s.durationMin != null && (
-                <span className="text-zinc-400 font-medium shrink-0">{toPersianDigits(String(s.durationMin))} دقیقه</span>
-              )}
-              {s.price != null && (
-                <span className="text-zinc-400 font-medium shrink-0 mr-auto">{formatMoney(s.price)} تومان</span>
+
+              {s.staffName && (
+                <span className="flex items-center gap-1.5 min-w-0">
+                  <UserIcon className="w-3.5 h-3.5 text-[#824c71] shrink-0" strokeWidth={1.75} />
+                  <span className="font-bold truncate">
+                    {s.staffName}
+                    {s.staffPercentage ? ` (${toPersianDigits(String(s.staffPercentage))}٪)` : ''}
+                  </span>
+                </span>
               )}
             </div>
           ))}
+        </div>
+
+        {/* بوردر جداکننده، زیرش وضعیت راست و قیمت چپ — بدون اکشن */}
+        <div className="border-t border-zinc-100 pt-3 flex items-center justify-between gap-3">
+          <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-medium shrink-0 ${statusInfo.bgClassName} ${statusInfo.textClassName}`}>
+            {statusInfo.label}
+          </span>
+
+          {bookingTotal > 0 && (
+            <span className="text-xs font-bold text-zinc-700 whitespace-nowrap">
+              {formatMoney(bookingTotal)} تومان
+            </span>
+          )}
         </div>
       </div>
     );
@@ -523,25 +545,27 @@ export default function MySalonPage() {
         </div>
       )}
 
-      {/* سوییچ تب — فقط وقتی هم سالن‌دار و هم پرسنل است */}
+      {/* سوییچ تب — فقط وقتی هم سالن‌دار و هم پرسنل است — هم‌سبک با تب‌های صفحه‌ی «نوبت‌های من» */}
       {showTabs && (
-        <div className="flex gap-1 mb-6 bg-zinc-100 p-1 rounded-full">
-          <button
-            onClick={() => setActiveTab('salon')}
-            className={`flex-1 py-2 rounded-full text-xs font-bold transition-colors ${
-              activeTab === 'salon' ? 'bg-white text-[#824c71] shadow-sm' : 'text-zinc-500'
-            }`}
-          >
-            سالن من
-          </button>
-          <button
-            onClick={() => setActiveTab('staff')}
-            className={`flex-1 py-2 rounded-full text-xs font-bold transition-colors ${
-              activeTab === 'staff' ? 'bg-white text-[#824c71] shadow-sm' : 'text-zinc-500'
-            }`}
-          >
-            برنامه پرسنلی
-          </button>
+        <div className="flex justify-center mb-6">
+          <div className="inline-flex items-center gap-1 bg-zinc-100 rounded-full p-1">
+            <button
+              onClick={() => setActiveTab('salon')}
+              className={`px-4 py-2 rounded-full text-xs font-bold transition-colors ${
+                activeTab === 'salon' ? 'bg-[#824c71] text-white' : 'text-zinc-500'
+              }`}
+            >
+              سالن من
+            </button>
+            <button
+              onClick={() => setActiveTab('staff')}
+              className={`px-4 py-2 rounded-full text-xs font-bold transition-colors ${
+                activeTab === 'staff' ? 'bg-[#824c71] text-white' : 'text-zinc-500'
+              }`}
+            >
+              برنامه پرسنلی
+            </button>
+          </div>
         </div>
       )}
 

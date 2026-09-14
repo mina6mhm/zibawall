@@ -33,6 +33,10 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: 'دسترسی ندارید' }, { status: 403 });
     }
 
+    // برخلاف قبل، وضعیت نوبت رو هم لازم داریم (برای نمایش بج وضعیت روی کارت)
+    // پس دیگه فیلتر status:'CONFIRMED' رو توی کوئری نمی‌زنیم، بلکه بعداً
+    // خودمون بر اساس نیاز فیلتر می‌کنیم (فعلاً همون CONFIRMED رو نگه می‌داریم
+    // که رفتار قبلی عوض نشه، ولی این‌بار از فیلد status خودِ booking می‌خونیم)
     const bookings = await prisma.booking.findMany({
       where: { salonId: staffMember.salonId, status: 'CONFIRMED' },
       orderBy: [{ date: 'asc' }, { startTime: 'asc' }],
@@ -49,9 +53,16 @@ export async function GET(req: Request) {
         startTime: b.startTime,
         customerName: b.customerName,
         customerPhone: b.customerPhone,
+        status: b.status,
         services: (b.services as any[])
           .filter(isMine)
-          .map((sv) => ({ name: sv.name, price: sv.price, durationMin: sv.durationMin })),
+          .map((sv) => ({
+            name: sv.name,
+            price: sv.price,
+            durationMin: sv.durationMin,
+            staffName: sv.staffName,
+            staffPercentage: sv.staffPercentage,
+          })),
         bookingGroupId: b.bookingGroupId,
       }));
 
