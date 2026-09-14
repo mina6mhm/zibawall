@@ -35,6 +35,8 @@ export default function SalonReportsPage() {
 
   // روزی که با کلیک روی نمودار ستونی انتخاب شده — برای نمایش دقیق تاریخ و درآمدش
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
+  // کلیک‌های پشت‌سرهم روی همون ستون، برچسب رو یکی‌درمیون نشون/مخفی می‌کنه
+  const [tooltipVisible, setTooltipVisible] = useState(true);
 
   // ماه انتخاب‌شده به تقویم شمسی — پیش‌فرض ماه جاری
   const [selectedMonth, setSelectedMonth] = useState<DateObject>(
@@ -77,18 +79,22 @@ export default function SalonReportsPage() {
   // با هر تغییر ماه، انتخاب روز قبلی روی نمودار پاک می‌شود
   const goToPrevMonth = () => {
     setSelectedDay(null);
+    setTooltipVisible(true);
     setSelectedMonth((prev) => new DateObject(prev).subtract(1, 'month'));
   };
   const goToNextMonth = () => {
     setSelectedDay(null);
+    setTooltipVisible(true);
     setSelectedMonth((prev) => new DateObject(prev).add(1, 'month'));
   };
   const goToCurrentMonth = () => {
     setSelectedDay(null);
+    setTooltipVisible(true);
     setSelectedMonth(new DateObject({ calendar: persian, locale: persian_fa }));
   };
   const handleJumpToMonth = (d: DateObject) => {
     setSelectedDay(null);
+    setTooltipVisible(true);
     setSelectedMonth(d);
   };
 
@@ -313,11 +319,19 @@ export default function SalonReportsPage() {
                   key={d.dateStr}
                   type="button"
                   disabled={!hasRevenue}
-                  onClick={() => hasRevenue && setSelectedDay(d.dateStr)}
+                  onClick={() => {
+                    if (!hasRevenue) return;
+                    if (d.dateStr === displayedDateStr) {
+                      setTooltipVisible((prev) => !prev);
+                    } else {
+                      setSelectedDay(d.dateStr);
+                      setTooltipVisible(true);
+                    }
+                  }}
                   className={`relative flex flex-col items-center justify-end h-full shrink-0 ${hasRevenue ? 'group' : 'cursor-default'}`}
                   style={{ width: 18 }}
                 >
-                  {isHighlighted && (
+                  {isHighlighted && tooltipVisible && (
                     <div
                       className="absolute left-1/2 -translate-x-1/2 z-10 whitespace-nowrap bg-[#824c71] text-white text-[10px] font-bold px-2 py-1 rounded-lg shadow-md"
                       style={{ bottom: `${tooltipBottomPx}px` }}
