@@ -7,7 +7,7 @@ import { CATEGORY_MAPPING } from "@/lib/data";
 import {
   Star, MapPin, Clock, Phone,
   CheckCircle2, CalendarOff, X, CalendarClock, ChevronDown, ChevronUp, Map, Trash2,
-  Home, Users, Share2, MessageSquare, Loader2
+  Home, Users, Share2, MessageSquare, Loader2, ArrowRight
 } from "lucide-react";
 import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
 import ShareSalonModal from "@/components/salon/ShareSalonModal";
@@ -325,7 +325,7 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
         {salon.phones?.length > 0 && (
           <div className="flex items-start gap-2">
             <Phone className="w-4 h-4 mt-0.5 text-[#824c71] shrink-0" />
-            <p className="font-bold text-zinc-800 leading-relaxed">
+            <p className="leading-relaxed">
               {salon.phones.map((p: string) => toPersianDigits(p)).join(' - ')}
             </p>
           </div>
@@ -570,23 +570,33 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
 
                 <div className="absolute inset-x-0 top-0 h-20 bg-gradient-to-b from-black/30 to-transparent pointer-events-none" />
 
-                <div className="absolute top-3 left-3 flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                <div className="absolute top-3 inset-x-3 flex items-center justify-between" onClick={(e) => e.stopPropagation()}>
                   <button
-                    onClick={handleShare}
-                    aria-label="اشتراک‌گذاری صفحه سالن"
+                    onClick={() => router.push('/dashboard')}
+                    aria-label="بازگشت به پیشخوان"
                     className="w-10 h-10 flex items-center justify-center rounded-full bg-white/95 backdrop-blur-md text-zinc-700 shadow-sm active:scale-90 transition-transform"
                   >
-                    <Share2 className="w-4.5 h-4.5" />
+                    <ArrowRight className="w-4.5 h-4.5" />
                   </button>
-                  <button
-                    onClick={toggleBookmark}
-                    aria-label="نشان کردن"
-                    className="w-10 h-10 flex items-center justify-center rounded-full bg-white/95 backdrop-blur-md shadow-sm active:scale-90 transition-transform"
-                  >
-                    <svg viewBox="0 0 24 24" className={`w-5 h-5 ${isBookmarked ? "text-[#824c71]" : "text-zinc-600"}`} fill={isBookmarked ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M6 4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v17.5l-6-4-6 4V4z" />
-                    </svg>
-                  </button>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={handleShare}
+                      aria-label="اشتراک‌گذاری صفحه سالن"
+                      className="w-10 h-10 flex items-center justify-center rounded-full bg-white/95 backdrop-blur-md text-zinc-700 shadow-sm active:scale-90 transition-transform"
+                    >
+                      <Share2 className="w-4.5 h-4.5" />
+                    </button>
+                    <button
+                      onClick={toggleBookmark}
+                      aria-label="نشان کردن"
+                      className="w-10 h-10 flex items-center justify-center rounded-full bg-white/95 backdrop-blur-md shadow-sm active:scale-90 transition-transform"
+                    >
+                      <svg viewBox="0 0 24 24" className={`w-5 h-5 ${isBookmarked ? "text-[#824c71]" : "text-zinc-600"}`} fill={isBookmarked ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M6 4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v17.5l-6-4-6 4V4z" />
+                      </svg>
+                    </button>
+                  </div>
                 </div>
               </div>
 
@@ -624,7 +634,7 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
                   Object.entries(groupedServices).map(([category, services]) => {
                     const isExpanded = expandedCategories.includes(category);
                     return (
-                      <div key={category} className="rounded-lg bg-zinc-50 overflow-hidden">
+                      <div key={category} className="rounded-lg bg-[#824c71]/[0.05] overflow-hidden">
                         <button
                           type="button"
                           onClick={() => toggleCategory(category)}
@@ -740,7 +750,7 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
               <textarea
                 value={reviewText}
                 onChange={(e) => setReviewText(e.target.value)}
-                className="w-full bg-zinc-50 rounded-lg p-3 text-sm focus:outline-none focus:ring-1 focus:ring-[#824c71]/40 transition resize-none placeholder:text-zinc-400"
+                className="w-full bg-white border border-zinc-200 rounded-lg p-3 text-sm focus:outline-none focus:border-[#824c71]/50 transition resize-none placeholder:text-zinc-400"
                 rows={3}
                 placeholder="تجربه خود را بنویسید..."
               />
