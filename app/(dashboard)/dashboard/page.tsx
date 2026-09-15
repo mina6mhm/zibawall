@@ -5,9 +5,11 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { CATEGORIES, CATEGORY_MAPPING } from '@/lib/data'; 
 import RegionFilterModal from '@/components/RegionFilterModal';
-import SearchBar from '@/components/SearchBar';
 import { Home, Check, Sparkles, Eye, Hand, Scissors, Flower2, Zap, Crown, Palette, Pin, SlidersHorizontal, X, CalendarClock, type LucideIcon } from 'lucide-react';
 import LandingScreen from '@/components/LandingScreen';
+
+// کلید ذخیره‌ی موقعیت اسکرول در sessionStorage برای برگشت از صفحه‌ی سالن
+const SCROLL_STORAGE_KEY = 'dashboardScrollPosition';
 
 // --- نگاشت دقیق آیکون مینیمال بر اساس اسم واقعی هر دسته (از lib/data.ts) ---
 const CATEGORY_ICON_MAP: Record<string, LucideIcon> = {
@@ -23,9 +25,7 @@ const CATEGORY_ICON_MAP: Record<string, LucideIcon> = {
 
 const getCategoryIcon = (category: string): LucideIcon => CATEGORY_ICON_MAP[category] || Sparkles;
 
-// --- عنوان کوتاه‌شده برای نمایش روی کارت (فقط ظاهری؛ فیلتر همچنان با اسم اصلی دسته کار می‌کند) ---
-// کوتاه شدن روی همه‌ی دسته‌ها اعمال شده تا لیبل‌ها حتی‌الامکان تک‌خط بمانند و
-// ارتفاع کارت‌ها (و در نتیجه جای آیکون‌ها) با هم یکسان بماند.
+// --- عنوان کوتاه‌شده برای نمایش روی کارت ---
 const CATEGORY_DISPLAY_LABEL: Record<string, string> = {
   'خدمات مو': 'مو',
   'خدمات ناخن': 'ناخن',
@@ -39,13 +39,10 @@ const CATEGORY_DISPLAY_LABEL: Record<string, string> = {
 
 const getCategoryLabel = (category: string): string => CATEGORY_DISPLAY_LABEL[category] || category;
 
-// --- اعداد لاتین رو به فارسی تبدیل می‌کنه ---
 const toPersianDigits = (str: string) => str.replace(/[0-9]/g, (d) => '۰۱۲۳۴۵۶۷۸۹'[Number(d)]);
 
-// --- فرمت امتیاز: عدد صحیح بدون اعشار، غیرصحیح با یک رقم اعشار ---
 const formatRating = (num: number) => (Number.isInteger(num) ? String(num) : num.toFixed(1));
 
-// --- تابع پایه برای نرمال‌سازی حروف ---
 const normalizeChars = (text: string) => {
   if (!text) return '';
   return text
@@ -56,7 +53,6 @@ const normalizeChars = (text: string) => {
     .replace(/[\u200B-\u200D\uFEFF\u200C]/g, '');
 };
 
-// --- تعریف گروه‌های مترادف ---
 const SYNONYM_GROUPS = [
   ['سالن', 'مرکز', 'ارایشگاه', 'مجموعه', 'کلینیک', 'انستیتو', 'خانه', 'اسپا'],
   ['کراتین', 'کراتینه', 'احیا', 'پروتئین', 'بوتاکس'],
@@ -69,7 +65,6 @@ const SYNONYM_GROUPS = [
   ['اپیلاسیون', 'لیزر', 'موزدایی', 'وکس', 'اصلاح']
 ];
 
-// --- تابع محاسبه اختلاف حروف (فاصله لون‌اشتاین) برای تشخیص غلط املایی ---
 const getDistance = (a: string, b: string) => {
   if (a.length === 0) return b.length;
   if (b.length === 0) return a.length;
@@ -82,9 +77,9 @@ const getDistance = (a: string, b: string) => {
         matrix[i][j] = matrix[i - 1][j - 1];
       } else {
         matrix[i][j] = Math.min(
-          matrix[i - 1][j - 1] + 1, // جایگزینی (مثل س به ش)
-          Math.min(matrix[i][j - 1] + 1, // درج (مثل مینا به مبینا)
-          matrix[i - 1][j] + 1) // حذف
+          matrix[i - 1][j - 1] + 1,
+          Math.min(matrix[i][j - 1] + 1,
+          matrix[i - 1][j] + 1)
         );
       }
     }
@@ -92,16 +87,14 @@ const getDistance = (a: string, b: string) => {
   return matrix[b.length][a.length];
 };
 
-// --- آپدیت تابع مترادف‌ها (پشتیبانی از غلط املایی) ---
 const getSynonyms = (word: string): string[] => {
   for (const group of SYNONYM_GROUPS) {
     const normalizedGroup = group.map(normalizeChars);
     
-    // بررسی تطابق دقیق یا داشتن حداکثر ۱-۲ غلط املایی
     const isMatch = normalizedGroup.some(w => {
       if (w === word) return true;
       if (word.length > 3) {
-        const maxDist = word.length > 5 ? 2 : 1; // کلمات طولانی‌تر اجازه ۲ غلط دارند
+        const maxDist = word.length > 5 ? 2 : 1;
         return getDistance(w, word) <= maxDist;
       }
       return false;
@@ -112,16 +105,13 @@ const getSynonyms = (word: string): string[] => {
   return [word];
 };
 
-// --- تابع بررسی تطابق در متن با انعطاف‌پذیری ---
 const isFuzzyMatch = (text: string, searchWord: string) => {
   if (!text) return false;
   const textNoSpace = text.replace(/\s+/g, '');
   const searchNoSpace = searchWord.replace(/\s+/g, '');
   
-  // ۱. بررسی اینکه کلمه دقیقاً داخل متن باشد
   if (textNoSpace.includes(searchNoSpace)) return true;
   
-  // ۲. بررسی حالت کلمه به کلمه برای خطای املایی
   if (searchNoSpace.length > 3) {
     const words = text.split(/\s+/);
     const maxDist = searchNoSpace.length > 5 ? 2 : 1;
@@ -139,10 +129,8 @@ const BookmarkIcon = ({ isActive, className }: { isActive: boolean, className?: 
   </svg>
 );
 
-// --- فیلتر مخاطب سالن: وقتی هیچ‌کدام انتخاب نشده یعنی «همه» نمایش داده شود ---
 type GenderFilter = 'ALL' | 'FEMALE' | 'MALE';
 
-// --- دکمه‌ی تکی برای هر گزینه‌ی فیلتر مخاطب (تاگل: کلیک مجدد = غیرفعال کردن و نمایش همه) ---
 function FilterPill({
   label,
   isActive,
@@ -166,7 +154,6 @@ function FilterPill({
   );
 }
 
-// --- مودال فیلترها: خدمات در منزل + مخاطب سالن، به‌صورت باتم‌شیت ---
 function FiltersModal({
   isOpen,
   onClose,
@@ -188,10 +175,8 @@ function FiltersModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center">
-      {/* پس‌زمینه تیره */}
       <div className="absolute inset-0 bg-black/40" onClick={onClose} />
 
-      {/* کارت فیلترها (بالای صفحه) */}
       <div className="relative w-full max-w-md bg-white rounded-b-3xl px-4 pt-4 pb-6 shadow-xl">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-base font-bold text-zinc-900">فیلترها</h3>
@@ -203,9 +188,7 @@ function FiltersModal({
           </button>
         </div>
 
-        {/* خدمات در منزل + مخاطب سالن در یک ردیف */}
         <div className="flex items-stretch gap-2">
-          {/* خدمات در منزل */}
           <button
             onClick={onToggleHomeService}
             className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-3 rounded-full border text-[13px] font-medium transition-all active:scale-[0.99] ${
@@ -218,7 +201,6 @@ function FiltersModal({
             خدمات در منزل
           </button>
 
-          {/* مخاطب سالن */}
           <div className="flex-1 flex items-center gap-0.5 bg-zinc-100 rounded-full p-1">
             <FilterPill
               label="بانوان"
@@ -237,7 +219,6 @@ function FiltersModal({
   );
 }
 
-// --- پاپ‌آپ هشدار وقتی نوبت‌دهی آنلاین سالن غیرفعاله — دقیقاً هم‌سبک با صفحه‌ی جزئیات سالن ---
 function BookingDisabledAlert({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
   if (!isOpen) return null;
   return (
@@ -269,7 +250,6 @@ export default function DashboardHomePage() {
   const [error, setError] = useState<string | null>(null);
 
   const [bookmarkedSalons, setBookmarkedSalons] = useState<(number|string)[]>([]);
-  // دسته‌بندی‌های انتخاب‌شده: وقتی آرایه خالی باشد یعنی «همه دسته‌ها» نمایش داده می‌شود؛ چند انتخابی است
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   
@@ -278,20 +258,10 @@ export default function DashboardHomePage() {
   const [selectedNeighborhoods, setSelectedNeighborhoods] = useState<string[]>([]);
   
   const [isRegionModalOpen, setIsRegionModalOpen] = useState(false);
-
-  // مودال فیلترهای اضافی (خدمات در منزل + مخاطب سالن)
   const [isFiltersModalOpen, setIsFiltersModalOpen] = useState(false);
-
-  // خدمات در منزل: یک چک‌باکس ساده (فعال/غیرفعال) - بدون حالت سه‌گانه
   const [homeServiceOnly, setHomeServiceOnly] = useState(false);
-
-  // مخاطب سالن: فقط دو گزینه (بانوان / آقایون)؛ اگر هیچ‌کدام انتخاب نشود یعنی «همه»
   const [genderFilter, setGenderFilter] = useState<GenderFilter>('ALL');
-
-  // پاپ‌آپ هشدار نوبت‌دهی غیرفعال — از هر کارتی در لیست قابل نمایش است
   const [showBookingAlert, setShowBookingAlert] = useState(false);
-
-  // --- هشدار فیلترشکن: اگر IP کاربر ایران نباشد (یعنی VPN/فیلترشکن روشنه)، چند ثانیه هشدار نشان بده ---
   const [showVpnWarning, setShowVpnWarning] = useState(false);
 
   useEffect(() => {
@@ -303,13 +273,12 @@ export default function DashboardHomePage() {
         if (!res.ok) return;
         const data = await res.json();
 
-        // اگر تشخیص کشور موفق بود و کشور، ایران نبود یعنی احتمالاً فیلترشکن روشنه
         if (data?.success !== false && data?.country_code && data.country_code !== 'IR') {
           setShowVpnWarning(true);
           hideTimer = setTimeout(() => setShowVpnWarning(false), 6000);
         }
       } catch {
-        // اگر تشخیص موقعیت با خطا مواجه شد، هشدار نمایش داده نمی‌شود (بی‌سروصدا رد می‌شود)
+        // بی‌سروصدا رد می‌شود
       }
     };
 
@@ -332,7 +301,6 @@ export default function DashboardHomePage() {
     setSelectedNeighborhoods((prev) => prev.filter((nh) => nh !== nhToRemove));
   };
 
-  // دسته‌بندی‌ها بدون گزینه‌ی «همه» (اگر در دیتای اصلی وجود داشته باشد حذف می‌شود)
   const categoryList = CATEGORIES.filter((c: string) => c !== 'همه');
 
   useEffect(() => {
@@ -366,6 +334,20 @@ export default function DashboardHomePage() {
     fetchSalonsData();
   }, []);
 
+  // بعد از این‌که لیست سالن‌ها لود شد، اگر قبلاً موقعیت اسکرول ذخیره شده بود
+  // (یعنی کاربر از صفحه‌ی جزئیات سالن برگشته)، به همون نقطه برمی‌گردیم.
+  useEffect(() => {
+    if (isLoading) return;
+
+    const savedScroll = sessionStorage.getItem(SCROLL_STORAGE_KEY);
+    if (savedScroll) {
+      requestAnimationFrame(() => {
+        window.scrollTo(0, parseInt(savedScroll, 10));
+        sessionStorage.removeItem(SCROLL_STORAGE_KEY);
+      });
+    }
+  }, [isLoading]);
+
   const handleBookmarkClick = async (salonId: number | string, e: React.MouseEvent) => {
     e.stopPropagation();
     const isBookmarked = bookmarkedSalons.includes(salonId);
@@ -381,7 +363,6 @@ export default function DashboardHomePage() {
 
   const isCurrentSalonBookmarked = (salonId: number | string) => bookmarkedSalons.includes(salonId);
 
-  // --- کلیک روی دکمه‌ی نوبت‌دهی داخل کارت: فعال بود → صفحه‌ی رزرو، غیرفعال بود → پاپ‌آپ هشدار ---
   const handleBookingClick = (salon: any, e: React.MouseEvent) => {
     e.stopPropagation();
     if (salon.bookingEnabled) {
@@ -391,11 +372,15 @@ export default function DashboardHomePage() {
     }
   };
 
+  // کلیک روی کارت سالن: قبل از رفتن به صفحه‌ی جزئیات، موقعیت فعلی اسکرول ذخیره می‌شود
+  const handleSalonCardClick = (salonId: number | string) => {
+    sessionStorage.setItem(SCROLL_STORAGE_KEY, String(window.scrollY));
+    router.push(`/salon/${salonId}`);
+  };
+
   const filteredSalons = salons.filter((salon) => {
-    // تبدیل تگ‌ها به رشته (مدیریت آبجکت‌های Prisma)
     const salonTags = (salon.tags || []).map((t: any) => typeof t === 'object' && t !== null ? t.name : t);
 
-    // اگر چند دسته انتخاب شده باشد، سالن باید همزمان با تمام آن‌ها تطابق داشته باشد (AND)
     const matchesCategory =
       selectedCategories.length === 0 ||
       selectedCategories.every((cat) => {
@@ -406,21 +391,17 @@ export default function DashboardHomePage() {
     const matchesProvince = salon.province ? salon.province === selectedProvince : true;
     const matchesCity = salon.city ? salon.city === selectedCity : true;
     
-    // پشتیبانی همزمان از اطلاعات ثبت شده با district (قدیمی) و neighborhoods (جدید)
     const salonNeighborhoods = Array.isArray(salon.neighborhoods) 
       ? salon.neighborhoods 
       : (salon.district ? [salon.district] : []);
 
-    // بررسی تطابق محله با لحاظ کردن گزینه «همه محله‌ها»
     const matchesLocation =
       selectedProvince === 'تهران' && selectedCity === 'تهران' && selectedNeighborhoods.length > 0
         ? selectedNeighborhoods.includes('همه محله‌ها') || salonNeighborhoods.some((nh: string) => selectedNeighborhoods.includes(nh))
         : true;
 
-    // فیلتر خدمات در منزل: وقتی چک‌باکس فعال است فقط سالن‌های دارای خدمات در منزل نشان داده شوند
     const matchesHomeService = !homeServiceOnly || !!salon.hasHomeService;
 
-    // فیلتر مخاطب سالن (خانم‌ها / آقایون)؛ سالن‌های «هر دو» در هر دو حالت نمایش داده می‌شوند
     const matchesGender =
       genderFilter === 'ALL' ||
       salon.genderAudience === genderFilter ||
@@ -432,12 +413,10 @@ export default function DashboardHomePage() {
 
     const searchTerms = normalizeChars(searchQuery).split(/\s+/).filter(Boolean);
     
-    // در اینجا فاصله‌ها را نگه می‌داریم تا کلمات قابل تشخیص باشند
     const normalizedName = normalizeChars(salon.name || '');
     const normalizedAddress = normalizeChars(salon.address || '');
     const normalizedTags = salonTags.map((tag: string) => normalizeChars(tag));
 
-    // جستجوی متنی هوشمند با پشتیبانی از غلط‌های املایی
     return searchTerms.every((term) => {
       const synonyms = getSynonyms(term);
       
@@ -456,7 +435,6 @@ export default function DashboardHomePage() {
   return (
     <>
       <div className="flex flex-col min-h-screen bg-white pb-24">
-        {/* هشدار فیلترشکن: فقط وقتی IP خارج از ایران تشخیص داده شود نمایش داده می‌شود */}
         {showVpnWarning && (
           <div className="mx-4 mt-3 flex items-center justify-between gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
             <div className="flex items-center gap-2.5 min-w-0">
@@ -479,7 +457,6 @@ export default function DashboardHomePage() {
 
         {/* هدر */}
         <div className="sticky top-0 z-20 bg-white px-4 pt-3 md:pt-5 pb-2 md:pb-3">
-          {/* انتخاب منطقه - دقیقاً مثل قبل، بالای سرچ‌باکس */}
           <div className="flex items-start mb-3 md:mb-5 w-full">
             <div className="flex flex-col gap-3 overflow-hidden w-full">
               <button 
@@ -498,7 +475,6 @@ export default function DashboardHomePage() {
                 </svg>
               </button>
 
-              {/* تگ‌های محله */}
               {selectedNeighborhoods.length > 0 && !selectedNeighborhoods.includes('همه محله‌ها') && (
                 <div className="flex items-center gap-2 overflow-x-auto hide-scrollbar w-full pb-1">
                   {selectedNeighborhoods.map((nh) => (
@@ -525,18 +501,39 @@ export default function DashboardHomePage() {
             </div>
           </div>
 
-          {/* سرچ‌باکس + آیکون فیلترها (خدمات در منزل و مخاطب سالن حالا در مودال هستند) */}
+          {/* سرچ‌باکس (اینلاین‌شده، بدون بوردر) + آیکون فیلترها */}
           <div className="flex items-center gap-2">
             <div className="flex-1 min-w-0">
-              <SearchBar searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
+              <div className="flex gap-2">
+                <div className="flex-1 flex items-center bg-white rounded-full px-4 py-3 h-12">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="text-zinc-400 ml-2 shrink-0">
+                    <circle cx="11" cy="11" r="8" />
+                    <path d="m21 21-4.3-4.3" />
+                  </svg>
+                  <input 
+                    type="text" 
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="جستجوی سالن، خدمات یا..." 
+                    className="bg-transparent border-none outline-none text-sm w-full text-zinc-900 placeholder:text-zinc-500"
+                  />
+                  {searchQuery && (
+                    <button onClick={() => setSearchQuery('')} className="text-zinc-400 hover:text-zinc-600 shrink-0">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M18 6 6 18"/><path d="m6 6 12 12"/>
+                      </svg>
+                    </button>
+                  )}
+                </div>
+              </div>
             </div>
             <button
               onClick={() => setIsFiltersModalOpen(true)}
               aria-label="فیلترها"
-              className={`relative shrink-0 w-11 h-11 flex items-center justify-center rounded-full border transition-all active:scale-95 ${
+              className={`relative shrink-0 w-11 h-11 flex items-center justify-center rounded-full transition-all active:scale-95 ${
                 hasActiveExtraFilters
-                  ? 'bg-[#824c71]/10 border-[#824c71]/30 text-[#824c71]'
-                  : 'bg-white border-zinc-200 text-zinc-600 hover:bg-zinc-50'
+                  ? 'bg-[#824c71]/10 text-[#824c71]'
+                  : 'bg-white text-zinc-600 hover:bg-zinc-50'
               }`}
             >
               <SlidersHorizontal className="w-[18px] h-[18px]" strokeWidth={2.2} />
@@ -547,7 +544,7 @@ export default function DashboardHomePage() {
           </div>
         </div>
 
-        {/* دسته‌بندی‌ها: عنوان + گرید دو ردیف چهارتایی با آیکون مینیمال، بدون گزینه‌ی «همه» */}
+        {/* دسته‌بندی‌ها */}
         <div className="px-4 mt-3 md:mt-4">
           <h2 className="text-base md:text-lg font-bold text-zinc-900 mb-3">دسته‌بندی خدمات</h2>
           <div className="grid grid-cols-4 gap-2.5">
@@ -558,11 +555,6 @@ export default function DashboardHomePage() {
                 <button
                   key={index}
                   onClick={() => toggleCategory(category)}
-                  // نکته‌ی مهم: عمداً justify-center روی این ستون نیست — اگر باشد، وقتی
-                  // لیبل یک دسته یک‌خطی و دسته‌ی دیگر دوخطی بشود، کل محتوا به‌صورت
-                  // یک بلوک وسط‌چین می‌شود و آیکون‌ها هم‌تراز نمی‌مانند. با شروع از
-                  // بالا (items-center بدون justify-center) و یک باکس ثابت‌ارتفاع
-                  // برای متن، آیکون همیشه در فاصله‌ی یکسانی از بالای کارت می‌ماند.
                   className={`flex flex-col items-center gap-2 rounded-2xl border pt-3.5 pb-2 px-1 h-[100px] transition-colors ${
                     isActive
                       ? 'border-[#824c71] bg-[#824c71]/5'
@@ -600,7 +592,6 @@ export default function DashboardHomePage() {
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {isLoading ? (
-              // اسکلتون‌های لودینگ - ارتفاع دقیقاً هم‌اندازه با کارت واقعی
               [1, 2, 3, 4].map((n) => (
                 <div key={n} className="bg-zinc-100 rounded-2xl h-44 animate-pulse"></div>
               ))
@@ -612,7 +603,6 @@ export default function DashboardHomePage() {
                 const validReviews = salonReviews.filter((review: any) => review.rating && review.rating > 0);
                 const totalVotes = validReviews.length;
 
-                // تبدیل تگ‌ها برای رندر در لیست
                 const salonTags = (salon.tags || []).map((t: any) => typeof t === 'object' && t !== null ? t.name : t);
 
                 const avgRatingNum = totalVotes > 0
@@ -625,14 +615,12 @@ export default function DashboardHomePage() {
                 const isPinned = !!salon.pinnedUntil && new Date(salon.pinnedUntil) > new Date();
                   
                 return (
-                  // --- شروع کارت (ارتفاع ثابت روی همه دستگاه‌ها، بدون وابستگی به فونت/متن) ---
                   <div 
                     key={salon.id}
-                    onClick={() => router.push(`/salon/${salon.id}`)}
+                    onClick={() => handleSalonCardClick(salon.id)}
                     dir="ltr"
                     className="h-44 cursor-pointer bg-white rounded-2xl border border-zinc-200 overflow-hidden shadow-[0_1px_4px_rgba(0,0,0,0.06)] hover:shadow-[0_4px_14px_rgba(0,0,0,0.1)] active:scale-[0.99] transition-all flex items-stretch group relative"
                   >
-                    {/* تصویر سالن - سمت چپ (ارتفاع ثابت = ارتفاع کارت) */}
                     <div className="w-28 sm:w-32 h-full bg-zinc-200 relative overflow-hidden shrink-0">
                       {salon.imageUrl ? (
                         <img src={salon.imageUrl} alt={salon.name} className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
@@ -641,12 +629,9 @@ export default function DashboardHomePage() {
                       )}
                     </div>
 
-                    {/* محتوا - سمت راست (ارتفاع ثابت، محتوای اضافه کلیپ می‌شود تا کارت‌ها یکدست بمانند) */}
                     <div dir="rtl" className="flex-1 min-w-0 h-full p-3 flex flex-col overflow-hidden">
                       
-                      {/* بلوک بالا: نام، آدرس، امتیاز، تگ‌ها - فضای باقی‌مانده را پر می‌کند و اگر زیاد بود کلیپ می‌شود */}
                       <div className="flex-1 min-h-0 overflow-hidden">
-                        {/* ردیف بالا: نام (راست) / بوکمارک (چپ) */}
                         <div className="flex items-start justify-between gap-2">
                           <div className="flex items-center gap-1.5 min-w-0 flex-1">
                             {isPinned && (
@@ -667,7 +652,6 @@ export default function DashboardHomePage() {
                           </button>
                         </div>
 
-                        {/* آدرس */}
                         <div className="flex items-center gap-1 text-zinc-500 mt-1 min-w-0">
                           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
                             <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
@@ -676,7 +660,6 @@ export default function DashboardHomePage() {
                           <span className="text-[12.5px] truncate">{salon.address || 'بدون آدرس'}</span>
                         </div>
 
-                        {/* امتیاز */}
                         {averageRating && (
                           <div className="flex items-center gap-1 mt-1.5">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="#EAB308" stroke="#EAB308" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -689,7 +672,6 @@ export default function DashboardHomePage() {
                           </div>
                         )}
 
-                        {/* تگ‌ها */}
                         {salonTags && salonTags.length > 0 && (
                           <div className="flex items-center gap-1 mt-2 overflow-hidden flex-nowrap">
                             {salonTags.slice(0, 2).map((tag: string, idx: number) => (
@@ -706,21 +688,16 @@ export default function DashboardHomePage() {
                         )}
                       </div>
 
-                      {/* دکمه نوبت‌دهی - همیشه ته کارت، در ارتفاع ثابت. اگر نوبت‌دهی آنلاین
-                          سالن غیرفعال باشد، به‌جای رفتن به صفحه‌ی رزرو، همون پاپ‌آپ هشدار
-                          صفحه‌ی جزئیات سالن نمایش داده می‌شود. */}
                       <div className="flex mt-2 shrink-0">
                         <button
                           onClick={(e) => handleBookingClick(salon, e)}
                           className="flex items-center justify-center gap-1.5 bg-[#824c71] text-white text-[13px] font-bold px-4 py-2 rounded-lg hover:bg-[#824c71]/90 active:scale-95 transition-all shadow-sm"
                         >
-                          <CalendarClock className="w-3.5 h-3.5" />
                           نوبت‌دهی
                         </button>
                       </div>
                     </div>
                   </div>
-                  // --- پایان کارت ---
                 );
               })
             ) : (
