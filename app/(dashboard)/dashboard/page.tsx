@@ -336,16 +336,36 @@ export default function DashboardHomePage() {
 
   // بعد از این‌که لیست سالن‌ها لود شد، اگر قبلاً موقعیت اسکرول ذخیره شده بود
   // (یعنی کاربر از صفحه‌ی جزئیات سالن برگشته)، به همون نقطه برمی‌گردیم.
+  // چون بعد از لود شدن دیتا، عکس‌های کارت‌ها هنوز ممکنه لود نشده باشن و ارتفاع واقعی صفحه
+  // کمتر از حد لازم باشه، به‌جای یک تلاش، تا رسیدن ارتفاع صفحه به مقدار لازم (یا رسیدن به
+  // حداکثر تعداد تلاش) هر ۵۰ میلی‌ثانیه دوباره امتحان می‌کنیم.
   useEffect(() => {
     if (isLoading) return;
 
     const savedScroll = sessionStorage.getItem(SCROLL_STORAGE_KEY);
-    if (savedScroll) {
-      requestAnimationFrame(() => {
-        window.scrollTo(0, parseInt(savedScroll, 10));
-        sessionStorage.removeItem(SCROLL_STORAGE_KEY);
-      });
-    }
+    if (!savedScroll) return;
+
+    const targetY = parseInt(savedScroll, 10);
+    sessionStorage.removeItem(SCROLL_STORAGE_KEY);
+
+    let attempts = 0;
+    const maxAttempts = 40; // حداکثر حدود ۲ ثانیه تلاش
+    let timeoutId: ReturnType<typeof setTimeout>;
+
+    const tryScroll = () => {
+      attempts++;
+      const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
+
+      if (maxScroll >= targetY || attempts >= maxAttempts) {
+        window.scrollTo(0, targetY);
+      } else {
+        timeoutId = setTimeout(tryScroll, 50);
+      }
+    };
+
+    tryScroll();
+
+    return () => clearTimeout(timeoutId);
   }, [isLoading]);
 
   const handleBookmarkClick = async (salonId: number | string, e: React.MouseEvent) => {
@@ -501,11 +521,11 @@ export default function DashboardHomePage() {
             </div>
           </div>
 
-          {/* سرچ‌باکس (اینلاین‌شده، بدون بوردر) + آیکون فیلترها */}
+          {/* سرچ‌باکس (بک‌گراند هم‌خوان با کارت‌های دسته‌بندی) + آیکون فیلترها */}
           <div className="flex items-center gap-2">
             <div className="flex-1 min-w-0">
               <div className="flex gap-2">
-                <div className="flex-1 flex items-center bg-white rounded-full px-4 py-3 h-12">
+                <div className="flex-1 flex items-center bg-zinc-50/60 border border-zinc-100 rounded-full px-4 py-3 h-12">
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="text-zinc-400 ml-2 shrink-0">
                     <circle cx="11" cy="11" r="8" />
                     <path d="m21 21-4.3-4.3" />
@@ -533,7 +553,7 @@ export default function DashboardHomePage() {
               className={`relative shrink-0 w-11 h-11 flex items-center justify-center rounded-full transition-all active:scale-95 ${
                 hasActiveExtraFilters
                   ? 'bg-[#824c71]/10 text-[#824c71]'
-                  : 'bg-white text-zinc-600 hover:bg-zinc-50'
+                  : 'bg-zinc-50/60 border border-zinc-100 text-zinc-600 hover:bg-zinc-100'
               }`}
             >
               <SlidersHorizontal className="w-[18px] h-[18px]" strokeWidth={2.2} />
