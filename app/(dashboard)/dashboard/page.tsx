@@ -264,21 +264,6 @@ export default function DashboardHomePage() {
   const [showBookingAlert, setShowBookingAlert] = useState(false);
   const [showVpnWarning, setShowVpnWarning] = useState(false);
 
-  // مرورگر به‌صورت پیش‌فرض خودش هم سعی می‌کنه موقعیت اسکرول قبلی رو با
-  // history.scrollRestoration = 'auto' برگردونه؛ این کار با رستور دستی‌ای که
-  // پایین‌تر انجام می‌دیم تداخل داره و باعث می‌شه با چند ثانیه تأخیر (بعد از
-  // اینکه مرورگر رستور خودش رو اعمال کرد) صفحه دوباره بره بالا. با غیرفعال
-  // کردنش، فقط رستور دستیِ خودمون اعمال می‌شه.
-  useEffect(() => {
-    if (typeof window !== 'undefined' && 'scrollRestoration' in window.history) {
-      const previous = window.history.scrollRestoration;
-      window.history.scrollRestoration = 'manual';
-      return () => {
-        window.history.scrollRestoration = previous;
-      };
-    }
-  }, []);
-
   useEffect(() => {
     let hideTimer: ReturnType<typeof setTimeout>;
 
@@ -536,11 +521,11 @@ export default function DashboardHomePage() {
             </div>
           </div>
 
-          {/* سرچ‌باکس (بدون بوردر، پس‌زمینه‌ی خاکستری کمی تیره‌تر تا روی سفید گم نشه) + آیکون فیلترها */}
+          {/* سرچ‌باکس (بک‌گراند هم‌خوان با کارت‌های دسته‌بندی) + آیکون فیلترها */}
           <div className="flex items-center gap-2">
             <div className="flex-1 min-w-0">
               <div className="flex gap-2">
-                <div className="flex-1 flex items-center bg-zinc-100 rounded-full px-4 py-3 h-12">
+                <div className="flex-1 flex items-center bg-zinc-50/60 border border-zinc-100 rounded-full px-4 py-3 h-12">
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="text-zinc-400 ml-2 shrink-0">
                     <circle cx="11" cy="11" r="8" />
                     <path d="m21 21-4.3-4.3" />
@@ -568,7 +553,7 @@ export default function DashboardHomePage() {
               className={`relative shrink-0 w-11 h-11 flex items-center justify-center rounded-full transition-all active:scale-95 ${
                 hasActiveExtraFilters
                   ? 'bg-[#824c71]/10 text-[#824c71]'
-                  : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'
+                  : 'bg-zinc-50/60 border border-zinc-100 text-zinc-600 hover:bg-zinc-100'
               }`}
             >
               <SlidersHorizontal className="w-[18px] h-[18px]" strokeWidth={2.2} />
@@ -593,7 +578,7 @@ export default function DashboardHomePage() {
                   className={`flex flex-col items-center gap-2 rounded-2xl border pt-3.5 pb-2 px-1 h-[100px] transition-colors ${
                     isActive
                       ? 'border-[#824c71] bg-[#824c71]/5'
-                      : 'border-zinc-100 bg-zinc-100 hover:bg-zinc-200/70'
+                      : 'border-zinc-100 bg-zinc-50/60 hover:bg-zinc-50'
                   }`}
                 >
                   <span
