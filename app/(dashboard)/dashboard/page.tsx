@@ -12,6 +12,9 @@ import LandingScreen from '@/components/LandingScreen';
 const SCROLL_STORAGE_KEY = 'dashboardScrollPosition';
 
 // --- نگاشت دقیق آیکون مینیمال بر اساس اسم واقعی هر دسته (از lib/data.ts) ---
+// نکته: اگر می‌خوای آیکون‌های اختصاصی خودت رو جایگزین کنی، کافیه همین‌جا
+// به‌جای کامپوننت‌های lucide-react، کامپوننت SVG خودت رو بذاری. بقیه‌ی
+// کد (استایل کارت، حالت انتخاب‌شده و ...) بدون تغییر کار می‌کنه.
 const CATEGORY_ICON_MAP: Record<string, LucideIcon> = {
   'خدمات مو': Scissors,
   'خدمات ناخن': Hand,
@@ -521,12 +524,12 @@ export default function DashboardHomePage() {
             </div>
           </div>
 
-          {/* سرچ‌باکس (بک‌گراند هم‌خوان با کارت‌های دسته‌بندی) + آیکون فیلترها */}
+          {/* سرچ‌باکس + آیکون فیلترها — رنگ پس‌زمینه تیره‌تر شد تا روی سفید بهتر دیده بشه */}
           <div className="flex items-center gap-2">
             <div className="flex-1 min-w-0">
               <div className="flex gap-2">
-                <div className="flex-1 flex items-center bg-zinc-50/60 rounded-full px-4 py-3 h-12">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="text-zinc-400 ml-2 shrink-0">
+                <div className="flex-1 flex items-center bg-zinc-100 border border-zinc-200/70 rounded-full px-4 py-3 h-12 transition-colors focus-within:bg-white focus-within:border-[#824c71]/40 focus-within:ring-2 focus-within:ring-[#824c71]/10">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="text-zinc-500 ml-2 shrink-0">
                     <circle cx="11" cy="11" r="8" />
                     <path d="m21 21-4.3-4.3" />
                   </svg>
@@ -550,50 +553,53 @@ export default function DashboardHomePage() {
             <button
               onClick={() => setIsFiltersModalOpen(true)}
               aria-label="فیلترها"
-              className={`relative shrink-0 w-11 h-11 flex items-center justify-center rounded-full transition-all active:scale-95 ${
+              className={`relative shrink-0 w-11 h-11 flex items-center justify-center rounded-full border transition-all active:scale-95 ${
                 hasActiveExtraFilters
-                  ? 'bg-[#824c71]/10 text-[#824c71]'
-                  : 'bg-zinc-50/60 text-zinc-600 hover:bg-zinc-100'
+                  ? 'bg-[#824c71] border-[#824c71] text-white shadow-sm shadow-[#824c71]/25'
+                  : 'bg-zinc-100 border-zinc-200/70 text-zinc-600 hover:bg-zinc-200/70'
               }`}
             >
               <SlidersHorizontal className="w-[18px] h-[18px]" strokeWidth={2.2} />
               {hasActiveExtraFilters && (
-                <span className="absolute top-1.5 left-1.5 w-2 h-2 rounded-full bg-[#824c71] border-2 border-white" />
+                <span className="absolute top-1.5 left-1.5 w-2 h-2 rounded-full bg-white border-2 border-[#824c71]" />
               )}
             </button>
           </div>
         </div>
 
-        {/* دسته‌بندی‌ها */}
+        {/* دسته‌بندی‌ها — ریدیزاین شد: کارت‌های تخت با بج آیکون سفید روی زمینه‌ی خاکستری،
+            و در حالت انتخاب‌شده کل کارت با رنگ برند پر می‌شه تا وضعیت انتخاب خیلی واضح باشه.
+            آیکون‌ها همچنان از CATEGORY_ICON_MAP میان — هر وقت خواستی آیکون‌های اختصاصی
+            خودت رو بذاری، فقط کافیه اون مپ رو عوض کنی. */}
         <div className="px-4 mt-3 md:mt-4">
           <h2 className="text-base md:text-lg font-bold text-zinc-900 mb-3">دسته‌بندی خدمات</h2>
-          <div className="grid grid-cols-4 gap-2.5">
-            {categoryList.map((category: string, index: number) => {
+          <div className="grid grid-cols-4 gap-3">
+            {categoryList.map((category: string) => {
               const CategoryIcon = getCategoryIcon(category);
               const isActive = selectedCategories.includes(category);
               return (
                 <button
-                  key={index}
+                  key={category}
                   onClick={() => toggleCategory(category)}
-                  className={`flex flex-col items-center gap-2 rounded-2xl border pt-3.5 pb-2 px-1 h-[100px] transition-colors ${
+                  className={`group flex flex-col items-center gap-2.5 rounded-[22px] pt-4 pb-3 px-1 transition-all duration-200 active:scale-[0.96] ${
                     isActive
-                      ? 'border-[#824c71] bg-[#824c71]/5'
-                      : 'border-zinc-100 bg-zinc-50/60 hover:bg-zinc-50'
+                      ? 'bg-[#824c71] shadow-md shadow-[#824c71]/25'
+                      : 'bg-zinc-100/80 hover:bg-zinc-200/70'
                   }`}
                 >
                   <span
-                    className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 transition-colors ${
-                      isActive ? 'bg-[#824c71]/10' : 'bg-[#824c71]/[0.06]'
+                    className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 transition-colors ${
+                      isActive ? 'bg-white/20' : 'bg-white shadow-sm'
                     }`}
                   >
                     <CategoryIcon
-                      className={`w-[18px] h-[18px] ${isActive ? 'text-[#824c71]' : 'text-[#824c71]/75'}`}
-                      strokeWidth={1.75}
+                      className={`w-5 h-5 ${isActive ? 'text-white' : 'text-[#824c71]'}`}
+                      strokeWidth={1.8}
                     />
                   </span>
                   <span
-                    className={`w-full h-7 flex items-center justify-center text-[11px] font-medium text-center leading-[1.15] ${
-                      isActive ? 'text-[#824c71]' : 'text-zinc-700'
+                    className={`w-full text-[11.5px] font-bold text-center leading-tight ${
+                      isActive ? 'text-white' : 'text-zinc-700'
                     }`}
                   >
                     {getCategoryLabel(category)}
