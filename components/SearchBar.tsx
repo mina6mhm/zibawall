@@ -10,7 +10,7 @@ interface SearchBarProps {
 export default function SearchBar({ searchQuery, setSearchQuery }: SearchBarProps) {
   return (
     <div className="flex gap-2">
-      <div className="flex-1 flex items-center bg-zinc-50 rounded-full px-4 py-3 h-12">
+      <div className="flex-1 flex items-center bg-white border border-zinc-200 rounded-full px-4 py-3 h-12">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="text-zinc-400 ml-2 shrink-0">
           <circle cx="11" cy="11" r="8" />
           <path d="m21 21-4.3-4.3" />

@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { CATEGORIES, CATEGORY_MAPPING } from '@/lib/data'; 
 import RegionFilterModal from '@/components/RegionFilterModal';
 import SearchBar from '@/components/SearchBar';
-import { Home, Check, Sparkles, Eye, Hand, Scissors, Flower2, Zap, Crown, Palette, Pin, SlidersHorizontal, X, type LucideIcon } from 'lucide-react';
+import { Home, Check, Sparkles, Eye, Hand, Scissors, Flower2, Zap, Crown, Palette, Pin, SlidersHorizontal, X, CalendarClock, type LucideIcon } from 'lucide-react';
 import LandingScreen from '@/components/LandingScreen';
 
 // --- نگاشت دقیق آیکون مینیمال بر اساس اسم واقعی هر دسته (از lib/data.ts) ---
@@ -24,12 +24,26 @@ const CATEGORY_ICON_MAP: Record<string, LucideIcon> = {
 const getCategoryIcon = (category: string): LucideIcon => CATEGORY_ICON_MAP[category] || Sparkles;
 
 // --- عنوان کوتاه‌شده برای نمایش روی کارت (فقط ظاهری؛ فیلتر همچنان با اسم اصلی دسته کار می‌کند) ---
+// کوتاه شدن روی همه‌ی دسته‌ها اعمال شده تا لیبل‌ها حتی‌الامکان تک‌خط بمانند و
+// ارتفاع کارت‌ها (و در نتیجه جای آیکون‌ها) با هم یکسان بماند.
 const CATEGORY_DISPLAY_LABEL: Record<string, string> = {
-  'خدمات پوست و زیبایی': 'خدمات پوست',
-  'خدمات آرایش و میکاپ': 'خدمات میکاپ',
+  'خدمات مو': 'مو',
+  'خدمات ناخن': 'ناخن',
+  'خدمات ابرو و مژه': 'ابرو و مژه',
+  'خدمات پوست و زیبایی': 'پوست',
+  'خدمات آرایش و میکاپ': 'میکاپ',
+  'پکیج‌های عروس': 'عروس',
+  'موزدایی و بدن': 'موزدایی',
+  'خدمات ماساژ و اسپا': 'ماساژ و اسپا',
 };
 
 const getCategoryLabel = (category: string): string => CATEGORY_DISPLAY_LABEL[category] || category;
+
+// --- اعداد لاتین رو به فارسی تبدیل می‌کنه ---
+const toPersianDigits = (str: string) => str.replace(/[0-9]/g, (d) => '۰۱۲۳۴۵۶۷۸۹'[Number(d)]);
+
+// --- فرمت امتیاز: عدد صحیح بدون اعشار، غیرصحیح با یک رقم اعشار ---
+const formatRating = (num: number) => (Number.isInteger(num) ? String(num) : num.toFixed(1));
 
 // --- تابع پایه برای نرمال‌سازی حروف ---
 const normalizeChars = (text: string) => {
@@ -223,6 +237,30 @@ function FiltersModal({
   );
 }
 
+// --- پاپ‌آپ هشدار وقتی نوبت‌دهی آنلاین سالن غیرفعاله — دقیقاً هم‌سبک با صفحه‌ی جزئیات سالن ---
+function BookingDisabledAlert({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
+  if (!isOpen) return null;
+  return (
+    <div
+      className="fixed inset-0 z-[200] flex items-center justify-center bg-black/40 backdrop-blur-sm px-5"
+      onClick={onClose}
+    >
+      <div className="bg-white rounded-xl p-6 max-w-sm w-full shadow-xl" onClick={(e) => e.stopPropagation()}>
+        <div className="w-12 h-12 bg-amber-50 rounded-xl flex items-center justify-center mb-4 mx-auto">
+          <CalendarClock className="w-6 h-6 text-amber-500" />
+        </div>
+        <h3 className="text-base font-bold text-zinc-900 text-center mb-2">نوبت‌دهی آنلاین فعال نیست</h3>
+        <p className="text-sm text-zinc-500 text-center leading-relaxed mb-5">
+          این سالن هنوز سیستم نوبت‌دهی آنلاین را فعال نکرده است. برای رزرو وقت با سالن تماس بگیرید.
+        </p>
+        <button onClick={onClose} className="w-full bg-[#824c71] hover:bg-[#6e3f60] text-white rounded-[10px] py-3 text-sm font-bold">
+          متوجه شدم
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function DashboardHomePage() {
   const router = useRouter();
   
@@ -249,6 +287,9 @@ export default function DashboardHomePage() {
 
   // مخاطب سالن: فقط دو گزینه (بانوان / آقایون)؛ اگر هیچ‌کدام انتخاب نشود یعنی «همه»
   const [genderFilter, setGenderFilter] = useState<GenderFilter>('ALL');
+
+  // پاپ‌آپ هشدار نوبت‌دهی غیرفعال — از هر کارتی در لیست قابل نمایش است
+  const [showBookingAlert, setShowBookingAlert] = useState(false);
 
   // --- هشدار فیلترشکن: اگر IP کاربر ایران نباشد (یعنی VPN/فیلترشکن روشنه)، چند ثانیه هشدار نشان بده ---
   const [showVpnWarning, setShowVpnWarning] = useState(false);
@@ -339,6 +380,16 @@ export default function DashboardHomePage() {
   };
 
   const isCurrentSalonBookmarked = (salonId: number | string) => bookmarkedSalons.includes(salonId);
+
+  // --- کلیک روی دکمه‌ی نوبت‌دهی داخل کارت: فعال بود → صفحه‌ی رزرو، غیرفعال بود → پاپ‌آپ هشدار ---
+  const handleBookingClick = (salon: any, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (salon.bookingEnabled) {
+      router.push(`/salon/${salon.id}/book`);
+    } else {
+      setShowBookingAlert(true);
+    }
+  };
 
   const filteredSalons = salons.filter((salon) => {
     // تبدیل تگ‌ها به رشته (مدیریت آبجکت‌های Prisma)
@@ -482,10 +533,10 @@ export default function DashboardHomePage() {
             <button
               onClick={() => setIsFiltersModalOpen(true)}
               aria-label="فیلترها"
-              className={`relative shrink-0 w-11 h-11 flex items-center justify-center rounded-full transition-all active:scale-95 ${
+              className={`relative shrink-0 w-11 h-11 flex items-center justify-center rounded-full border transition-all active:scale-95 ${
                 hasActiveExtraFilters
-                  ? 'bg-[#824c71]/10 text-[#824c71]'
-                  : 'bg-zinc-50 text-zinc-600 hover:bg-zinc-100'
+                  ? 'bg-[#824c71]/10 border-[#824c71]/30 text-[#824c71]'
+                  : 'bg-white border-zinc-200 text-zinc-600 hover:bg-zinc-50'
               }`}
             >
               <SlidersHorizontal className="w-[18px] h-[18px]" strokeWidth={2.2} />
@@ -507,24 +558,29 @@ export default function DashboardHomePage() {
                 <button
                   key={index}
                   onClick={() => toggleCategory(category)}
-                  className={`flex flex-col items-center justify-center gap-2 rounded-2xl border p-2 h-[104px] transition-colors ${
+                  // نکته‌ی مهم: عمداً justify-center روی این ستون نیست — اگر باشد، وقتی
+                  // لیبل یک دسته یک‌خطی و دسته‌ی دیگر دوخطی بشود، کل محتوا به‌صورت
+                  // یک بلوک وسط‌چین می‌شود و آیکون‌ها هم‌تراز نمی‌مانند. با شروع از
+                  // بالا (items-center بدون justify-center) و یک باکس ثابت‌ارتفاع
+                  // برای متن، آیکون همیشه در فاصله‌ی یکسانی از بالای کارت می‌ماند.
+                  className={`flex flex-col items-center gap-2 rounded-2xl border pt-3.5 pb-2 px-1 h-[100px] transition-colors ${
                     isActive
                       ? 'border-[#824c71] bg-[#824c71]/5'
                       : 'border-zinc-100 bg-zinc-50/60 hover:bg-zinc-50'
                   }`}
                 >
                   <span
-                    className={`w-11 h-11 rounded-full flex items-center justify-center shrink-0 transition-colors ${
+                    className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 transition-colors ${
                       isActive ? 'bg-[#824c71]/10' : 'bg-[#824c71]/[0.06]'
                     }`}
                   >
                     <CategoryIcon
-                      className={`w-5 h-5 ${isActive ? 'text-[#824c71]' : 'text-[#824c71]/75'}`}
+                      className={`w-[18px] h-[18px] ${isActive ? 'text-[#824c71]' : 'text-[#824c71]/75'}`}
                       strokeWidth={1.75}
                     />
                   </span>
                   <span
-                    className={`text-[11.5px] md:text-xs font-medium text-center leading-tight ${
+                    className={`w-full h-7 flex items-center justify-center text-[11px] font-medium text-center leading-[1.15] ${
                       isActive ? 'text-[#824c71]' : 'text-zinc-700'
                     }`}
                   >
@@ -559,9 +615,12 @@ export default function DashboardHomePage() {
                 // تبدیل تگ‌ها برای رندر در لیست
                 const salonTags = (salon.tags || []).map((t: any) => typeof t === 'object' && t !== null ? t.name : t);
 
-                const averageRating = totalVotes > 0 
-                  ? (validReviews.reduce((acc: number, review: any) => acc + review.rating, 0) / totalVotes).toFixed(1)
-                  : salon.rating ? String(salon.rating) : null; 
+                const avgRatingNum = totalVotes > 0
+                  ? validReviews.reduce((acc: number, review: any) => acc + review.rating, 0) / totalVotes
+                  : (typeof salon.rating === 'number' && salon.rating > 0 ? salon.rating : null);
+
+                const averageRating = avgRatingNum !== null ? formatRating(avgRatingNum) : null;
+                const reviewsCount = totalVotes > 0 ? totalVotes : (salon.reviewsCount || 0);
 
                 const isPinned = !!salon.pinnedUntil && new Date(salon.pinnedUntil) > new Date();
                   
@@ -623,9 +682,9 @@ export default function DashboardHomePage() {
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="#EAB308" stroke="#EAB308" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                               <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
                             </svg>
-                            <span className="font-bold text-[12.5px] text-zinc-900">{averageRating}</span>
+                            <span className="font-bold text-[12.5px] text-zinc-900">{toPersianDigits(averageRating)}</span>
                             <span className="text-[11px] text-zinc-500">
-                              ({totalVotes > 0 ? totalVotes : salon.reviewsCount || 0} نظر)
+                              ({toPersianDigits(String(reviewsCount))} نظر)
                             </span>
                           </div>
                         )}
@@ -647,17 +706,17 @@ export default function DashboardHomePage() {
                         )}
                       </div>
 
-                      {/* دکمه تماس - همیشه ته کارت، در ارتفاع ثابت */}
+                      {/* دکمه نوبت‌دهی - همیشه ته کارت، در ارتفاع ثابت. اگر نوبت‌دهی آنلاین
+                          سالن غیرفعال باشد، به‌جای رفتن به صفحه‌ی رزرو، همون پاپ‌آپ هشدار
+                          صفحه‌ی جزئیات سالن نمایش داده می‌شود. */}
                       <div className="flex mt-2 shrink-0">
-                        {(salon.phone || (salon.phones && salon.phones.length > 0)) && (
-                          <a 
-                            href={`tel:${salon.phone || salon.phones[0]}`}
-                            onClick={(e) => e.stopPropagation()}
-                            className="bg-[#824c71] text-white text-[13px] font-bold px-5 py-2 rounded-lg hover:bg-[#824c71]/90 active:scale-95 transition-all shadow-sm inline-flex items-center justify-center"
-                          >
-                            تماس
-                          </a>
-                        )}
+                        <button
+                          onClick={(e) => handleBookingClick(salon, e)}
+                          className="flex items-center justify-center gap-1.5 bg-[#824c71] text-white text-[13px] font-bold px-4 py-2 rounded-lg hover:bg-[#824c71]/90 active:scale-95 transition-all shadow-sm"
+                        >
+                          <CalendarClock className="w-3.5 h-3.5" />
+                          نوبت‌دهی
+                        </button>
                       </div>
                     </div>
                   </div>
@@ -729,6 +788,8 @@ export default function DashboardHomePage() {
           setGenderFilter('ALL');
         }}
       />
+
+      <BookingDisabledAlert isOpen={showBookingAlert} onClose={() => setShowBookingAlert(false)} />
     </>
   );
 }
