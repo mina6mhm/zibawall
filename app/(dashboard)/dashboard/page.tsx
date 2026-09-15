@@ -581,11 +581,11 @@ export default function DashboardHomePage() {
         <button
           key={category}
           onClick={() => toggleCategory(category)}
-          className={`flex flex-col items-center gap-2 rounded-xl pt-3.5 pb-2 px-1 h-[100px] transition-colors ${
-            isActive
-              ? 'bg-[#824c71]/10'
-              : 'bg-zinc-50 hover:bg-zinc-100'
-          }`}
+          className={`flex flex-col items-center gap-2 rounded-xl pt-3.5 pb-2 px-1 h-[100px] border transition-all ${
+  isActive
+    ? 'border-[#824c71] bg-[#824c71]/10'
+    : 'border-transparent bg-zinc-50 hover:bg-zinc-100'
+}`}
         >
           <span
             className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 transition-colors ${
