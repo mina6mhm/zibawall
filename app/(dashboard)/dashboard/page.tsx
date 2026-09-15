@@ -525,7 +525,7 @@ export default function DashboardHomePage() {
           <div className="flex items-center gap-2">
             <div className="flex-1 min-w-0">
               <div className="flex gap-2">
-                <div className="flex-1 flex items-center bg-zinc-50/60 border border-zinc-100 rounded-full px-4 py-3 h-12">
+                <div className="flex-1 flex items-center bg-zinc-50/60 rounded-full px-4 py-3 h-12">
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="text-zinc-400 ml-2 shrink-0">
                     <circle cx="11" cy="11" r="8" />
                     <path d="m21 21-4.3-4.3" />
@@ -553,7 +553,7 @@ export default function DashboardHomePage() {
               className={`relative shrink-0 w-11 h-11 flex items-center justify-center rounded-full transition-all active:scale-95 ${
                 hasActiveExtraFilters
                   ? 'bg-[#824c71]/10 text-[#824c71]'
-                  : 'bg-zinc-50/60 border border-zinc-100 text-zinc-600 hover:bg-zinc-100'
+                  : 'bg-zinc-50/60 text-zinc-600 hover:bg-zinc-100'
               }`}
             >
               <SlidersHorizontal className="w-[18px] h-[18px]" strokeWidth={2.2} />
