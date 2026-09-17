@@ -2,6 +2,7 @@
 import localFont from 'next/font/local';
 import './globals.css';
 import { Metadata, Viewport } from 'next';
+import AndroidBackButtonHandler from '@/components/AndroidBackButtonHandler';
 
 const shabnam = localFont({
   src: [
@@ -42,6 +43,7 @@ export default function RootLayout({
   return (
     <html lang="fa" dir="rtl">
       <body className={`${shabnam.className} bg-white text-black antialiased`}>
+        <AndroidBackButtonHandler />
         {children}
       </body>
     </html>
