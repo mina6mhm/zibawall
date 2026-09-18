@@ -1665,16 +1665,8 @@ function ScheduleTab({
   const toggle = (day: string) =>
     setLocal((p) => ({ ...p, [day]: { ...p[day], open: !p[day].open } }));
 
-  // تغییر فقط ساعت یا فقط دقیقه‌ی یک لبه (شروع/پایان) بدون دست‌زدن به بقیه‌ی مقدار —
-  // کادرهای ساعت/دقیقه این‌جا جدا از هم هستن (نه input type=time) تا بشه خیلی کوچیک‌شون کرد
-  // و کل ردیف یک روز همیشه در یک خط بمونه، حتی در صفحه‌های خیلی باریک.
-  const setTimePart = (day: string, field: 'start' | 'end', part: 'h' | 'm', val: string) =>
-    setLocal((p) => {
-      const [ch, cm] = (p[day][field] || '00:00').split(':');
-      const h = part === 'h' ? val : ch;
-      const m = part === 'm' ? val : cm;
-      return { ...p, [day]: { ...p[day], [field]: `${(h || '0').padStart(2, '0')}:${(m || '0').padStart(2, '0')}` } };
-    });
+  const setTime = (day: string, field: 'start' | 'end', val: string) =>
+    setLocal((p) => ({ ...p, [day]: { ...p[day], [field]: val } }));
 
   const handleSave = async () => {
     setSaving(true);
@@ -1714,14 +1706,12 @@ function ScheduleTab({
         <p className="text-sm font-bold text-zinc-800 px-4 pt-4 pb-3 border-b border-zinc-50">برنامه هفتگی سالن</p>
         {WEEK_DAYS.map((day, idx) => {
           const d = local[day] ?? { open: false, start: '09:00', end: '20:00' };
-          const [sH, sM] = (d.start || '00:00').split(':');
-          const [eH, eM] = (d.end || '00:00').split(':');
           return (
             <div
               key={day}
-              className={`flex items-center justify-between gap-2 px-3 sm:px-4 py-3 ${idx < WEEK_DAYS.length - 1 ? 'border-b border-zinc-50' : ''}`}
+              className={`flex items-center justify-between gap-1.5 px-2.5 sm:px-4 py-3 ${idx < WEEK_DAYS.length - 1 ? 'border-b border-zinc-50' : ''}`}
             >
-              <div className="flex items-center gap-2 shrink-0">
+              <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
                 <button onClick={() => toggle(day)} className="shrink-0">
                   <div className={`relative w-9 h-5 rounded-full transition-colors duration-200 ${d.open ? 'bg-[#824c71]' : 'bg-zinc-200'}`}>
                     <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-all duration-200 ${d.open ? 'right-0.5' : 'right-4'}`} />
@@ -1734,46 +1724,22 @@ function ScheduleTab({
               </div>
 
               {d.open ? (
-                <div className="flex items-center gap-1 shrink-0">
-                  {/* ساعت شروع — دقیقه اول در JSX تا در چیدمان راست‌به‌چپ، نمایش نهایی «ساعت:دقیقه» چپ‌به‌راست درست دربیاد */}
-                  <div className="flex items-center gap-0.5 shrink-0">
-                    <input
-                      value={sM}
-                      onChange={(e) => setTimePart(day, 'start', 'm', sanitizeMinuteTime(e.target.value))}
-                      inputMode="numeric"
-                      aria-label={`دقیقه شروع ${day}`}
-                      className="w-6 border border-zinc-200 rounded-[7px] py-1 text-[11px] text-center focus:outline-none focus:border-[#824c71]"
-                    />
-                    <span className="text-zinc-400 text-[10px] shrink-0">:</span>
-                    <input
-                      value={sH}
-                      onChange={(e) => setTimePart(day, 'start', 'h', sanitizeHourTime(e.target.value))}
-                      inputMode="numeric"
-                      aria-label={`ساعت شروع ${day}`}
-                      className="w-6 border border-zinc-200 rounded-[7px] py-1 text-[11px] text-center focus:outline-none focus:border-[#824c71]"
-                    />
-                  </div>
-
+                <div className="flex items-center gap-1 shrink-0 min-w-0">
+                  <input
+                    type="time"
+                    dir="ltr"
+                    value={d.start}
+                    onChange={(e) => setTime(day, 'start', e.target.value)}
+                    className="w-[72px] sm:w-20 border border-zinc-200 rounded-[8px] px-0.5 py-1 text-[11px] text-center focus:outline-none focus:border-[#824c71]"
+                  />
                   <span className="text-zinc-400 text-[10px] shrink-0">تا</span>
-
-                  {/* ساعت پایان */}
-                  <div className="flex items-center gap-0.5 shrink-0">
-                    <input
-                      value={eM}
-                      onChange={(e) => setTimePart(day, 'end', 'm', sanitizeMinuteTime(e.target.value))}
-                      inputMode="numeric"
-                      aria-label={`دقیقه پایان ${day}`}
-                      className="w-6 border border-zinc-200 rounded-[7px] py-1 text-[11px] text-center focus:outline-none focus:border-[#824c71]"
-                    />
-                    <span className="text-zinc-400 text-[10px] shrink-0">:</span>
-                    <input
-                      value={eH}
-                      onChange={(e) => setTimePart(day, 'end', 'h', sanitizeHourTime(e.target.value))}
-                      inputMode="numeric"
-                      aria-label={`ساعت پایان ${day}`}
-                      className="w-6 border border-zinc-200 rounded-[7px] py-1 text-[11px] text-center focus:outline-none focus:border-[#824c71]"
-                    />
-                  </div>
+                  <input
+                    type="time"
+                    dir="ltr"
+                    value={d.end}
+                    onChange={(e) => setTime(day, 'end', e.target.value)}
+                    className="w-[72px] sm:w-20 border border-zinc-200 rounded-[8px] px-0.5 py-1 text-[11px] text-center focus:outline-none focus:border-[#824c71]"
+                  />
                 </div>
               ) : (
                 <span className="text-xs text-zinc-400 shrink-0">تعطیل</span>
