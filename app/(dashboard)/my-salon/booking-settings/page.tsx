@@ -1,13 +1,13 @@
 // app/(dashboard)/my-salon/booking-settings/page.tsx
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, Fragment } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
   ArrowRight, Loader2, Store, CalendarClock, Settings2,
   Plus, Trash2, Pencil, X, Check, ChevronDown, Users, Clock, CalendarOff,
-  AlertTriangle, Wallet, CheckCircle2,
+  Wallet, AlertTriangle,
 } from 'lucide-react';
 import { DateObject } from 'react-multi-date-picker';
 import PersianCalendar, { CalendarDayMarker } from '@/components/ui/PersianCalendar';
@@ -190,6 +190,9 @@ function buildDefaultScheduleFromProfile(salon: {
 
 // ─── Sub-components ──────────────────────────────────────────────────────────
 
+// نوار مرحله‌ای بالای صفحه — تا سالن‌دار بداند تنظیم نوبت‌دهی آنلاین چند مرحله
+// دارد و باید همه‌شان را طی کند. جابه‌جایی بین مرحله‌ها همچنان آزاد است
+// (روی هر مرحله می‌شود کلیک کرد)؛ فقط نشانگر بصریِ «کامل / ناقص» هم اضافه شده.
 function TabBar({
   active,
   onChange,
@@ -201,22 +204,61 @@ function TabBar({
   hasServices: boolean;
   hasStaff: boolean;
 }) {
-  const tabs = ['خدمات', 'پرسنل', 'برنامه سالن', 'برنامه پرسنل'];
+  const steps: { label: string; ready?: boolean }[] = [
+    { label: 'خدمات', ready: hasServices },
+    { label: 'پرسنل', ready: hasStaff },
+    { label: 'برنامه سالن' },
+    { label: 'برنامه پرسنل' },
+  ];
+
   return (
-    <div className="flex bg-zinc-100 rounded-xl p-1 mb-6 gap-1">
-      {tabs.map((t, i) => (
-        <button
-          key={t}
-          onClick={() => onChange(i)}
-          className={`flex-1 py-2 rounded-lg text-[11px] font-bold transition-all ${
-            active === i
-              ? 'bg-white text-[#824c71] shadow-sm'
-              : 'text-zinc-500 hover:text-zinc-700'
-          }`}
-        >
-          {t}
-        </button>
-      ))}
+    <div className="bg-white border border-zinc-100 rounded-2xl p-4 mb-6">
+      <div className="flex items-start">
+        {steps.map((step, i) => {
+          const isActive = active === i;
+          const isDone = i < active;
+          const needsAttention = step.ready === false;
+
+          return (
+            <Fragment key={step.label}>
+              <button
+                type="button"
+                onClick={() => onChange(i)}
+                className="flex flex-col items-center gap-1.5 shrink-0 px-0.5 group"
+              >
+                <span
+                  className={`relative w-8 h-8 rounded-full flex items-center justify-center text-[12px] font-bold shrink-0 transition-colors ${
+                    isActive
+                      ? 'bg-[#824c71] text-white'
+                      : isDone
+                      ? 'bg-[#824c71]/10 text-[#824c71]'
+                      : 'bg-zinc-100 text-zinc-400 group-hover:bg-zinc-200'
+                  }`}
+                >
+                  {isDone ? <Check className="w-3.5 h-3.5" /> : (i + 1).toLocaleString('fa-IR')}
+                  {needsAttention && (
+                    <span className="absolute -top-0.5 -left-0.5 w-2.5 h-2.5 rounded-full bg-amber-400 border-2 border-white" />
+                  )}
+                </span>
+                <span
+                  className={`text-[10.5px] font-bold whitespace-nowrap transition-colors ${
+                    isActive ? 'text-[#824c71]' : isDone ? 'text-zinc-600' : 'text-zinc-400'
+                  }`}
+                >
+                  {step.label}
+                </span>
+              </button>
+              {i < steps.length - 1 && (
+                <div
+                  className={`flex-1 h-px mt-4 mx-1.5 transition-colors ${
+                    i < active ? 'bg-[#824c71]/25' : 'bg-zinc-100'
+                  }`}
+                />
+              )}
+            </Fragment>
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -433,12 +475,21 @@ function ServicesTab({
                     )}
                   </div>
                   <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-[12px] text-zinc-500 mb-1">
-                    <span>⏱ {minToDuration(s.durationMin)}</span>
-                    {s.price > 0 && <span>💰 {formatPrice(s.price)} تومان</span>}
+                    <span className="inline-flex items-center gap-1">
+                      <Clock className="w-3 h-3 text-zinc-400" />
+                      {minToDuration(s.durationMin)}
+                    </span>
+                    {s.price > 0 && (
+                      <span className="inline-flex items-center gap-1">
+                        <Wallet className="w-3 h-3 text-zinc-400" />
+                        {formatPrice(s.price)} تومان
+                      </span>
+                    )}
                   </div>
                   {s.isActive && !servicesWithStaff.has(s.id) && (
                     <p className="text-[11px] text-amber-600 bg-amber-50 rounded-lg px-2 py-1 inline-flex items-center gap-1 mt-0.5">
-                      ⚠️ هیچ پرسنلی این خدمت را انجام نمی‌دهد
+                      <AlertTriangle className="w-3 h-3 shrink-0" />
+                      هیچ پرسنلی این خدمت را انجام نمی‌دهد
                     </p>
                   )}
                 </div>
@@ -716,7 +767,10 @@ function StaffTab({
                     <div className="min-w-0">
                       <p className="text-sm font-bold text-zinc-800 truncate">{s.name}</p>
                       {assignedIds.size === 0 ? (
-                        <p className="text-[11px] text-amber-600 font-medium">⚠️ هیچ خدمتی تخصیص داده نشده</p>
+                        <p className="text-[11px] text-amber-600 font-medium inline-flex items-center gap-1">
+                          <AlertTriangle className="w-3 h-3 shrink-0" />
+                          هیچ خدمتی تخصیص داده نشده
+                        </p>
                       ) : (
                         <p className="text-[11px] text-zinc-400 flex items-center gap-1.5 truncate">
                           <span>{assignedIds.size} خدمات تخصیص‌یافته</span>
@@ -1156,7 +1210,7 @@ function StaffScheduleTab({
                     }`}
                   >
                     {isSaving && <Loader2 className="w-3 h-3 animate-spin" />}
-                    {isOff && !isSaving && <span>✕</span>}
+                    {isOff && !isSaving && <X className="w-3 h-3" />}
                     {day}
                   </button>
                 );
@@ -1694,8 +1748,12 @@ function ScheduleTab({
             : 'bg-[#824c71] text-white disabled:opacity-60'
         }`}
       >
-        {saving && <Loader2 className="w-4 h-4 animate-spin" />}
-        {saved ? '✓ ذخیره شد' : saving ? 'در حال ذخیره...' : 'ذخیره برنامه هفتگی'}
+        {saving ? (
+          <Loader2 className="w-4 h-4 animate-spin" />
+        ) : saved ? (
+          <Check className="w-4 h-4" />
+        ) : null}
+        {saved ? 'ذخیره شد' : saving ? 'در حال ذخیره...' : 'ذخیره برنامه هفتگی'}
       </button>
 
       {/* تقویم ماهانه — تعطیلی یا تغییر ساعت یک روز خاص، مستقل از برنامه‌ی هفتگی بالا */}
@@ -1876,16 +1934,21 @@ export default function BookingSettingsPage() {
 
       {/* هشدار خلاصه — خدمات بدون پرسنل یا پرسنل بدون خدمت */}
       {(unlinkedServicesCount > 0 || unlinkedStaffCount > 0) && (
-        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-3.5 mb-6 text-amber-700">
-          <p className="text-xs font-bold mb-1">⚠️ نیاز به تکمیل تنظیمات</p>
-          <ul className="text-[11px] space-y-0.5 leading-relaxed">
-            {unlinkedServicesCount > 0 && (
-              <li>• {unlinkedServicesCount.toLocaleString('fa-IR')} خدمت هنوز به هیچ پرسنلی تخصیص داده نشده</li>
-            )}
-            {unlinkedStaffCount > 0 && (
-              <li>• {unlinkedStaffCount.toLocaleString('fa-IR')} پرسنل هنوز هیچ خدمتی ندارد</li>
-            )}
-          </ul>
+        <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-2xl p-3.5 mb-6">
+          <div className="w-7 h-7 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center shrink-0">
+            <AlertTriangle className="w-3.5 h-3.5" />
+          </div>
+          <div className="text-amber-700">
+            <p className="text-xs font-bold mb-1">نیاز به تکمیل تنظیمات</p>
+            <ul className="text-[11px] space-y-0.5 leading-relaxed">
+              {unlinkedServicesCount > 0 && (
+                <li>• {unlinkedServicesCount.toLocaleString('fa-IR')} خدمت هنوز به هیچ پرسنلی تخصیص داده نشده</li>
+              )}
+              {unlinkedStaffCount > 0 && (
+                <li>• {unlinkedStaffCount.toLocaleString('fa-IR')} پرسنل هنوز هیچ خدمتی ندارد</li>
+              )}
+            </ul>
+          </div>
         </div>
       )}
 
