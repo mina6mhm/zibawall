@@ -7,7 +7,7 @@ import Link from 'next/link';
 import {
   ArrowRight, Loader2, Store, CalendarClock, Settings2,
   Plus, Trash2, Pencil, X, Check, ChevronDown, Users, Clock, CalendarOff,
-  Wallet, AlertTriangle,
+  AlertTriangle,
 } from 'lucide-react';
 import { DateObject } from 'react-multi-date-picker';
 import PersianCalendar, { CalendarDayMarker } from '@/components/ui/PersianCalendar';
@@ -217,7 +217,7 @@ function TabBar({
   ];
 
   return (
-    <div className="bg-white border border-zinc-100 rounded-[10px] shadow-sm shadow-zinc-200/50 p-4 mb-6">
+    <div className="bg-white border border-zinc-100 rounded-[10px] p-4 mb-6">
       <div className="flex items-start">
         {steps.map((step, i) => {
           const isActive = active === i;
@@ -465,7 +465,7 @@ function ServicesTab({
           {services.map((s) => (
             <div
               key={s.id}
-              className={`border rounded-[10px] shadow-sm shadow-zinc-200/50 p-4 transition-all ${
+              className={`border rounded-[10px] p-4 transition-all ${
                 s.isActive ? 'bg-white border-zinc-100' : 'bg-zinc-50 border-zinc-100 opacity-60'
               }`}
             >
@@ -486,8 +486,7 @@ function ServicesTab({
                     </span>
                     {s.price > 0 && (
                       <span className="inline-flex items-center gap-1">
-                        <Wallet className="w-3 h-3 text-zinc-400" />
-                        {formatPrice(s.price)} تومان
+                        قیمت: {formatPrice(s.price)} تومان
                       </span>
                     )}
                   </div>
@@ -760,9 +759,9 @@ function StaffTab({
             const isOpen = expanded === s.id;
 
             return (
-              <div key={s.id} className="border border-zinc-100 rounded-[10px] shadow-sm shadow-zinc-200/50 overflow-hidden bg-white self-start">
+              <div key={s.id} className="border border-zinc-100 rounded-[10px] overflow-hidden bg-white self-start">
                 <button
-                  className="w-full flex items-center justify-between px-4 py-3.5 text-right"
+                  className="w-full flex items-center justify-between px-4 py-5 text-right"
                   onClick={() => setExpanded(isOpen ? null : s.id)}
                 >
                   <div className="flex items-center gap-2.5 min-w-0">
@@ -902,7 +901,7 @@ function ClosedRangesEditor({
   const removeRange = (idx: number) => onChange(ranges.filter((_, i) => i !== idx));
 
   return (
-    <div className="mb-3.5 bg-white border border-zinc-100 rounded-[10px] shadow-sm shadow-zinc-200/50 p-3">
+    <div className="mb-3.5 bg-white border border-zinc-100 rounded-[10px] p-3">
       <p className="text-sm font-medium text-zinc-800">بستن یک بازه‌ی ساعتی خاص</p>
       <p className="text-[11px] text-zinc-400 mt-0.5 mb-3 leading-relaxed">
         فقط همین بازه‌ها بسته می‌شه؛ بقیه‌ی همین روز طبق ساعت کاری بالا باز می‌مونه.
@@ -1190,7 +1189,7 @@ function StaffScheduleTab({
           {/* ┌─────────────────────────────────────────────────────────────┐
               │  بخش ۱ / ۲ — روزهای ثابت تعطیل (همیشگی)                     │
               └─────────────────────────────────────────────────────────────┘ */}
-          <div className="bg-white border border-zinc-100 rounded-[10px] shadow-sm shadow-zinc-200/50 p-4 mb-3">
+          <div className="bg-white border border-zinc-100 rounded-[10px] p-4 mb-3">
             <div className="flex items-center gap-2 mb-1">
               <CalendarOff className="w-4 h-4 text-zinc-400" />
               <p className="text-sm font-bold text-zinc-800">روزهای ثابت تعطیل</p>
@@ -1352,7 +1351,7 @@ function StaffScheduleTab({
                   return (
                     <div
                       key={o.id}
-                      className="w-full flex items-center justify-between gap-2 bg-white border border-zinc-100 rounded-[10px] shadow-sm shadow-zinc-200/50 px-3.5 py-3"
+                      className="w-full flex items-center justify-between gap-2 bg-white border border-zinc-100 rounded-[10px] px-3.5 py-3"
                     >
                       <button
                         onClick={() => openDay(o.date)}
@@ -1619,7 +1618,7 @@ function SalonScheduleOverrideSection() {
             {overridesInViewedMonth.map((o) => {
               const closed = parseClosedRangesClient(o.closedRanges);
               return (
-                <div key={o.id} className="w-full flex items-center justify-between gap-2 bg-white border border-zinc-100 rounded-[10px] shadow-sm shadow-zinc-200/50 px-3.5 py-3">
+                <div key={o.id} className="w-full flex items-center justify-between gap-2 bg-white border border-zinc-100 rounded-[10px] px-3.5 py-3">
                   <button onClick={() => openDay(o.date)} className="flex-1 flex items-center gap-2.5 text-right">
                     <div className={`w-2 h-2 rounded-full shrink-0 ${o.isClosed ? 'bg-red-400' : 'bg-[#824c71]'}`} />
                     <div>
@@ -1680,7 +1679,7 @@ function ScheduleTab({
   return (
     <div>
       {/* Grid */}
-      <div className="bg-white border border-zinc-100 rounded-[10px] shadow-sm shadow-zinc-200/50 p-4 mb-4">
+      <div className="bg-white border border-zinc-100 rounded-[10px] p-4 mb-4">
         <p className="text-sm font-bold text-zinc-800 mb-3">فاصله شروع نوبت‌ها</p>
         <div className="flex gap-2">
           {[15, 30, 60].map((g) => (
@@ -1703,7 +1702,7 @@ function ScheduleTab({
       </div>
 
       {/* Weekly */}
-      <div className="bg-white border border-zinc-100 rounded-[10px] shadow-sm shadow-zinc-200/50 overflow-hidden mb-4">
+      <div className="bg-white border border-zinc-100 rounded-[10px] overflow-hidden mb-4">
         <p className="text-sm font-bold text-zinc-800 px-4 pt-4 pb-3 border-b border-zinc-50">برنامه هفتگی سالن</p>
         {WEEK_DAYS.map((day, idx) => {
           const d = local[day] ?? { open: false, start: '09:00', end: '20:00' };
@@ -1908,7 +1907,7 @@ export default function BookingSettingsPage() {
       </div>
 
       {/* Toggle Card */}
-      <div className={`border rounded-[10px] shadow-sm shadow-zinc-200/50 p-4 mb-6 flex items-center justify-between gap-4 transition-colors ${
+      <div className={`border rounded-[10px] p-4 mb-6 flex items-center justify-between gap-4 transition-colors ${
         bookingEnabled ? 'bg-[#824c71]/5 border-[#824c71]/20' : 'bg-white border-zinc-100'
       }`}>
         <div className="flex items-start gap-3">
