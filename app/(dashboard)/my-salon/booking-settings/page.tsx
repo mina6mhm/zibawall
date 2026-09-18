@@ -71,6 +71,11 @@ const DEFAULT_SCHEDULE: WeeklySchedule = Object.fromEntries(
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
+// تبدیل ارقام انگلیسی به فارسی — برای یکدست‌سازی نمایش اعداد در کل صفحه
+// (فقط برای «نمایش»؛ فیلدهای قابل‌ویرایش مثل قیمت/موبایل/ساعت همچنان انگلیسی می‌مانند)
+const toPersianDigits = (str: string) =>
+  str.replace(/[0-9]/g, (d) => '۰۱۲۳۴۵۶۷۸۹'[Number(d)]);
+
 const minToDuration = (min: number) => {
   const h = Math.floor(min / 60);
   const m = min % 60;
@@ -121,7 +126,7 @@ const parseClosedRangesClient = (raw: unknown): ClosedRange[] => {
 };
 
 const formatClosedRangesSummary = (ranges: ClosedRange[]) =>
-  ranges.map((r) => `${r.start}-${r.end}`).join('، ');
+  ranges.map((r) => `${toPersianDigits(r.start)}-${toPersianDigits(r.end)}`).join('، ');
 
 // نمایش مقدار خام در input: سه‌رقم سه‌رقم بدون تبدیل به فارسی
 const displayNumber = (raw: string) => {
@@ -212,7 +217,7 @@ function TabBar({
   ];
 
   return (
-    <div className="bg-white border border-zinc-100 rounded-2xl p-4 mb-6">
+    <div className="bg-white border border-zinc-100 rounded-[10px] shadow-sm shadow-zinc-200/50 p-4 mb-6">
       <div className="flex items-start">
         {steps.map((step, i) => {
           const isActive = active === i;
@@ -313,7 +318,7 @@ function ServiceFormModal({ initial, onSave, onClose }: ServiceFormProps) {
 
   return (
     <div className="fixed inset-0 z-[120] flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm sm:p-4" onClick={onClose}>
-      <div className="bg-white w-full sm:max-w-md rounded-t-2xl sm:rounded-2xl p-5 pb-8 sm:pb-5" onClick={(e) => e.stopPropagation()}>
+      <div className="bg-white w-full sm:max-w-md rounded-t-2xl sm:rounded-[10px] p-5 pb-8 sm:pb-5" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-5">
           <h3 className="text-base font-bold text-zinc-900">
             {initial?.id ? 'ویرایش خدمات' : 'افزودن خدمات'}
@@ -332,7 +337,7 @@ function ServiceFormModal({ initial, onSave, onClose }: ServiceFormProps) {
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="مثلاً کاشت ناخن"
-              className="w-full border border-zinc-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-[#824c71] focus:ring-1 focus:ring-[#824c71]/20"
+              className="w-full border border-zinc-200 rounded-[10px] px-3.5 py-2.5 text-sm focus:outline-none focus:border-[#824c71] focus:ring-1 focus:ring-[#824c71]/20"
             />
           </div>
 
@@ -348,7 +353,7 @@ function ServiceFormModal({ initial, onSave, onClose }: ServiceFormProps) {
                   placeholder="دقیقه"
                   dir="ltr"
                   inputMode="numeric"
-                  className="w-full border border-zinc-200 rounded-xl px-2 py-2.5 text-sm text-center focus:outline-none focus:border-[#824c71] focus:ring-1 focus:ring-[#824c71]/20"
+                  className="w-full border border-zinc-200 rounded-[10px] px-2 py-2.5 text-sm text-center focus:outline-none focus:border-[#824c71] focus:ring-1 focus:ring-[#824c71]/20"
                 />
                 <span className="text-zinc-400 font-bold shrink-0">:</span>
                 <input
@@ -357,7 +362,7 @@ function ServiceFormModal({ initial, onSave, onClose }: ServiceFormProps) {
                   placeholder="ساعت"
                   dir="ltr"
                   inputMode="numeric"
-                  className="w-full border border-zinc-200 rounded-xl px-2 py-2.5 text-sm text-center focus:outline-none focus:border-[#824c71] focus:ring-1 focus:ring-[#824c71]/20"
+                  className="w-full border border-zinc-200 rounded-[10px] px-2 py-2.5 text-sm text-center focus:outline-none focus:border-[#824c71] focus:ring-1 focus:ring-[#824c71]/20"
                 />
               </div>
               <p className="text-[10px] text-zinc-400 mt-1">ساعت و دقیقه — مثلاً ۱ و ۳۰</p>
@@ -373,7 +378,7 @@ function ServiceFormModal({ initial, onSave, onClose }: ServiceFormProps) {
                 placeholder="مثلاً 500,000"
                 dir="ltr"
                 inputMode="numeric"
-                className="w-full border border-zinc-200 rounded-xl px-3.5 py-2.5 text-sm text-left focus:outline-none focus:border-[#824c71] focus:ring-1 focus:ring-[#824c71]/20"
+                className="w-full border border-zinc-200 rounded-[10px] px-3.5 py-2.5 text-sm text-left focus:outline-none focus:border-[#824c71] focus:ring-1 focus:ring-[#824c71]/20"
               />
             </div>
           </div>
@@ -383,7 +388,7 @@ function ServiceFormModal({ initial, onSave, onClose }: ServiceFormProps) {
           <button
             onClick={handleSave}
             disabled={saving}
-            className="w-full bg-[#824c71] text-white rounded-xl py-3 text-sm font-bold disabled:opacity-60 flex items-center justify-center gap-2"
+            className="w-full bg-[#824c71] text-white rounded-[10px] py-3 text-sm font-bold disabled:opacity-60 flex items-center justify-center gap-2"
           >
             {saving && <Loader2 className="w-4 h-4 animate-spin" />}
             {saving ? 'در حال ذخیره...' : 'ذخیره خدمات'}
@@ -450,7 +455,7 @@ function ServicesTab({
   return (
     <div>
       {services.length === 0 ? (
-        <div className="text-center py-12 bg-zinc-50 rounded-2xl mb-4">
+        <div className="text-center py-12 bg-zinc-50 rounded-[10px] mb-4">
           <Clock className="w-8 h-8 text-zinc-300 mx-auto mb-2" />
           <p className="text-zinc-500 text-sm font-medium">هنوز خدمتی تعریف نشده</p>
           <p className="text-zinc-400 text-xs mt-1">خدمات سالن را با مدت زمان و قیمت وارد کنید</p>
@@ -460,7 +465,7 @@ function ServicesTab({
           {services.map((s) => (
             <div
               key={s.id}
-              className={`border rounded-2xl p-4 transition-all ${
+              className={`border rounded-[10px] shadow-sm shadow-zinc-200/50 p-4 transition-all ${
                 s.isActive ? 'bg-white border-zinc-100' : 'bg-zinc-50 border-zinc-100 opacity-60'
               }`}
             >
@@ -469,7 +474,7 @@ function ServicesTab({
                   <div className="flex items-center gap-2 mb-1">
                     <p className="text-sm font-bold text-zinc-900 truncate">{s.name}</p>
                     {!s.isActive && (
-                      <span className="text-[10px] bg-zinc-200 text-zinc-500 px-1.5 py-0.5 rounded-md font-medium shrink-0">
+                      <span className="text-[10px] bg-zinc-200 text-zinc-500 px-1.5 py-0.5 rounded-full font-medium shrink-0">
                         غیرفعال
                       </span>
                     )}
@@ -477,7 +482,7 @@ function ServicesTab({
                   <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-[12px] text-zinc-500 mb-1">
                     <span className="inline-flex items-center gap-1">
                       <Clock className="w-3 h-3 text-zinc-400" />
-                      {minToDuration(s.durationMin)}
+                      {toPersianDigits(minToDuration(s.durationMin))}
                     </span>
                     {s.price > 0 && (
                       <span className="inline-flex items-center gap-1">
@@ -487,7 +492,7 @@ function ServicesTab({
                     )}
                   </div>
                   {s.isActive && !servicesWithStaff.has(s.id) && (
-                    <p className="text-[11px] text-amber-600 bg-amber-50 rounded-lg px-2 py-1 inline-flex items-center gap-1 mt-0.5">
+                    <p className="text-[11px] text-amber-600 bg-amber-50 rounded-full px-2.5 py-1 inline-flex items-center gap-1 mt-0.5">
                       <AlertTriangle className="w-3 h-3 shrink-0" />
                       هیچ پرسنلی این خدمت را انجام نمی‌دهد
                     </p>
@@ -496,7 +501,7 @@ function ServicesTab({
                 <div className="flex items-center gap-1.5 shrink-0">
                   <button
                     onClick={() => handleToggleActive(s)}
-                    className={`w-7 h-7 rounded-lg flex items-center justify-center transition-colors ${
+                    className={`w-7 h-7 rounded-full flex items-center justify-center transition-colors ${
                       s.isActive
                         ? 'bg-emerald-50 text-emerald-600'
                         : 'bg-zinc-100 text-zinc-400'
@@ -507,14 +512,14 @@ function ServicesTab({
                   </button>
                   <button
                     onClick={() => { setEditing(s); setShowForm(true); }}
-                    className="w-7 h-7 rounded-lg bg-zinc-100 text-zinc-500 flex items-center justify-center"
+                    className="w-7 h-7 rounded-full bg-zinc-100 text-zinc-500 flex items-center justify-center"
                   >
                     <Pencil className="w-3.5 h-3.5" />
                   </button>
                   <button
                     onClick={() => handleDelete(s.id)}
                     disabled={deletingId === s.id}
-                    className="w-7 h-7 rounded-lg bg-red-50 text-red-500 flex items-center justify-center disabled:opacity-40"
+                    className="w-7 h-7 rounded-full bg-red-50 text-red-500 flex items-center justify-center disabled:opacity-40"
                   >
                     {deletingId === s.id ? (
                       <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -531,7 +536,7 @@ function ServicesTab({
 
       <button
         onClick={() => { setEditing(null); setShowForm(true); }}
-        className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border-2 border-dashed border-zinc-200 text-zinc-500 text-sm font-medium hover:border-[#824c71]/40 hover:text-[#824c71] transition-colors"
+        className="w-full flex items-center justify-center gap-2 py-3 rounded-[10px] border-2 border-dashed border-zinc-200 text-zinc-500 text-sm font-medium hover:border-[#824c71]/40 hover:text-[#824c71] transition-colors"
       >
         <Plus className="w-4 h-4" />
         افزودن خدمات جدید
@@ -602,7 +607,7 @@ function StaffFormModal({ initial, onSave, onClose }: StaffFormProps) {
 
   return (
     <div className="fixed inset-0 z-[120] flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm sm:p-4" onClick={onClose}>
-      <div className="bg-white w-full sm:max-w-md rounded-t-2xl sm:rounded-2xl p-5 pb-8 sm:pb-5" onClick={(e) => e.stopPropagation()}>
+      <div className="bg-white w-full sm:max-w-md rounded-t-2xl sm:rounded-[10px] p-5 pb-8 sm:pb-5" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-5">
           <h3 className="text-base font-bold text-zinc-900">
             {initial ? 'ویرایش پرسنل' : 'افزودن پرسنل'}
@@ -621,7 +626,7 @@ function StaffFormModal({ initial, onSave, onClose }: StaffFormProps) {
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="مثلاً سارا محمدی"
-              className="w-full border border-zinc-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-[#824c71] focus:ring-1 focus:ring-[#824c71]/20"
+              className="w-full border border-zinc-200 rounded-[10px] px-3.5 py-2.5 text-sm focus:outline-none focus:border-[#824c71] focus:ring-1 focus:ring-[#824c71]/20"
             />
           </div>
 
@@ -636,14 +641,14 @@ function StaffFormModal({ initial, onSave, onClose }: StaffFormProps) {
                 placeholder="۰۹۱۲۳۴۵۶۷۸۹"
                 dir="ltr"
                 inputMode="numeric"
-                className="w-full border border-zinc-200 rounded-xl px-3.5 py-2.5 text-sm text-left focus:outline-none focus:border-[#824c71] focus:ring-1 focus:ring-[#824c71]/20"
+                className="w-full border border-zinc-200 rounded-[10px] px-3.5 py-2.5 text-sm text-left focus:outline-none focus:border-[#824c71] focus:ring-1 focus:ring-[#824c71]/20"
               />
             </div>
             <div>
               <label className="block text-xs font-medium text-zinc-600 mb-1.5">
                 درصد پرسنل <span className="text-zinc-400 font-normal">(اختیاری)</span>
               </label>
-              <div className="flex items-center border border-zinc-200 rounded-xl overflow-hidden focus-within:border-[#824c71] focus-within:ring-1 focus-within:ring-[#824c71]/20">
+              <div className="flex items-center border border-zinc-200 rounded-[10px] overflow-hidden focus-within:border-[#824c71] focus-within:ring-1 focus-within:ring-[#824c71]/20">
                 <input
                   value={commission}
                   onChange={(e) => setCommission(sanitizeCommission(e.target.value))}
@@ -666,7 +671,7 @@ function StaffFormModal({ initial, onSave, onClose }: StaffFormProps) {
           <button
             onClick={handleSave}
             disabled={saving}
-            className="w-full bg-[#824c71] text-white rounded-xl py-3 text-sm font-bold disabled:opacity-60 flex items-center justify-center gap-2"
+            className="w-full bg-[#824c71] text-white rounded-[10px] py-3 text-sm font-bold disabled:opacity-60 flex items-center justify-center gap-2"
           >
             {saving && <Loader2 className="w-4 h-4 animate-spin" />}
             {saving ? 'در حال ذخیره...' : 'ذخیره پرسنل'}
@@ -733,7 +738,7 @@ function StaffTab({
 
   if (services.length === 0) {
     return (
-      <div className="text-center py-12 bg-zinc-50 rounded-2xl">
+      <div className="text-center py-12 bg-zinc-50 rounded-[10px]">
         <p className="text-zinc-500 text-sm font-medium">ابتدا خدمات سالن را تعریف کنید</p>
         <p className="text-zinc-400 text-xs mt-1">بعد از تعریف خدمات، می‌توانید به هر پرسنل خدمات تخصیص دهید</p>
       </div>
@@ -743,7 +748,7 @@ function StaffTab({
   return (
     <div>
       {staff.length === 0 ? (
-        <div className="text-center py-10 bg-zinc-50 rounded-2xl mb-4">
+        <div className="text-center py-10 bg-zinc-50 rounded-[10px] mb-4">
           <Users className="w-8 h-8 text-zinc-300 mx-auto mb-2" />
           <p className="text-zinc-500 text-sm font-medium">هنوز پرسنلی ثبت نشده</p>
           <p className="text-zinc-400 text-xs mt-1">پرسنل خود را از همین‌جا اضافه کنید</p>
@@ -755,7 +760,7 @@ function StaffTab({
             const isOpen = expanded === s.id;
 
             return (
-              <div key={s.id} className="border border-zinc-100 rounded-2xl overflow-hidden bg-white self-start">
+              <div key={s.id} className="border border-zinc-100 rounded-[10px] shadow-sm shadow-zinc-200/50 overflow-hidden bg-white self-start">
                 <button
                   className="w-full flex items-center justify-between px-4 py-3.5 text-right"
                   onClick={() => setExpanded(isOpen ? null : s.id)}
@@ -773,9 +778,9 @@ function StaffTab({
                         </p>
                       ) : (
                         <p className="text-[11px] text-zinc-400 flex items-center gap-1.5 truncate">
-                          <span>{assignedIds.size} خدمات تخصیص‌یافته</span>
+                          <span>{toPersianDigits(String(assignedIds.size))} خدمات تخصیص‌یافته</span>
                           {s.commissionPercent != null && (
-                            <span className="text-[#824c71] font-medium">· {s.commissionPercent}٪ سهم پرسنل</span>
+                            <span className="text-[#824c71] font-medium">· {toPersianDigits(String(s.commissionPercent))}٪ سهم پرسنل</span>
                           )}
                         </p>
                       )}
@@ -784,14 +789,14 @@ function StaffTab({
                   <div className="flex items-center gap-1.5 shrink-0">
                     <button
                       onClick={(e) => { e.stopPropagation(); setEditingStaff(s); setShowForm(true); }}
-                      className="w-7 h-7 flex items-center justify-center rounded-lg bg-zinc-100 text-zinc-500"
+                      className="w-7 h-7 flex items-center justify-center rounded-full bg-zinc-100 text-zinc-500"
                     >
                       <Pencil className="w-3.5 h-3.5" />
                     </button>
                     <button
                       onClick={(e) => { e.stopPropagation(); handleDeleteStaff(s.id); }}
                       disabled={deletingStaffId === s.id}
-                      className="w-7 h-7 flex items-center justify-center rounded-lg bg-red-50 text-red-400 disabled:opacity-40"
+                      className="w-7 h-7 flex items-center justify-center rounded-full bg-red-50 text-red-400 disabled:opacity-40"
                     >
                       {deletingStaffId === s.id
                         ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -813,7 +818,7 @@ function StaffTab({
                             key={svc.id}
                             onClick={() => toggleService(s.id, svc.id, has)}
                             disabled={isSaving || !svc.isActive}
-                            className={`flex items-center justify-between px-3 py-2.5 rounded-xl border text-right transition-all disabled:opacity-40 ${
+                            className={`flex items-center justify-between px-3 py-2.5 rounded-[10px] border text-right transition-all disabled:opacity-40 ${
                               has
                                 ? 'border-[#824c71]/30 bg-[#824c71]/5 text-[#824c71]'
                                 : 'border-zinc-100 bg-zinc-50 text-zinc-600 hover:border-zinc-200'
@@ -827,7 +832,7 @@ function StaffTab({
                               </div>
                               <span className="text-xs font-medium">{svc.name}</span>
                             </div>
-                            <span className="text-[11px] text-zinc-400">{minToDuration(svc.durationMin)}</span>
+                            <span className="text-[11px] text-zinc-400">{toPersianDigits(minToDuration(svc.durationMin))}</span>
                           </button>
                         );
                       })}
@@ -842,7 +847,7 @@ function StaffTab({
 
       <button
         onClick={() => { setEditingStaff(null); setShowForm(true); }}
-        className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border-2 border-dashed border-zinc-200 text-zinc-500 text-sm font-medium hover:border-[#824c71]/40 hover:text-[#824c71] transition-colors"
+        className="w-full flex items-center justify-center gap-2 py-3 rounded-[10px] border-2 border-dashed border-zinc-200 text-zinc-500 text-sm font-medium hover:border-[#824c71]/40 hover:text-[#824c71] transition-colors"
       >
         <Plus className="w-4 h-4" />
         افزودن پرسنل جدید
@@ -897,7 +902,7 @@ function ClosedRangesEditor({
   const removeRange = (idx: number) => onChange(ranges.filter((_, i) => i !== idx));
 
   return (
-    <div className="mb-3.5 bg-white border border-zinc-100 rounded-xl p-3">
+    <div className="mb-3.5 bg-white border border-zinc-100 rounded-[10px] shadow-sm shadow-zinc-200/50 p-3">
       <p className="text-sm font-medium text-zinc-800">بستن یک بازه‌ی ساعتی خاص</p>
       <p className="text-[11px] text-zinc-400 mt-0.5 mb-3 leading-relaxed">
         فقط همین بازه‌ها بسته می‌شه؛ بقیه‌ی همین روز طبق ساعت کاری بالا باز می‌مونه.
@@ -908,9 +913,9 @@ function ClosedRangesEditor({
           {ranges.map((r, idx) => (
             <span
               key={`${r.start}-${r.end}-${idx}`}
-              className="flex items-center gap-1.5 bg-red-50 border border-red-200 text-red-500 text-[11px] font-medium rounded-lg pl-1 pr-2.5 py-1"
+              className="flex items-center gap-1.5 bg-red-50 border border-red-200 text-red-500 text-[11px] font-medium rounded-full pl-1 pr-2.5 py-1"
             >
-              {r.start} تا {r.end}
+              {toPersianDigits(r.start)} تا {toPersianDigits(r.end)}
               <button
                 type="button"
                 onClick={() => removeRange(idx)}
@@ -929,14 +934,14 @@ function ClosedRangesEditor({
             value={startM}
             onChange={(e) => setStartM(sanitizeMinuteTime(e.target.value))}
             placeholder="دقیقه" dir="ltr" inputMode="numeric"
-            className="w-11 border border-zinc-300 rounded-lg px-1 py-1.5 text-xs bg-zinc-50 text-center focus:outline-none focus:border-[#824c71] focus:bg-white"
+            className="w-11 border border-zinc-300 rounded-[10px] px-1 py-1.5 text-xs bg-zinc-50 text-center focus:outline-none focus:border-[#824c71] focus:bg-white"
           />
           <span className="text-zinc-400 text-xs">:</span>
           <input
             value={startH}
             onChange={(e) => setStartH(sanitizeHourTime(e.target.value))}
             placeholder="ساعت" dir="ltr" inputMode="numeric"
-            className="w-11 border border-zinc-300 rounded-lg px-1 py-1.5 text-xs bg-zinc-50 text-center focus:outline-none focus:border-[#824c71] focus:bg-white"
+            className="w-11 border border-zinc-300 rounded-[10px] px-1 py-1.5 text-xs bg-zinc-50 text-center focus:outline-none focus:border-[#824c71] focus:bg-white"
           />
         </div>
         <span className="text-zinc-400 text-[11px] shrink-0">تا</span>
@@ -945,20 +950,20 @@ function ClosedRangesEditor({
             value={endM}
             onChange={(e) => setEndM(sanitizeMinuteTime(e.target.value))}
             placeholder="دقیقه" dir="ltr" inputMode="numeric"
-            className="w-11 border border-zinc-300 rounded-lg px-1 py-1.5 text-xs bg-zinc-50 text-center focus:outline-none focus:border-[#824c71] focus:bg-white"
+            className="w-11 border border-zinc-300 rounded-[10px] px-1 py-1.5 text-xs bg-zinc-50 text-center focus:outline-none focus:border-[#824c71] focus:bg-white"
           />
           <span className="text-zinc-400 text-xs">:</span>
           <input
             value={endH}
             onChange={(e) => setEndH(sanitizeHourTime(e.target.value))}
             placeholder="ساعت" dir="ltr" inputMode="numeric"
-            className="w-11 border border-zinc-300 rounded-lg px-1 py-1.5 text-xs bg-zinc-50 text-center focus:outline-none focus:border-[#824c71] focus:bg-white"
+            className="w-11 border border-zinc-300 rounded-[10px] px-1 py-1.5 text-xs bg-zinc-50 text-center focus:outline-none focus:border-[#824c71] focus:bg-white"
           />
         </div>
         <button
           type="button"
           onClick={addRange}
-          className="shrink-0 h-[30px] px-3 rounded-lg bg-zinc-800 text-white text-[11px] font-bold flex items-center gap-1"
+          className="shrink-0 h-[30px] px-3 rounded-[10px] bg-zinc-800 text-white text-[11px] font-bold flex items-center gap-1"
         >
           <Plus className="w-3 h-3" />
           افزودن
@@ -1147,11 +1152,13 @@ function StaffScheduleTab({
   };
 
   const formatPersianDate = (dateStr: string) =>
-    new DateObject({ date: new Date(dateStr), calendar: persian, locale: persian_fa }).format('D MMMM YYYY');
+    toPersianDigits(
+      new DateObject({ date: new Date(dateStr), calendar: persian, locale: persian_fa }).format('D MMMM YYYY')
+    );
 
   if (staff.length === 0) {
     return (
-      <div className="text-center py-12 bg-zinc-50 rounded-2xl">
+      <div className="text-center py-12 bg-zinc-50 rounded-[10px]">
         <Users className="w-8 h-8 text-zinc-300 mx-auto mb-2" />
         <p className="text-zinc-500 text-sm font-medium">ابتدا یک پرسنل ثبت کنید</p>
         <p className="text-zinc-400 text-xs mt-1">از تب «پرسنل» می‌توانید پرسنل اضافه کنید</p>
@@ -1167,7 +1174,7 @@ function StaffScheduleTab({
           <button
             key={s.id}
             onClick={() => setSelectedStaffId(s.id)}
-            className={`shrink-0 px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-colors ${
+            className={`shrink-0 px-3.5 py-2 rounded-full text-xs font-bold whitespace-nowrap transition-colors ${
               selectedStaffId === s.id
                 ? 'bg-[#824c71] text-white'
                 : 'bg-zinc-100 text-zinc-600'
@@ -1183,11 +1190,11 @@ function StaffScheduleTab({
           {/* ┌─────────────────────────────────────────────────────────────┐
               │  بخش ۱ / ۲ — روزهای ثابت تعطیل (همیشگی)                     │
               └─────────────────────────────────────────────────────────────┘ */}
-          <div className="bg-white border border-zinc-100 rounded-2xl p-4 mb-3">
+          <div className="bg-white border border-zinc-100 rounded-[10px] shadow-sm shadow-zinc-200/50 p-4 mb-3">
             <div className="flex items-center gap-2 mb-1">
               <CalendarOff className="w-4 h-4 text-zinc-400" />
               <p className="text-sm font-bold text-zinc-800">روزهای ثابت تعطیل</p>
-              <span className="text-[10px] bg-zinc-100 text-zinc-500 px-1.5 py-0.5 rounded-md font-medium">
+              <span className="text-[10px] bg-zinc-100 text-zinc-500 px-1.5 py-0.5 rounded-full font-medium">
                 همیشگی
               </span>
             </div>
@@ -1203,7 +1210,7 @@ function StaffScheduleTab({
                     key={day}
                     onClick={() => toggleOffDay(day)}
                     disabled={isSaving}
-                    className={`px-3.5 py-2.5 rounded-xl text-xs font-bold border transition-all disabled:opacity-50 flex items-center gap-1.5 ${
+                    className={`px-3.5 py-2.5 rounded-full text-xs font-bold border transition-all disabled:opacity-50 flex items-center gap-1.5 ${
                       isOff
                         ? 'bg-red-50 border-red-200 text-red-600'
                         : 'bg-zinc-50 border-zinc-100 text-zinc-600 hover:border-zinc-200'
@@ -1237,7 +1244,7 @@ function StaffScheduleTab({
             <div className="flex items-center gap-2 mb-1">
               <CalendarClock className="w-4 h-4 text-zinc-400" />
               <p className="text-sm font-bold text-zinc-800">مرخصی یا تغییر ساعت برای یک روز خاص</p>
-              <span className="text-[10px] bg-[#824c71]/10 text-[#824c71] px-1.5 py-0.5 rounded-md font-medium">
+              <span className="text-[10px] bg-[#824c71]/10 text-[#824c71] px-1.5 py-0.5 rounded-full font-medium">
                 موقت
               </span>
             </div>
@@ -1248,7 +1255,7 @@ function StaffScheduleTab({
 
           <div className="relative mb-3">
             {isLoadingOverrides && (
-              <div className="absolute inset-0 bg-white/60 flex items-center justify-center rounded-2xl z-10">
+              <div className="absolute inset-0 bg-white/60 flex items-center justify-center rounded-[10px] z-10">
                 <Loader2 className="w-5 h-5 text-[#824c71] animate-spin" />
               </div>
             )}
@@ -1273,7 +1280,7 @@ function StaffScheduleTab({
 
           {/* ادیتور روز انتخاب‌شده — همینجا، بدون مدال */}
           {selectedDateStr && (
-            <div className="border border-[#824c71]/20 bg-[#824c71]/[0.03] rounded-2xl p-4 mb-5">
+            <div className="border border-[#824c71]/20 bg-[#824c71]/[0.03] rounded-[10px] p-4 mb-5">
               <div className="flex items-center justify-between mb-4">
                 <p className="text-sm font-bold text-zinc-800">{formatPersianDate(selectedDateStr)}</p>
                 <button onClick={() => setSelectedDateStr(null)} className="p-1 text-zinc-400 bg-white rounded-full">
@@ -1281,7 +1288,7 @@ function StaffScheduleTab({
                 </button>
               </div>
 
-              <div className="flex items-center justify-between mb-3.5 bg-white border border-zinc-100 rounded-xl p-3">
+              <div className="flex items-center justify-between mb-3.5 bg-white border border-zinc-100 rounded-[10px] p-3">
                 <div>
                   <p className="text-sm font-medium text-zinc-800">مرخصی کامل</p>
                   <p className="text-[11px] text-zinc-400 mt-0.5">فقط همین یک روز کاری نیست</p>
@@ -1303,7 +1310,7 @@ function StaffScheduleTab({
                   value={editNote}
                   onChange={(e) => setEditNote(e.target.value)}
                   placeholder="مثلاً: مرخصی استعلاجی"
-                  className="w-full border border-zinc-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:border-[#824c71]"
+                  className="w-full border border-zinc-200 rounded-[10px] px-3 py-2 text-sm bg-white focus:outline-none focus:border-[#824c71]"
                 />
               </div>
 
@@ -1311,7 +1318,7 @@ function StaffScheduleTab({
                 <button
                   onClick={handleSaveOverride}
                   disabled={savingOverride}
-                  className="flex-1 bg-[#824c71] text-white rounded-xl py-2.5 text-xs font-bold disabled:opacity-60 flex items-center justify-center gap-1.5"
+                  className="flex-1 bg-[#824c71] text-white rounded-[10px] py-2.5 text-xs font-bold disabled:opacity-60 flex items-center justify-center gap-1.5"
                 >
                   {savingOverride && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
                   ذخیره
@@ -1320,7 +1327,7 @@ function StaffScheduleTab({
                   <button
                     onClick={() => handleDeleteOverride(selectedDateStr)}
                     disabled={deletingOverride}
-                    className="px-4 rounded-xl bg-red-50 text-red-500 text-xs font-bold disabled:opacity-50"
+                    className="px-4 rounded-[10px] bg-red-50 text-red-500 text-xs font-bold disabled:opacity-50"
                   >
                     {deletingOverride ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'حذف'}
                   </button>
@@ -1335,7 +1342,7 @@ function StaffScheduleTab({
               موارد موقت این ماه برای {currentStaff.name}
             </p>
             {overridesInViewedMonth.length === 0 ? (
-              <div className="text-center py-8 bg-zinc-50 rounded-2xl">
+              <div className="text-center py-8 bg-zinc-50 rounded-[10px]">
                 <p className="text-zinc-400 text-xs">در این ماه مرخصی یا بازه‌ی ساعتی خاصی ثبت نشده</p>
               </div>
             ) : (
@@ -1345,7 +1352,7 @@ function StaffScheduleTab({
                   return (
                     <div
                       key={o.id}
-                      className="w-full flex items-center justify-between gap-2 bg-white border border-zinc-100 rounded-xl px-3.5 py-3"
+                      className="w-full flex items-center justify-between gap-2 bg-white border border-zinc-100 rounded-[10px] shadow-sm shadow-zinc-200/50 px-3.5 py-3"
                     >
                       <button
                         onClick={() => openDay(o.date)}
@@ -1366,7 +1373,7 @@ function StaffScheduleTab({
                       </button>
                       <button
                         onClick={() => handleDeleteOverride(o.date)}
-                        className="w-7 h-7 flex items-center justify-center rounded-lg bg-red-50 text-red-400 shrink-0"
+                        className="w-7 h-7 flex items-center justify-center rounded-full bg-red-50 text-red-400 shrink-0"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
@@ -1500,7 +1507,9 @@ function SalonScheduleOverrideSection() {
   };
 
   const formatPersianDate = (dateStr: string) =>
-    new DateObject({ date: new Date(dateStr), calendar: persian, locale: persian_fa }).format('D MMMM YYYY');
+    toPersianDigits(
+      new DateObject({ date: new Date(dateStr), calendar: persian, locale: persian_fa }).format('D MMMM YYYY')
+    );
 
   return (
     <div className="mt-6">
@@ -1508,7 +1517,7 @@ function SalonScheduleOverrideSection() {
         <div className="flex items-center gap-2 mb-1">
           <CalendarOff className="w-4 h-4 text-zinc-400" />
           <p className="text-sm font-bold text-zinc-800">تعطیلی یا تغییر ساعت یک روز خاص</p>
-          <span className="text-[10px] bg-[#824c71]/10 text-[#824c71] px-1.5 py-0.5 rounded-md font-medium">
+          <span className="text-[10px] bg-[#824c71]/10 text-[#824c71] px-1.5 py-0.5 rounded-full font-medium">
             موقت
           </span>
         </div>
@@ -1519,7 +1528,7 @@ function SalonScheduleOverrideSection() {
 
       <div className="relative mb-3">
         {isLoading && (
-          <div className="absolute inset-0 bg-white/60 flex items-center justify-center rounded-2xl z-10">
+          <div className="absolute inset-0 bg-white/60 flex items-center justify-center rounded-[10px] z-10">
             <Loader2 className="w-5 h-5 text-[#824c71] animate-spin" />
           </div>
         )}
@@ -1543,7 +1552,7 @@ function SalonScheduleOverrideSection() {
       </div>
 
       {selectedDateStr && (
-        <div className="border border-[#824c71]/20 bg-[#824c71]/[0.03] rounded-2xl p-4 mb-5">
+        <div className="border border-[#824c71]/20 bg-[#824c71]/[0.03] rounded-[10px] p-4 mb-5">
           <div className="flex items-center justify-between mb-4">
             <p className="text-sm font-bold text-zinc-800">{formatPersianDate(selectedDateStr)}</p>
             <button onClick={() => setSelectedDateStr(null)} className="p-1 text-zinc-400 bg-white rounded-full">
@@ -1551,7 +1560,7 @@ function SalonScheduleOverrideSection() {
             </button>
           </div>
 
-          <div className="flex items-center justify-between mb-3.5 bg-white border border-zinc-100 rounded-xl p-3">
+          <div className="flex items-center justify-between mb-3.5 bg-white border border-zinc-100 rounded-[10px] p-3">
             <div>
               <p className="text-sm font-medium text-zinc-800">تعطیل کامل</p>
               <p className="text-[11px] text-zinc-400 mt-0.5">سالن این روز اصلاً نوبت‌دهی ندارد</p>
@@ -1573,7 +1582,7 @@ function SalonScheduleOverrideSection() {
               value={editNote}
               onChange={(e) => setEditNote(e.target.value)}
               placeholder="مثلاً: تعطیلی رسمی"
-              className="w-full border border-zinc-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:border-[#824c71]"
+              className="w-full border border-zinc-200 rounded-[10px] px-3 py-2 text-sm bg-white focus:outline-none focus:border-[#824c71]"
             />
           </div>
 
@@ -1581,7 +1590,7 @@ function SalonScheduleOverrideSection() {
             <button
               onClick={handleSave}
               disabled={saving}
-              className="flex-1 bg-[#824c71] text-white rounded-xl py-2.5 text-xs font-bold disabled:opacity-60 flex items-center justify-center gap-1.5"
+              className="flex-1 bg-[#824c71] text-white rounded-[10px] py-2.5 text-xs font-bold disabled:opacity-60 flex items-center justify-center gap-1.5"
             >
               {saving && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
               ذخیره
@@ -1590,7 +1599,7 @@ function SalonScheduleOverrideSection() {
               <button
                 onClick={() => handleDelete(selectedDateStr)}
                 disabled={deleting}
-                className="px-4 rounded-xl bg-red-50 text-red-500 text-xs font-bold disabled:opacity-50"
+                className="px-4 rounded-[10px] bg-red-50 text-red-500 text-xs font-bold disabled:opacity-50"
               >
                 {deleting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'حذف'}
               </button>
@@ -1602,7 +1611,7 @@ function SalonScheduleOverrideSection() {
       <div>
         <p className="text-xs font-bold text-zinc-500 mb-2 px-1">موارد موقت این ماه</p>
         {overridesInViewedMonth.length === 0 ? (
-          <div className="text-center py-8 bg-zinc-50 rounded-2xl">
+          <div className="text-center py-8 bg-zinc-50 rounded-[10px]">
             <p className="text-zinc-400 text-xs">در این ماه تعطیلی یا بازه‌ی ساعتی خاصی ثبت نشده</p>
           </div>
         ) : (
@@ -1610,7 +1619,7 @@ function SalonScheduleOverrideSection() {
             {overridesInViewedMonth.map((o) => {
               const closed = parseClosedRangesClient(o.closedRanges);
               return (
-                <div key={o.id} className="w-full flex items-center justify-between gap-2 bg-white border border-zinc-100 rounded-xl px-3.5 py-3">
+                <div key={o.id} className="w-full flex items-center justify-between gap-2 bg-white border border-zinc-100 rounded-[10px] shadow-sm shadow-zinc-200/50 px-3.5 py-3">
                   <button onClick={() => openDay(o.date)} className="flex-1 flex items-center gap-2.5 text-right">
                     <div className={`w-2 h-2 rounded-full shrink-0 ${o.isClosed ? 'bg-red-400' : 'bg-[#824c71]'}`} />
                     <div>
@@ -1625,7 +1634,7 @@ function SalonScheduleOverrideSection() {
                       </p>
                     </div>
                   </button>
-                  <button onClick={() => handleDelete(o.date)} className="w-7 h-7 flex items-center justify-center rounded-lg bg-red-50 text-red-400 shrink-0">
+                  <button onClick={() => handleDelete(o.date)} className="w-7 h-7 flex items-center justify-center rounded-full bg-red-50 text-red-400 shrink-0">
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
                 </div>
@@ -1671,30 +1680,30 @@ function ScheduleTab({
   return (
     <div>
       {/* Grid */}
-      <div className="bg-white border border-zinc-100 rounded-2xl p-4 mb-4">
+      <div className="bg-white border border-zinc-100 rounded-[10px] shadow-sm shadow-zinc-200/50 p-4 mb-4">
         <p className="text-sm font-bold text-zinc-800 mb-3">فاصله شروع نوبت‌ها</p>
         <div className="flex gap-2">
           {[15, 30, 60].map((g) => (
             <button
               key={g}
               onClick={() => setLocalGrid(g)}
-              className={`flex-1 py-2.5 rounded-xl text-sm font-medium border transition-all ${
+              className={`flex-1 py-2.5 rounded-full text-sm font-medium border transition-all ${
                 localGrid === g
                   ? 'bg-[#824c71] text-white border-[#824c71]'
                   : 'bg-white text-zinc-600 border-zinc-200 hover:border-zinc-300'
               }`}
             >
-              {g} دقیقه
+              {toPersianDigits(String(g))} دقیقه
             </button>
           ))}
         </div>
         <p className="text-[11px] text-zinc-400 mt-2">
-          مشتریان می‌توانند هر {localGrid} دقیقه یک‌بار شروع نوبت را انتخاب کنند
+          مشتریان می‌توانند هر {toPersianDigits(String(localGrid))} دقیقه یک‌بار شروع نوبت را انتخاب کنند
         </p>
       </div>
 
       {/* Weekly */}
-      <div className="bg-white border border-zinc-100 rounded-2xl overflow-hidden mb-4">
+      <div className="bg-white border border-zinc-100 rounded-[10px] shadow-sm shadow-zinc-200/50 overflow-hidden mb-4">
         <p className="text-sm font-bold text-zinc-800 px-4 pt-4 pb-3 border-b border-zinc-50">برنامه هفتگی سالن</p>
         {WEEK_DAYS.map((day, idx) => {
           const d = local[day] ?? { open: false, start: '09:00', end: '20:00' };
@@ -1720,7 +1729,7 @@ function ScheduleTab({
                     dir="ltr"
                     value={d.start}
                     onChange={(e) => setTime(day, 'start', e.target.value)}
-                    className="flex-1 min-w-[92px] border border-zinc-200 rounded-lg px-2 py-1.5 text-xs text-center focus:outline-none focus:border-[#824c71]"
+                    className="flex-1 min-w-[92px] border border-zinc-200 rounded-[10px] px-2 py-1.5 text-xs text-center focus:outline-none focus:border-[#824c71]"
                   />
                   <span className="text-zinc-400 text-xs shrink-0">تا</span>
                   <input
@@ -1728,7 +1737,7 @@ function ScheduleTab({
                     dir="ltr"
                     value={d.end}
                     onChange={(e) => setTime(day, 'end', e.target.value)}
-                    className="flex-1 min-w-[92px] border border-zinc-200 rounded-lg px-2 py-1.5 text-xs text-center focus:outline-none focus:border-[#824c71]"
+                    className="flex-1 min-w-[92px] border border-zinc-200 rounded-[10px] px-2 py-1.5 text-xs text-center focus:outline-none focus:border-[#824c71]"
                   />
                 </div>
               ) : (
@@ -1742,7 +1751,7 @@ function ScheduleTab({
       <button
         onClick={handleSave}
         disabled={saving}
-        className={`w-full rounded-xl py-3 text-sm font-bold transition-all flex items-center justify-center gap-2 ${
+        className={`w-full rounded-[10px] py-3 text-sm font-bold transition-all flex items-center justify-center gap-2 ${
           saved
             ? 'bg-emerald-500 text-white'
             : 'bg-[#824c71] text-white disabled:opacity-60'
@@ -1869,7 +1878,7 @@ export default function BookingSettingsPage() {
       <div className="flex flex-col items-center justify-center min-h-[60vh] px-4 text-center gap-4">
         <Store className="w-12 h-12 text-zinc-300" />
         <p className="text-zinc-600 font-medium">شما هنوز کسب‌وکاری ثبت نکرده‌اید.</p>
-        <Link href="/profile/business" className="bg-[#824c71] text-white px-5 py-2.5 rounded-xl text-sm font-medium">
+        <Link href="/profile/business" className="bg-[#824c71] text-white px-5 py-2.5 rounded-[10px] text-sm font-medium">
           ثبت نام کسب‌وکار
         </Link>
       </div>
@@ -1889,7 +1898,7 @@ export default function BookingSettingsPage() {
     <div className="max-w-2xl mx-auto pt-8 pb-32 px-4 md:pt-10 md:px-0">
       {/* Header */}
       <div className="flex items-center gap-3 mb-6">
-        <Link href="/my-salon" className="w-10 h-10 flex items-center justify-center rounded-xl bg-zinc-100 text-zinc-600 hover:bg-zinc-200 transition-colors shrink-0">
+        <Link href="/my-salon" className="w-10 h-10 flex items-center justify-center rounded-[10px] bg-zinc-100 text-zinc-600 hover:bg-zinc-200 transition-colors shrink-0">
           <ArrowRight className="w-4 h-4" />
         </Link>
         <div>
@@ -1899,11 +1908,11 @@ export default function BookingSettingsPage() {
       </div>
 
       {/* Toggle Card */}
-      <div className={`border rounded-2xl p-4 mb-6 flex items-center justify-between gap-4 transition-colors ${
+      <div className={`border rounded-[10px] shadow-sm shadow-zinc-200/50 p-4 mb-6 flex items-center justify-between gap-4 transition-colors ${
         bookingEnabled ? 'bg-[#824c71]/5 border-[#824c71]/20' : 'bg-white border-zinc-100'
       }`}>
         <div className="flex items-start gap-3">
-          <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${bookingEnabled ? 'bg-[#824c71]/15 text-[#824c71]' : 'bg-zinc-100 text-zinc-400'}`}>
+          <div className={`w-10 h-10 rounded-[10px] flex items-center justify-center shrink-0 ${bookingEnabled ? 'bg-[#824c71]/15 text-[#824c71]' : 'bg-zinc-100 text-zinc-400'}`}>
             <CalendarClock className="w-5 h-5" />
           </div>
           <div>
@@ -1934,7 +1943,7 @@ export default function BookingSettingsPage() {
 
       {/* هشدار خلاصه — خدمات بدون پرسنل یا پرسنل بدون خدمت */}
       {(unlinkedServicesCount > 0 || unlinkedStaffCount > 0) && (
-        <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-2xl p-3.5 mb-6">
+        <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-[10px] p-3.5 mb-6">
           <div className="w-7 h-7 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center shrink-0">
             <AlertTriangle className="w-3.5 h-3.5" />
           </div>
