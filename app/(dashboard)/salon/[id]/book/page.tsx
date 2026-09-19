@@ -5,7 +5,7 @@ import { useState, useEffect, useRef, use, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   ArrowRight, ArrowLeft, Loader2, CalendarClock, Clock,
-  Check, Plus, Trash2, CreditCard, User,
+  Check, Plus, Trash2, CreditCard, User, Users,
   Hand, Footprints, Eye, Scissors, Sparkles, Palette, Crown, Zap, Flower2,
   type LucideIcon,
 } from 'lucide-react';
@@ -51,7 +51,7 @@ const stepOrder: Step[] = ['service', 'staff', 'schedule', 'confirm'];
 
 // تایتل‌ها با لحن رسمی — نه محاوره‌ای
 const STEP_TITLES: Record<Step, { title: string; sub: string }> = {
-  service:  { title: 'انتخاب خدمت', sub: 'خدمت مورد نظر خود را انتخاب کنید' },
+  service:  { title: 'انتخاب خدمات', sub: 'خدمت مورد نظر خود را انتخاب کنید' },
   staff:    { title: 'انتخاب پرسنل', sub: 'در صورت تمایل، پرسنل موردنظر را انتخاب کنید' },
   schedule: { title: 'انتخاب تاریخ و ساعت', sub: 'روز و ساعت نوبت خود را مشخص کنید' },
   confirm:  { title: 'تأیید نهایی', sub: 'نوبت‌های انتخابی را بررسی و پرداخت کنید' },
@@ -123,13 +123,14 @@ function getServiceIcon(name: string): LucideIcon {
 }
 
 // ─── Breadcrumb ───────────────────────────────────────────────────────────────
-// نوار مرحله‌ای با رنگ برند — دایره‌ی شماره‌دار + خط رابط، بدون شدو
+// نوار مرحله‌ای با رنگ برند — دایره‌ی شماره‌دار + خط رابط، بدون شدو.
+// حالا در همه‌ی مراحل (از جمله تأیید نهایی) نمایش داده می‌شه.
 
 const STEP_SHORT: Record<Step, string> = {
   service: 'خدمات', staff: 'پرسنل', schedule: 'زمان', confirm: 'تأیید',
 };
 
-function Breadcrumb({ step, currentIdx }: { step: Step; currentIdx: number }) {
+function Breadcrumb({ currentIdx }: { currentIdx: number }) {
   return (
     <div className="flex items-start mb-7">
       {stepOrder.map((s, i) => {
@@ -168,8 +169,7 @@ function Breadcrumb({ step, currentIdx }: { step: Step; currentIdx: number }) {
 }
 
 // ─── کارت نوبتِ ثبت‌شده در سبد — تنها کارتی که شدو دارد، دقیقاً هم‌سبک با
-// کارت صفحه‌ی «نوبت‌های من»: ردیف ۱ اسم خدمت + قیمت، ردیف ۲ تاریخ/ساعت/پرسنل
-// با آیکون بنفش، بعد یک بوردر جداکننده و زیرش مدت‌زمان + اکشن‌ها.
+// کارت صفحه‌ی «نوبت‌های من».
 function CartItemCard({
   item,
   onRemove,
@@ -452,8 +452,11 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
     <div className="min-h-screen bg-white" dir="rtl">
       <div className="max-w-md mx-auto px-5 pt-6 pb-32">
 
-        {/* breadcrumb */}
-        {step !== 'confirm' && <Breadcrumb step={step} currentIdx={currentIdx} />}
+        {/* عنوان ثابت بالای صفحه — فاصله از بالای گوشی تا آیکون‌های استپ */}
+        <p className="text-center text-xs font-bold text-zinc-400 mb-5">رزرو نوبت{salonName ? ` · ${salonName}` : ''}</p>
+
+        {/* breadcrumb — همیشه نمایش داده می‌شه، از جمله مرحله‌ی تأیید نهایی */}
+        <Breadcrumb currentIdx={currentIdx} />
 
         {/* عنوان مرحله */}
         <div className="mb-6">
@@ -490,7 +493,7 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
                   onClick={() => setSelectedService(svc)}
                   className={`w-full flex items-center gap-3.5 p-3.5 rounded-[10px] text-right transition-all active:scale-[0.99] ${
                     isSelected
-                      ? 'bg-[#824c71]/[0.06] ring-2 ring-[#824c71]'
+                      ? 'bg-[#824c71]/[0.06] ring-1 ring-[#824c71]'
                       : 'bg-zinc-50 hover:bg-zinc-100'
                   }`}
                 >
@@ -533,25 +536,44 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
           </div>
         )}
 
-        {/* ─── مرحله ۲: پرسنل — «تفاوتی ندارد» جدا و نقطه‌چین، بقیه هم‌سبک خدمات ─── */}
+        {/* ─── مرحله ۲: پرسنل — «تفاوتی ندارد» با آیکون گروه + جداکننده، نه بوردر خط‌چین ─── */}
         {step === 'staff' && selectedService && (
           <div>
             {isLoadingStaff ? (
               <div className="flex justify-center py-12"><Loader2 className="w-5 h-5 text-[#824c71] animate-spin" /></div>
             ) : (
               <div className="space-y-2.5">
-                {/* تفاوتی ندارد — عمداً یه گزینه‌ی متفاوت با بقیه، نه یه «پرسنل» دیگه */}
+                {/* تفاوتی ندارد */}
                 <button
                   onClick={() => setSelectedStaffId(null)}
-                  className={`w-full flex items-center justify-center gap-2 py-3.5 rounded-[10px] border-2 border-dashed text-sm font-bold transition-all ${
+                  className={`w-full flex items-center gap-3.5 p-3.5 rounded-[10px] text-right transition-all ${
                     selectedStaffId === null
-                      ? 'border-[#824c71] bg-[#824c71]/5 text-[#824c71]'
-                      : 'border-zinc-200 text-zinc-500 hover:border-[#824c71]/40 hover:text-[#824c71]'
+                      ? 'bg-[#824c71]/[0.06] ring-1 ring-[#824c71]'
+                      : 'bg-zinc-50 hover:bg-zinc-100'
                   }`}
                 >
-                  {selectedStaffId === null && <Check className="w-4 h-4" />}
-                  تفاوتی ندارد
+                  <span className={`w-11 h-11 rounded-full flex items-center justify-center shrink-0 ${
+                    selectedStaffId === null ? 'bg-[#824c71]/15' : 'bg-zinc-200/70'
+                  }`}>
+                    <Users className={`w-5 h-5 ${selectedStaffId === null ? 'text-[#824c71]' : 'text-zinc-500'}`} strokeWidth={1.75} />
+                  </span>
+                  <p className={`flex-1 text-sm font-semibold text-right ${selectedStaffId === null ? 'text-[#824c71]' : 'text-zinc-900'}`}>
+                    تفاوتی ندارد
+                  </p>
+                  {selectedStaffId === null && (
+                    <span className="w-5 h-5 rounded-full bg-[#824c71] flex items-center justify-center shrink-0">
+                      <Check className="w-3 h-3 text-white" />
+                    </span>
+                  )}
                 </button>
+
+                {staffOptions.length > 0 && (
+                  <div className="flex items-center gap-2 py-1">
+                    <div className="flex-1 h-px bg-zinc-100" />
+                    <span className="text-[10px] text-zinc-400 shrink-0">یا انتخاب مستقیم</span>
+                    <div className="flex-1 h-px bg-zinc-100" />
+                  </div>
+                )}
 
                 {staffOptions.map((s) => {
                   const isSelected = selectedStaffId === s.id;
@@ -561,7 +583,7 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
                       onClick={() => setSelectedStaffId(s.id)}
                       className={`w-full flex items-center gap-3.5 p-3.5 rounded-[10px] text-right transition-all ${
                         isSelected
-                          ? 'bg-[#824c71]/[0.06] ring-2 ring-[#824c71]'
+                          ? 'bg-[#824c71]/[0.06] ring-1 ring-[#824c71]'
                           : 'bg-zinc-50 hover:bg-zinc-100'
                       }`}
                     >
