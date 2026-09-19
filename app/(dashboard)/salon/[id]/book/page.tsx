@@ -3,7 +3,6 @@
 
 import { useState, useEffect, useRef, use, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
 import {
   ArrowRight, ArrowLeft, Loader2, CalendarClock, Clock,
   Check, Plus, Trash2, CreditCard, User,
@@ -123,8 +122,8 @@ function getServiceIcon(name: string): LucideIcon {
 }
 
 // ─── Breadcrumb ───────────────────────────────────────────────────────────────
-// چیدمانِ راهنمای مرحله‌ها خنثی (خاکستری/تیره) نگه داشته شده — رنگ بنفش برای
-// عناصر محتوایی (آیکون خدمت، کارت انتخابی، قیمت) ذخیره می‌شه، نه ناوبری بالای صفحه
+// نوار مرحله‌ای با رنگ برند — دقیقاً هم‌سبک با TabBar صفحه‌ی «نوبت‌دهی آنلاین»:
+// دایره‌ی شماره‌دار + خط رابط، بنفش برای مرحله‌ی فعال/طی‌شده.
 
 const STEP_SHORT: Record<Step, string> = {
   service: 'خدمات', staff: 'پرسنل', schedule: 'زمان', confirm: 'تأیید',
@@ -132,29 +131,38 @@ const STEP_SHORT: Record<Step, string> = {
 
 function Breadcrumb({ step, currentIdx }: { step: Step; currentIdx: number }) {
   return (
-    <div className="flex items-center gap-1.5 mb-7">
-      {stepOrder.map((s, i) => (
-        <div key={s} className="flex items-center gap-1.5">
-          <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] transition-all ${
-            i === currentIdx
-              ? 'bg-stone-900/5 text-stone-900 font-bold'
-              : i < currentIdx
-              ? 'text-stone-400'
-              : 'text-stone-300'
-          }`}>
-            {i < currentIdx
-              ? <Check className="w-3 h-3 text-stone-400 shrink-0" />
-              : <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] shrink-0 ${
-                  i === currentIdx ? 'bg-stone-900 text-white' : 'bg-stone-100 text-stone-400'
-                }`}>{toPersian(String(i + 1))}</span>
-            }
-            {STEP_SHORT[s]}
+    <div className="flex items-start mb-7">
+      {stepOrder.map((s, i) => {
+        const isActive = i === currentIdx;
+        const isDone = i < currentIdx;
+        return (
+          <div key={s} className={`flex items-center ${i < stepOrder.length - 1 ? 'flex-1' : ''}`}>
+            <div className="flex flex-col items-center gap-1.5 shrink-0">
+              <span
+                className={`w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-bold shrink-0 transition-colors ${
+                  isActive
+                    ? 'bg-[#824c71] text-white'
+                    : isDone
+                    ? 'bg-[#824c71]/10 text-[#824c71]'
+                    : 'bg-zinc-100 text-zinc-400'
+                }`}
+              >
+                {isDone ? <Check className="w-3.5 h-3.5" /> : toPersian(String(i + 1))}
+              </span>
+              <span
+                className={`text-[10.5px] font-bold whitespace-nowrap ${
+                  isActive ? 'text-[#824c71]' : isDone ? 'text-zinc-600' : 'text-zinc-400'
+                }`}
+              >
+                {STEP_SHORT[s]}
+              </span>
+            </div>
+            {i < stepOrder.length - 1 && (
+              <div className={`flex-1 h-px mx-1.5 mb-4 transition-colors ${i < currentIdx ? 'bg-[#824c71]/25' : 'bg-zinc-100'}`} />
+            )}
           </div>
-          {i < stepOrder.length - 1 && (
-            <div className={`w-4 h-px ${i < currentIdx ? 'bg-stone-300' : 'bg-stone-100'}`} />
-          )}
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }
@@ -371,7 +379,7 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
   // ── Render ───────────────────────────────────────────────────────────────
   if (isLoadingSalon) return (
     <div className="min-h-screen flex items-center justify-center bg-white">
-      <Loader2 className="w-6 h-6 text-stone-300 animate-spin" />
+      <Loader2 className="w-6 h-6 text-[#824c71] animate-spin" />
     </div>
   );
 
@@ -379,38 +387,27 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
 
   return (
     <div className="min-h-screen bg-white" dir="rtl">
-      <div className="max-w-md mx-auto px-5 pt-6 pb-36">
-
-        {/* هدر */}
-        <div className="flex items-center mb-6">
-          <Link
-            href={`/salon/${salonId}`}
-            className="flex items-center gap-1 text-sm font-medium text-stone-600 hover:text-stone-900 transition-colors"
-          >
-            <ArrowRight className="w-4 h-4" />
-            بازگشت
-          </Link>
-        </div>
+      <div className="max-w-md mx-auto px-5 pt-6 pb-32">
 
         {/* breadcrumb */}
         {step !== 'confirm' && <Breadcrumb step={step} currentIdx={currentIdx} />}
 
         {/* عنوان مرحله */}
         <div className="mb-6">
-          <h1 className="text-xl font-bold text-stone-900">{title}</h1>
-          <p className="text-xs text-stone-400 mt-1">{sub}</p>
+          <h1 className="text-xl font-bold text-zinc-900">{title}</h1>
+          <p className="text-xs text-zinc-400 mt-1">{sub}</p>
         </div>
 
         {/* ─── کارت نوبت‌های ثبت‌شده — در همه مراحل غیر از confirm ─── */}
         {cart.length > 0 && step !== 'confirm' && (
-          <div className="mb-5 space-y-2">
-            <p className="text-xs font-bold text-stone-400 px-1">نوبت‌های ثبت‌شده</p>
+          <div className="mb-5 space-y-2.5">
+            <p className="text-xs font-bold text-zinc-400 px-1">نوبت‌های ثبت‌شده</p>
             {cart.map((item, idx) => (
-              <div key={idx} className="bg-stone-50 border border-stone-100 rounded-2xl p-4">
+              <div key={idx} className="bg-white rounded-2xl p-4 shadow-[0_2px_14px_rgba(0,0,0,0.08)]">
                 <div className="flex items-start justify-between gap-2 mb-3">
                   <div>
-                    <p className="text-sm font-bold text-stone-900">{item.serviceName}</p>
-                    <p className="text-[11px] text-stone-400 mt-0.5 flex items-center gap-1">
+                    <p className="text-sm font-bold text-zinc-900">{item.serviceName}</p>
+                    <p className="text-[11px] text-zinc-400 mt-0.5 flex items-center gap-1">
                       <Clock className="w-3 h-3" />
                       {toPersian(formatDuration(item.durationMin))}
                     </p>
@@ -423,16 +420,16 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
                   </button>
                 </div>
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="flex items-center gap-1 bg-white rounded-lg px-2.5 py-1.5 border border-stone-100 text-[11px] text-stone-500">
-                    <CalendarClock className="w-3.5 h-3.5 text-[#824c71]/60" />
+                  <span className="flex items-center gap-1 bg-[#824c71]/5 rounded-[10px] px-2.5 py-1.5 text-[11px] text-zinc-600">
+                    <CalendarClock className="w-3.5 h-3.5 text-[#824c71]/70" />
                     {formatPersianDate(item.date)} — {toPersian(item.startTime)}
                   </span>
-                  <span className="flex items-center gap-1 bg-white rounded-lg px-2.5 py-1.5 border border-stone-100 text-[11px] text-stone-500">
-                    <User className="w-3.5 h-3.5 text-stone-300" />
+                  <span className="flex items-center gap-1 bg-[#824c71]/5 rounded-[10px] px-2.5 py-1.5 text-[11px] text-zinc-600">
+                    <User className="w-3.5 h-3.5 text-[#824c71]/70" />
                     {item.staffName}
                   </span>
                 </div>
-                <div className="mt-3 pt-3 border-t border-stone-100 flex justify-end">
+                <div className="mt-3 pt-3 border-t border-zinc-100 flex justify-end">
                   <button
                     onClick={() => setStep('confirm')}
                     className="text-xs font-bold text-[#824c71] flex items-center gap-1"
@@ -450,7 +447,7 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
         {step === 'service' && (
           <div className="space-y-2.5">
             {services.length === 0 ? (
-              <p className="text-center text-stone-400 text-sm py-16">خدماتی تعریف نشده</p>
+              <p className="text-center text-zinc-400 text-sm py-16">خدماتی تعریف نشده</p>
             ) : services.map((svc) => {
               const Icon = getServiceIcon(svc.name);
               const isSelected = selectedService?.id === svc.id;
@@ -458,10 +455,10 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
                 <button
                   key={svc.id}
                   onClick={() => setSelectedService(svc)}
-                  className={`w-full flex items-center gap-3.5 p-3.5 rounded-2xl border text-right transition-all active:scale-[0.99] ${
+                  className={`w-full flex items-center gap-3.5 p-3.5 rounded-2xl text-right transition-all active:scale-[0.99] ${
                     isSelected
-                      ? 'border-[#824c71] bg-[#824c71]/[0.06]'
-                      : 'border-stone-100 bg-white hover:bg-stone-50'
+                      ? 'bg-[#824c71]/[0.06] ring-2 ring-[#824c71]'
+                      : 'bg-white shadow-[0_2px_10px_rgba(0,0,0,0.05)] hover:shadow-[0_2px_14px_rgba(0,0,0,0.08)]'
                   }`}
                 >
                   <span
@@ -476,10 +473,10 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
                   </span>
 
                   <div className="flex-1 min-w-0">
-                    <p className={`text-sm font-semibold ${isSelected ? 'text-[#824c71]' : 'text-stone-900'}`}>
+                    <p className={`text-sm font-semibold ${isSelected ? 'text-[#824c71]' : 'text-zinc-900'}`}>
                       {svc.name}
                     </p>
-                    <span className="text-[12px] text-stone-400 flex items-center gap-1 mt-1">
+                    <span className="text-[12px] text-zinc-400 flex items-center gap-1 mt-1">
                       <Clock className="w-3 h-3" />
                       {toPersian(formatDuration(svc.durationMin))}
                     </span>
@@ -507,16 +504,16 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
         {step === 'staff' && selectedService && (
           <div>
             {isLoadingStaff ? (
-              <div className="flex justify-center py-12"><Loader2 className="w-5 h-5 text-stone-300 animate-spin" /></div>
+              <div className="flex justify-center py-12"><Loader2 className="w-5 h-5 text-[#824c71] animate-spin" /></div>
             ) : (
               <div className="space-y-2.5">
                 {/* تفاوتی ندارد */}
                 <button
                   onClick={() => setSelectedStaffId(null)}
-                  className={`w-full flex items-center gap-3.5 p-3.5 rounded-2xl border text-right transition-all ${
+                  className={`w-full flex items-center gap-3.5 p-3.5 rounded-2xl text-right transition-all ${
                     selectedStaffId === null
-                      ? 'border-[#824c71] bg-[#824c71]/[0.06]'
-                      : 'border-stone-100 bg-white hover:bg-stone-50'
+                      ? 'bg-[#824c71]/[0.06] ring-2 ring-[#824c71]'
+                      : 'bg-white shadow-[0_2px_10px_rgba(0,0,0,0.05)] hover:shadow-[0_2px_14px_rgba(0,0,0,0.08)]'
                   }`}
                 >
                   <span className={`w-11 h-11 rounded-full flex items-center justify-center shrink-0 ${
@@ -525,8 +522,8 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
                     <User className={`w-5 h-5 ${selectedStaffId === null ? 'text-[#824c71]' : 'text-[#824c71]/75'}`} strokeWidth={1.75} />
                   </span>
                   <div className="flex-1">
-                    <p className={`text-sm font-semibold ${selectedStaffId === null ? 'text-[#824c71]' : 'text-stone-900'}`}>تفاوتی ندارد</p>
-                    <p className="text-[11px] text-stone-400 mt-0.5">اولین پرسنل آزاد انتخاب می‌شود</p>
+                    <p className={`text-sm font-semibold ${selectedStaffId === null ? 'text-[#824c71]' : 'text-zinc-900'}`}>تفاوتی ندارد</p>
+                    <p className="text-[11px] text-zinc-400 mt-0.5">اولین پرسنل آزاد انتخاب می‌شود</p>
                   </div>
                   {selectedStaffId === null && (
                     <span className="w-5 h-5 rounded-full bg-[#824c71] flex items-center justify-center shrink-0">
@@ -541,10 +538,10 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
                     <button
                       key={s.id}
                       onClick={() => setSelectedStaffId(s.id)}
-                      className={`w-full flex items-center gap-3.5 p-3.5 rounded-2xl border text-right transition-all ${
+                      className={`w-full flex items-center gap-3.5 p-3.5 rounded-2xl text-right transition-all ${
                         isSelected
-                          ? 'border-[#824c71] bg-[#824c71]/[0.06]'
-                          : 'border-stone-100 bg-white hover:bg-stone-50'
+                          ? 'bg-[#824c71]/[0.06] ring-2 ring-[#824c71]'
+                          : 'bg-white shadow-[0_2px_10px_rgba(0,0,0,0.05)] hover:shadow-[0_2px_14px_rgba(0,0,0,0.08)]'
                       }`}
                     >
                       <span className={`w-11 h-11 rounded-full flex items-center justify-center text-sm font-bold shrink-0 ${
@@ -552,7 +549,7 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
                       }`}>
                         {s.name.slice(0, 1)}
                       </span>
-                      <p className={`flex-1 text-sm font-semibold text-right ${isSelected ? 'text-[#824c71]' : 'text-stone-900'}`}>
+                      <p className={`flex-1 text-sm font-semibold text-right ${isSelected ? 'text-[#824c71]' : 'text-zinc-900'}`}>
                         {s.name}
                       </p>
                       {isSelected && (
@@ -571,7 +568,7 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
         {/* ─── مرحله ۳: تاریخ + ساعت ─── */}
         {step === 'schedule' && selectedService && (
           <div>
-            <p className="text-xs font-semibold text-stone-500 uppercase tracking-wider mb-3">تاریخ</p>
+            <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-3">تاریخ</p>
             <PersianCalendar
               selectedDate={selectedDate}
               onSelectDate={(d) => { if (d !== selectedDate) setSelectedSlot(null); setSelectedDate(d); }}
@@ -582,18 +579,18 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
             {selectedDate && (
               <div className="mt-7">
                 <div className="flex items-center justify-between mb-4">
-                  <p className="text-xs font-semibold text-stone-500 uppercase tracking-wider">ساعت</p>
-                  <span className="text-xs text-stone-400">{formatPersianDate(selectedDate)}</span>
+                  <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">ساعت</p>
+                  <span className="text-xs text-zinc-400">{formatPersianDate(selectedDate)}</span>
                 </div>
 
                 {isLoadingSlots ? (
-                  <div className="flex justify-center py-10"><Loader2 className="w-5 h-5 text-stone-300 animate-spin" /></div>
+                  <div className="flex justify-center py-10"><Loader2 className="w-5 h-5 text-[#824c71] animate-spin" /></div>
                 ) : slotsError ? (
                   <p className="text-center text-sm text-red-400 py-8">{slotsError}</p>
                 ) : slots.length === 0 ? (
                   <div className="text-center py-10">
-                    <p className="text-sm text-stone-500 font-medium">ساعت آزادی در این روز وجود ندارد</p>
-                    <p className="text-xs text-stone-400 mt-1">تاریخ دیگری انتخاب کنید</p>
+                    <p className="text-sm text-zinc-500 font-medium">ساعت آزادی در این روز وجود ندارد</p>
+                    <p className="text-xs text-zinc-400 mt-1">تاریخ دیگری انتخاب کنید</p>
                   </div>
                 ) : (
                   <>
@@ -601,10 +598,10 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
                       <div className="flex gap-2 overflow-x-auto pb-2 mb-4">
                         <button
                           onClick={() => setSelectedStaffId(null)}
-                          className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-medium border transition-all ${
+                          className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
                             selectedStaffId === null
-                              ? 'border-[#824c71] bg-[#824c71] text-white'
-                              : 'border-stone-200 text-stone-500 hover:border-stone-300'
+                              ? 'bg-[#824c71] text-white'
+                              : 'bg-zinc-100 text-zinc-500 hover:bg-zinc-200'
                           }`}
                         >
                           همه
@@ -613,10 +610,10 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
                           <button
                             key={s.id}
                             onClick={() => setSelectedStaffId(s.id)}
-                            className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-medium border transition-all ${
+                            className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
                               selectedStaffId === s.id
-                                ? 'border-[#824c71] bg-[#824c71] text-white'
-                                : 'border-stone-200 text-stone-500 hover:border-stone-300'
+                                ? 'bg-[#824c71] text-white'
+                                : 'bg-zinc-100 text-zinc-500 hover:bg-zinc-200'
                             }`}
                           >
                             {s.name}
@@ -630,10 +627,10 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
                         <button
                           key={slot.time}
                           onClick={() => setSelectedSlot(selectedSlot?.time === slot.time ? null : slot)}
-                          className={`py-2.5 rounded-xl text-sm font-medium border transition-all ${
+                          className={`py-2.5 rounded-[10px] text-sm font-medium transition-all ${
                             selectedSlot?.time === slot.time
-                              ? 'bg-[#824c71] text-white border-[#824c71]'
-                              : 'bg-white text-stone-700 border-stone-100 hover:border-[#824c71]/20 hover:text-[#824c71]'
+                              ? 'bg-[#824c71] text-white'
+                              : 'bg-white shadow-[0_1px_6px_rgba(0,0,0,0.06)] text-zinc-700 hover:text-[#824c71]'
                           }`}
                           dir="ltr"
                         >
@@ -657,8 +654,8 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
           <div>
             {cart.length === 0 ? (
               <div className="text-center py-16">
-                <p className="text-stone-400 text-sm">سبد رزرو خالی است</p>
-                <button onClick={startNew} className="mt-4 text-sm text-stone-700 underline underline-offset-2">
+                <p className="text-zinc-400 text-sm">سبد رزرو خالی است</p>
+                <button onClick={startNew} className="mt-4 text-sm text-[#824c71] font-bold underline underline-offset-2">
                   افزودن نوبت
                 </button>
               </div>
@@ -666,11 +663,11 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
               <>
                 <div className="space-y-3 mb-6">
                   {cart.map((item, idx) => (
-                    <div key={idx} className="bg-stone-50 rounded-2xl p-4 border border-stone-100">
+                    <div key={idx} className="bg-white rounded-2xl p-4 shadow-[0_2px_14px_rgba(0,0,0,0.08)]">
                       <div className="flex items-start justify-between gap-2 mb-3">
                         <div>
-                          <p className="text-sm font-bold text-stone-900">{item.serviceName}</p>
-                          <p className="text-xs text-stone-400 mt-0.5 flex items-center gap-1">
+                          <p className="text-sm font-bold text-zinc-900">{item.serviceName}</p>
+                          <p className="text-xs text-zinc-400 mt-0.5 flex items-center gap-1">
                             <Clock className="w-3 h-3" />
                             {toPersian(formatDuration(item.durationMin))}
                           </p>
@@ -683,12 +680,12 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
                         </button>
                       </div>
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="flex items-center gap-1 text-[11px] text-stone-500 bg-white rounded-lg px-2.5 py-1.5 border border-stone-100">
-                          <CalendarClock className="w-3.5 h-3.5 text-[#824c71]/60" />
+                        <span className="flex items-center gap-1 text-[11px] text-zinc-600 bg-[#824c71]/5 rounded-[10px] px-2.5 py-1.5">
+                          <CalendarClock className="w-3.5 h-3.5 text-[#824c71]/70" />
                           {formatPersianDate(item.date)} — {toPersian(item.startTime)}
                         </span>
-                        <span className="flex items-center gap-1 text-[11px] text-stone-500 bg-white rounded-lg px-2.5 py-1.5 border border-stone-100">
-                          <User className="w-3.5 h-3.5 text-stone-300" />
+                        <span className="flex items-center gap-1 text-[11px] text-zinc-600 bg-[#824c71]/5 rounded-[10px] px-2.5 py-1.5">
+                          <User className="w-3.5 h-3.5 text-[#824c71]/70" />
                           {item.staffName}
                         </span>
                       </div>
@@ -698,7 +695,7 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
 
                 <button
                   onClick={startNew}
-                  className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl border border-dashed border-stone-200 text-sm text-stone-400 hover:text-stone-600 hover:border-stone-300 transition-all mb-6"
+                  className="w-full flex items-center justify-center gap-2 py-3 rounded-[10px] border-2 border-dashed border-zinc-200 text-sm text-zinc-500 font-medium hover:border-[#824c71]/40 hover:text-[#824c71] transition-all mb-6"
                 >
                   <Plus className="w-4 h-4" />
                   افزودن نوبت دیگر
@@ -711,7 +708,7 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
                 <button
                   onClick={handleSubmit}
                   disabled={isSubmitting}
-                  className="w-full bg-[#824c71] hover:bg-[#6d3f5e] text-white rounded-2xl py-4 text-sm font-semibold flex items-center justify-center gap-2 disabled:opacity-60 transition-colors"
+                  className="w-full bg-[#824c71] hover:bg-[#6d3f5e] text-white rounded-xl py-4 text-sm font-bold flex items-center justify-center gap-2 disabled:opacity-60 transition-colors"
                 >
                   {isSubmitting
                     ? <><Loader2 className="w-4 h-4 animate-spin" /> در حال ثبت...</>
@@ -723,47 +720,39 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
           </div>
         )}
 
-        {/* ناوبری قبل/ادامه — پایین صفحه، بدون بک‌گراند، فقط نوشته با رنگ مشکی */}
+        {/* ─── نوار پایین: دکمه‌ی برگشت (آیکونی) + دکمه‌ی اصلی ادامه/افزودن ─── */}
         {step !== 'confirm' && (
           <div
-            className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md px-5 py-3.5 flex items-center justify-between"
+            className="fixed bottom-0 left-0 right-0 bg-white shadow-[0_-2px_16px_rgba(0,0,0,0.07)] px-5 py-3.5 flex items-center gap-3"
             style={{ paddingBottom: 'calc(0.875rem + env(safe-area-inset-bottom, 0px))' }}
           >
             <button
               onClick={goBack}
               disabled={currentIdx === 0}
-              className={`flex items-center gap-1.5 text-sm font-medium transition-colors px-3 py-2 ${
+              aria-label="مرحله قبل"
+              className={`w-12 h-12 shrink-0 flex items-center justify-center rounded-xl transition-colors ${
                 currentIdx === 0
-                  ? 'text-stone-300 pointer-events-none'
-                  : 'text-black hover:opacity-70'
+                  ? 'bg-zinc-50 text-zinc-300'
+                  : 'bg-[#824c71]/10 text-[#824c71] hover:bg-[#824c71]/15'
               }`}
             >
-              <ArrowRight className="w-4 h-4" />
-              قبلی
+              <ArrowRight className="w-5 h-5" />
             </button>
 
             {step === 'schedule' ? (
               <button
                 onClick={addToCart}
                 disabled={!selectedSlot}
-                className={`flex items-center gap-1.5 text-sm font-bold px-3 py-2 transition-colors ${
-                  selectedSlot
-                    ? 'text-black hover:opacity-70'
-                    : 'text-stone-300 pointer-events-none'
-                }`}
+                className="flex-1 h-12 rounded-xl bg-[#824c71] text-white text-sm font-bold flex items-center justify-center gap-1.5 disabled:opacity-40 disabled:pointer-events-none hover:bg-[#6d3f5e] transition-colors"
               >
-                ادامه
+                افزودن و ادامه
                 <ArrowLeft className="w-4 h-4" />
               </button>
             ) : (
               <button
                 onClick={goNext}
                 disabled={!canGoNext}
-                className={`flex items-center gap-1.5 text-sm font-bold px-3 py-2 transition-colors ${
-                  canGoNext
-                    ? 'text-black hover:opacity-70'
-                    : 'text-stone-300 pointer-events-none'
-                }`}
+                className="flex-1 h-12 rounded-xl bg-[#824c71] text-white text-sm font-bold flex items-center justify-center gap-1.5 disabled:opacity-40 disabled:pointer-events-none hover:bg-[#6d3f5e] transition-colors"
               >
                 ادامه
                 <ArrowLeft className="w-4 h-4" />
