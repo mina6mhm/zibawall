@@ -13,18 +13,18 @@ const SCROLL_STORAGE_KEY = 'dashboardScrollPosition';
 
 // --- نگاشت آیکون اختصاصی هر دسته (فایل‌ها در public/icons/categories) ---
 const CATEGORY_ICON_MAP: Record<string, string> = {
-  'خدمات مو': '/icons/categories/hair.svg',
-  'خدمات ناخن': '/icons/categories/nails.svg',
-  'خدمات ابرو و مژه': '/icons/categories/brows-lashes.svg',
-  'خدمات پوست و زیبایی': '/icons/categories/skin.svg',
-  'خدمات آرایش و میکاپ': '/icons/categories/makeup.svg',
-  'پکیج‌های عروس': '/icons/categories/bridal.svg',
-  'موزدایی و بدن': '/icons/categories/hair-removal.svg',
-  'خدمات ماساژ و اسپا': '/icons/categories/massage-spa.svg',
+  'خدمات مو': '/icons/categories/hair.png',
+  'خدمات ناخن': '/icons/categories/nails.png',
+  'خدمات ابرو و مژه': '/icons/categories/brows-lashes.png',
+  'خدمات پوست و زیبایی': '/icons/categories/skin.png',
+  'خدمات آرایش و میکاپ': '/icons/categories/makeup.png',
+  'پکیج‌های عروس': '/icons/categories/bridal.png',
+  'موزدایی و بدن': '/icons/categories/hair-removal.png',
+  'خدمات ماساژ و اسپا': '/icons/categories/massage-spa.png',
 };
 
 const getCategoryIcon = (category: string): string =>
-  CATEGORY_ICON_MAP[category] || '/icons/categories/default.svg';
+  CATEGORY_ICON_MAP[category] || '/icons/categories/default.png';
 
 // --- عنوان کوتاه‌شده برای نمایش روی کارت ---
 const CATEGORY_DISPLAY_LABEL: Record<string, string> = {
