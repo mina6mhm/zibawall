@@ -5,28 +5,26 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { CATEGORIES, CATEGORY_MAPPING } from '@/lib/data'; 
 import RegionFilterModal from '@/components/RegionFilterModal';
-import { Home, Check, Sparkles, Eye, Hand, Scissors, Flower2, Zap, Crown, Palette, Pin, SlidersHorizontal, X, CalendarClock, type LucideIcon } from 'lucide-react';
+import { Home, Pin, SlidersHorizontal, X, CalendarClock } from 'lucide-react';
 import LandingScreen from '@/components/LandingScreen';
 
 // کلید ذخیره‌ی موقعیت اسکرول در sessionStorage برای برگشت از صفحه‌ی سالن
 const SCROLL_STORAGE_KEY = 'dashboardScrollPosition';
 
-// --- نگاشت دقیق آیکون مینیمال بر اساس اسم واقعی هر دسته (از lib/data.ts) ---
-// نکته: اگر می‌خوای آیکون‌های اختصاصی خودت رو جایگزین کنی، کافیه همین‌جا
-// به‌جای کامپوننت‌های lucide-react، کامپوننت SVG خودت رو بذاری. بقیه‌ی
-// کد (استایل کارت، حالت انتخاب‌شده و ...) بدون تغییر کار می‌کنه.
-const CATEGORY_ICON_MAP: Record<string, LucideIcon> = {
-  'خدمات مو': Scissors,
-  'خدمات ناخن': Hand,
-  'خدمات ابرو و مژه': Eye,
-  'خدمات پوست و زیبایی': Sparkles,
-  'خدمات آرایش و میکاپ': Palette,
-  'پکیج‌های عروس': Crown,
-  'موزدایی و بدن': Zap,
-  'خدمات ماساژ و اسپا': Flower2,
+// --- نگاشت آیکون اختصاصی هر دسته (فایل‌ها در public/icons/categories) ---
+const CATEGORY_ICON_MAP: Record<string, string> = {
+  'خدمات مو': '/icons/categories/hair.svg',
+  'خدمات ناخن': '/icons/categories/nails.svg',
+  'خدمات ابرو و مژه': '/icons/categories/brows-lashes.svg',
+  'خدمات پوست و زیبایی': '/icons/categories/skin.svg',
+  'خدمات آرایش و میکاپ': '/icons/categories/makeup.svg',
+  'پکیج‌های عروس': '/icons/categories/bridal.svg',
+  'موزدایی و بدن': '/icons/categories/hair-removal.svg',
+  'خدمات ماساژ و اسپا': '/icons/categories/massage-spa.svg',
 };
 
-const getCategoryIcon = (category: string): LucideIcon => CATEGORY_ICON_MAP[category] || Sparkles;
+const getCategoryIcon = (category: string): string =>
+  CATEGORY_ICON_MAP[category] || '/icons/categories/default.svg';
 
 // --- عنوان کوتاه‌شده برای نمایش روی کارت ---
 const CATEGORY_DISPLAY_LABEL: Record<string, string> = {
@@ -566,49 +564,48 @@ export default function DashboardHomePage() {
 </div>
         </div>
 
-        {/* دسته‌بندی‌ها — ریدیزاین شد: کارت‌های تخت با بج آیکون سفید روی زمینه‌ی خاکستری،
-            و در حالت انتخاب‌شده کل کارت با رنگ برند پر می‌شه تا وضعیت انتخاب خیلی واضح باشه.
-            آیکون‌ها همچنان از CATEGORY_ICON_MAP میان — هر وقت خواستی آیکون‌های اختصاصی
-            خودت رو بذاری، فقط کافیه اون مپ رو عوض کنی. */}
-        {/* دسته‌بندی‌ها */}
-<div className="px-4 mt-3 md:mt-4">
-  <h2 className="text-base md:text-lg font-bold text-zinc-900 mb-3">دسته‌بندی خدمات</h2>
-  <div className="grid grid-cols-4 gap-2.5">
-    {categoryList.map((category: string) => {
-      const CategoryIcon = getCategoryIcon(category);
-      const isActive = selectedCategories.includes(category);
-      return (
-        <button
-          key={category}
-          onClick={() => toggleCategory(category)}
-          className={`flex flex-col items-center gap-2 rounded-xl pt-3.5 pb-2 px-1 h-[100px] border transition-all ${
-  isActive
-    ? 'border-[#824c71] bg-[#824c71]/10'
-    : 'border-transparent bg-zinc-50 hover:bg-zinc-100'
-}`}
-        >
-          <span
-            className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 transition-colors ${
-              isActive ? 'bg-[#824c71]/10' : 'bg-[#824c71]/[0.06]'
-            }`}
-          >
-            <CategoryIcon
-              className={`w-[18px] h-[18px] ${isActive ? 'text-[#824c71]' : 'text-[#824c71]/75'}`}
-              strokeWidth={1.75}
-            />
-          </span>
-          <span
-            className={`w-full h-7 flex items-center justify-center text-[11px] font-medium text-center leading-[1.15] ${
-              isActive ? 'text-[#824c71]' : 'text-zinc-700'
-            }`}
-          >
-            {getCategoryLabel(category)}
-          </span>
-        </button>
-      );
-    })}
-  </div>
-</div>
+        {/* دسته‌بندی‌ها: فقط آیکون اختصاصی + نام خدمت.
+            حالت انتخاب‌شده: آیکون کمی بزرگ‌تر، نام پررنگ و برند، و یک خط کوچک زیر نام */}
+        <div className="px-4 mt-3 md:mt-4">
+          <h2 className="text-base md:text-lg font-bold text-zinc-900 mb-3">دسته‌بندی خدمات</h2>
+          <div className="grid grid-cols-4 gap-x-2 gap-y-4">
+            {categoryList.map((category: string) => {
+              const iconSrc = getCategoryIcon(category);
+              const isActive = selectedCategories.includes(category);
+              return (
+                <button
+                  key={category}
+                  type="button"
+                  onClick={() => toggleCategory(category)}
+                  aria-pressed={isActive}
+                  className="group flex flex-col items-center gap-1.5 px-1 py-1 active:scale-95 transition-transform"
+                >
+                  <img
+                    src={iconSrc}
+                    alt=""
+                    draggable={false}
+                    className={`w-14 h-14 object-contain transition-transform duration-200 ${
+                      isActive ? 'scale-110' : 'group-hover:scale-105'
+                    }`}
+                  />
+                  <span
+                    className={`w-full min-h-[28px] flex items-center justify-center text-[11px] text-center leading-[1.15] transition-colors ${
+                      isActive ? 'font-bold text-[#824c71]' : 'font-medium text-zinc-700'
+                    }`}
+                  >
+                    {getCategoryLabel(category)}
+                  </span>
+                  <span
+                    aria-hidden="true"
+                    className={`h-[3px] rounded-full bg-[#824c71] transition-all duration-200 ${
+                      isActive ? 'w-6 opacity-100' : 'w-0 opacity-0'
+                    }`}
+                  />
+                </button>
+              );
+            })}
+          </div>
+        </div>
 
         {/* لیست سالن‌ها */}
         <div className="px-4 mt-4 md:mt-6">
