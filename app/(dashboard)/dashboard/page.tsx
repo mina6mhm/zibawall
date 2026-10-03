@@ -525,7 +525,7 @@ export default function DashboardHomePage() {
 <div className="flex items-center gap-2">
   <div className="flex-1 min-w-0">
     <div className="flex gap-2">
-      <div className="flex-1 flex items-center bg-zinc-50 rounded-full px-4 py-3 h-12 transition-colors focus-within:bg-white focus-within:border focus-within:border-[#824c71]/40 focus-within:ring-2 focus-within:ring-[#824c71]/10">
+      <div className="flex-1 flex items-center bg-zinc-100 rounded-full px-4 py-3 h-12 transition-colors focus-within:bg-white focus-within:border focus-within:border-[#824c71]/40 focus-within:ring-2 focus-within:ring-[#824c71]/10">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="text-zinc-400 ml-2 shrink-0">
           <circle cx="11" cy="11" r="8" />
           <path d="m21 21-4.3-4.3" />
@@ -553,7 +553,7 @@ export default function DashboardHomePage() {
     className={`relative shrink-0 w-11 h-11 flex items-center justify-center rounded-full transition-all active:scale-95 ${
       hasActiveExtraFilters
         ? 'bg-[#824c71]/10 text-[#824c71]'
-        : 'bg-zinc-50 text-zinc-600 hover:bg-zinc-100'
+        : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'
     }`}
   >
     <SlidersHorizontal className="w-[18px] h-[18px]" strokeWidth={2.2} />
@@ -567,8 +567,8 @@ export default function DashboardHomePage() {
         {/* دسته‌بندی‌ها: فقط آیکون اختصاصی + نام خدمت.
             حالت انتخاب‌شده: آیکون کمی بزرگ‌تر، نام پررنگ و برند، و یک خط کوچک زیر نام */}
         <div className="px-4 mt-3 md:mt-4">
-          <h2 className="text-base md:text-lg font-bold text-zinc-900 mb-3">دسته‌بندی خدمات</h2>
-          <div className="grid grid-cols-4 gap-x-2 gap-y-4">
+          <h2 className="text-base md:text-lg font-bold text-zinc-900 mb-5">دسته‌بندی خدمات</h2>
+          <div className="grid grid-cols-4 gap-x-2 gap-y-1">
             {categoryList.map((category: string) => {
               const iconSrc = getCategoryIcon(category);
               const isActive = selectedCategories.includes(category);
@@ -578,7 +578,7 @@ export default function DashboardHomePage() {
                   type="button"
                   onClick={() => toggleCategory(category)}
                   aria-pressed={isActive}
-                  className="group flex flex-col items-center gap-1.5 px-1 py-1 active:scale-95 transition-transform"
+                  className="group flex flex-col items-center gap-1 px-1 py-1 active:scale-95 transition-transform"
                 >
                   <img
                     src={iconSrc}
@@ -589,7 +589,7 @@ export default function DashboardHomePage() {
                     }`}
                   />
                   <span
-                    className={`w-full min-h-[28px] flex items-center justify-center text-[11px] text-center leading-[1.15] transition-colors ${
+                    className={`w-full flex items-center justify-center text-[11px] text-center leading-[1.15] transition-colors ${
                       isActive ? 'font-bold text-[#824c71]' : 'font-medium text-zinc-700'
                     }`}
                   >
