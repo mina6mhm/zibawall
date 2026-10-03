@@ -1,15 +1,31 @@
 //app/(dashboard)/dashboard/page.tsx
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { CATEGORIES, CATEGORY_MAPPING } from '@/lib/data'; 
 import RegionFilterModal from '@/components/RegionFilterModal';
 import { Home, Pin, SlidersHorizontal, X, CalendarClock } from 'lucide-react';
 import LandingScreen from '@/components/LandingScreen';
 
-// کلید ذخیره‌ی موقعیت اسکرول در sessionStorage برای برگشت از صفحه‌ی سالن
-const SCROLL_STORAGE_KEY = 'dashboardScrollPosition';
+// کلید ذخیره‌ی وضعیت داشبورد (فیلترها + موقعیت اسکرول) در sessionStorage
+// برای برگشت از صفحه‌ی سالن
+const DASHBOARD_STATE_KEY = 'dashboardState';
+
+type GenderFilter = 'ALL' | 'FEMALE' | 'MALE';
+
+type DashboardSnapshot = {
+  selectedCategories: string[];
+  searchQuery: string;
+  selectedProvince: string;
+  selectedCity: string;
+  selectedNeighborhoods: string[];
+  homeServiceOnly: boolean;
+  genderFilter: GenderFilter;
+  // سالنی که روش کلیک شده و فاصله‌ی بالای کارتش تا بالای صفحه‌ی نمایش
+  anchor: { salonId: number | string; top: number } | null;
+  scrollY: number;
+};
 
 // --- نگاشت آیکون اختصاصی هر دسته (فایل‌ها در public/icons/categories) ---
 const CATEGORY_ICON_MAP: Record<string, string> = {
@@ -129,8 +145,6 @@ const BookmarkIcon = ({ isActive, className }: { isActive: boolean, className?: 
     <path d="M6 4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v17.5l-6-4-6 4V4z" />
   </svg>
 );
-
-type GenderFilter = 'ALL' | 'FEMALE' | 'MALE';
 
 function FilterPill({
   label,
@@ -265,6 +279,37 @@ export default function DashboardHomePage() {
   const [showBookingAlert, setShowBookingAlert] = useState(false);
   const [showVpnWarning, setShowVpnWarning] = useState(false);
 
+  // وضعیت ذخیره‌شده‌ی قبلی (اگر کاربر از صفحه‌ی سالن برگشته باشد)
+  const snapshotRef = useRef<DashboardSnapshot | null>(null);
+  const [isStateRestored, setIsStateRestored] = useState(false);
+
+  // بازیابی فیلترها هنگام ورود به صفحه (فقط یک بار)
+  useEffect(() => {
+    if (!snapshotRef.current) {
+      try {
+        const raw = sessionStorage.getItem(DASHBOARD_STATE_KEY);
+        if (raw) {
+          snapshotRef.current = JSON.parse(raw) as DashboardSnapshot;
+          sessionStorage.removeItem(DASHBOARD_STATE_KEY);
+        }
+      } catch {
+        // اگر داده‌ی ذخیره‌شده خراب بود، نادیده گرفته می‌شود
+      }
+    }
+
+    const snap = snapshotRef.current;
+    if (snap) {
+      setSelectedCategories(snap.selectedCategories ?? []);
+      setSearchQuery(snap.searchQuery ?? '');
+      setSelectedProvince(snap.selectedProvince ?? 'تهران');
+      setSelectedCity(snap.selectedCity ?? 'تهران');
+      setSelectedNeighborhoods(snap.selectedNeighborhoods ?? []);
+      setHomeServiceOnly(!!snap.homeServiceOnly);
+      setGenderFilter(snap.genderFilter ?? 'ALL');
+    }
+    setIsStateRestored(true);
+  }, []);
+
   useEffect(() => {
     let hideTimer: ReturnType<typeof setTimeout>;
 
@@ -335,19 +380,14 @@ export default function DashboardHomePage() {
     fetchSalonsData();
   }, []);
 
-  // بعد از این‌که لیست سالن‌ها لود شد، اگر قبلاً موقعیت اسکرول ذخیره شده بود
-  // (یعنی کاربر از صفحه‌ی جزئیات سالن برگشته)، به همون نقطه برمی‌گردیم.
-  // چون بعد از لود شدن دیتا، عکس‌های کارت‌ها هنوز ممکنه لود نشده باشن و ارتفاع واقعی صفحه
-  // کمتر از حد لازم باشه، به‌جای یک تلاش، تا رسیدن ارتفاع صفحه به مقدار لازم (یا رسیدن به
-  // حداکثر تعداد تلاش) هر ۵۰ میلی‌ثانیه دوباره امتحان می‌کنیم.
+  // بعد از این‌که فیلترها برگردانده شدند و لیست سالن‌ها لود شد، صفحه را طوری اسکرول
+  // می‌کنیم که همان سالنی که کاربر رویش کلیک کرده بود دقیقاً در همان جای قبلی صفحه باشد.
+  // اگر آن کارت پیدا نشد، به موقعیت اسکرول ذخیره‌شده برمی‌گردیم.
   useEffect(() => {
-    if (isLoading) return;
+    if (isLoading || !isStateRestored) return;
 
-    const savedScroll = sessionStorage.getItem(SCROLL_STORAGE_KEY);
-    if (!savedScroll) return;
-
-    const targetY = parseInt(savedScroll, 10);
-    sessionStorage.removeItem(SCROLL_STORAGE_KEY);
+    const snap = snapshotRef.current;
+    if (!snap) return;
 
     let attempts = 0;
     const maxAttempts = 40; // حداکثر حدود ۲ ثانیه تلاش
@@ -355,10 +395,23 @@ export default function DashboardHomePage() {
 
     const tryScroll = () => {
       attempts++;
+
+      let targetY: number | null = null;
+      if (snap.anchor) {
+        const card = Array.from(document.querySelectorAll('[data-salon-id]')).find(
+          (el) => el.getAttribute('data-salon-id') === String(snap.anchor!.salonId)
+        );
+        if (card) {
+          targetY = card.getBoundingClientRect().top + window.scrollY - snap.anchor.top;
+        }
+      }
+      if (targetY === null) targetY = snap.scrollY;
+
       const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
 
       if (maxScroll >= targetY || attempts >= maxAttempts) {
-        window.scrollTo(0, targetY);
+        window.scrollTo(0, Math.max(0, targetY));
+        snapshotRef.current = null;
       } else {
         timeoutId = setTimeout(tryScroll, 50);
       }
@@ -367,7 +420,7 @@ export default function DashboardHomePage() {
     tryScroll();
 
     return () => clearTimeout(timeoutId);
-  }, [isLoading]);
+  }, [isLoading, isStateRestored]);
 
   const handleBookmarkClick = async (salonId: number | string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -384,18 +437,38 @@ export default function DashboardHomePage() {
 
   const isCurrentSalonBookmarked = (salonId: number | string) => bookmarkedSalons.includes(salonId);
 
-  const handleBookingClick = (salon: any, e: React.MouseEvent) => {
+  // قبل از رفتن به صفحه‌ی سالن، فیلترها و موقعیت دقیق کارت انتخاب‌شده ذخیره می‌شود
+  const saveDashboardState = (salonId: number | string, cardEl: Element | null) => {
+    const snapshot: DashboardSnapshot = {
+      selectedCategories,
+      searchQuery,
+      selectedProvince,
+      selectedCity,
+      selectedNeighborhoods,
+      homeServiceOnly,
+      genderFilter,
+      anchor: cardEl ? { salonId, top: cardEl.getBoundingClientRect().top } : null,
+      scrollY: window.scrollY,
+    };
+    try {
+      sessionStorage.setItem(DASHBOARD_STATE_KEY, JSON.stringify(snapshot));
+    } catch {
+      // اگر ذخیره‌سازی ممکن نبود، فقط وضعیت بازیابی نمی‌شود
+    }
+  };
+
+  const handleBookingClick = (salon: any, e: React.MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation();
     if (salon.bookingEnabled) {
+      saveDashboardState(salon.id, e.currentTarget.closest('[data-salon-id]'));
       router.push(`/salon/${salon.id}/book`);
     } else {
       setShowBookingAlert(true);
     }
   };
 
-  // کلیک روی کارت سالن: قبل از رفتن به صفحه‌ی جزئیات، موقعیت فعلی اسکرول ذخیره می‌شود
-  const handleSalonCardClick = (salonId: number | string) => {
-    sessionStorage.setItem(SCROLL_STORAGE_KEY, String(window.scrollY));
+  const handleSalonCardClick = (salonId: number | string, e: React.MouseEvent<HTMLDivElement>) => {
+    saveDashboardState(salonId, e.currentTarget);
     router.push(`/salon/${salonId}`);
   };
 
@@ -578,7 +651,7 @@ export default function DashboardHomePage() {
                   type="button"
                   onClick={() => toggleCategory(category)}
                   aria-pressed={isActive}
-                  className="group flex flex-col items-center gap-1 px-1 py-1 active:scale-95 transition-transform"
+                  className="group flex flex-col items-center gap-1.5 px-1 py-1 active:scale-95 transition-transform"
                 >
                   <img
                     src={iconSrc}
@@ -640,7 +713,8 @@ export default function DashboardHomePage() {
                 return (
                   <div 
                     key={salon.id}
-                    onClick={() => handleSalonCardClick(salon.id)}
+                    data-salon-id={salon.id}
+                    onClick={(e) => handleSalonCardClick(salon.id, e)}
                     dir="ltr"
                     className="h-44 cursor-pointer bg-white rounded-2xl border border-zinc-200 overflow-hidden shadow-[0_1px_4px_rgba(0,0,0,0.06)] hover:shadow-[0_4px_14px_rgba(0,0,0,0.1)] active:scale-[0.99] transition-all flex items-stretch group relative"
                   >
