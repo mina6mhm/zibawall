@@ -584,7 +584,7 @@ export default function DashboardHomePage() {
                     src={iconSrc}
                     alt=""
                     draggable={false}
-                    className={`w-14 h-14 object-contain transition-transform duration-200 ${
+                    className={`w-10 h-10 object-contain transition-transform duration-200 ${
                       isActive ? 'scale-110' : 'group-hover:scale-105'
                     }`}
                   />
