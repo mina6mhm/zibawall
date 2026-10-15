@@ -18,7 +18,13 @@ const ICON_STROKE = '#824c71';
 const ICON_FILL = '#824c71';
 const ICON_ACCENT = '#d98fb8';
 
-type CategoryIconProps = { className?: string };
+type CategoryIconProps = { className?: string; active?: boolean };
+
+// پالت رنگی آیکون: حالت عادی (بنفش روی زمینه‌ی روشن) و حالت انتخاب‌شده (سفید روی زمینه‌ی بنفش)
+const getPalette = (active?: boolean) =>
+  active
+    ? { stroke: '#ffffff', fill: '#ffffff', accent: '#f6c9e0' }
+    : { stroke: ICON_STROKE, fill: ICON_FILL, accent: ICON_ACCENT };
 
 const svgBase = {
   viewBox: '0 0 48 48',
@@ -28,112 +34,139 @@ const svgBase = {
   focusable: false,
 } as const;
 
-const lineProps = {
-  stroke: ICON_STROKE,
+const lp = (c: { stroke: string }) => ({
+  stroke: c.stroke,
   strokeWidth: 2.2,
   strokeLinecap: 'round' as const,
   strokeLinejoin: 'round' as const,
-};
+});
 
 // مو: قیچی آرایشگری
-const HairIcon = ({ className }: CategoryIconProps) => (
+const HairIcon = ({ className, active }: CategoryIconProps) => {
+  const c = getPalette(active);
+  return (
   <svg {...svgBase} className={className}>
-    <circle cx="13" cy="36" r="6" fill={ICON_FILL} fillOpacity="0.14" {...lineProps} />
-    <circle cx="35" cy="36" r="6" fill={ICON_FILL} fillOpacity="0.14" {...lineProps} />
-    <path d="M17.5 31.5 L34 7" {...lineProps} />
-    <path d="M30.5 31.5 L14 7" {...lineProps} />
-    <circle cx="24" cy="22" r="1.6" fill={ICON_ACCENT} />
-    <path d="M38 12c1.5-.6 2.6-1.7 3.2-3.2.6 1.5 1.7 2.6 3.2 3.2-1.5.6-2.6 1.7-3.2 3.2-.6-1.5-1.7-2.6-3.2-3.2Z" fill={ICON_ACCENT} />
+    <circle cx="13" cy="36" r="6" fill={c.fill} fillOpacity="0.14" {...lp(c)} />
+    <circle cx="35" cy="36" r="6" fill={c.fill} fillOpacity="0.14" {...lp(c)} />
+    <path d="M17.5 31.5 L34 7" {...lp(c)} />
+    <path d="M30.5 31.5 L14 7" {...lp(c)} />
+    <circle cx="24" cy="22" r="1.6" fill={c.accent} />
+    <path d="M38 12c1.5-.6 2.6-1.7 3.2-3.2.6 1.5 1.7 2.6 3.2 3.2-1.5.6-2.6 1.7-3.2 3.2-.6-1.5-1.7-2.6-3.2-3.2Z" fill={c.accent} />
   </svg>
-);
+  );
+};
 
 // ناخن: لاک ناخن
-const NailsIcon = ({ className }: CategoryIconProps) => (
+const NailsIcon = ({ className, active }: CategoryIconProps) => {
+  const c = getPalette(active);
+  return (
   <svg {...svgBase} className={className}>
-    <rect x="19.5" y="4.5" width="9" height="11" rx="3" fill={ICON_ACCENT} fillOpacity="0.5" {...lineProps} />
-    <rect x="21.5" y="15.5" width="5" height="6" {...lineProps} />
-    <rect x="13" y="21.5" width="22" height="21" rx="6.5" fill={ICON_FILL} fillOpacity="0.14" {...lineProps} />
-    <path d="M18.5 28v8" stroke={ICON_ACCENT} strokeWidth="2.4" strokeLinecap="round" />
-    <circle cx="29" cy="35" r="1.6" fill={ICON_ACCENT} />
+    <rect x="19.5" y="4.5" width="9" height="11" rx="3" fill={c.accent} fillOpacity="0.5" {...lp(c)} />
+    <rect x="21.5" y="15.5" width="5" height="6" {...lp(c)} />
+    <rect x="13" y="21.5" width="22" height="21" rx="6.5" fill={c.fill} fillOpacity="0.14" {...lp(c)} />
+    <path d="M18.5 28v8" stroke={c.accent} strokeWidth="2.4" strokeLinecap="round" />
+    <circle cx="29" cy="35" r="1.6" fill={c.accent} />
   </svg>
-);
+  );
+};
 
 // ابرو و مژه: چشم با مژه‌های بلند
-const BrowsLashesIcon = ({ className }: CategoryIconProps) => (
+const BrowsLashesIcon = ({ className, active }: CategoryIconProps) => {
+  const c = getPalette(active);
+  return (
   <svg {...svgBase} className={className}>
-    <path d="M5 28Q24 12 43 28Q24 41 5 28Z" fill={ICON_FILL} fillOpacity="0.1" {...lineProps} />
-    <circle cx="24" cy="27" r="5.5" fill={ICON_FILL} fillOpacity="0.18" {...lineProps} />
-    <circle cx="24" cy="27" r="2" fill={ICON_STROKE} />
-    <path d="M24 19.5V11" {...lineProps} />
-    <path d="M15 22.5 11.5 15" {...lineProps} />
-    <path d="M33 22.5 36.5 15" {...lineProps} />
-    <path d="M9.2 25.6 5 20.5" {...lineProps} />
-    <path d="M38.8 25.6 43 20.5" {...lineProps} />
+    <path d="M5 28Q24 12 43 28Q24 41 5 28Z" fill={c.fill} fillOpacity="0.1" {...lp(c)} />
+    <circle cx="24" cy="27" r="5.5" fill={c.fill} fillOpacity="0.18" {...lp(c)} />
+    <circle cx="24" cy="27" r="2" fill={c.stroke} />
+    <path d="M24 19.5V11" {...lp(c)} />
+    <path d="M15 22.5 11.5 15" {...lp(c)} />
+    <path d="M33 22.5 36.5 15" {...lp(c)} />
+    <path d="M9.2 25.6 5 20.5" {...lp(c)} />
+    <path d="M38.8 25.6 43 20.5" {...lp(c)} />
   </svg>
-);
+  );
+};
 
 // پوست و زیبایی: قطره‌ی سرم + درخشش
-const SkinIcon = ({ className }: CategoryIconProps) => (
+const SkinIcon = ({ className, active }: CategoryIconProps) => {
+  const c = getPalette(active);
+  return (
   <svg {...svgBase} className={className}>
-    <path d="M22 8C22 8 10 22 10 30a12 12 0 0 0 24 0C34 22 22 8 22 8Z" fill={ICON_FILL} fillOpacity="0.14" {...lineProps} />
-    <path d="M16 30a6 6 0 0 0 5 5.9" stroke={ICON_ACCENT} strokeWidth="2.4" strokeLinecap="round" />
-    <path d="M37 6c.8 2.8 2.2 4.2 5 5-2.8.8-4.2 2.2-5 5-.8-2.8-2.2-4.2-5-5 2.8-.8 4.2-2.2 5-5Z" fill={ICON_ACCENT} />
-    <circle cx="40.5" cy="21.5" r="1.6" fill={ICON_STROKE} />
+    <path d="M22 8C22 8 10 22 10 30a12 12 0 0 0 24 0C34 22 22 8 22 8Z" fill={c.fill} fillOpacity="0.14" {...lp(c)} />
+    <path d="M16 30a6 6 0 0 0 5 5.9" stroke={c.accent} strokeWidth="2.4" strokeLinecap="round" />
+    <path d="M37 6c.8 2.8 2.2 4.2 5 5-2.8.8-4.2 2.2-5 5-.8-2.8-2.2-4.2-5-5 2.8-.8 4.2-2.2 5-5Z" fill={c.accent} />
+    <circle cx="40.5" cy="21.5" r="1.6" fill={c.stroke} />
   </svg>
-);
+  );
+};
 
 // آرایش و میکاپ: رژلب
-const MakeupIcon = ({ className }: CategoryIconProps) => (
+const MakeupIcon = ({ className, active }: CategoryIconProps) => {
+  const c = getPalette(active);
+  return (
   <svg {...svgBase} className={className}>
-    <path d="M19 22V14.5C19 10 22 7 25 5.5c1 2.5 4 4 4 9V22Z" fill={ICON_ACCENT} fillOpacity="0.55" {...lineProps} />
-    <rect x="18" y="22" width="12" height="7" rx="1.5" fill={ICON_FILL} fillOpacity="0.14" {...lineProps} />
-    <rect x="15" y="29" width="18" height="14" rx="3.5" fill={ICON_FILL} fillOpacity="0.14" {...lineProps} />
-    <path d="M15 35.5h18" {...lineProps} />
+    <path d="M19 22V14.5C19 10 22 7 25 5.5c1 2.5 4 4 4 9V22Z" fill={c.accent} fillOpacity="0.55" {...lp(c)} />
+    <rect x="18" y="22" width="12" height="7" rx="1.5" fill={c.fill} fillOpacity="0.14" {...lp(c)} />
+    <rect x="15" y="29" width="18" height="14" rx="3.5" fill={c.fill} fillOpacity="0.14" {...lp(c)} />
+    <path d="M15 35.5h18" {...lp(c)} />
   </svg>
-);
+  );
+};
 
 // پکیج‌های عروس: حلقه‌ی الماس
-const BridalIcon = ({ className }: CategoryIconProps) => (
+const BridalIcon = ({ className, active }: CategoryIconProps) => {
+  const c = getPalette(active);
+  return (
   <svg {...svgBase} className={className}>
-    <circle cx="24" cy="32" r="10.5" fill={ICON_FILL} fillOpacity="0.1" {...lineProps} />
-    <path d="M17.5 12.5 20.5 7h7l3 5.5L24 21Z" fill={ICON_ACCENT} fillOpacity="0.55" {...lineProps} />
-    <path d="M17.5 12.5h13" {...lineProps} />
-    <path d="M20.5 7 24 12.5 27.5 7" {...lineProps} />
-    <path d="M24 12.5V21" {...lineProps} />
-    <path d="M9 9.5l1 2.2 2.2 1-2.2 1-1 2.2-1-2.2-2.2-1 2.2-1Z" fill={ICON_ACCENT} />
+    <circle cx="24" cy="32" r="10.5" fill={c.fill} fillOpacity="0.1" {...lp(c)} />
+    <path d="M17.5 12.5 20.5 7h7l3 5.5L24 21Z" fill={c.accent} fillOpacity="0.55" {...lp(c)} />
+    <path d="M17.5 12.5h13" {...lp(c)} />
+    <path d="M20.5 7 24 12.5 27.5 7" {...lp(c)} />
+    <path d="M24 12.5V21" {...lp(c)} />
+    <path d="M9 9.5l1 2.2 2.2 1-2.2 1-1 2.2-1-2.2-2.2-1 2.2-1Z" fill={c.accent} />
   </svg>
-);
+  );
+};
 
 // موزدایی و بدن: تیغ
-const HairRemovalIcon = ({ className }: CategoryIconProps) => (
+const HairRemovalIcon = ({ className, active }: CategoryIconProps) => {
+  const c = getPalette(active);
+  return (
   <svg {...svgBase} className={className}>
-    <rect x="12" y="6" width="24" height="12" rx="4" fill={ICON_FILL} fillOpacity="0.14" {...lineProps} />
-    <path d="M17 12h14" stroke={ICON_ACCENT} strokeWidth="2.6" strokeLinecap="round" />
-    <path d="M19 18v3h10v-3" {...lineProps} />
-    <rect x="20.5" y="21" width="7" height="22" rx="3.5" fill={ICON_FILL} fillOpacity="0.14" {...lineProps} />
-    <path d="M24 27v9" stroke={ICON_ACCENT} strokeWidth="2.2" strokeLinecap="round" />
-    <circle cx="41" cy="14" r="1.8" fill={ICON_ACCENT} />
-    <circle cx="7" cy="30" r="1.4" fill={ICON_ACCENT} />
+    <rect x="12" y="6" width="24" height="12" rx="4" fill={c.fill} fillOpacity="0.14" {...lp(c)} />
+    <path d="M17 12h14" stroke={c.accent} strokeWidth="2.6" strokeLinecap="round" />
+    <path d="M19 18v3h10v-3" {...lp(c)} />
+    <rect x="20.5" y="21" width="7" height="22" rx="3.5" fill={c.fill} fillOpacity="0.14" {...lp(c)} />
+    <path d="M24 27v9" stroke={c.accent} strokeWidth="2.2" strokeLinecap="round" />
+    <circle cx="41" cy="14" r="1.8" fill={c.accent} />
+    <circle cx="7" cy="30" r="1.4" fill={c.accent} />
   </svg>
-);
+  );
+};
 
 // ماساژ و اسپا: گل نیلوفر آبی
-const MassageSpaIcon = ({ className }: CategoryIconProps) => (
+const MassageSpaIcon = ({ className, active }: CategoryIconProps) => {
+  const c = getPalette(active);
+  return (
   <svg {...svgBase} className={className}>
-    <path d="M24 8C30 15 30 26 24 33 18 26 18 15 24 8Z" fill={ICON_ACCENT} fillOpacity="0.5" {...lineProps} />
-    <path d="M23 33.5C15.5 33.5 9 29.5 7 21.5 14.5 20.5 21 24.5 23 33.5Z" fill={ICON_FILL} fillOpacity="0.14" {...lineProps} />
-    <path d="M25 33.5C32.5 33.5 39 29.5 41 21.5 33.5 20.5 27 24.5 25 33.5Z" fill={ICON_FILL} fillOpacity="0.14" {...lineProps} />
-    <path d="M8 40c4-2.4 8-2.4 12 0s8 2.4 12 0 6-2 8-1" {...lineProps} />
+    <path d="M24 8C30 15 30 26 24 33 18 26 18 15 24 8Z" fill={c.accent} fillOpacity="0.5" {...lp(c)} />
+    <path d="M23 33.5C15.5 33.5 9 29.5 7 21.5 14.5 20.5 21 24.5 23 33.5Z" fill={c.fill} fillOpacity="0.14" {...lp(c)} />
+    <path d="M25 33.5C32.5 33.5 39 29.5 41 21.5 33.5 20.5 27 24.5 25 33.5Z" fill={c.fill} fillOpacity="0.14" {...lp(c)} />
+    <path d="M8 40c4-2.4 8-2.4 12 0s8 2.4 12 0 6-2 8-1" {...lp(c)} />
   </svg>
-);
+  );
+};
 
 // آیکون پیش‌فرض برای دسته‌های ناشناخته
-const DefaultCategoryIcon = ({ className }: CategoryIconProps) => (
+const DefaultCategoryIcon = ({ className, active }: CategoryIconProps) => {
+  const c = getPalette(active);
+  return (
   <svg {...svgBase} className={className}>
-    <path d="M24 6c1.6 7 5 10.4 12 12-7 1.6-10.4 5-12 12-1.6-7-5-10.4-12-12 7-1.6 10.4-5 12-12Z" fill={ICON_ACCENT} fillOpacity="0.5" {...lineProps} />
-    <circle cx="37" cy="36" r="3" fill={ICON_FILL} fillOpacity="0.14" {...lineProps} />
+    <path d="M24 6c1.6 7 5 10.4 12 12-7 1.6-10.4 5-12 12-1.6-7-5-10.4-12-12 7-1.6 10.4-5 12-12Z" fill={c.accent} fillOpacity="0.5" {...lp(c)} />
+    <circle cx="37" cy="36" r="3" fill={c.fill} fillOpacity="0.14" {...lp(c)} />
   </svg>
-);
+  );
+};
 
 const CATEGORY_ICON_MAP: Record<string, React.ComponentType<CategoryIconProps>> = {
   'خدمات مو': HairIcon,
@@ -687,11 +720,11 @@ export default function DashboardHomePage() {
 </div>
         </div>
 
-        {/* دسته‌بندی‌ها — فقط آیکون وکتور + نام خدمت (بدون کارت و دایره)؛
-            حالت انتخاب‌شده با رنگ برند، متن ضخیم و یک خط کوچک زیر نام مشخص می‌شه. */}
+        {/* دسته‌بندی‌ها — آیکون وکتور روی تایل گرد با زمینه‌ی ملایم؛
+            حالت انتخاب‌شده: تایل بنفش پر با آیکون سفید، سایه‌ی نرم و تیک کوچک روی گوشه. */}
         <div className="px-4 mt-3 md:mt-4">
           <h2 className="text-base md:text-lg font-bold text-zinc-900 mb-4">دسته‌بندی خدمات</h2>
-          <div className="grid grid-cols-4 gap-x-1 gap-y-2">
+          <div className="grid grid-cols-4 gap-x-2 gap-y-3.5">
             {categoryList.map((category: string) => {
               const CategoryIcon = getCategoryIcon(category);
               const isActive = selectedCategories.includes(category);
@@ -700,13 +733,22 @@ export default function DashboardHomePage() {
                   key={category}
                   onClick={() => toggleCategory(category)}
                   aria-pressed={isActive}
-                  className="flex flex-col items-center gap-1 px-1 pt-1 pb-0.5 active:scale-95 transition-transform"
+                  className="group flex flex-col items-center gap-1.5 active:scale-95 transition-transform"
                 >
-                  <CategoryIcon
-                    className={`w-[52px] h-[52px] transition-transform duration-200 ${
-                      isActive ? 'scale-110' : ''
+                  <span
+                    className={`relative w-[62px] h-[62px] rounded-[20px] flex items-center justify-center transition-all duration-200 ${
+                      isActive
+                        ? 'bg-gradient-to-br from-[#9a5c86] to-[#824c71] shadow-[0_6px_14px_-4px_rgba(130,76,113,0.55)] -translate-y-0.5'
+                        : 'bg-gradient-to-br from-[#faf3f7] to-[#f1e3ec] ring-1 ring-inset ring-[#824c71]/10 group-hover:from-[#f6e9f1] group-hover:to-[#ecd9e5]'
                     }`}
-                  />
+                  >
+                    <CategoryIcon className="w-[34px] h-[34px]" active={isActive} />
+                    {isActive && (
+                      <span className="absolute -top-1 -left-1 w-[18px] h-[18px] rounded-full bg-white shadow flex items-center justify-center">
+                        <Check className="w-3 h-3 text-[#824c71]" strokeWidth={3.5} />
+                      </span>
+                    )}
+                  </span>
                   <span
                     className={`w-full text-[11px] text-center leading-[1.3] transition-colors ${
                       isActive ? 'text-[#824c71] font-bold' : 'text-zinc-700 font-medium'
@@ -714,11 +756,6 @@ export default function DashboardHomePage() {
                   >
                     {getCategoryLabel(category)}
                   </span>
-                  <span
-                    className={`h-[3px] rounded-full transition-all duration-200 ${
-                      isActive ? 'w-5 bg-[#824c71]' : 'w-0 bg-transparent'
-                    }`}
-                  />
                 </button>
               );
             })}
