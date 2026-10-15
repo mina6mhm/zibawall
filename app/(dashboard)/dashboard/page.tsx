@@ -18,13 +18,11 @@ const ICON_STROKE = '#824c71';
 const ICON_FILL = '#824c71';
 const ICON_ACCENT = '#d98fb8';
 
-type CategoryIconProps = { className?: string; active?: boolean };
+type IconPalette = { stroke: string; fill: string; accent: string };
+type CategoryIconProps = { className?: string; palette?: IconPalette };
 
-// پالت رنگی آیکون: حالت عادی (بنفش روی زمینه‌ی روشن) و حالت انتخاب‌شده (سفید روی زمینه‌ی بنفش)
-const getPalette = (active?: boolean) =>
-  active
-    ? { stroke: '#ffffff', fill: '#ffffff', accent: '#f6c9e0' }
-    : { stroke: ICON_STROKE, fill: ICON_FILL, accent: ICON_ACCENT };
+// پالت پیش‌فرض (رنگ برند) برای دسته‌های ناشناخته
+const DEFAULT_PALETTE: IconPalette = { stroke: ICON_STROKE, fill: ICON_FILL, accent: ICON_ACCENT };
 
 const svgBase = {
   viewBox: '0 0 48 48',
@@ -42,8 +40,8 @@ const lp = (c: { stroke: string }) => ({
 });
 
 // مو: قیچی آرایشگری
-const HairIcon = ({ className, active }: CategoryIconProps) => {
-  const c = getPalette(active);
+const HairIcon = ({ className, palette }: CategoryIconProps) => {
+  const c = palette ?? DEFAULT_PALETTE;
   return (
   <svg {...svgBase} className={className}>
     <circle cx="13" cy="36" r="6" fill={c.fill} fillOpacity="0.14" {...lp(c)} />
@@ -57,8 +55,8 @@ const HairIcon = ({ className, active }: CategoryIconProps) => {
 };
 
 // ناخن: لاک ناخن
-const NailsIcon = ({ className, active }: CategoryIconProps) => {
-  const c = getPalette(active);
+const NailsIcon = ({ className, palette }: CategoryIconProps) => {
+  const c = palette ?? DEFAULT_PALETTE;
   return (
   <svg {...svgBase} className={className}>
     <rect x="19.5" y="4.5" width="9" height="11" rx="3" fill={c.accent} fillOpacity="0.5" {...lp(c)} />
@@ -71,8 +69,8 @@ const NailsIcon = ({ className, active }: CategoryIconProps) => {
 };
 
 // ابرو و مژه: چشم با مژه‌های بلند
-const BrowsLashesIcon = ({ className, active }: CategoryIconProps) => {
-  const c = getPalette(active);
+const BrowsLashesIcon = ({ className, palette }: CategoryIconProps) => {
+  const c = palette ?? DEFAULT_PALETTE;
   return (
   <svg {...svgBase} className={className}>
     <path d="M5 28Q24 12 43 28Q24 41 5 28Z" fill={c.fill} fillOpacity="0.1" {...lp(c)} />
@@ -88,8 +86,8 @@ const BrowsLashesIcon = ({ className, active }: CategoryIconProps) => {
 };
 
 // پوست و زیبایی: قطره‌ی سرم + درخشش
-const SkinIcon = ({ className, active }: CategoryIconProps) => {
-  const c = getPalette(active);
+const SkinIcon = ({ className, palette }: CategoryIconProps) => {
+  const c = palette ?? DEFAULT_PALETTE;
   return (
   <svg {...svgBase} className={className}>
     <path d="M22 8C22 8 10 22 10 30a12 12 0 0 0 24 0C34 22 22 8 22 8Z" fill={c.fill} fillOpacity="0.14" {...lp(c)} />
@@ -101,8 +99,8 @@ const SkinIcon = ({ className, active }: CategoryIconProps) => {
 };
 
 // آرایش و میکاپ: رژلب
-const MakeupIcon = ({ className, active }: CategoryIconProps) => {
-  const c = getPalette(active);
+const MakeupIcon = ({ className, palette }: CategoryIconProps) => {
+  const c = palette ?? DEFAULT_PALETTE;
   return (
   <svg {...svgBase} className={className}>
     <path d="M19 22V14.5C19 10 22 7 25 5.5c1 2.5 4 4 4 9V22Z" fill={c.accent} fillOpacity="0.55" {...lp(c)} />
@@ -114,8 +112,8 @@ const MakeupIcon = ({ className, active }: CategoryIconProps) => {
 };
 
 // پکیج‌های عروس: حلقه‌ی الماس
-const BridalIcon = ({ className, active }: CategoryIconProps) => {
-  const c = getPalette(active);
+const BridalIcon = ({ className, palette }: CategoryIconProps) => {
+  const c = palette ?? DEFAULT_PALETTE;
   return (
   <svg {...svgBase} className={className}>
     <circle cx="24" cy="32" r="10.5" fill={c.fill} fillOpacity="0.1" {...lp(c)} />
@@ -129,8 +127,8 @@ const BridalIcon = ({ className, active }: CategoryIconProps) => {
 };
 
 // موزدایی و بدن: تیغ
-const HairRemovalIcon = ({ className, active }: CategoryIconProps) => {
-  const c = getPalette(active);
+const HairRemovalIcon = ({ className, palette }: CategoryIconProps) => {
+  const c = palette ?? DEFAULT_PALETTE;
   return (
   <svg {...svgBase} className={className}>
     <rect x="12" y="6" width="24" height="12" rx="4" fill={c.fill} fillOpacity="0.14" {...lp(c)} />
@@ -145,8 +143,8 @@ const HairRemovalIcon = ({ className, active }: CategoryIconProps) => {
 };
 
 // ماساژ و اسپا: گل نیلوفر آبی
-const MassageSpaIcon = ({ className, active }: CategoryIconProps) => {
-  const c = getPalette(active);
+const MassageSpaIcon = ({ className, palette }: CategoryIconProps) => {
+  const c = palette ?? DEFAULT_PALETTE;
   return (
   <svg {...svgBase} className={className}>
     <path d="M24 8C30 15 30 26 24 33 18 26 18 15 24 8Z" fill={c.accent} fillOpacity="0.5" {...lp(c)} />
@@ -158,8 +156,8 @@ const MassageSpaIcon = ({ className, active }: CategoryIconProps) => {
 };
 
 // آیکون پیش‌فرض برای دسته‌های ناشناخته
-const DefaultCategoryIcon = ({ className, active }: CategoryIconProps) => {
-  const c = getPalette(active);
+const DefaultCategoryIcon = ({ className, palette }: CategoryIconProps) => {
+  const c = palette ?? DEFAULT_PALETTE;
   return (
   <svg {...svgBase} className={className}>
     <path d="M24 6c1.6 7 5 10.4 12 12-7 1.6-10.4 5-12 12-1.6-7-5-10.4-12-12 7-1.6 10.4-5 12-12Z" fill={c.accent} fillOpacity="0.5" {...lp(c)} />
@@ -181,6 +179,25 @@ const CATEGORY_ICON_MAP: Record<string, React.ComponentType<CategoryIconProps>> 
 
 const getCategoryIcon = (category: string): React.ComponentType<CategoryIconProps> =>
   CATEGORY_ICON_MAP[category] || DefaultCategoryIcon;
+
+// --- تم رنگی هر دسته: هر دسته رنگ خودش رو داره تا صفحه زنده‌تر و خوانا‌تر باشه ---
+// from/to: گرادیان ملایم تایل | stroke/accent: رنگ آیکون | text: رنگ نام در حالت انتخاب
+type CategoryTheme = { from: string; to: string; stroke: string; accent: string; text: string };
+
+const CATEGORY_THEME: Record<string, CategoryTheme> = {
+  'خدمات مو':             { from: '#FFF3F5', to: '#FFDFE6', stroke: '#E0527A', accent: '#FF9DB5', text: '#B83A5E' },
+  'خدمات ناخن':           { from: '#FFF6EE', to: '#FFE2CE', stroke: '#E8743B', accent: '#FFB27D', text: '#C2531F' },
+  'خدمات ابرو و مژه':     { from: '#EEFBF8', to: '#D0F3EB', stroke: '#1D9C8A', accent: '#6FD6C3', text: '#137A6B' },
+  'خدمات پوست و زیبایی':  { from: '#F0F7FF', to: '#D8EAFF', stroke: '#3B82D9', accent: '#8CC0FF', text: '#2563B8' },
+  'خدمات آرایش و میکاپ':  { from: '#FFF1F1', to: '#FFDADA', stroke: '#D93A4A', accent: '#FF8A94', text: '#B42333' },
+  'پکیج‌های عروس':        { from: '#FFFAEC', to: '#FFEDBD', stroke: '#C58A12', accent: '#F5C451', text: '#8F6208' },
+  'موزدایی و بدن':        { from: '#F1FBF2', to: '#D6F2DA', stroke: '#3E9B54', accent: '#8ED79F', text: '#2B7A3F' },
+  'خدمات ماساژ و اسپا':   { from: '#F4F3FF', to: '#E1DFFF', stroke: '#6B63D6', accent: '#A9A3FF', text: '#4F46B5' },
+};
+
+const DEFAULT_THEME: CategoryTheme = { from: '#FAF3F7', to: '#F1E3EC', stroke: ICON_STROKE, accent: ICON_ACCENT, text: '#824c71' };
+
+const getCategoryTheme = (category: string): CategoryTheme => CATEGORY_THEME[category] || DEFAULT_THEME;
 
 // --- عنوان کوتاه‌شده برای نمایش روی کارت ---
 const CATEGORY_DISPLAY_LABEL: Record<string, string> = {
@@ -720,39 +737,41 @@ export default function DashboardHomePage() {
 </div>
         </div>
 
-        {/* دسته‌بندی‌ها — آیکون وکتور روی تایل گرد با زمینه‌ی ملایم؛
-            حالت انتخاب‌شده: تایل بنفش پر با آیکون سفید، سایه‌ی نرم و تیک کوچک روی گوشه. */}
+        {/* دسته‌بندی‌ها — هر دسته یک تایل با گرادیان ملایم و رنگ مخصوص خودش؛
+            حالت انتخاب‌شده: حلقه‌ی هم‌رنگ دور تایل + سایه‌ی نرم + آیکون کمی بزرگ‌تر + نام هم‌رنگ. */}
         <div className="px-4 mt-3 md:mt-4">
           <h2 className="text-base md:text-lg font-bold text-zinc-900 mb-4">دسته‌بندی خدمات</h2>
           <div className="grid grid-cols-4 gap-x-2 gap-y-3.5">
             {categoryList.map((category: string) => {
               const CategoryIcon = getCategoryIcon(category);
+              const theme = getCategoryTheme(category);
               const isActive = selectedCategories.includes(category);
               return (
                 <button
                   key={category}
                   onClick={() => toggleCategory(category)}
                   aria-pressed={isActive}
-                  className="group flex flex-col items-center gap-1.5 active:scale-95 transition-transform"
+                  className="flex flex-col items-center gap-1.5 active:scale-95 transition-transform"
                 >
                   <span
-                    className={`relative w-[62px] h-[62px] rounded-[20px] flex items-center justify-center transition-all duration-200 ${
-                      isActive
-                        ? 'bg-gradient-to-br from-[#9a5c86] to-[#824c71] shadow-[0_6px_14px_-4px_rgba(130,76,113,0.55)] -translate-y-0.5'
-                        : 'bg-gradient-to-br from-[#faf3f7] to-[#f1e3ec] ring-1 ring-inset ring-[#824c71]/10 group-hover:from-[#f6e9f1] group-hover:to-[#ecd9e5]'
-                    }`}
+                    className="w-[62px] h-[62px] rounded-[20px] flex items-center justify-center transition-all duration-200"
+                    style={{
+                      background: `linear-gradient(145deg, ${theme.from}, ${theme.to})`,
+                      boxShadow: isActive
+                        ? `0 0 0 2px ${theme.stroke}, 0 8px 16px -8px ${theme.stroke}99`
+                        : `inset 0 0 0 1px ${theme.stroke}1F`,
+                    }}
                   >
-                    <CategoryIcon className="w-[34px] h-[34px]" active={isActive} />
-                    {isActive && (
-                      <span className="absolute -top-1 -left-1 w-[18px] h-[18px] rounded-full bg-white shadow flex items-center justify-center">
-                        <Check className="w-3 h-3 text-[#824c71]" strokeWidth={3.5} />
-                      </span>
-                    )}
+                    <CategoryIcon
+                      className={`w-[34px] h-[34px] transition-transform duration-200 ${isActive ? 'scale-110' : ''}`}
+                      palette={{ stroke: theme.stroke, fill: theme.stroke, accent: theme.accent }}
+                    />
                   </span>
                   <span
                     className={`w-full text-[11px] text-center leading-[1.3] transition-colors ${
-                      isActive ? 'text-[#824c71] font-bold' : 'text-zinc-700 font-medium'
+                      isActive ? 'font-bold' : 'text-zinc-700 font-medium'
                     }`}
+                    style={isActive ? { color: theme.text } : undefined}
                   >
                     {getCategoryLabel(category)}
                   </span>
