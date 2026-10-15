@@ -180,24 +180,17 @@ const CATEGORY_ICON_MAP: Record<string, React.ComponentType<CategoryIconProps>> 
 const getCategoryIcon = (category: string): React.ComponentType<CategoryIconProps> =>
   CATEGORY_ICON_MAP[category] || DefaultCategoryIcon;
 
-// --- تم رنگی هر دسته: هر دسته رنگ خودش رو داره تا صفحه زنده‌تر و خوانا‌تر باشه ---
-// from/to: گرادیان ملایم تایل | stroke/accent: رنگ آیکون | text: رنگ نام در حالت انتخاب
-type CategoryTheme = { from: string; to: string; stroke: string; accent: string; text: string };
-
-const CATEGORY_THEME: Record<string, CategoryTheme> = {
-  'خدمات مو':             { from: '#FFF3F5', to: '#FFDFE6', stroke: '#E0527A', accent: '#FF9DB5', text: '#B83A5E' },
-  'خدمات ناخن':           { from: '#FFF6EE', to: '#FFE2CE', stroke: '#E8743B', accent: '#FFB27D', text: '#C2531F' },
-  'خدمات ابرو و مژه':     { from: '#EEFBF8', to: '#D0F3EB', stroke: '#1D9C8A', accent: '#6FD6C3', text: '#137A6B' },
-  'خدمات پوست و زیبایی':  { from: '#F0F7FF', to: '#D8EAFF', stroke: '#3B82D9', accent: '#8CC0FF', text: '#2563B8' },
-  'خدمات آرایش و میکاپ':  { from: '#FFF1F1', to: '#FFDADA', stroke: '#D93A4A', accent: '#FF8A94', text: '#B42333' },
-  'پکیج‌های عروس':        { from: '#FFFAEC', to: '#FFEDBD', stroke: '#C58A12', accent: '#F5C451', text: '#8F6208' },
-  'موزدایی و بدن':        { from: '#F1FBF2', to: '#D6F2DA', stroke: '#3E9B54', accent: '#8ED79F', text: '#2B7A3F' },
-  'خدمات ماساژ و اسپا':   { from: '#F4F3FF', to: '#E1DFFF', stroke: '#6B63D6', accent: '#A9A3FF', text: '#4F46B5' },
+// --- تم رنگی دسته‌ها: همه در طیف رنگ برند (#824c71) با گرادیان ملایم ---
+// from/to: گرادیان تایل در حالت عادی | activeFrom/activeTo: گرادیان کمی پررنگ‌تر در حالت انتخاب
+const CATEGORY_THEME = {
+  from: '#FCF6FA',
+  to: '#F2E3ED',
+  activeFrom: '#F8EAF2',
+  activeTo: '#EBD2E2',
+  stroke: '#824c71',
+  accent: '#d98fb8',
+  text: '#824c71',
 };
-
-const DEFAULT_THEME: CategoryTheme = { from: '#FAF3F7', to: '#F1E3EC', stroke: ICON_STROKE, accent: ICON_ACCENT, text: '#824c71' };
-
-const getCategoryTheme = (category: string): CategoryTheme => CATEGORY_THEME[category] || DEFAULT_THEME;
 
 // --- عنوان کوتاه‌شده برای نمایش روی کارت ---
 const CATEGORY_DISPLAY_LABEL: Record<string, string> = {
@@ -737,14 +730,14 @@ export default function DashboardHomePage() {
 </div>
         </div>
 
-        {/* دسته‌بندی‌ها — هر دسته یک تایل با گرادیان ملایم و رنگ مخصوص خودش؛
-            حالت انتخاب‌شده: حلقه‌ی هم‌رنگ دور تایل + سایه‌ی نرم + آیکون کمی بزرگ‌تر + نام هم‌رنگ. */}
+        {/* دسته‌بندی‌ها — هر دسته یک تایل با گرادیان ملایم در طیف رنگ برند؛
+            حالت انتخاب‌شده: حلقه‌ی نازک برند دور تایل + سایه‌ی نرم + آیکون کمی بزرگ‌تر + نام هم‌رنگ. */}
         <div className="px-4 mt-3 md:mt-4">
           <h2 className="text-base md:text-lg font-bold text-zinc-900 mb-4">دسته‌بندی خدمات</h2>
           <div className="grid grid-cols-4 gap-x-2 gap-y-3.5">
             {categoryList.map((category: string) => {
               const CategoryIcon = getCategoryIcon(category);
-              const theme = getCategoryTheme(category);
+              const theme = CATEGORY_THEME;
               const isActive = selectedCategories.includes(category);
               return (
                 <button
@@ -756,10 +749,12 @@ export default function DashboardHomePage() {
                   <span
                     className="w-[62px] h-[62px] rounded-[20px] flex items-center justify-center transition-all duration-200"
                     style={{
-                      background: `linear-gradient(145deg, ${theme.from}, ${theme.to})`,
+                      background: isActive
+                        ? `linear-gradient(145deg, ${theme.activeFrom}, ${theme.activeTo})`
+                        : `linear-gradient(145deg, ${theme.from}, ${theme.to})`,
                       boxShadow: isActive
-                        ? `0 0 0 2px ${theme.stroke}, 0 8px 16px -8px ${theme.stroke}99`
-                        : `inset 0 0 0 1px ${theme.stroke}1F`,
+                        ? `0 0 0 1.5px ${theme.stroke}, 0 8px 16px -8px ${theme.stroke}8C`
+                        : `inset 0 0 0 1px ${theme.stroke}1A`,
                     }}
                   >
                     <CategoryIcon
