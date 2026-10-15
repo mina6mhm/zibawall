@@ -1,13 +1,11 @@
 // app/(dashboard)/salon/[id]/book/page.tsx
 'use client';
 
-import { useState, useEffect, useRef, use, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useRef, use, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   ArrowRight, ArrowLeft, Loader2, CalendarClock, Clock,
   Check, Plus, Trash2, CreditCard, User, Users,
-  Hand, Footprints, Eye, Scissors, Sparkles, Palette, Crown, Zap, Flower2,
-  type LucideIcon,
 } from 'lucide-react';
 import { DateObject } from 'react-multi-date-picker';
 import PersianCalendar, { CalendarDayMarker } from '@/components/ui/PersianCalendar';
@@ -99,27 +97,234 @@ function buildClosedDateMarkers(closedDates: string[]): Record<string, CalendarD
   return markers;
 }
 
-// ─── تشخیص آیکون خدمت بر اساس کلمات کلیدی در اسم آن ────────────────────────
-// همون منطقی که دسته‌بندی‌های صفحه‌ی اصلی دارن، اینجا روی تک‌تک خدمات اعمال می‌شه
+// --- آیکون‌های وکتور اختصاصی (همون آیکون‌ها و تایل گرادیانی صفحه‌ی داشبورد) ---
+// نکته: این بخش دقیقاً با بخش هم‌نام در صفحه‌ی داشبورد یکسانه؛ اگه اونجا رنگ یا طرحی رو
+// تغییر دادی، همین‌جا هم همون تغییر رو بده تا دو صفحه یکدست بمونن.
+// هر آیکون روی بوم ۴۸×۴۸ طراحی شده و از سه رنگ برند استفاده می‌کنه:
+// خط اصلی (بنفش برند)، پر‌کننده‌ی ملایم و یک رنگ تاکیدی صورتی.
+const ICON_STROKE = '#824c71';
+const ICON_FILL = '#824c71';
+const ICON_ACCENT = '#d98fb8';
 
-const SERVICE_ICON_RULES: { keywords: string[]; icon: LucideIcon }[] = [
-  { keywords: ['پا', 'پدیکور'], icon: Footprints },
-  { keywords: ['ناخن', 'دست', 'مانیکور', 'کاشت ناخن', 'ژلیش'], icon: Hand },
-  { keywords: ['ابرو', 'مژه', 'میکروبلیدینگ', 'لیفت مژه'], icon: Eye },
-  { keywords: ['عروس', 'فرمالیته'], icon: Crown },
-  { keywords: ['میکاپ', 'آرایش', 'گریم'], icon: Palette },
-  { keywords: ['اپیلاسیون', 'لیزر', 'موزدایی', 'وکس', 'اصلاح'], icon: Zap },
-  { keywords: ['ماساژ', 'اسپا'], icon: Flower2 },
-  { keywords: ['پوست', 'فیشیال', 'پاکسازی', 'میکرودرم', 'مزوتراپی'], icon: Sparkles },
-  { keywords: ['مو', 'کراتین', 'رنگ', 'شینیون', 'شنیون', 'بافت', 'براشینگ', 'کوتاهی', 'احیا'], icon: Scissors },
+type IconPalette = { stroke: string; fill: string; accent: string };
+type CategoryIconProps = { className?: string; palette?: IconPalette };
+
+// پالت پیش‌فرض (رنگ برند) برای دسته‌های ناشناخته
+const DEFAULT_PALETTE: IconPalette = { stroke: ICON_STROKE, fill: ICON_FILL, accent: ICON_ACCENT };
+
+const svgBase = {
+  viewBox: '0 0 48 48',
+  fill: 'none',
+  xmlns: 'http://www.w3.org/2000/svg',
+  'aria-hidden': true,
+  focusable: false,
+} as const;
+
+const lp = (c: { stroke: string }) => ({
+  stroke: c.stroke,
+  strokeWidth: 2.2,
+  strokeLinecap: 'round' as const,
+  strokeLinejoin: 'round' as const,
+});
+
+// مو: قیچی آرایشگری
+const HairIcon = ({ className, palette }: CategoryIconProps) => {
+  const c = palette ?? DEFAULT_PALETTE;
+  return (
+  <svg {...svgBase} className={className}>
+    <circle cx="13" cy="36" r="6" fill={c.fill} fillOpacity="0.14" {...lp(c)} />
+    <circle cx="35" cy="36" r="6" fill={c.fill} fillOpacity="0.14" {...lp(c)} />
+    <path d="M17.5 31.5 L34 7" {...lp(c)} />
+    <path d="M30.5 31.5 L14 7" {...lp(c)} />
+    <circle cx="24" cy="22" r="1.6" fill={c.accent} />
+    <path d="M38 12c1.5-.6 2.6-1.7 3.2-3.2.6 1.5 1.7 2.6 3.2 3.2-1.5.6-2.6 1.7-3.2 3.2-.6-1.5-1.7-2.6-3.2-3.2Z" fill={c.accent} />
+  </svg>
+  );
+};
+
+// ناخن: لاک ناخن
+const NailsIcon = ({ className, palette }: CategoryIconProps) => {
+  const c = palette ?? DEFAULT_PALETTE;
+  return (
+  <svg {...svgBase} className={className}>
+    <rect x="19.5" y="4.5" width="9" height="11" rx="3" fill={c.accent} fillOpacity="0.5" {...lp(c)} />
+    <rect x="21.5" y="15.5" width="5" height="6" {...lp(c)} />
+    <rect x="13" y="21.5" width="22" height="21" rx="6.5" fill={c.fill} fillOpacity="0.14" {...lp(c)} />
+    <path d="M18.5 28v8" stroke={c.accent} strokeWidth="2.4" strokeLinecap="round" />
+    <circle cx="29" cy="35" r="1.6" fill={c.accent} />
+  </svg>
+  );
+};
+
+// ابرو و مژه: چشم با مژه‌های بلند
+const BrowsLashesIcon = ({ className, palette }: CategoryIconProps) => {
+  const c = palette ?? DEFAULT_PALETTE;
+  return (
+  <svg {...svgBase} className={className}>
+    <path d="M5 28Q24 12 43 28Q24 41 5 28Z" fill={c.fill} fillOpacity="0.1" {...lp(c)} />
+    <circle cx="24" cy="27" r="5.5" fill={c.fill} fillOpacity="0.18" {...lp(c)} />
+    <circle cx="24" cy="27" r="2" fill={c.stroke} />
+    <path d="M24 19.5V11" {...lp(c)} />
+    <path d="M15 22.5 11.5 15" {...lp(c)} />
+    <path d="M33 22.5 36.5 15" {...lp(c)} />
+    <path d="M9.2 25.6 5 20.5" {...lp(c)} />
+    <path d="M38.8 25.6 43 20.5" {...lp(c)} />
+  </svg>
+  );
+};
+
+// پوست و زیبایی: قطره‌ی سرم + درخشش
+const SkinIcon = ({ className, palette }: CategoryIconProps) => {
+  const c = palette ?? DEFAULT_PALETTE;
+  return (
+  <svg {...svgBase} className={className}>
+    <path d="M22 8C22 8 10 22 10 30a12 12 0 0 0 24 0C34 22 22 8 22 8Z" fill={c.fill} fillOpacity="0.14" {...lp(c)} />
+    <path d="M16 30a6 6 0 0 0 5 5.9" stroke={c.accent} strokeWidth="2.4" strokeLinecap="round" />
+    <path d="M37 6c.8 2.8 2.2 4.2 5 5-2.8.8-4.2 2.2-5 5-.8-2.8-2.2-4.2-5-5 2.8-.8 4.2-2.2 5-5Z" fill={c.accent} />
+    <circle cx="40.5" cy="21.5" r="1.6" fill={c.stroke} />
+  </svg>
+  );
+};
+
+// آرایش و میکاپ: رژلب
+const MakeupIcon = ({ className, palette }: CategoryIconProps) => {
+  const c = palette ?? DEFAULT_PALETTE;
+  return (
+  <svg {...svgBase} className={className}>
+    <path d="M19 22V14.5C19 10 22 7 25 5.5c1 2.5 4 4 4 9V22Z" fill={c.accent} fillOpacity="0.55" {...lp(c)} />
+    <rect x="18" y="22" width="12" height="7" rx="1.5" fill={c.fill} fillOpacity="0.14" {...lp(c)} />
+    <rect x="15" y="29" width="18" height="14" rx="3.5" fill={c.fill} fillOpacity="0.14" {...lp(c)} />
+    <path d="M15 35.5h18" {...lp(c)} />
+  </svg>
+  );
+};
+
+// پکیج‌های عروس: حلقه‌ی الماس
+const BridalIcon = ({ className, palette }: CategoryIconProps) => {
+  const c = palette ?? DEFAULT_PALETTE;
+  return (
+  <svg {...svgBase} className={className}>
+    <circle cx="24" cy="32" r="10.5" fill={c.fill} fillOpacity="0.1" {...lp(c)} />
+    <path d="M17.5 12.5 20.5 7h7l3 5.5L24 21Z" fill={c.accent} fillOpacity="0.55" {...lp(c)} />
+    <path d="M17.5 12.5h13" {...lp(c)} />
+    <path d="M20.5 7 24 12.5 27.5 7" {...lp(c)} />
+    <path d="M24 12.5V21" {...lp(c)} />
+    <path d="M9 9.5l1 2.2 2.2 1-2.2 1-1 2.2-1-2.2-2.2-1 2.2-1Z" fill={c.accent} />
+  </svg>
+  );
+};
+
+// موزدایی و بدن: تیغ
+const HairRemovalIcon = ({ className, palette }: CategoryIconProps) => {
+  const c = palette ?? DEFAULT_PALETTE;
+  return (
+  <svg {...svgBase} className={className}>
+    <rect x="12" y="6" width="24" height="12" rx="4" fill={c.fill} fillOpacity="0.14" {...lp(c)} />
+    <path d="M17 12h14" stroke={c.accent} strokeWidth="2.6" strokeLinecap="round" />
+    <path d="M19 18v3h10v-3" {...lp(c)} />
+    <rect x="20.5" y="21" width="7" height="22" rx="3.5" fill={c.fill} fillOpacity="0.14" {...lp(c)} />
+    <path d="M24 27v9" stroke={c.accent} strokeWidth="2.2" strokeLinecap="round" />
+    <circle cx="41" cy="14" r="1.8" fill={c.accent} />
+    <circle cx="7" cy="30" r="1.4" fill={c.accent} />
+  </svg>
+  );
+};
+
+// ماساژ و اسپا: گل نیلوفر آبی
+const MassageSpaIcon = ({ className, palette }: CategoryIconProps) => {
+  const c = palette ?? DEFAULT_PALETTE;
+  return (
+  <svg {...svgBase} className={className}>
+    <path d="M24 8C30 15 30 26 24 33 18 26 18 15 24 8Z" fill={c.accent} fillOpacity="0.5" {...lp(c)} />
+    <path d="M23 33.5C15.5 33.5 9 29.5 7 21.5 14.5 20.5 21 24.5 23 33.5Z" fill={c.fill} fillOpacity="0.14" {...lp(c)} />
+    <path d="M25 33.5C32.5 33.5 39 29.5 41 21.5 33.5 20.5 27 24.5 25 33.5Z" fill={c.fill} fillOpacity="0.14" {...lp(c)} />
+    <path d="M8 40c4-2.4 8-2.4 12 0s8 2.4 12 0 6-2 8-1" {...lp(c)} />
+  </svg>
+  );
+};
+
+// آیکون پیش‌فرض برای دسته‌های ناشناخته
+const DefaultCategoryIcon = ({ className, palette }: CategoryIconProps) => {
+  const c = palette ?? DEFAULT_PALETTE;
+  return (
+  <svg {...svgBase} className={className}>
+    <path d="M24 6c1.6 7 5 10.4 12 12-7 1.6-10.4 5-12 12-1.6-7-5-10.4-12-12 7-1.6 10.4-5 12-12Z" fill={c.accent} fillOpacity="0.5" {...lp(c)} />
+    <circle cx="37" cy="36" r="3" fill={c.fill} fillOpacity="0.14" {...lp(c)} />
+  </svg>
+  );
+};
+
+// --- تم رنگی دسته‌ها: همه در طیف رنگ برند (#824c71) با گرادیان ملایم ---
+// from/to: گرادیان تایل در حالت عادی | activeFrom/activeTo: گرادیان کمی پررنگ‌تر در حالت انتخاب
+const CATEGORY_THEME = {
+  from: '#FCF6FA',
+  to: '#F2E3ED',
+  activeFrom: '#F8EAF2',
+  activeTo: '#EBD2E2',
+  stroke: '#824c71',
+  accent: '#d98fb8',
+  text: '#824c71',
+};
+
+
+// تایل گرادیانی آیکون — دقیقاً هم‌استایل با دسته‌بندی‌های داشبورد
+const getTileStyle = (size: number, active = false): React.CSSProperties => ({
+  width: size,
+  height: size,
+  borderRadius: Math.round(size * 0.32),
+  background: active
+    ? `linear-gradient(145deg, ${CATEGORY_THEME.activeFrom}, ${CATEGORY_THEME.activeTo})`
+    : `linear-gradient(145deg, ${CATEGORY_THEME.from}, ${CATEGORY_THEME.to})`,
+  boxShadow: `inset 0 0 0 1px ${CATEGORY_THEME.stroke}1A`,
+});
+
+function ServiceIconTile({
+  icon: Icon,
+  size = 52,
+  active = false,
+}: {
+  icon: React.ComponentType<CategoryIconProps>;
+  size?: number;
+  active?: boolean;
+}) {
+  const iconSize = Math.round(size * 0.55);
+  return (
+    <span
+      className="flex items-center justify-center shrink-0 transition-all duration-200"
+      style={getTileStyle(size, active)}
+    >
+      <span style={{ width: iconSize, height: iconSize }} className="flex">
+        <Icon
+          className={`w-full h-full transition-transform duration-200 ${active ? 'scale-110' : ''}`}
+          palette={{ stroke: CATEGORY_THEME.stroke, fill: CATEGORY_THEME.stroke, accent: CATEGORY_THEME.accent }}
+        />
+      </span>
+    </span>
+  );
+}
+
+// ─── تشخیص آیکون خدمت بر اساس کلمات کلیدی در اسم آن ────────────────────────
+// از همان آیکون‌های وکتور دسته‌بندی‌های داشبورد استفاده می‌شه
+
+type ServiceIcon = React.ComponentType<CategoryIconProps>;
+
+const SERVICE_ICON_RULES: { keywords: string[]; icon: ServiceIcon }[] = [
+  { keywords: ['پدیکور', 'کفسابی', 'ناخن', 'دست', 'مانیکور', 'کاشت ناخن', 'ژلیش'], icon: NailsIcon },
+  { keywords: ['ابرو', 'مژه', 'میکروبلیدینگ', 'لیفت مژه'], icon: BrowsLashesIcon },
+  { keywords: ['عروس', 'فرمالیته'], icon: BridalIcon },
+  { keywords: ['میکاپ', 'آرایش', 'گریم'], icon: MakeupIcon },
+  { keywords: ['اپیلاسیون', 'لیزر', 'موزدایی', 'وکس', 'اصلاح'], icon: HairRemovalIcon },
+  { keywords: ['ماساژ', 'اسپا'], icon: MassageSpaIcon },
+  { keywords: ['پوست', 'فیشیال', 'پاکسازی', 'میکرودرم', 'مزوتراپی'], icon: SkinIcon },
+  { keywords: ['مو', 'کراتین', 'رنگ', 'شینیون', 'شنیون', 'بافت', 'براشینگ', 'کوتاهی', 'احیا'], icon: HairIcon },
 ];
 
-function getServiceIcon(name: string): LucideIcon {
+function getServiceIcon(name: string): ServiceIcon {
   const normalized = name.toLowerCase();
   for (const rule of SERVICE_ICON_RULES) {
     if (rule.keywords.some((kw) => normalized.includes(kw))) return rule.icon;
   }
-  return Sparkles;
+  return DefaultCategoryIcon;
 }
 
 // ─── Breadcrumb ───────────────────────────────────────────────────────────────
@@ -479,7 +684,7 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
           </div>
         )}
 
-        {/* ─── مرحله ۱: خدمات — کارت‌ها به سبک دسته‌بندی صفحه‌ی اصلی، با آیکون تشخیصی ─── */}
+        {/* ─── مرحله ۱: خدمات — تایل گرادیانی + آیکون وکتور، یکدست با دسته‌بندی‌های داشبورد ─── */}
         {step === 'service' && (
           <div className="space-y-2.5">
             {services.length === 0 ? (
@@ -491,22 +696,13 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
                 <button
                   key={svc.id}
                   onClick={() => setSelectedService(svc)}
-                  className={`w-full flex items-center gap-3.5 p-3.5 rounded-[10px] text-right transition-all active:scale-[0.99] ${
+                  className={`w-full flex items-center gap-3.5 p-3 rounded-2xl text-right transition-all active:scale-[0.99] ${
                     isSelected
                       ? 'bg-[#824c71]/[0.06] ring-1 ring-[#824c71]'
                       : 'bg-zinc-50 hover:bg-zinc-100'
                   }`}
                 >
-                  <span
-                    className={`w-11 h-11 rounded-full flex items-center justify-center shrink-0 transition-colors ${
-                      isSelected ? 'bg-[#824c71]/15' : 'bg-[#824c71]/[0.08]'
-                    }`}
-                  >
-                    <Icon
-                      className={`w-5 h-5 ${isSelected ? 'text-[#824c71]' : 'text-[#824c71]/75'}`}
-                      strokeWidth={1.75}
-                    />
-                  </span>
+                  <ServiceIconTile icon={Icon} size={52} active={isSelected} />
 
                   <div className="flex-1 min-w-0">
                     <p className={`text-sm font-semibold ${isSelected ? 'text-[#824c71]' : 'text-zinc-900'}`}>
@@ -536,7 +732,7 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
           </div>
         )}
 
-        {/* ─── مرحله ۲: پرسنل — «تفاوتی ندارد» با آیکون گروه + جداکننده، نه بوردر خط‌چین ─── */}
+        {/* ─── مرحله ۲: پرسنل — «تفاوتی ندارد» و آواتار پرسنل روی همان تایل گرادیانی ─── */}
         {step === 'staff' && selectedService && (
           <div>
             {isLoadingStaff ? (
@@ -546,16 +742,17 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
                 {/* تفاوتی ندارد */}
                 <button
                   onClick={() => setSelectedStaffId(null)}
-                  className={`w-full flex items-center gap-3.5 p-3.5 rounded-[10px] text-right transition-all ${
+                  className={`w-full flex items-center gap-3.5 p-3 rounded-2xl text-right transition-all ${
                     selectedStaffId === null
                       ? 'bg-[#824c71]/[0.06] ring-1 ring-[#824c71]'
                       : 'bg-zinc-50 hover:bg-zinc-100'
                   }`}
                 >
-                  <span className={`w-11 h-11 rounded-full flex items-center justify-center shrink-0 ${
-                    selectedStaffId === null ? 'bg-[#824c71]/15' : 'bg-zinc-200/70'
-                  }`}>
-                    <Users className={`w-5 h-5 ${selectedStaffId === null ? 'text-[#824c71]' : 'text-zinc-500'}`} strokeWidth={1.75} />
+                  <span
+                    className="flex items-center justify-center shrink-0 transition-all duration-200"
+                    style={getTileStyle(52, selectedStaffId === null)}
+                  >
+                    <Users className="w-6 h-6" style={{ color: CATEGORY_THEME.stroke }} strokeWidth={1.75} />
                   </span>
                   <p className={`flex-1 text-sm font-semibold text-right ${selectedStaffId === null ? 'text-[#824c71]' : 'text-zinc-900'}`}>
                     تفاوتی ندارد
@@ -581,15 +778,16 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
                     <button
                       key={s.id}
                       onClick={() => setSelectedStaffId(s.id)}
-                      className={`w-full flex items-center gap-3.5 p-3.5 rounded-[10px] text-right transition-all ${
+                      className={`w-full flex items-center gap-3.5 p-3 rounded-2xl text-right transition-all ${
                         isSelected
                           ? 'bg-[#824c71]/[0.06] ring-1 ring-[#824c71]'
                           : 'bg-zinc-50 hover:bg-zinc-100'
                       }`}
                     >
-                      <span className={`w-11 h-11 rounded-full flex items-center justify-center text-sm font-bold shrink-0 ${
-                        isSelected ? 'bg-[#824c71]/15 text-[#824c71]' : 'bg-[#824c71]/[0.08] text-[#824c71]/75'
-                      }`}>
+                      <span
+                        className="flex items-center justify-center text-base font-bold shrink-0 transition-all duration-200"
+                        style={{ ...getTileStyle(52, isSelected), color: CATEGORY_THEME.stroke }}
+                      >
                         {s.name.slice(0, 1)}
                       </span>
                       <p className={`flex-1 text-sm font-semibold text-right ${isSelected ? 'text-[#824c71]' : 'text-zinc-900'}`}>
