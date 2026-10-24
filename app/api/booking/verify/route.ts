@@ -1,11 +1,12 @@
 // app/api/booking/verify/route.ts
-import { NextResponse } from 'next/server';
+import { NextResponse, after } from 'next/server';
 import { cookies } from 'next/headers';
 import jwt from 'jsonwebtoken';
 import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { verifyZarinpalPayment } from '@/lib/zarinpal';
 import { checkBookingSlotStillAvailable } from '@/lib/bookingSchedule';
+import { notifyBookingConfirmed } from '@/lib/bookingNotifications';
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
@@ -87,6 +88,10 @@ export async function GET(req: Request) {
 
         if (!outcome.ok) {
           return redirectTo('slotTaken');
+        }
+        // پیامک تایید نوبت (همان لحظه)؛ اگر قبلاً SUCCESS بوده پیامک تکراری نمی‌رود.
+        if (booking.paymentStatus !== 'SUCCESS') {
+          after(() => notifyBookingConfirmed({ bookingId: booking.id, fallbackBaseUrl: baseUrl }));
         }
         return redirectTo('success');
       } catch (txError) {

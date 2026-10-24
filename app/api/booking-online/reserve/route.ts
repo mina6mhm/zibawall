@@ -1,5 +1,5 @@
 // app/api/booking-online/reserve/route.ts
-import { NextResponse } from 'next/server';
+import { NextResponse, after } from 'next/server';
 import { cookies } from 'next/headers';
 import jwt from 'jsonwebtoken';
 import { Prisma } from '@prisma/client';
@@ -7,6 +7,7 @@ import type { BookingService, Staff } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { BOOKING_APP_FEE } from '@/lib/constants';
 import { timeToMin, validateSlotAgainstSchedule } from '@/lib/bookingSchedule';
+import { notifyBookingConfirmed } from '@/lib/bookingNotifications';
 
 type ReserveItem = {
   serviceId: string;
@@ -276,6 +277,13 @@ export async function POST(req: Request) {
         );
       }
       throw err;
+    }
+
+    // اگر مبلغی برای پرداخت نیست، نوبت همین‌جا CONFIRMED شده → پیامک همین لحظه.
+    // (در حالت پرداختی، پیامک بعد از موفق شدن پرداخت در booking-group/verify ارسال می‌شود.)
+    if (group.paymentStatus === 'SUCCESS') {
+      const origin = new URL(req.url).origin;
+      after(() => notifyBookingConfirmed({ groupId: group.id, fallbackBaseUrl: origin }));
     }
 
     return NextResponse.json({ success: true, group }, { status: 201 });

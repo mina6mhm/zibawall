@@ -1,11 +1,12 @@
 //app/api/booking-group/verify/route.ts
-import { NextResponse } from 'next/server';
+import { NextResponse, after } from 'next/server';
 import { cookies } from 'next/headers';
 import jwt from 'jsonwebtoken';
 import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { verifyZarinpalPayment } from '@/lib/zarinpal';
 import { checkGroupSlotsStillAvailable } from '@/lib/bookingSchedule';
+import { notifyBookingConfirmed } from '@/lib/bookingNotifications';
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
@@ -92,6 +93,11 @@ export async function GET(req: Request) {
 
         if (!outcome.ok) {
           return redirectTo('slotTaken');
+        }
+        // پیامک تایید نوبت (همان لحظه، بعد از ارسال پاسخ). اگر این callback دوباره
+        // صدا زده شود و گروه از قبل SUCCESS بوده، پیامک تکراری نمی‌رود.
+        if (group.paymentStatus !== 'SUCCESS') {
+          after(() => notifyBookingConfirmed({ groupId: group.id, fallbackBaseUrl: baseUrl }));
         }
         return redirectTo('success');
       } catch (txError) {

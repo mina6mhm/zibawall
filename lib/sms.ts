@@ -74,3 +74,31 @@ export async function sendBookingReminderSms(params: {
     },
   });
 }
+
+// پیامک تایید ثبت نوبت — بلافاصله بعد از قطعی شدن نوبت (پرداخت موفق) برای مشتری ارسال می‌شود.
+// یک پترن جدید در پنل ایران‌پیامک/فراز بسازید و کدش را در env بگذارید:
+// FARAZ_SMS_BOOKING_CONFIRM_PATTERN_CODE
+// متغیرهای پترن: salon, date, time, services, link
+export async function sendBookingConfirmationSms(params: {
+  phone: string;
+  salonName: string;
+  date: string;     // تاریخ شمسی، مثلاً "۱۴۰۵/۰۸/۰۲"
+  time: string;     // ساعت، مثلاً "16:30"
+  services: string; // نام خدمات، مثلاً "کراتین مو، میکاپ"
+  link: string;     // لینک صفحه‌ی جزئیات سالن
+}) {
+  const patternCode = process.env.FARAZ_SMS_BOOKING_CONFIRM_PATTERN_CODE;
+  if (!patternCode) throw new Error('FARAZ_SMS_BOOKING_CONFIRM_PATTERN_CODE is not configured');
+
+  return sendPatternSms({
+    patternCode,
+    recipient: params.phone,
+    attributes: {
+      salon: params.salonName,
+      date: params.date,
+      time: params.time,
+      services: params.services,
+      link: params.link,
+    },
+  });
+}
