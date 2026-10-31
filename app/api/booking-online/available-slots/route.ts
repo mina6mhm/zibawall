@@ -98,17 +98,23 @@ export async function GET(req: Request) {
     currentUserId = null;
   }
 
-  const existingBookings = await prisma.booking.findMany({
+  // نکته: فیلتر customerId: { not: ... } عمداً حذف شد، چون (۱) نوبت‌های CONFIRMED
+  // خودِ کاربر هم باید اسلات رو اشغال نشون بدن و (۲) در SQL شرط <> روی ردیف‌هایی
+  // که customerId = NULL دارن false می‌شه و اون نوبت‌ها اشتباهاً آزاد دیده می‌شدن.
+  // فقط هولدِ پرداخت‌نشده‌ی خودِ کاربر رو در حافظه کنار می‌ذاریم.
+  const activeBookings = await prisma.booking.findMany({
     where: {
       salonId,
       date: { gte: new Date(dateStr + 'T00:00:00Z'), lt: new Date(dateStr + 'T23:59:59Z') },
-      ...(currentUserId ? { customerId: { not: currentUserId } } : {}),
       OR: [
         { status: 'CONFIRMED' },
         { status: 'PENDING_PAYMENT', expiresAt: { gt: now } },
       ],
     },
   });
+  const existingBookings = activeBookings.filter(
+    (b) => !(currentUserId && b.customerId === currentUserId && b.status === 'PENDING_PAYMENT')
+  );
 
   // ── ۵. محاسبه اسلات‌های آزاد برای هر پرسنل ─────────────────────────────
   const slotStaffMap: Record<string, { id: string; name: string }[]> = {};

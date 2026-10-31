@@ -301,10 +301,18 @@ export async function checkBookingSlotStillAvailable(
     services: Prisma.JsonValue;
     expiresAt: Date | null;
     customerId: string | null;
+    status?: string;
+    bookingGroupId?: string | null;
   },
   client: QueryClient = prisma
 ): Promise<{ ok: true } | { ok: false; error: string }> {
   const now = new Date();
+
+  // هولدی که قبلاً کنسل شده (مثلاً چون کاربر دوباره رزرو کرده) نباید با پرداخت
+  // دیرهنگام دوباره CONFIRMED بشه
+  if (booking.status === 'CANCELLED') {
+    return { ok: false, error: 'این رزرو لغو شده است' };
+  }
 
   if (booking.expiresAt && booking.expiresAt.getTime() <= now.getTime()) {
     return { ok: false, error: 'مهلت این رزرو به پایان رسیده است' };
@@ -331,9 +339,6 @@ export async function checkBookingSlotStillAvailable(
       salonId: booking.salonId,
       id: { not: booking.id },
       date: { gte: dayStart, lt: dayEnd },
-      // نوبت‌های دیگه‌ی خودِ همین مشتری نباید به‌عنوان «توسط شخص دیگری رزرو
-      // شده» حساب بشن — این چک فقط باید جلوی تداخل با مشتری‌های دیگه رو بگیره
-      ...(booking.customerId ? { customerId: { not: booking.customerId } } : {}),
       OR: [
         { status: 'CONFIRMED' },
         { status: 'PENDING_PAYMENT', expiresAt: { gt: now } },
@@ -342,6 +347,9 @@ export async function checkBookingSlotStillAvailable(
   });
 
   const conflict = others.some((ob) => {
+    // نوبت‌های همین سبد (همین BookingGroup) با هم تداخل حساب نمی‌شن؛ ولی نوبت‌های
+    // دیگه‌ی همین مشتری (از گروه‌های دیگه) اگه همون پرسنل/ساعت باشن تداخل هستن
+    if (booking.bookingGroupId && ob.bookingGroupId === booking.bookingGroupId) return false;
     const obServices = (ob.services as any[]) ?? [];
     const obStaffIds: string[] = obServices.map((s: any) => s.staffId).filter(Boolean);
     if (!staffIds.some((id) => obStaffIds.includes(id))) return false;

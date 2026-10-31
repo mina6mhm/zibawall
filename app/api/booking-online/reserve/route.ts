@@ -141,14 +141,15 @@ export async function POST(req: Request) {
           });
 
           const busyByStaffDate: Record<string, { start: number; end: number }[]> = {};
-          // هولدهای فعالِ خودِ همین کاربر برای همین تاریخ‌ها — این‌ها نباید مانع
-          // تلاش دوباره‌اش بشن (مثلاً وقتی بار قبل پرداخت انجام نشده)، ولی چون
-          // داره دوباره هولد می‌گیره، هولد قبلی‌شو کنسل می‌کنیم که دیتای یتیم
-          // نمونه و دو هولد فعال هم‌زمان برای خودش نداشته باشه
+          // هولدهای پرداخت‌نشده‌ی خودِ همین کاربر برای همین تاریخ‌ها — این‌ها نباید
+          // مانع تلاش دوباره‌اش بشن (مثلاً وقتی بار قبل پرداخت کامل نشده)، ولی چون
+          // داره دوباره هولد می‌گیره، هولد قبلی‌شو کنسل می‌کنیم.
+          // نکته‌ی مهم: فقط PENDING_PAYMENT «هولد» حساب می‌شه. نوبت‌های CONFIRMED
+          // خودِ کاربر مثل نوبت‌های بقیه اسلات رو اشغال می‌کنن و هیچ‌وقت کنسل نمی‌شن.
           const ownStaleBookingIds: string[] = [];
 
           for (const b of existingBookings) {
-            if (b.customerId === user.id) {
+            if (b.customerId === user.id && b.status === 'PENDING_PAYMENT') {
               ownStaleBookingIds.push(b.id);
               continue;
             }
@@ -201,7 +202,7 @@ export async function POST(req: Request) {
             );
 
             await tx.booking.updateMany({
-              where: { id: { in: ownStaleBookingIds } },
+              where: { id: { in: ownStaleBookingIds }, status: 'PENDING_PAYMENT' },
               data: { status: 'CANCELLED' },
             });
             if (staleGroupIds.length > 0) {
