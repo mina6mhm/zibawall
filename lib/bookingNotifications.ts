@@ -19,6 +19,7 @@ type Target =
 
 export async function notifyBookingConfirmed(target: Target): Promise<void> {
   try {
+    console.log('📨 notifyBookingConfirmed شروع شد:', JSON.stringify(target));
     const where =
       'groupId' in target
         ? { bookingGroupId: target.groupId, status: 'CONFIRMED' as const }
@@ -29,11 +30,17 @@ export async function notifyBookingConfirmed(target: Target): Promise<void> {
       include: { salon: { select: { id: true, name: true } } },
       orderBy: [{ date: 'asc' }, { startTime: 'asc' }],
     });
-    if (bookings.length === 0) return;
+    if (bookings.length === 0) {
+      console.warn('📨 پیامک تایید نوبت: هیچ نوبت CONFIRMED پیدا نشد');
+      return;
+    }
 
     const first = bookings[0];
     const phone = first.customerPhone;
-    if (!phone) return;
+    if (!phone) {
+      console.warn('📨 پیامک تایید نوبت: شماره‌ی مشتری روی نوبت ثبت نشده');
+      return;
+    }
 
     const baseUrl = (process.env.NEXT_PUBLIC_BASE_URL || target.fallbackBaseUrl || '').replace(/\/+$/, '');
     if (!baseUrl) {
@@ -53,6 +60,7 @@ export async function notifyBookingConfirmed(target: Target): Promise<void> {
       )
     );
 
+    console.log('📨 ارسال پیامک تایید نوبت به', phone);
     await sendBookingConfirmationSms({
       phone,
       salonName: first.salon.name,

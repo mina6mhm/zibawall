@@ -90,15 +90,19 @@ export async function sendBookingConfirmationSms(params: {
   const patternCode = process.env.FARAZ_SMS_BOOKING_CONFIRM_PATTERN_CODE;
   if (!patternCode) throw new Error('FARAZ_SMS_BOOKING_CONFIRM_PATTERN_CODE is not configured');
 
+  // فقط وقتی پترن در پنل متغیر link دارد، آن را می‌فرستیم؛ ارسال متغیر اضافه باعث رد شدن پیامک می‌شود.
+  // بعد از ساخت پترن جدید با link: FARAZ_SMS_BOOKING_CONFIRM_WITH_LINK=true
+  const withLink = process.env.FARAZ_SMS_BOOKING_CONFIRM_WITH_LINK === 'true';
+
   return sendPatternSms({
     patternCode,
     recipient: params.phone,
     attributes: {
       salon: params.salonName,
+      services: params.services,
       date: params.date,
       time: params.time,
-      services: params.services,
-      link: params.link,
+      ...(withLink ? { link: params.link } : {}),
     },
   });
 }
