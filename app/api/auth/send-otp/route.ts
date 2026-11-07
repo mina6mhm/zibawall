@@ -47,9 +47,17 @@ export async function POST(req: Request) {
       );
     }
 
-    const otpCode = Math.floor(
-      10000 + Math.random() * 90000
-    ).toString();
+    // لیست شماره‌های تستی که کد ثابت دارن (مثلاً شماره‌های خارجی که SMS بهشون نمی‌رسه)
+    const testPhones = (process.env.TEST_PHONE_NUMBERS || '')
+      .split(',')
+      .map((p) => p.trim())
+      .filter(Boolean);
+
+    const isTestPhone = testPhones.includes(mobile);
+
+    const otpCode = isTestPhone
+      ? (process.env.TEST_OTP_CODE || '11111')
+      : Math.floor(10000 + Math.random() * 90000).toString();
 
     // زمان اعتبار کد و فاصله‌ی لازم برای ارسال مجدد: ۹۰ ثانیه
     const expiresAt = new Date(
@@ -74,12 +82,24 @@ export async function POST(req: Request) {
     // در حالت تستی این لاگ بسیار مهم است تا بتوانید کد را بردارید
     console.log(`🔑 OTP for ${mobile}: ${otpCode}`);
 
+    // شماره‌های whitelist شده (TEST_PHONE_NUMBERS) هیچ‌وقت SMS واقعی
+    // نمی‌گیرن، چه در dev چه در production — کدشون همیشه TEST_OTP_CODE است
+    if (isTestPhone) {
+      return NextResponse.json(
+        {
+          success: true,
+          message: 'کد تایید ارسال شد'
+        },
+        {
+          status: 200
+        }
+      );
+    }
+
     // در محیط لوکال/توسعه، کد OTP همین بالا در ترمینال لاگ شده و در دیتابیس
     // هم ذخیره شده — نیازی به کلیدهای واقعی سرویس پیامکی (فراز/ایران‌پیامک)
-    // نیست. این‌طوری می‌شود بدون تنظیم SMS_API_KEY هم به‌صورت لوکال با هر
-    // شماره‌ای لاگین کرد: کافی است کد لاگ‌شده در ترمینال را وارد کنید.
-    // در production (روی دامنه‌ی اصلی) این بخش رد نمی‌شود و پیامک واقعی
-    // طبق روال قبلی ارسال می‌شود.
+    // نیست. در production (روی دامنه‌ی اصلی) این بخش رد نمی‌شود و پیامک
+    // واقعی طبق روال قبلی ارسال می‌شود.
     if (process.env.NODE_ENV !== 'production') {
       return NextResponse.json(
         {
@@ -110,7 +130,6 @@ export async function POST(req: Request) {
       );
     }
 
-    // بعد:
     const requestBody = {
       code: 'J88zq2Mhlt', // کد پترن تایید شده
       recipient: mobile,
@@ -123,12 +142,6 @@ export async function POST(req: Request) {
       number_format: 'english'
     };
 
-    // نکته‌ی مهم: قبلاً اینجا با await منتظر پاسخ سرویس پیامکی می‌ماندیم و
-    // فقط بعد از آن به کاربر پاسخ می‌دادیم؛ همین باعث می‌شد رفتن به صفحه‌ی
-    // کد تایید در فرانت‌اند چند ثانیه (تا ۱۵ ثانیه در بدترین حالت) طول بکشد.
-    // چون کد OTP از قبل در دیتابیس ذخیره شده، همین الان به کاربر پاسخ موفق
-    // می‌دهیم و ارسال واقعی پیامک را با after() در پس‌زمینه انجام می‌دهیم؛
-    // این‌طوری فرانت‌اند بلافاصله بعد از ثبت کد به مرحله‌ی بعد می‌رود.
     after(async () => {
       try {
         console.log(
