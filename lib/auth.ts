@@ -37,3 +37,21 @@ export async function getAuthUser(): Promise<AuthResult> {
     return { error: 'توکن نامعتبر یا منقضی شده است', status: 401 };
   }
 }
+
+// برای فایل‌هایی که خودشان کوکی را می‌خوانند: اعتبارسنجی یکسان توکن (HS256 + userId معتبر)
+// بدون هیچ secret پیش‌فرض. اگر نامعتبر بود null برمی‌گرداند.
+export function verifyAuthToken(token: string): { userId: string; role?: string } | null {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
+    console.error('JWT_SECRET is not defined');
+    return null;
+  }
+  try {
+    const decoded = jwt.verify(token, secret, { algorithms: ['HS256'] });
+    if (typeof decoded === 'string') return null;
+    if (typeof decoded.userId !== 'string' || decoded.userId === '') return null;
+    return { userId: decoded.userId, role: decoded.role as string | undefined };
+  } catch {
+    return null;
+  }
+}

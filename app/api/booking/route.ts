@@ -5,6 +5,7 @@ import { prisma } from '@/lib/prisma';
 import { getAuthUser } from '@/lib/auth';
 import { normalizeDigits } from '@/lib/phone';
 import { getSalonForUserId } from '@/lib/salonAccess';
+import { parseDayRange, dateWhere, MAX_BOOKING_ROWS } from '@/lib/dateRange';
 
 export const dynamic = 'force-dynamic';
 
@@ -50,9 +51,9 @@ function sanitizeServices(
     .filter((s) => s.name !== '');
 }
 
-// دریافت لیست نوبت‌های سالنِ کاربر لاگین‌شده
-// ⚠️ این کوئری همه‌ی نوبت‌های CONFIRMED را از ابتدا برمی‌گرداند و با رشد سالن کند می‌شود؛
-// بهتر است فیلتر بازه‌ی تاریخ (from/to) اضافه شود (به نوع فیلد date در schema بستگی دارد).
+// دریافت لیست نوبت‌های قطعی سالنِ کاربر لاگین‌شده
+// فیلتر بازه‌ی تاریخ: ?from=YYYY-MM-DD&to=YYYY-MM-DD (هر دو شامل). اگر from نیاید، از ۳۱ روز پیش
+// تا آینده برمی‌گردد؛ سقف ردیف و سقف طول بازه هم دارد (به lib/dateRange.ts نگاه کنید).
 export async function GET(req: Request) {
   try {
     const result = await getOwnedSalonFromToken();
@@ -60,9 +61,15 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: result.error }, { status: result.status });
     }
 
+    const range = parseDayRange(new URL(req.url).searchParams);
+    if ('error' in range) {
+      return NextResponse.json({ error: range.error }, { status: 400 });
+    }
+
     const bookings = await prisma.booking.findMany({
-      where: { salonId: result.salon.id, status: 'CONFIRMED' },
+      where: { salonId: result.salon.id, status: 'CONFIRMED', date: dateWhere(range) },
       orderBy: [{ date: 'asc' }, { startTime: 'asc' }],
+      take: MAX_BOOKING_ROWS,
     });
 
     return NextResponse.json({ bookings }, { status: 200 });
@@ -135,6 +142,16 @@ export async function PUT(req: Request) {
     const finalDepositAmount =
       typeof depositAmount === 'number' && depositAmount > 0 ? Math.round(depositAmount) : 0;
 
+    // مبلغ نوبتی که پرداختش شروع یا انجام شده نباید عوض شود: verify با مبلغ ذخیره‌شده تایید می‌کند و
+    // تغییر مبلغ بعد از پرداخت یا بعد از ساخت authority، تایید را خراب یا حسابداری را نادرست می‌کند
+    const paymentLocked = existingBooking.paymentStatus === 'SUCCESS' || !!existingBooking.authority;
+    if (paymentLocked && finalDepositAmount !== existingBooking.depositAmount) {
+      return NextResponse.json(
+        { error: 'مبلغ بیعانه‌ی نوبتی که پرداخت آن شروع یا انجام شده قابل تغییر نیست' },
+        { status: 400 }
+      );
+    }
+
     const totalAmount = finalDepositAmount + existingBooking.appFee;
 
     const trimmedName = typeof customerName === 'string' ? customerName.trim().slice(0, 100) : '';
@@ -144,8 +161,9 @@ export async function PUT(req: Request) {
       select: { id: true },
     });
 
-    const updatedBooking = await prisma.booking.update({
-      where: { id },
+    // اگر هم‌زمان لغو شده باشد، نوشتن انجام نمی‌شود
+    const updated = await prisma.booking.updateMany({
+      where: { id, salonId: salon.id, status: { not: 'CANCELLED' } },
       data: {
         customerId: existingCustomer?.id || null,
         customerName: trimmedName || null,
@@ -155,6 +173,11 @@ export async function PUT(req: Request) {
         totalAmount,
       },
     });
+    if (updated.count === 0) {
+      return NextResponse.json({ error: 'نوبت لغو شده قابل ویرایش نیست' }, { status: 400 });
+    }
+
+    const updatedBooking = await prisma.booking.findUnique({ where: { id } });
 
     return NextResponse.json({ success: true, booking: updatedBooking }, { status: 200 });
   } catch (error) {

@@ -16,7 +16,7 @@ async function requireOwnedSalon() {
 
   let decoded: any;
   try {
-    decoded = jwt.verify(token, process.env.JWT_SECRET!);
+    decoded = jwt.verify(token, process.env.JWT_SECRET!, { algorithms: ['HS256'] });
   } catch {
     return { error: 'توکن نامعتبر است', status: 401 as const };
   }

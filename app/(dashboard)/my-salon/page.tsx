@@ -110,6 +110,24 @@ export default function MySalonPage() {
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
   const datePickerRef = useRef<HTMLDivElement>(null);
 
+  // نوبت‌ها فقط برای همان روزی که صفحه نشان می‌دهد گرفته می‌شوند
+  const selectedDateRef = useRef<Date>(selectedDate);
+  useEffect(() => { selectedDateRef.current = selectedDate; }, [selectedDate]);
+
+  const loadBookingsForDay = useCallback(async (d: Date) => {
+    const day = d.toISOString().slice(0, 10);
+    try {
+      const res = await fetch(`/api/booking?from=${day}&to=${day}`);
+      // اگر کاربر در این فاصله روز دیگری را انتخاب کرده، پاسخ قدیمی نادیده گرفته می‌شود
+      if (res.ok && selectedDateRef.current.toISOString().slice(0, 10) === day) {
+        const data = await res.json();
+        setBookings(data.bookings || []);
+      }
+    } catch (error) {
+      console.error('خطا در دریافت نوبت‌ها:', error);
+    }
+  }, []);
+
   const fetchData = useCallback(async () => {
     try {
       const [profileRes, staffRes] = await Promise.all([
@@ -126,11 +144,8 @@ export default function MySalonPage() {
           setHasSalon(true);
           setSalonName(profileData.salon.name);
           setBookingEnabled(!!profileData.salon.bookingEnabled);
-          const bookingsRes = await fetch('/api/booking');
-          if (bookingsRes.ok) {
-            const bookingsData = await bookingsRes.json();
-            setBookings(bookingsData.bookings || []);
-          }
+          // فقط نوبت‌های «روز انتخاب‌شده» (قبلاً کل تاریخچه‌ی سالن دریافت می‌شد)
+          await loadBookingsForDay(selectedDateRef.current);
         } else {
           setHasSalon(false);
         }
@@ -147,9 +162,16 @@ export default function MySalonPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [router]);
+  }, [router, loadBookingsForDay]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
+  const isFirstDayEffect = useRef(true);
+  useEffect(() => {
+    if (isFirstDayEffect.current) { isFirstDayEffect.current = false; return; }
+    if (hasSalon) loadBookingsForDay(selectedDate);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedDate]);
+
 
   // تب پیش‌فرض: اگر فقط پرسنل است (سالن ندارد)، مستقیم برو سراغ برنامه‌ی پرسنلی
   useEffect(() => {
@@ -160,7 +182,8 @@ export default function MySalonPage() {
     if (!selectedStaffId) { setStaffBookings([]); return; }
     setIsLoadingStaffBookings(true);
     try {
-      const res = await fetch(`/api/staff/bookings?staffId=${selectedStaffId}`);
+      const day = selectedDate.toISOString().slice(0, 10);
+      const res = await fetch(`/api/staff/bookings?staffId=${encodeURIComponent(selectedStaffId)}&from=${day}&to=${day}`);
       if (res.ok) {
         const data = await res.json();
         setStaffBookings(data.bookings ?? []);
@@ -168,7 +191,7 @@ export default function MySalonPage() {
     } finally {
       setIsLoadingStaffBookings(false);
     }
-  }, [selectedStaffId]);
+  }, [selectedStaffId, selectedDate]);
 
   useEffect(() => { fetchStaffBookings(); }, [fetchStaffBookings]);
 

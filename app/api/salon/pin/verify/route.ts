@@ -1,9 +1,10 @@
 // app/api/salon/pin/verify/route.ts
 import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
-import jwt from 'jsonwebtoken';
 import { prisma } from '@/lib/prisma';
+import { getAuthUser } from '@/lib/auth';
 import { verifyZarinpalPayment } from '@/lib/zarinpal';
+
+export const dynamic = 'force-dynamic';
 
 const PIN_DURATION_DAYS = 30;
 const PIN_DURATION_MS = PIN_DURATION_DAYS * 24 * 60 * 60 * 1000;
@@ -14,24 +15,13 @@ export async function GET(req: Request) {
   const status = searchParams.get('Status');
   const paymentId = searchParams.get('paymentId');
 
-  const baseUrl = new URL(req.url).origin;
+  // پشت پروکسی origin درخواست ممکن است آدرس داخلی باشد
+  const baseUrl = (process.env.NEXT_PUBLIC_BASE_URL || new URL(req.url).origin).replace(/\/+$/, '');
 
-  // این درخواست (برگشت از زرین‌پال) روی اپ‌های نیتیو داخل مرورگرِ سیستم اتفاق
-  // می‌افتد نه WebView خودِ اپ (به lib/openPaymentUrl.ts نگاه کنید)، پس کوکی
-  // لاگینِ اپ آنجا وجود ندارد. اگر همین‌جا کوکی معتبر داشتیم (حالت وب)، مستقیم
-  // به صفحه‌ی محافظت‌شده برمی‌گردیم؛ در غیر این صورت (حالت اپ نیتیو) به
-  // صفحه‌ی عمومی /payment/result که نیازی به لاگین ندارد.
-  const hasValidSession = await (async () => {
-    try {
-      const cookieStore = await cookies();
-      const token = cookieStore.get('token')?.value;
-      if (!token) return false;
-      jwt.verify(token, process.env.JWT_SECRET!);
-      return true;
-    } catch {
-      return false;
-    }
-  })();
+  // برگشت از زرین‌پال روی اپ‌های نیتیو داخل مرورگرِ سیستم اتفاق می‌افتد (کوکی لاگین اپ آنجا نیست)
+  // → صفحه‌ی عمومی /payment/result؛ در حالت وب (کوکی معتبر) → صفحه‌ی بیزینس
+  const auth = await getAuthUser();
+  const hasValidSession = !('error' in auth);
 
   const redirectTo = (resultStatus: 'success' | 'failed') =>
     hasValidSession
@@ -46,20 +36,45 @@ export async function GET(req: Request) {
   // idempotent: اگر قبلاً روی این پرداخت verify موفق انجام شده، دوباره روزها اضافه نشود
   if (payment.status === 'SUCCESS') return redirectTo('success');
 
+  // فقط اگر هنوز SUCCESS نشده FAILED می‌نویسیم (قبلاً Status=NOK روی پرداخت موفق هم FAILED می‌نوشت)
+  const markFailedUnlessPaid = async (): Promise<'success' | 'failed'> => {
+    const res = await prisma.payment.updateMany({
+      where: { id: payment.id, status: { not: 'SUCCESS' } },
+      data: { status: 'FAILED' },
+    });
+    return res.count > 0 ? 'failed' : 'success';
+  };
+
   if (status !== 'OK') {
-    await prisma.payment.update({ where: { id: payment.id }, data: { status: 'FAILED' } });
+    return redirectTo(await markFailedUnlessPaid());
+  }
+
+  let result: Awaited<ReturnType<typeof verifyZarinpalPayment>>;
+  try {
+    result = await verifyZarinpalPayment({ amountToman: payment.amount, authority });
+  } catch (error) {
+    // خطای شبکه/timeout: وضعیت نامعلوم است؛ FAILED نمی‌کنیم تا لینک دوباره قابل verify باشد
+    console.error('Error verifying salon pin payment:', error);
     return redirectTo('failed');
   }
 
-  try {
-    const result = await verifyZarinpalPayment({ amountToman: payment.amount, authority });
+  if (!result.success) {
+    return redirectTo(await markFailedUnlessPaid());
+  }
 
-    if (result.success) {
-      await prisma.$transaction(async (tx) => {
-        await tx.payment.update({
-          where: { id: payment.id },
+  try {
+    await prisma.$transaction(
+      async (tx) => {
+        // «ادعای» اتمیک پرداخت: فقط یک callback (از چند callback هم‌زمان/تکراری) برنده می‌شود.
+        // قبلاً دو callback هم‌زمان هر دو شرط SUCCESS نبودن را رد می‌کردند و ۳۰ روز دوبار اضافه می‌شد.
+        const claimed = await tx.payment.updateMany({
+          where: { id: payment.id, status: { not: 'SUCCESS' } },
           data: { status: 'SUCCESS', refId: String(result.refId) },
         });
+        if (claimed.count === 0) return; // callback دیگری قبلاً روزها را اضافه کرده
+
+        // قفل ردیف سالن: دو پرداخت پینِ هم‌زمان برای یک سالن، تمدید همدیگر را گم نکنند
+        await tx.$queryRaw`SELECT id FROM "Salon" WHERE id = ${payment.salonId} FOR UPDATE`;
 
         const salon = await tx.salon.findUnique({ where: { id: payment.salonId } });
         if (!salon) return;
@@ -75,15 +90,19 @@ export async function GET(req: Request) {
           where: { id: salon.id },
           data: { pinnedUntil: newExpiry, pinnedAt: now },
         });
-      });
+      },
+      { maxWait: 10_000, timeout: 15_000 }
+    );
 
-      return redirectTo('success');
-    }
-
-    await prisma.payment.update({ where: { id: payment.id }, data: { status: 'FAILED' } });
-    return redirectTo('failed');
+    return redirectTo('success');
   } catch (error) {
-    console.error('Error verifying salon pin payment:', error);
+    // پول تایید شده ولی ثبت در دیتابیس شکست خورد → باید دستی پیگیری شود
+    console.error('PAYMENT_VERIFIED_BUT_PIN_NOT_APPLIED', {
+      paymentId: payment.id,
+      authority,
+      refId: result.refId,
+      error,
+    });
     return redirectTo('failed');
   }
 }

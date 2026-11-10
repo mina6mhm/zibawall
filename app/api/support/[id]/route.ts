@@ -12,7 +12,7 @@ async function getAuth() {
   const token = cookieStore.get('token')?.value;
   if (!token) return null;
   try {
-    return jwt.verify(token, process.env.JWT_SECRET!) as any;
+    return jwt.verify(token, process.env.JWT_SECRET!, { algorithms: ['HS256'] }) as any;
   } catch {
     return null;
   }

@@ -1,25 +1,31 @@
 // app/api/user/profile/route.ts
 
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
-import jwt from 'jsonwebtoken';
+import { Prisma } from '@prisma/client';
 import { cookies } from 'next/headers';
+import { prisma } from '@/lib/prisma';
+import { getAuthUser } from '@/lib/auth';
 import { getAccessibleSalonsForUserId, ACTIVE_SALON_COOKIE } from '@/lib/salonAccess';
 
-// دریافت اطلاعات کاربر در صفحه پروفایل
-export async function GET(req: Request) {
-  try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get('token')?.value;
+export const dynamic = 'force-dynamic';
 
-    if (!token) {
-      return NextResponse.json({ error: 'عدم دسترسی' }, { status: 401 });
+const USERNAME_REGEX = /^[a-zA-Z0-9_]{3,20}$/;
+const MAX_NAME_LENGTH = 60;
+
+// دریافت اطلاعات کاربر در صفحه پروفایل
+export async function GET() {
+  try {
+    // قبلاً اگر JWT_SECRET تنظیم نبود از یک کلید پیش‌فرضِ عمومی استفاده می‌شد و هرکسی
+    // می‌توانست توکن جعلی بسازد؛ حالا همان اعتبارسنجی مشترک (بدون کلید پیش‌فرض) استفاده می‌شود.
+    const auth = await getAuthUser();
+    if ('error' in auth) {
+      return NextResponse.json({ error: auth.error }, { status: auth.status });
     }
 
-    const decoded: any = jwt.verify(token, process.env.JWT_SECRET || 'fallback-secret-key');
-
+    // فقط ستون‌های لازم (نه otpCode/passwordHash و ...)
     const user = await prisma.user.findUnique({
-      where: { id: decoded.userId },
+      where: { id: auth.userId },
+      select: { id: true, name: true, phone: true, username: true, role: true },
     });
 
     if (!user) {
@@ -49,7 +55,7 @@ export async function GET(req: Request) {
       name: user.name,
       phone: user.phone,
       username: user.username,
-      role: user.role,     // 👈 این خط اضافه شد
+      role: user.role,
       salon: active?.salon ?? null,
       isSalonOwner: active?.isOwner ?? false, // فقط صاحب اصلی؛ مدیرها false می‌گیرن
       // لیست همه‌ی سالن‌های در دسترس، برای سوییچر — همیشه برگردونده می‌شه حتی اگه فقط یک سالن باشه
@@ -64,55 +70,88 @@ export async function GET(req: Request) {
       })),
     });
   } catch (error) {
-    return NextResponse.json({ error: 'توکن نامعتبر یا خطای سرور' }, { status: 401 });
+    // قبلاً هر خطای دیتابیس هم ۴۰۱ برمی‌گرداند و کاربر لاگین‌شده را به صفحه‌ی ورود می‌فرستاد
+    console.error('Error fetching profile:', error);
+    return NextResponse.json({ error: 'خطای سرور' }, { status: 500 });
   }
 }
 
 // ویرایش اطلاعات در صفحه پروفایل
 export async function PUT(req: Request) {
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get('token')?.value;
-
-    if (!token) {
-      return NextResponse.json({ error: 'عدم دسترسی' }, { status: 401 });
+    const auth = await getAuthUser();
+    if ('error' in auth) {
+      return NextResponse.json({ error: auth.error }, { status: auth.status });
     }
 
-    const decoded: any = jwt.verify(token, process.env.JWT_SECRET || 'fallback-secret-key');
+    const body = await req.json().catch(() => null);
+    if (!body || typeof body !== 'object') {
+      return NextResponse.json({ error: 'اطلاعات ارسالی نامعتبر است' }, { status: 400 });
+    }
 
-    const body = await req.json();
-    const { name, username } = body;
+    const updateData: { name?: string; username?: string } = {};
 
-    const updateData: any = {};
-    if (name !== undefined) updateData.name = name.trim();
-    if (username !== undefined) updateData.username = username.trim();
+    // اگر name/username رشته نبود، .trim() می‌ترکید و ۵۰۰ می‌داد
+    if (body.name !== undefined) {
+      if (typeof body.name !== 'string' || body.name.trim().length > MAX_NAME_LENGTH) {
+        return NextResponse.json({ error: 'نام وارد شده نامعتبر یا بیش از حد طولانی است' }, { status: 400 });
+      }
+      updateData.name = body.name.trim();
+    }
+
+    // صفحه‌ی پروفایل برای کاربرِ بدون نام کاربری username خالی می‌فرستد؛ خالی = «بدون تغییر».
+    // (قبلاً '' ذخیره می‌شد و چون username یکتاست، کاربر دوم با '' خطای ۴۰۰ می‌گرفت)
+    if (body.username !== undefined) {
+      if (typeof body.username !== 'string') {
+        return NextResponse.json({ error: 'نام کاربری نامعتبر است' }, { status: 400 });
+      }
+      const username = body.username.trim();
+      if (username !== '') {
+        if (!USERNAME_REGEX.test(username)) {
+          return NextResponse.json(
+            { error: 'نام کاربری باید بین ۳ تا ۲۰ کاراکتر و فقط شامل حروف انگلیسی، اعداد و _ باشد' },
+            { status: 400 }
+          );
+        }
+        updateData.username = username;
+      }
+    }
+
+    if (Object.keys(updateData).length === 0) {
+      return NextResponse.json({ error: 'هیچ فیلدی برای بروزرسانی ارسال نشده است' }, { status: 400 });
+    }
 
     const updatedUser = await prisma.user.update({
-      where: { id: decoded.userId },
+      where: { id: auth.userId },
       data: updateData,
-      include: { salon: true }
+      include: { salon: true },
     });
 
-    return NextResponse.json({ 
-      message: 'پروفایل آپدیت شد', 
+    return NextResponse.json({
+      message: 'پروفایل آپدیت شد',
       user: {
         id: updatedUser.id,
         name: updatedUser.name,
         phone: updatedUser.phone,
         username: updatedUser.username,
-        role: updatedUser.role,   // 👈 این خط هم اضافه شد (برای یکدستی)
-        salon: updatedUser.salon
-      } 
+        role: updatedUser.role,
+        salon: updatedUser.salon,
+      },
     });
-    
-  } catch (error: any) {
-    if (error.code === 'P2002' && error.meta?.target?.includes('username')) {
-      return NextResponse.json(
-        { error: 'این نام کاربری قبلاً توسط شخص دیگری ثبت شده است. لطفاً نام دیگری انتخاب کنید.' }, 
-        { status: 400 }
-      );
+  } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError) {
+      if (error.code === 'P2002') {
+        return NextResponse.json(
+          { error: 'این نام کاربری قبلاً توسط شخص دیگری ثبت شده است. لطفاً نام دیگری انتخاب کنید.' },
+          { status: 400 }
+        );
+      }
+      if (error.code === 'P2025') {
+        return NextResponse.json({ error: 'کاربر یافت نشد' }, { status: 404 });
+      }
     }
-    
+
+    console.error('Error updating profile:', error);
     return NextResponse.json({ error: 'خطا در ذخیره اطلاعات' }, { status: 500 });
   }
 }

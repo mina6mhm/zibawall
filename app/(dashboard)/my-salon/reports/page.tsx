@@ -31,6 +31,7 @@ export default function SalonReportsPage() {
   const [salonName, setSalonName] = useState('');
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isBookingsLoading, setIsBookingsLoading] = useState(true);
   const [isStaffModalOpen, setIsStaffModalOpen] = useState(false);
 
   // روزی که با کلیک روی نمودار ستونی انتخاب شده — برای نمایش دقیق تاریخ و درآمدش
@@ -60,11 +61,6 @@ export default function SalonReportsPage() {
       setHasSalon(true);
       setSalonName(profileData.salon.name);
 
-      const bookingsRes = await fetch('/api/booking');
-      if (bookingsRes.ok) {
-        const bookingsData = await bookingsRes.json();
-        setBookings(bookingsData.bookings || []);
-      }
     } catch (error) {
       console.error('خطا در دریافت اطلاعات:', error);
     } finally {
@@ -120,6 +116,28 @@ export default function SalonReportsPage() {
     }
     return days;
   }, [selectedMonth]);
+
+  // فقط نوبت‌های «ماه انتخاب‌شده» گرفته می‌شود (قبلاً کل تاریخچه‌ی سالن در هر بار ورود دریافت می‌شد)
+  const monthFrom = monthDays[0]?.dateStr;
+  const monthTo = monthDays[monthDays.length - 1]?.dateStr;
+  useEffect(() => {
+    if (!hasSalon || !monthFrom || !monthTo) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(`/api/booking?from=${monthFrom}&to=${monthTo}`);
+        if (res.ok && !cancelled) {
+          const data = await res.json();
+          setBookings(data.bookings || []);
+        }
+      } catch (error) {
+        console.error('خطا در دریافت نوبت‌ها:', error);
+      } finally {
+        if (!cancelled) setIsBookingsLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [hasSalon, monthFrom, monthTo]);
 
   const monthStats = useMemo(() => {
     const dateSet = new Set(monthDays.map((d) => d.dateStr));
@@ -195,7 +213,8 @@ export default function SalonReportsPage() {
     return null;
   }, [monthStats]);
 
-  if (isLoading) {
+  // بدون این، لحظه‌ای گزارش با درآمد صفر نشان داده می‌شد
+  if (isLoading || (hasSalon && isBookingsLoading)) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh]">
         <Loader2 className="w-10 h-10 text-[#824c71] animate-spin mb-4" />

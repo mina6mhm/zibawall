@@ -4,19 +4,7 @@ import { prisma } from '@/lib/prisma';
 import { getAuthUser } from '@/lib/auth';
 import { requestZarinpalPayment } from '@/lib/zarinpal';
 import { checkBookingSlotStillAvailable } from '@/lib/bookingSchedule';
-
-// جلوگیری از دوبار کلیک: هر درخواست پرداخت یک authority جدید می‌سازد و روی نوبت
-// می‌نویسد؛ اگر کاربر با authority قدیمی‌تر پرداخت کند، verify آن را «ناموفق» می‌بیند
-// درحالی‌که پول کم شده. (فقط در همین instance؛ راه‌حل کامل: جدول Payment برای همه‌ی authorityها)
-const IN_FLIGHT_TTL_MS = 15_000;
-const inFlight = new Map<string, number>();
-
-function sweepInFlight(now: number) {
-  if (inFlight.size < 1000) return;
-  for (const [key, at] of inFlight) {
-    if (now - at > IN_FLIGHT_TTL_MS) inFlight.delete(key);
-  }
-}
+import { acquirePaymentLock, releasePaymentLock } from '@/lib/paymentLock';
 
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   let lockKey: string | null = null;
@@ -52,17 +40,13 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       return NextResponse.json({ error: 'مبلغ نوبت نامعتبر است' }, { status: 400 });
     }
 
-    const now = Date.now();
-    sweepInFlight(now);
-    const startedAt = inFlight.get(booking.id);
-    if (startedAt && now - startedAt < IN_FLIGHT_TTL_MS) {
+    if (!acquirePaymentLock(`booking:${booking.id}`)) {
       return NextResponse.json(
         { error: 'درخواست پرداخت در حال پردازش است. چند ثانیه صبر کنید' },
         { status: 429 }
       );
     }
-    inFlight.set(booking.id, now);
-    lockKey = booking.id;
+    lockKey = `booking:${booking.id}`;
 
     // قبل از فرستادن کاربر به درگاه چک کن که ساعت هنوز آزاد است؛ وگرنه کاربر
     // پول می‌دهد و بعد از پرداخت «نوبت در دسترس نبود» می‌گیرد (و باید استرداد شود)
@@ -84,10 +68,14 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       mobile: booking.customerPhone,
     });
 
-    await prisma.booking.update({
-      where: { id: booking.id },
+    // فقط اگر هنوز PENDING_PAYMENT است authority را بنویس (پرداخت/لغو هم‌زمان را خراب نکند)
+    const updated = await prisma.booking.updateMany({
+      where: { id: booking.id, status: 'PENDING_PAYMENT' },
       data: { authority },
     });
+    if (updated.count === 0) {
+      return NextResponse.json({ error: 'این نوبت قبلاً پرداخت یا لغو شده است' }, { status: 400 });
+    }
 
     succeeded = true; // قفل تا پایان TTL می‌ماند تا کلیک تکراری authority دوم نسازد
     return NextResponse.json({ paymentUrl }, { status: 200 });
@@ -99,6 +87,6 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       { status: 502 }
     );
   } finally {
-    if (lockKey && !succeeded) inFlight.delete(lockKey);
+    if (lockKey && !succeeded) releasePaymentLock(lockKey);
   }
 }

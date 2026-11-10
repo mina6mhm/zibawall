@@ -1,28 +1,23 @@
 // app/api/staff/route.ts
 import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
-import jwt from 'jsonwebtoken';
+import { Prisma } from '@prisma/client';
 
 import { prisma } from '@/lib/prisma';
+import { getAuthUser } from '@/lib/auth';
 import { getSalonForUserId } from '@/lib/salonAccess';
+import { normalizeDigits } from '@/lib/phone';
+import { cleanString } from '@/lib/validate';
 
 const mobileRegex = /^09\d{9}$/;
+const MAX_STAFF_PER_SALON = 200;
+const MAX_STAFF_NAME_LENGTH = 60;
 
 // گرفتن سالنی که کاربر لاگین‌شده به آن دسترسی دارد (صاحب اصلی یا مدیر اضافه‌شده)
 async function getOwnedSalonFromToken() {
-  const cookieStore = await cookies();
-  const token = cookieStore.get('token')?.value;
+  const auth = await getAuthUser();
+  if ('error' in auth) return { error: auth.error, status: auth.status };
 
-  if (!token) return { error: 'ابتدا وارد حساب کاربری شوید', status: 401 as const };
-
-  let decoded: any;
-  try {
-    decoded = jwt.verify(token, process.env.JWT_SECRET!);
-  } catch {
-    return { error: 'توکن نامعتبر است', status: 401 as const };
-  }
-
-  const salon = await getSalonForUserId(decoded.userId);
+  const salon = await getSalonForUserId(auth.userId);
 
   if (!salon) return { error: 'شما سالنی ثبت نکرده‌اید', status: 404 as const };
 
@@ -38,10 +33,11 @@ export async function GET() {
     }
 
     const staff = await prisma.staff.findMany({
-  where: { salonId: result.salon.id },
-  include: { bookingServices: true },  // ← اضافه کن
-  orderBy: { name: 'asc' },
-});
+      where: { salonId: result.salon.id },
+      include: { bookingServices: true },
+      orderBy: { name: 'asc' },
+      take: MAX_STAFF_PER_SALON,
+    });
 
     return NextResponse.json({ staff }, { status: 200 });
   } catch (error) {
@@ -58,12 +54,16 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: result.error }, { status: result.status });
     }
 
-    const body = await req.json();
-    const name = typeof body?.name === 'string' ? body.name.trim() : '';
-    const phone = typeof body?.phone === 'string' ? body.phone.trim() : '';
+    // بدن نامعتبر قبلاً ۵۰۰ می‌داد؛ ارقام فارسی هم قبلاً «شماره نامعتبر» می‌شد
+    const body = await req.json().catch(() => null);
+    if (!body || typeof body !== 'object') {
+      return NextResponse.json({ error: 'اطلاعات ارسالی نامعتبر است' }, { status: 400 });
+    }
+    const name = cleanString(body.name, MAX_STAFF_NAME_LENGTH) ?? '';
+    const phone = normalizeDigits(body.phone);
 
     if (!name) {
-      return NextResponse.json({ error: 'نام پرسنل را وارد کنید' }, { status: 400 });
+      return NextResponse.json({ error: 'نام پرسنل را وارد کنید (حداکثر ۶۰ کاراکتر)' }, { status: 400 });
     }
 
     if (!mobileRegex.test(phone)) {
@@ -96,12 +96,21 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'این شماره موبایل قبلاً برای پرسنل دیگری ثبت شده است' }, { status: 400 });
     }
 
+    const staffCount = await prisma.staff.count({ where: { salonId: result.salon.id } });
+    if (staffCount >= MAX_STAFF_PER_SALON) {
+      return NextResponse.json({ error: 'سقف تعداد پرسنل این سالن پر شده است' }, { status: 400 });
+    }
+
     const staff = await prisma.staff.create({
       data: { salonId: result.salon.id, name, phone, commissionPercent },
     });
 
     return NextResponse.json({ success: true, staff }, { status: 201 });
   } catch (error) {
+    // دو درخواست هم‌زمان: بررسی تکراری‌بودن بالا و create اتمیک نیستند؛ یکتایی را دیتابیس تضمین می‌کند
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+      return NextResponse.json({ error: 'این پرسنل (نام یا شماره) قبلاً ثبت شده است' }, { status: 409 });
+    }
     console.error('Error creating staff:', error);
     return NextResponse.json({ error: 'خطای سرور در ثبت پرسنل' }, { status: 500 });
   }
@@ -128,7 +137,8 @@ export async function DELETE(req: Request) {
       return NextResponse.json({ error: 'پرسنلی یافت نشد' }, { status: 404 });
     }
 
-    await prisma.staff.delete({ where: { id } });
+    // deleteMany: اگر هم‌زمان حذف شده باشد، خطای P2025 (۵۰۰) نمی‌دهد
+    await prisma.staff.deleteMany({ where: { id, salonId: result.salon.id } });
 
     return NextResponse.json({ success: true }, { status: 200 });
   } catch (error) {

@@ -82,7 +82,7 @@ export async function getSalonFromCookieToken(): Promise<Salon | null> {
   const token = cookieStore.get('token')?.value;
   if (!token) return null;
   try {
-    const decoded: any = jwt.verify(token, process.env.JWT_SECRET!);
+    const decoded: any = jwt.verify(token, process.env.JWT_SECRET!, { algorithms: ['HS256'] });
     return await getSalonForUserId(decoded.userId);
   } catch {
     return null;

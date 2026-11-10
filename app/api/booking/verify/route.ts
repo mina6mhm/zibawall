@@ -4,7 +4,8 @@ import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { getAuthUser } from '@/lib/auth';
 import { verifyZarinpalPayment } from '@/lib/zarinpal';
-import { checkBookingSlotStillAvailable } from '@/lib/bookingSchedule';
+import { checkBookingSlotStillAvailable, lockSalonDay } from '@/lib/bookingSchedule';
+import { dateOnlyIso } from '@/lib/dateUtils';
 import { notifyBookingConfirmed } from '@/lib/bookingNotifications';
 
 export const dynamic = 'force-dynamic';
@@ -46,17 +47,20 @@ export async function GET(req: Request) {
     return redirectTo(booking.status === 'CONFIRMED' ? 'success' : 'slotTaken');
   }
 
-  // قبل از نوشتن FAILED، دوباره می‌خوانیم تا روی یک پرداخت موفقِ هم‌زمان ننویسیم
+  // به‌صورت اتمیک فقط اگر هنوز SUCCESS نشده FAILED می‌نویسیم؛ قبلاً «خواندن سپس نوشتن» بود و
+  // اگر callback موفق هم‌زمان بین این دو مرحله تمام می‌شد، پرداخت موفق به FAILED برمی‌گشت
   const markFailedUnlessPaid = async (): Promise<ResultKind> => {
+    const res = await prisma.booking.updateMany({
+      where: { id: booking.id, paymentStatus: { not: 'SUCCESS' } },
+      data: { paymentStatus: 'FAILED' },
+    });
+    if (res.count > 0) return 'failed';
+
     const fresh = await prisma.booking.findUnique({
       where: { id: booking.id },
-      select: { paymentStatus: true, status: true },
+      select: { status: true },
     });
-    if (fresh?.paymentStatus === 'SUCCESS') {
-      return fresh.status === 'CONFIRMED' ? 'success' : 'slotTaken';
-    }
-    await prisma.booking.update({ where: { id: booking.id }, data: { paymentStatus: 'FAILED' } });
-    return 'failed';
+    return fresh?.status === 'CONFIRMED' ? 'success' : 'slotTaken';
   };
 
   if (status !== 'OK') {
@@ -94,6 +98,9 @@ export async function GET(req: Request) {
                 ? { kind: 'confirmed', firstTime: false }
                 : { kind: 'slotTaken' };
             }
+
+            // پرداخت‌های هم‌زمان برای همان سالن/روز پشت سر هم می‌ایستند (کمتر P2034 و بدون double-booking)
+            await lockSalonDay(tx, fresh.salonId, dateOnlyIso(new Date(fresh.date)));
 
             // سالن‌دار هم‌زمان با پرداخت نوبت را لغو کرده: پول گرفته شده ولی نوبت
             // نباید دوباره CONFIRMED شود؛ برای پیگیری استرداد SUCCESS ثبت می‌شود

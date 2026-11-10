@@ -1,8 +1,8 @@
 // app/api/staff/bookings/route.ts
 import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
-import jwt from 'jsonwebtoken';
 import { prisma } from '@/lib/prisma';
+import { getAuthUser } from '@/lib/auth';
+import { parseDayRange, dateWhere, MAX_BOOKING_ROWS } from '@/lib/dateRange';
 
 export const dynamic = 'force-dynamic';
 
@@ -10,22 +10,18 @@ export const dynamic = 'force-dynamic';
 // با شماره‌ی ثبت‌شده‌ی همان رکورد Staff یکسان باشد (بررسی امنیتی)
 export async function GET(req: Request) {
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get('token')?.value;
-    if (!token) return NextResponse.json({ error: 'ابتدا وارد حساب کاربری شوید' }, { status: 401 });
-
-    let decoded: any;
-    try {
-      decoded = jwt.verify(token, process.env.JWT_SECRET!);
-    } catch {
-      return NextResponse.json({ error: 'توکن نامعتبر است' }, { status: 401 });
-    }
+    const auth = await getAuthUser();
+    if ('error' in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
     const { searchParams } = new URL(req.url);
     const staffId = searchParams.get('staffId');
     if (!staffId) return NextResponse.json({ error: 'staffId الزامی است' }, { status: 400 });
 
-    const user = await prisma.user.findUnique({ where: { id: decoded.userId } });
+    // بازه‌ی تاریخ (?from=&to=)؛ قبلاً همه‌ی تاریخچه‌ی نوبت‌های سالن خوانده می‌شد
+    const range = parseDayRange(searchParams);
+    if ('error' in range) return NextResponse.json({ error: range.error }, { status: 400 });
+
+    const user = await prisma.user.findUnique({ where: { id: auth.userId }, select: { phone: true } });
     if (!user?.phone) return NextResponse.json({ error: 'دسترسی ندارید' }, { status: 403 });
 
     const staffMember = await prisma.staff.findUnique({ where: { id: staffId } });
@@ -38,15 +34,17 @@ export async function GET(req: Request) {
     // خودمون بر اساس نیاز فیلتر می‌کنیم (فعلاً همون CONFIRMED رو نگه می‌داریم
     // که رفتار قبلی عوض نشه، ولی این‌بار از فیلد status خودِ booking می‌خونیم)
     const bookings = await prisma.booking.findMany({
-      where: { salonId: staffMember.salonId, status: 'CONFIRMED' },
+      where: { salonId: staffMember.salonId, status: 'CONFIRMED', date: dateWhere(range) },
       orderBy: [{ date: 'asc' }, { startTime: 'asc' }],
+      take: MAX_BOOKING_ROWS,
     });
 
     // فقط نوبت‌هایی که حداقل یکی از خدمات‌شان به همین پرسنل تخصیص دارد
-    const isMine = (sv: any) => sv.staffId === staffId || sv.staffName === staffMember.name;
+    const servicesOf = (b: { services: unknown }): any[] => (Array.isArray(b.services) ? b.services : []);
+    const isMine = (sv: any) => sv?.staffId === staffId || sv?.staffName === staffMember.name;
 
     const result = bookings
-      .filter((b) => (b.services as any[]).some(isMine))
+      .filter((b) => servicesOf(b).some(isMine))
       .map((b) => ({
         id: b.id,
         date: b.date,
@@ -54,7 +52,7 @@ export async function GET(req: Request) {
         customerName: b.customerName,
         customerPhone: b.customerPhone,
         status: b.status,
-        services: (b.services as any[])
+        services: servicesOf(b)
           .filter(isMine)
           .map((sv) => ({
             name: sv.name,

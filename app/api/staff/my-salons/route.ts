@@ -1,8 +1,7 @@
 // app/api/staff/my-salons/route.ts
 import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
-import jwt from 'jsonwebtoken';
 import { prisma } from '@/lib/prisma';
+import { getAuthUser } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -10,18 +9,10 @@ export const dynamic = 'force-dynamic';
 // یک شماره ممکن است در چند سالن مختلف به‌عنوان پرسنل ثبت شده باشد
 export async function GET() {
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get('token')?.value;
-    if (!token) return NextResponse.json({ error: 'ابتدا وارد حساب کاربری شوید' }, { status: 401 });
+    const auth = await getAuthUser();
+    if ('error' in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
-    let decoded: any;
-    try {
-      decoded = jwt.verify(token, process.env.JWT_SECRET!);
-    } catch {
-      return NextResponse.json({ error: 'توکن نامعتبر است' }, { status: 401 });
-    }
-
-    const user = await prisma.user.findUnique({ where: { id: decoded.userId } });
+    const user = await prisma.user.findUnique({ where: { id: auth.userId }, select: { phone: true } });
     if (!user?.phone) {
       return NextResponse.json({ salons: [] });
     }
@@ -29,6 +20,7 @@ export async function GET() {
     const staffRecords = await prisma.staff.findMany({
       where: { phone: user.phone },
       include: { salon: { select: { id: true, name: true } } },
+      take: 50,
     });
 
     const salons = staffRecords.map((s) => ({
