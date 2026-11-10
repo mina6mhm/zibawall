@@ -1,18 +1,26 @@
 // lib/push.ts
-// ارسال نوتیف مستقیم از خود اپ به ادمین‌ها با Web Push، بدون نیاز به تلگرام یا Firebase.
+// ارسال نوتیف مستقیم از خود اپ با Web Push، بدون نیاز به تلگرام یا Firebase.
 //
 // راه‌اندازی:
-// ۱. دو خط زیر از قبل توی .env تولید و اینجا نوشته شده — همینا رو کپی کن:
-//    NEXT_PUBLIC_VAPID_PUBLIC_KEY=BOAXOdAYm4PpMvnUoDS-TD8ESs-LDDEol1VcG46YhXC0hAc6THtMs5XZsTuLbj3KnHEtby_JXNgfleZhdh5Fh-o
-//    VAPID_PRIVATE_KEY=doHqT2uuec3woz5_ezW_EL6WumfLBglZGsrE6k7y9Xk
-//    VAPID_SUBJECT=mailto:zibawallapp@gmail.com  (یک ایمیل واقعی خودت بذار، اختیاریه ولی بهتره ست بشه)
-// ۲. با اکانت ادمین وارد سایت شو → پنل مدیریت → «فعال‌سازی نوتیف مرورگر» رو بزن و اجازه بده.
-//    از همون لحظه، هر مرورگری که این دکمه رو بزنه، نوتیف پوش می‌گیره.
+// ۱. یک جفت کلید VAPID بساز:   npx web-push generate-vapid-keys
+// ۲. توی .env (و فقط همان‌جا — هرگز توی کد یا کامنت) بگذار:
+//      NEXT_PUBLIC_VAPID_PUBLIC_KEY=...
+//      VAPID_PRIVATE_KEY=...
+//      VAPID_SUBJECT=mailto:you@example.com
+// ۳. با اکانت ادمین وارد پنل مدیریت شو → «فعال‌سازی نوتیف مرورگر».
 //
-// این کاملاً مستقل از سیستم تلگرام (lib/telegram.ts) هست و به اون کاری نداره.
+// این فایل مستقل از سیستم تلگرام (lib/telegram.ts) است.
 
 import webpush from 'web-push';
 import { prisma } from '@/lib/prisma';
+import { runWithConcurrency } from '@/lib/concurrency';
+
+// اگر endpoint پوش (سرورهای گوگل/اپل/موزیلا) کند باشد، نباید کل حلقه گیر کند
+const PUSH_TIMEOUT_MS = 10_000;
+// حداکثر تعداد ارسال هم‌زمان
+const PUSH_CONCURRENCY = 20;
+// پیش‌فرض web-push چهار هفته است؛ برای نوتیف‌های این اپ یک روز کافی است
+const DEFAULT_TTL_SECONDS = 60 * 60 * 24;
 
 let vapidConfigured = false;
 
@@ -37,45 +45,66 @@ type PushPayload = {
   title: string;
   body: string;
   url?: string;
+  ttlSeconds?: number;
 };
 
+type StoredSubscription = { id: string; endpoint: string; p256dh: string; auth: string };
+
+type DeliveryOutcome = 'ok' | 'gone' | 'error';
+
+export type PushResult = 'sent' | 'no_subscription' | 'failed';
+
+const SUBSCRIPTION_SELECT = { id: true, endpoint: true, p256dh: true, auth: true } as const;
+
+function buildBody(payload: PushPayload, defaultUrl: string): string {
+  return JSON.stringify({
+    title: payload.title,
+    body: payload.body,
+    url: payload.url || defaultUrl,
+  });
+}
+
+// ارسال به یک subscription. هیچ‌وقت throw نمی‌کند.
+async function deliverToSubscription(
+  sub: StoredSubscription,
+  body: string,
+  ttlSeconds: number
+): Promise<DeliveryOutcome> {
+  try {
+    await webpush.sendNotification(
+      { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
+      body,
+      { TTL: ttlSeconds, timeout: PUSH_TIMEOUT_MS }
+    );
+    return 'ok';
+  } catch (err: any) {
+    // ۴۰۴/۴۱۰ یعنی subscription منقضی یا توسط کاربر لغو شده — از دیتابیس پاکش کن
+    if (err?.statusCode === 404 || err?.statusCode === 410) {
+      await prisma.pushSubscription.delete({ where: { id: sub.id } }).catch(() => {});
+      return 'gone';
+    }
+    console.error(`❌ Web push error for subscription ${sub.id}:`, err?.statusCode, err?.body || err);
+    return 'error';
+  }
+}
+
 // نوتیف Web Push به تمام مرورگرهایی که یک ادمین (role=ADMIN) توشون subscribe کرده.
-// عمداً throw نمی‌کنه؛ نبود تنظیمات یا خطای ارسال نباید جریان اصلی (ثبت سالن و ...) رو بشکنه.
+// عمداً throw نمی‌کنه؛ نبود تنظیمات یا خطای ارسال نباید جریان اصلی رو بشکنه.
 export async function sendWebPushToAdmins(payload: PushPayload) {
   if (!ensureVapidConfigured()) return;
 
   const subscriptions = await prisma.pushSubscription.findMany({
     where: { user: { role: 'ADMIN' } },
+    select: SUBSCRIPTION_SELECT,
   });
-
   if (subscriptions.length === 0) return;
 
-  const notificationPayload = JSON.stringify({
-    title: payload.title,
-    body: payload.body,
-    url: payload.url || '/admin/salons',
-  });
+  const body = buildBody(payload, '/admin/salons');
+  const ttl = payload.ttlSeconds ?? DEFAULT_TTL_SECONDS;
 
-  await Promise.all(
-    subscriptions.map(async (sub) => {
-      try {
-        await webpush.sendNotification(
-          {
-            endpoint: sub.endpoint,
-            keys: { p256dh: sub.p256dh, auth: sub.auth },
-          },
-          notificationPayload
-        );
-      } catch (err: any) {
-        // ۴۰۴/۴۱۰ یعنی subscription منقضی یا توسط کاربر لغو شده — از دیتابیس پاکش کن
-        if (err?.statusCode === 404 || err?.statusCode === 410) {
-          await prisma.pushSubscription.delete({ where: { id: sub.id } }).catch(() => {});
-        } else {
-          console.error(`❌ Web push error for subscription ${sub.id}:`, err?.statusCode, err?.body || err);
-        }
-      }
-    })
-  );
+  await runWithConcurrency(subscriptions, PUSH_CONCURRENCY, async (sub) => {
+    await deliverToSubscription(sub, body, ttl);
+  });
 }
 
 // نوتیف اختصاصی: سالن جدید در انتظار تایید ادمین (معادل Web Push همون تابع تلگرام)
@@ -93,54 +122,90 @@ export async function notifyAdminNewSalonPendingPush(salon: {
   await sendWebPushToAdmins({ title, body, url: '/admin/salons' });
 }
 
-// نوتیف Web Push به یک کاربر خاص (نه فقط ادمین‌ها) — روی همه‌ی مرورگر/دستگاه‌هایی
-// که اون کاربر توشون subscribe کرده. دقیقاً همون مکانیزم ارسال به ادمین‌هاست،
-// فقط فیلترش به‌جای role=ADMIN روی یک userId مشخصه.
-export async function sendWebPushToUser(userId: string, payload: PushPayload) {
-  if (!ensureVapidConfigured()) return;
+/**
+ * ارسال دسته‌ایِ پوش به چند کاربر (هر آیتم یک پیام مستقل).
+ * - subscriptionهای همه‌ی کاربرها با «یک» query گرفته می‌شود (نه یک query برای هر کاربر)
+ * - ارسال‌ها با سقف هم‌زمانی انجام می‌شود
+ * - خروجی هم‌ترتیب با items است:
+ *     'sent'            حداقل یک دستگاه پیام را پذیرفت
+ *     'no_subscription' کاربر هیچ subscription فعالی ندارد (تلاش مجدد بی‌فایده است)
+ *     'failed'          subscription داشت ولی خطای موقتی بود (تلاش مجدد معنی دارد)
+ */
+export async function sendWebPushBatch(
+  items: { userId: string; payload: PushPayload }[]
+): Promise<PushResult[]> {
+  if (items.length === 0) return [];
+  if (!ensureVapidConfigured()) return items.map(() => 'failed' as const);
 
+  const userIds = Array.from(new Set(items.map((i) => i.userId)));
   const subscriptions = await prisma.pushSubscription.findMany({
-    where: { userId },
+    where: { userId: { in: userIds } },
+    select: { ...SUBSCRIPTION_SELECT, userId: true },
   });
 
-  if (subscriptions.length === 0) return;
+  const byUser = new Map<string, StoredSubscription[]>();
+  for (const s of subscriptions) {
+    const list = byUser.get(s.userId) ?? [];
+    list.push(s);
+    byUser.set(s.userId, list);
+  }
 
-  const notificationPayload = JSON.stringify({
-    title: payload.title,
-    body: payload.body,
-    url: payload.url || '/appointments',
+  type Job = { itemIndex: number; sub: StoredSubscription; body: string; ttl: number };
+  const jobs: Job[] = [];
+  items.forEach((item, itemIndex) => {
+    const body = buildBody(item.payload, '/appointments');
+    const ttl = item.payload.ttlSeconds ?? DEFAULT_TTL_SECONDS;
+    for (const sub of byUser.get(item.userId) ?? []) {
+      jobs.push({ itemIndex, sub, body, ttl });
+    }
   });
 
-  await Promise.all(
-    subscriptions.map(async (sub) => {
-      try {
-        await webpush.sendNotification(
-          {
-            endpoint: sub.endpoint,
-            keys: { p256dh: sub.p256dh, auth: sub.auth },
-          },
-          notificationPayload
-        );
-      } catch (err: any) {
-        if (err?.statusCode === 404 || err?.statusCode === 410) {
-          await prisma.pushSubscription.delete({ where: { id: sub.id } }).catch(() => {});
-        } else {
-          console.error(`❌ Web push error for subscription ${sub.id}:`, err?.statusCode, err?.body || err);
-        }
-      }
-    })
-  );
+  const outcomesByItem = new Map<number, DeliveryOutcome[]>();
+  await runWithConcurrency(jobs, PUSH_CONCURRENCY, async (job) => {
+    const outcome = await deliverToSubscription(job.sub, job.body, job.ttl);
+    const list = outcomesByItem.get(job.itemIndex) ?? [];
+    list.push(outcome);
+    outcomesByItem.set(job.itemIndex, list);
+  });
+
+  return items.map((_, idx): PushResult => {
+    const outcomes = outcomesByItem.get(idx);
+    if (!outcomes || outcomes.length === 0) return 'no_subscription';
+    if (outcomes.includes('ok')) return 'sent';
+    if (outcomes.every((o) => o === 'gone')) return 'no_subscription';
+    return 'failed';
+  });
 }
 
-// نوتیف اختصاصی: یادآوری نوبت ۲۴ ساعت قبل — معادل Web Push همون پیامکی که
-// با sendBookingReminderSms می‌ره، ولی برای مشتری‌ای که subscribe کرده.
+// نوتیف Web Push به یک کاربر خاص (روی همه‌ی دستگاه‌هایی که توشون subscribe کرده)
+export async function sendWebPushToUser(userId: string, payload: PushPayload) {
+  await sendWebPushBatch([{ userId, payload }]);
+}
+
+const REMINDER_TTL_SECONDS = 6 * 60 * 60; // یادآوری بعد از چند ساعت دیگر ارزشی ندارد
+
+function reminderPayload(booking: { salonName: string; date: string; time: string }): PushPayload {
+  return {
+    title: '⏰ یادآوری نوبت',
+    body: `فردا ساعت ${booking.time} نوبت ${booking.salonName} داری — ${booking.date}`,
+    url: '/appointments',
+    ttlSeconds: REMINDER_TTL_SECONDS,
+  };
+}
+
+// یادآوری نوبت ۲۴ ساعت قبل برای یک کاربر
 export async function notifyUserBookingReminderPush(
   userId: string,
   booking: { salonName: string; date: string; time: string }
 ) {
-  await sendWebPushToUser(userId, {
-    title: '⏰ یادآوری نوبت',
-    body: `فردا ساعت ${booking.time} نوبت ${booking.salonName} داری — ${booking.date}`,
-    url: '/appointments',
-  });
+  await sendWebPushToUser(userId, reminderPayload(booking));
+}
+
+// یادآوری نوبت برای چندین کاربر در یک دسته (مسیر اصلی job یادآوری)
+export async function notifyUsersBookingReminderPush(
+  items: { userId: string; salonName: string; date: string; time: string }[]
+): Promise<PushResult[]> {
+  return sendWebPushBatch(
+    items.map((i) => ({ userId: i.userId, payload: reminderPayload(i) }))
+  );
 }
