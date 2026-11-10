@@ -230,7 +230,9 @@ export function resolveStaffDayScheduleSync(
 
 /** آیا یک "YYYY-MM-DD" + "HH:MM" مشخص، از همین لحظه گذشته است یا نه. */
 export function isSlotInPast(dateStr: string, startTime: string, now: Date = new Date()): boolean {
-  const slotDateTime = new Date(`${dateStr}T${startTime}:00Z`);
+  // startTime به وقت تهران است (UTC+03:30 ثابت؛ ایران ساعت تابستانی ندارد).
+  // قبلاً با 'Z' (یعنی UTC) پارس می‌شد و باعث می‌شد نوبت‌ها تا ۳.۵ ساعت بعد از شروع هم قابل رزرو باشند.
+  const slotDateTime = new Date(`${dateStr}T${startTime}:00+03:30`);
   return slotDateTime.getTime() <= now.getTime();
 }
 
@@ -292,88 +294,170 @@ export async function validateSlotAgainstSchedule(params: {
  * کاربر از درگاه بانک برمی‌گرده، ممکنه هولد منقضی شده باشه و یک نفر دیگه
  * دقیقاً همون اسلات رو گرفته و حتی CONFIRM هم کرده باشه.
  */
-export async function checkBookingSlotStillAvailable(
-  booking: {
-    id: string;
-    salonId: string;
-    date: Date;
-    startTime: string;
-    services: Prisma.JsonValue;
-    expiresAt: Date | null;
-    customerId: string | null;
-    status?: string;
-    bookingGroupId?: string | null;
-  },
-  client: QueryClient = prisma
-): Promise<{ ok: true } | { ok: false; error: string }> {
-  const now = new Date();
+const DAY_MS = 24 * 60 * 60 * 1000;
 
-  // هولدی که قبلاً کنسل شده (مثلاً چون کاربر دوباره رزرو کرده) نباید با پرداخت
-  // دیرهنگام دوباره CONFIRMED بشه
-  if (booking.status === 'CANCELLED') {
-    return { ok: false, error: 'این رزرو لغو شده است' };
-  }
+/**
+ * قفل سطح-دیتابیس برای «یک سالن در یک روز».
+ * داخل همان $transaction که نوبت را CONFIRM می‌کنی، «قبل از» checkBookingSlotStillAvailable صدایش بزن:
+ *
+ *   await prisma.$transaction(async (tx) => {
+ *     await lockSalonDay(tx, salonId, dateStr);
+ *     const check = await checkGroupSlotsStillAvailable(bookings, tx);
+ *     if (!check.ok) throw new Error(check.error);
+ *     await tx.booking.updateMany({ ... status: 'CONFIRMED' ... });
+ *   });
+ *
+ * بدون این قفل، دو پرداخت هم‌زمان برای یک اسلات هر دو چک را رد می‌کنند و هر دو CONFIRMED می‌شوند
+ * (double booking). قفل خودکار با پایان تراکنش آزاد می‌شود و فقط درخواست‌های همان سالن/روز را
+ * پشت سر هم می‌چیند.
+ */
+export async function lockSalonDay(tx: Prisma.TransactionClient, salonId: string, dateStr: string) {
+  await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${salonId + ':' + dateStr}))`;
+}
+
+export type BookingToCheck = {
+  id: string;
+  salonId: string;
+  date: Date;
+  startTime: string;
+  services: Prisma.JsonValue;
+  expiresAt: Date | null;
+  customerId: string | null;
+  status?: string;
+  bookingGroupId?: string | null;
+};
+
+type OtherBooking = {
+  id: string;
+  bookingGroupId: string | null;
+  startTime: string;
+  services: Prisma.JsonValue;
+};
+
+type Prepared =
+  | { error: string }
+  | { skip: true }
+  | { staffIds: string[]; startMin: number; endMin: number; dateStr: string };
+
+// بخش sync و بدون query: لغو/انقضا/گذشته بودن + محاسبه‌ی بازه‌ی زمانی
+function prepareCheck(booking: BookingToCheck, now: Date): Prepared {
+  if (booking.status === 'CANCELLED') return { error: 'این رزرو لغو شده است' };
 
   if (booking.expiresAt && booking.expiresAt.getTime() <= now.getTime()) {
-    return { ok: false, error: 'مهلت این رزرو به پایان رسیده است' };
+    return { error: 'مهلت این رزرو به پایان رسیده است' };
   }
 
   const dateStr = new Date(booking.date).toISOString().slice(0, 10);
   if (isSlotInPast(dateStr, booking.startTime, now)) {
-    return { ok: false, error: `ساعت ${booking.startTime} گذشته است` };
+    return { error: `ساعت ${booking.startTime} گذشته است` };
   }
 
   const services = (booking.services as any[]) ?? [];
   const staffIds: string[] = services.map((s: any) => s.staffId).filter(Boolean);
-  if (staffIds.length === 0) return { ok: true };
+  if (staffIds.length === 0) return { skip: true };
 
   const startMin = timeToMin(booking.startTime);
   const duration = services.reduce((acc: number, s: any) => acc + (s.durationMin ?? 60), 0);
-  const endMin = startMin + duration;
+  return { staffIds, startMin, endMin: startMin + duration, dateStr };
+}
 
-  const dayStart = new Date(dateStr + 'T00:00:00Z');
-  const dayEnd = new Date(dateStr + 'T23:59:59Z');
+// بخش sync: تداخل با نوبت‌های دیگر (از قبل لود شده)
+function hasConflict(
+  booking: BookingToCheck,
+  p: { staffIds: string[]; startMin: number; endMin: number },
+  others: OtherBooking[]
+): boolean {
+  return others.some((ob) => {
+    if (ob.id === booking.id) return false;
+    // نوبت‌های همین سبد با هم تداخل حساب نمی‌شوند
+    if (booking.bookingGroupId && ob.bookingGroupId === booking.bookingGroupId) return false;
+    const obServices = (ob.services as any[]) ?? [];
+    const obStaffIds: string[] = obServices.map((s: any) => s.staffId).filter(Boolean);
+    if (!p.staffIds.some((id) => obStaffIds.includes(id))) return false;
+    const obStart = timeToMin(ob.startTime);
+    const obDuration = obServices.reduce((acc: number, s: any) => acc + (s.durationMin ?? 60), 0);
+    return p.startMin < obStart + obDuration && p.endMin > obStart;
+  });
+}
 
+const OTHER_SELECT = { id: true, bookingGroupId: true, startTime: true, services: true } as const;
+
+function activeBookingsWhere(now: Date) {
+  return {
+    OR: [{ status: 'CONFIRMED' as const }, { status: 'PENDING_PAYMENT' as const, expiresAt: { gt: now } }],
+  };
+}
+
+/**
+ * چک می‌کند یک نوبت PENDING_PAYMENT هنوز قابل تایید است (هولد منقضی نشده، ساعتش نگذشته، تداخلی نیست).
+ * ⚠️ برای جلوگیری از double-booking باید داخل تراکنش و بعد از lockSalonDay صدا زده شود.
+ */
+export async function checkBookingSlotStillAvailable(
+  booking: BookingToCheck,
+  client: QueryClient = prisma
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const now = new Date();
+  const p = prepareCheck(booking, now);
+  if ('error' in p) return { ok: false, error: p.error };
+  if ('skip' in p) return { ok: true };
+
+  const dayStart = new Date(p.dateStr + 'T00:00:00Z');
   const others = await client.booking.findMany({
     where: {
       salonId: booking.salonId,
       id: { not: booking.id },
-      date: { gte: dayStart, lt: dayEnd },
-      OR: [
-        { status: 'CONFIRMED' },
-        { status: 'PENDING_PAYMENT', expiresAt: { gt: now } },
-      ],
+      date: { gte: dayStart, lt: new Date(dayStart.getTime() + DAY_MS) },
+      ...activeBookingsWhere(now),
     },
+    select: OTHER_SELECT,
   });
 
-  const conflict = others.some((ob) => {
-    // نوبت‌های همین سبد (همین BookingGroup) با هم تداخل حساب نمی‌شن؛ ولی نوبت‌های
-    // دیگه‌ی همین مشتری (از گروه‌های دیگه) اگه همون پرسنل/ساعت باشن تداخل هستن
-    if (booking.bookingGroupId && ob.bookingGroupId === booking.bookingGroupId) return false;
-    const obServices = (ob.services as any[]) ?? [];
-    const obStaffIds: string[] = obServices.map((s: any) => s.staffId).filter(Boolean);
-    if (!staffIds.some((id) => obStaffIds.includes(id))) return false;
-    const obStart = timeToMin(ob.startTime);
-    const obDuration = obServices.reduce((acc: number, s: any) => acc + (s.durationMin ?? 60), 0);
-    const obEnd = obStart + obDuration;
-    return startMin < obEnd && endMin > obStart;
-  });
-
-  if (conflict) {
+  if (hasConflict(booking, p, others)) {
     return { ok: false, error: `ساعت ${booking.startTime} توسط شخص دیگری رزرو شده است` };
   }
-
   return { ok: true };
 }
 
-/** همون چک بالا، برای همه‌ی نوبت‌های یک BookingGroup (سبد چند-خدمتی) */
+/**
+ * همان چک بالا برای همه‌ی نوبت‌های یک BookingGroup — با «یک» query برای کل سبد
+ * (قبلاً به‌ازای هر نوبت یک query جدا بود).
+ */
 export async function checkGroupSlotsStillAvailable(
-  bookings: Parameters<typeof checkBookingSlotStillAvailable>[0][],
+  bookings: BookingToCheck[],
   client: QueryClient = prisma
 ): Promise<{ ok: true } | { ok: false; error: string }> {
+  const now = new Date();
+
+  const prepared: { booking: BookingToCheck; p: Extract<Prepared, { staffIds: string[] }> }[] = [];
   for (const booking of bookings) {
-    const result = await checkBookingSlotStillAvailable(booking, client);
-    if (!result.ok) return result;
+    const p = prepareCheck(booking, now);
+    if ('error' in p) return { ok: false, error: p.error };
+    if ('skip' in p) continue;
+    prepared.push({ booking, p });
+  }
+  if (prepared.length === 0) return { ok: true };
+
+  const salonIds = Array.from(new Set(prepared.map((x) => x.booking.salonId)));
+  const dayMs = prepared.map((x) => new Date(x.p.dateStr + 'T00:00:00Z').getTime());
+  const minDay = new Date(Math.min(...dayMs));
+  const maxDay = new Date(Math.max(...dayMs) + DAY_MS);
+
+  const others = await client.booking.findMany({
+    where: {
+      salonId: { in: salonIds },
+      date: { gte: minDay, lt: maxDay },
+      ...activeBookingsWhere(now),
+    },
+    select: { ...OTHER_SELECT, salonId: true, date: true },
+  });
+
+  for (const { booking, p } of prepared) {
+    const sameDay = others.filter(
+      (ob) => ob.salonId === booking.salonId && new Date(ob.date).toISOString().slice(0, 10) === p.dateStr
+    );
+    if (hasConflict(booking, p, sameDay)) {
+      return { ok: false, error: `ساعت ${booking.startTime} توسط شخص دیگری رزرو شده است` };
+    }
   }
   return { ok: true };
 }

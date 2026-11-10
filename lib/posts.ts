@@ -12,17 +12,34 @@ export type PostMeta = {
   image?: string;
 };
 
+// فقط حروف/عدد/خط‌تیره (فارسی هم مجاز) — جلوی path traversal مثل ../../
+const SLUG_RE = /^[\w\u0600-\u06FF-]+$/;
+
+// محتوای بلاگ بین دیپلوی‌ها ثابت است؛ در production فقط یک‌بار از دیسک خوانده می‌شود
+// (قبلاً readFileSync همزمان روی هر درخواست، event loop را بلاک می‌کرد).
+const isProd = process.env.NODE_ENV === 'production';
+const postCache = new Map<string, { meta: Record<string, any>; content: string }>();
+let allPostsCache: PostMeta[] | null = null;
+
 export function getPostBySlug(slug: string) {
+  if (!SLUG_RE.test(slug)) throw new Error('Invalid slug');
+
+  const cached = isProd ? postCache.get(slug) : undefined;
+  if (cached) return cached;
+
   const fullPath = path.join(postsDirectory, `${slug}.mdx`);
   const fileContents = fs.readFileSync(fullPath, 'utf8');
   const { data, content } = matter(fileContents);
-  return { meta: data, content };
+  const result = { meta: data, content };
+
+  if (isProd) postCache.set(slug, result);
+  return result;
 }
 
 export function getAllPosts(): PostMeta[] {
-  const entries = fs.readdirSync(postsDirectory);
+  if (isProd && allPostsCache) return allPostsCache;
 
-  // فقط فایل‌های .mdx رو در نظر بگیر — هر فایل دیگه‌ای (مثل .DS_Store) نادیده گرفته می‌شه
+  const entries = fs.readdirSync(postsDirectory);
   const mdxSlugs = entries.filter((entry) => entry.endsWith('.mdx'));
 
   const posts = mdxSlugs.map((slug) => {
@@ -38,5 +55,6 @@ export function getAllPosts(): PostMeta[] {
     } as PostMeta;
   });
 
+  if (isProd) allPostsCache = posts;
   return posts;
 }

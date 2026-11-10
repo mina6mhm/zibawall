@@ -23,13 +23,12 @@ export type SalonAccess = {
 
 // همه‌ی سالن‌هایی که این کاربر بهشون دسترسی داره (مالکیت یا مدیریت)
 export async function getAccessibleSalonsForUserId(userId: string): Promise<SalonAccess[]> {
-  const user = await prisma.user.findUnique({ where: { id: userId } });
+  // یک query برای کاربر + سالن خودش (قبلاً دو query جدا بود)
+  const user = await prisma.user.findUnique({ where: { id: userId }, include: { salon: true } });
   if (!user) return [];
 
   const results: SalonAccess[] = [];
-
-  const ownedSalon = await prisma.salon.findUnique({ where: { userId } });
-  if (ownedSalon) results.push({ salon: ownedSalon, isOwner: true });
+  if (user.salon) results.push({ salon: user.salon, isOwner: true });
 
   if (user.phone) {
     const managerRecords = await prisma.salonManager.findMany({

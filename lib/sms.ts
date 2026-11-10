@@ -20,8 +20,6 @@ export async function sendPatternSms({ patternCode, recipient, attributes }: Sen
     number_format: 'persian',
   };
 
-  console.log('📤 SMS REQUEST:', JSON.stringify(requestBody));
-
   let smsRes: Response;
   try {
     smsRes = await fetch('https://api.iranpayamak.com/ws/v1/sms/pattern', {
@@ -31,7 +29,7 @@ export async function sendPatternSms({ patternCode, recipient, attributes }: Sen
         'Api-Key': apiKey,
       },
       body: JSON.stringify(requestBody),
-      signal: AbortSignal.timeout(15000),
+      signal: AbortSignal.timeout(8000),
     });
   } catch (networkError) {
     console.error('❌ SMS Network Error:', networkError);
@@ -39,12 +37,9 @@ export async function sendPatternSms({ patternCode, recipient, attributes }: Sen
   }
 
   const smsText = await smsRes.text();
-  console.log('====================');
-  console.log('SMS STATUS:', smsRes.status);
-  console.log('SMS RESPONSE:', smsText);
-  console.log('====================');
-
+  // لاگ فقط در حالت خطا (و بدون شماره‌ی کامل) — لاگ همه‌ی درخواست‌ها زیر بار هم کند است هم اطلاعات کاربر را درز می‌دهد
   if (!smsRes.ok) {
+    console.error('❌ SMS failed:', smsRes.status, smsText.slice(0, 300), 'to ***' + String(recipient).slice(-4));
     throw new Error('ارسال پیامک با خطا مواجه شد');
   }
 

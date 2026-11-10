@@ -45,6 +45,7 @@ export async function requestZarinpalPayment({
   const res = await fetch(ZARINPAL_REQUEST_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
+    signal: AbortSignal.timeout(15000), // بدون timeout، کندی درگاه همه‌ی requestها را معلق می‌کند
     body: JSON.stringify({
       merchant_id: ZARINPAL_MERCHANT_ID,
       amount: amountToman * 10,
@@ -54,7 +55,7 @@ export async function requestZarinpalPayment({
     }),
   });
 
-  const data = await res.json();
+  const data = await res.json().catch(() => null);
 
   if (data?.data?.code === 100 && data?.data?.authority) {
     return {
@@ -81,6 +82,7 @@ export async function verifyZarinpalPayment({
   const res = await fetch(ZARINPAL_VERIFY_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
+    signal: AbortSignal.timeout(15000), // بدون timeout، کندی درگاه همه‌ی requestها را معلق می‌کند
     body: JSON.stringify({
       merchant_id: ZARINPAL_MERCHANT_ID,
       amount: amountToman * 10,
@@ -88,12 +90,14 @@ export async function verifyZarinpalPayment({
     }),
   });
 
-  const data = await res.json();
+  const data = await res.json().catch(() => null);
 
   // کد ۱۰۰: پرداخت موفق و تازه‌تایید‌شده / کد ۱۰۱: قبلاً تایید شده (idempotent)
   if (data?.data?.code === 100 || data?.data?.code === 101) {
     return { success: true, refId: data.data.ref_id as string | number };
   }
 
+  // توجه: اگر fetch به‌خاطر timeout throw کرد، نتیجه «نامشخص» است نه «ناموفق» —
+  // در callback پرداخت نوبت را FAILED نکن، اجازه بده کاربر/زمان‌بند دوباره verify کند.
   return { success: false, refId: null as null };
 }
