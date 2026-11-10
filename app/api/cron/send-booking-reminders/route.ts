@@ -9,8 +9,11 @@ import { sendBookingReminders } from '@/lib/bookingReminders';
 export const dynamic = 'force-dynamic';
 
 export async function GET(req: Request) {
+  // اگر CRON_SECRET تنظیم نشده باشد، قبلاً مقایسه با رشته‌ی "Bearer undefined" انجام می‌شد
+  // و هر کسی با همین هدر می‌توانست مسیر را صدا بزند. حالا بدون secret مسیر کاملاً بسته است.
+  const secret = process.env.CRON_SECRET;
   const authHeader = req.headers.get('authorization');
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+  if (!secret || authHeader !== `Bearer ${secret}`) {
     return NextResponse.json({ error: 'دسترسی غیرمجاز' }, { status: 401 });
   }
 

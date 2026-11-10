@@ -8,6 +8,10 @@ import { prisma } from '@/lib/prisma';
 import { BOOKING_APP_FEE } from '@/lib/constants';
 import { timeToMin, validateSlotAgainstSchedule } from '@/lib/bookingSchedule';
 import { notifyBookingConfirmed } from '@/lib/bookingNotifications';
+import { rateLimit } from '@/lib/rateLimit';
+
+// سقف تعداد خدمات در یک سبد؛ قبلاً بی‌نهایت بود و هر آیتم چند کوئری دیتابیس می‌زد
+const MAX_CART_ITEMS = 10;
 
 type ReserveItem = {
   serviceId: string;
@@ -27,9 +31,22 @@ export async function POST(req: Request) {
 
     let decoded: any;
     try {
-      decoded = jwt.verify(token, process.env.JWT_SECRET!);
+      decoded = jwt.verify(token, process.env.JWT_SECRET!, { algorithms: ['HS256'] });
     } catch {
       return NextResponse.json({ error: 'توکن نامعتبر است' }, { status: 401 });
+    }
+
+    if (typeof decoded?.userId !== 'string' || !decoded.userId) {
+      return NextResponse.json({ error: 'توکن نامعتبر است' }, { status: 401 });
+    }
+
+    // ضد اسپم/رزرو الکی: ۲۰ تلاش رزرو در ۱۰ دقیقه برای هر کاربر
+    const limit = rateLimit(`reserve:${decoded.userId}`, 20, 10 * 60 * 1000);
+    if (!limit.ok) {
+      return NextResponse.json(
+        { error: 'تعداد تلاش‌ها زیاد است. کمی بعد دوباره تلاش کنید' },
+        { status: 429, headers: { 'Retry-After': String(limit.retryAfter) } }
+      );
     }
 
     const user = await prisma.user.findUnique({ where: { id: decoded.userId } });
@@ -40,6 +57,12 @@ export async function POST(req: Request) {
 
     if (!salonId || !Array.isArray(items) || items.length === 0) {
       return NextResponse.json({ error: 'اطلاعات ناقص است' }, { status: 400 });
+    }
+    if (items.length > MAX_CART_ITEMS) {
+      return NextResponse.json(
+        { error: `در هر رزرو حداکثر ${MAX_CART_ITEMS} خدمت مجاز است` },
+        { status: 400 }
+      );
     }
 
     const salon = await prisma.salon.findUnique({ where: { id: salonId } });

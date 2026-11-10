@@ -1,10 +1,11 @@
 // app/api/business/create-pending/route.ts
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { getAuthUser } from '@/lib/auth';
+import { rateLimit } from '@/lib/rateLimit';
+import { cleanString, cleanStringArray, cleanCoordinates, cleanTags, isHttpUrl } from '@/lib/validate';
 import { notifyAdminNewSalonPending } from '@/lib/telegram';
 import { notifyAdminNewSalonPendingPush } from '@/lib/push';
-
-const mobileRegex = /^09\d{9}$/;
 
 // این مسیر سالن را بدون پرداخت می‌سازد ولی آن را مستقیم پابلیک نمی‌کند (اشتراک/پلن فعلاً حذف شده است).
 // سالن با status=PENDING_APPROVAL ساخته می‌شود و تا زمانی‌که ادمین از پنل مدیریت
@@ -13,18 +14,32 @@ const mobileRegex = /^09\d{9}$/;
 // «ACTIVE و منقضی‌نشده»ی GET /api/salon بدون نیاز به تغییر schema یا آن فیلتر درست کار کند.
 export async function POST(req: Request) {
   try {
-    const body = await req.json();
+    // قبلاً این مسیر لاگین نمی‌خواست و با userPhone هر کسی می‌شد «به‌نام دیگران» کسب‌وکار
+    // ساخت؛ چون هر کاربر فقط یک سالن می‌تواند داشته باشد، قربانی دیگر نمی‌توانست ثبت‌نام کند.
+    // حالا هویت فقط از کوکی لاگین گرفته می‌شود و userPhone نادیده گرفته می‌شود.
+    const auth = await getAuthUser();
+    if ('error' in auth) {
+      return NextResponse.json({ error: auth.error }, { status: auth.status });
+    }
+
+    const limit = rateLimit(`create-pending:${auth.userId}`, 5, 60 * 60 * 1000);
+    if (!limit.ok) {
+      return NextResponse.json(
+        { error: 'تعداد درخواست‌ها زیاد است. کمی بعد دوباره تلاش کنید' },
+        { status: 429, headers: { 'Retry-After': String(limit.retryAfter) } }
+      );
+    }
+
+    const body = await req.json().catch(() => null);
+    if (!body || typeof body !== 'object') {
+      return NextResponse.json({ error: 'اطلاعات ارسالی نامعتبر است' }, { status: 400 });
+    }
     const {
-      userPhone, name, province, city, neighborhoods, address, coordinates,
-      phones, workingHours, closedDays, hasHomeService, genderAudience,
+      neighborhoods, coordinates, phones, closedDays, hasHomeService, genderAudience,
       cardNumber, tags, description, socials, imageUrl, portfolios,
     } = body;
 
-    if (!userPhone) {
-      return NextResponse.json({ error: 'شماره کاربر ارسال نشده است' }, { status: 400 });
-    }
-
-    const user = await prisma.user.findUnique({ where: { phone: userPhone } });
+    const user = await prisma.user.findUnique({ where: { id: auth.userId } });
     if (!user) {
       return NextResponse.json({ error: 'کاربر یافت نشد' }, { status: 404 });
     }
@@ -34,26 +49,41 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'شما قبلاً یک کسب‌وکار ثبت کرده‌اید' }, { status: 400 });
     }
 
+    const name = cleanString(body.name, 100);
+    const province = cleanString(body.province, 60);
+    const city = cleanString(body.city, 60);
+    const address = cleanString(body.address, 400);
+    const workingHours = cleanString(body.workingHours, 300);
+
     if (!name || !province || !city || !address || !workingHours) {
-      return NextResponse.json({ error: 'اطلاعات پایه سالن ناقص است' }, { status: 400 });
+      return NextResponse.json({ error: 'اطلاعات پایه سالن ناقص یا نامعتبر است' }, { status: 400 });
     }
 
-    const validPhones = Array.isArray(phones) ? phones.filter((p: string) => p?.trim()) : [];
+    const validPhones = cleanStringArray(phones, 5, 20);
     if (validPhones.length === 0) {
       return NextResponse.json({ error: 'حداقل یک شماره تماس الزامی است' }, { status: 400 });
     }
 
-    if (cardNumber && !/^\d{16}$/.test(cardNumber)) {
+    if (cardNumber && !/^\d{16}$/.test(String(cardNumber))) {
       return NextResponse.json({ error: 'اگر شماره کارت وارد می‌کنید، باید دقیقاً ۱۶ رقم باشد' }, { status: 400 });
     }
 
-    if (!imageUrl) {
+    if (!isHttpUrl(imageUrl)) {
       return NextResponse.json({ error: 'عکس کاور الزامی است' }, { status: 400 });
+    }
+
+    const cleanDescription = cleanString(description, 3000);
+    if (description !== undefined && description !== null && cleanDescription === null) {
+      return NextResponse.json({ error: 'توضیحات بیش از حد طولانی است' }, { status: 400 });
     }
 
     // سقف ثابت نمونه‌کار — دیگر به پلن وابسته نیست
     const MAX_PORTFOLIOS = 15;
-    const finalPortfolios = Array.isArray(portfolios) ? portfolios.slice(0, MAX_PORTFOLIOS) : [];
+    const finalPortfolios = (Array.isArray(portfolios) ? portfolios : [])
+      .filter((u: unknown) => isHttpUrl(u))
+      .slice(0, MAX_PORTFOLIOS);
+    const coords = cleanCoordinates(coordinates);
+    const social = (k: string) => cleanString(socials?.[k], 200) || null;
 
     const farFuture = new Date();
     farFuture.setFullYear(farFuture.getFullYear() + 100);
@@ -63,19 +93,19 @@ export async function POST(req: Request) {
         name,
         province,
         city,
-        neighborhoods: neighborhoods || [],
+        neighborhoods: cleanStringArray(neighborhoods, 60, 60),
         address,
-        lat: coordinates && coordinates.length === 2 ? coordinates[0] : null,
-        lng: coordinates && coordinates.length === 2 ? coordinates[1] : null,
+        lat: coords ? coords[0] : null,
+        lng: coords ? coords[1] : null,
         phones: validPhones,
         workingHours,
-        closedDays: closedDays || [],
+        closedDays: cleanStringArray(closedDays, 7, 20),
         hasHomeService: !!hasHomeService,
-        genderAudience: genderAudience || 'BOTH',
-        cardNumber: cardNumber || '',
-        tags: tags || [],
+        genderAudience: ['FEMALE', 'MALE', 'BOTH'].includes(genderAudience) ? genderAudience : 'BOTH',
+        cardNumber: cardNumber ? String(cardNumber) : '',
+        tags: cleanTags(tags),
         imageUrl,
-        description: description || 'توضیحات پیش‌فرض سالن',
+        description: cleanDescription || 'توضیحات پیش‌فرض سالن',
         portfolios: finalPortfolios,
         status: 'PENDING_APPROVAL',
         planId: null,
@@ -83,12 +113,12 @@ export async function POST(req: Request) {
         userId: user.id,
         socials: {
           create: {
-            website: socials?.website || null,
-            instagram: socials?.instagram || null,
-            whatsapp: socials?.whatsapp || null,
-            telegram: socials?.telegram || null,
-            rubika: socials?.rubika || null,
-            bale: socials?.bale || null,
+            website: social('website'),
+            instagram: social('instagram'),
+            whatsapp: social('whatsapp'),
+            telegram: social('telegram'),
+            rubika: social('rubika'),
+            bale: social('bale'),
           },
         },
       },

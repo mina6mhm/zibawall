@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import jwt from 'jsonwebtoken';
 import { prisma } from '@/lib/prisma';
+import { rateLimit, getClientIp } from '@/lib/rateLimit';
 import {
   persianDayNameForDate,
   resolveSalonDaySchedule,
@@ -23,7 +24,28 @@ export const dynamic = 'force-dynamic';
  *   date       — تاریخ میلادی "YYYY-MM-DD"
  *   staffId?   — اختیاری: آیدی پرسنل خاص (اگه نباشه = همه‌ی پرسنل واجد شرایط)
  */
+const DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
+
 export async function GET(req: Request) {
+  try {
+    return await handleGet(req);
+  } catch (error) {
+    // قبلاً این مسیر try/catch نداشت: ورودی خراب یا قطع لحظه‌ای دیتابیس = خطای کنترل‌نشده
+    console.error('Error in available-slots:', error);
+    return NextResponse.json({ error: 'خطای سرور در دریافت ساعت‌های خالی' }, { status: 500 });
+  }
+}
+
+async function handleGet(req: Request) {
+  // مسیر عمومی و پرکوئری است؛ ۱۲۰ درخواست در دقیقه برای هر IP کافی است
+  const limit = rateLimit(`slots:${getClientIp(req)}`, 120, 60 * 1000);
+  if (!limit.ok) {
+    return NextResponse.json(
+      { error: 'تعداد درخواست‌ها زیاد است. کمی بعد دوباره تلاش کنید' },
+      { status: 429, headers: { 'Retry-After': String(limit.retryAfter) } }
+    );
+  }
+
   const { searchParams } = new URL(req.url);
   const salonId   = searchParams.get('salonId');
   const serviceId = searchParams.get('serviceId');
@@ -32,6 +54,11 @@ export async function GET(req: Request) {
 
   if (!salonId || !serviceId || !dateStr) {
     return NextResponse.json({ error: 'salonId، serviceId و date الزامی هستند' }, { status: 400 });
+  }
+
+  // تاریخ نامعتبر (مثلاً "abc") Invalid Date می‌ساخت و کوئری دیتابیس را می‌ترکاند
+  if (!DATE_REGEX.test(dateStr) || Number.isNaN(new Date(dateStr + 'T00:00:00Z').getTime())) {
+    return NextResponse.json({ error: 'فرمت تاریخ نامعتبر است (YYYY-MM-DD)' }, { status: 400 });
   }
 
   // ── ۱. دریافت اطلاعات سالن + خدمت ───────────────────────────────────────
@@ -91,7 +118,7 @@ export async function GET(req: Request) {
   try {
     const token = (await cookies()).get('token')?.value;
     if (token) {
-      const decoded: any = jwt.verify(token, process.env.JWT_SECRET!);
+      const decoded: any = jwt.verify(token, process.env.JWT_SECRET!, { algorithms: ['HS256'] });
       currentUserId = decoded?.userId ?? null;
     }
   } catch {

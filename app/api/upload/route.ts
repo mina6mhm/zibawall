@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import jwt from 'jsonwebtoken';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
+import { rateLimit } from '@/lib/rateLimit';
 import sharp from 'sharp';
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const heicConvert = require('heic-convert');
@@ -17,8 +18,33 @@ const s3 = new S3Client({
   },
 });
 
-const MAX_FILE_SIZE_MB = 50;
+// سقف‌ها: قبلاً ۵۰ مگابایت برای هر فایل و بدون سقف تعداد فایل بود؛ چند درخواست
+// هم‌زمان کافی بود تا حافظه‌ی سرور (و CPU برای sharp/heic) تمام شود.
+// کلاینت عکس‌ها را قبل از ارسال فشرده می‌کند، پس ۲۰ مگابایت برای عکس واقعی کافی است.
+// فرم ثبت/ویرایش کسب‌وکار همه‌ی نمونه‌کارها (حداکثر ۳۰ تا) را در «یک» درخواست می‌فرستد،
+// پس سقف تعداد باید حداقل ۳۰ + ۱ (کاور) باشد.
+const MAX_FILE_SIZE_MB = 20;
 const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
+const MAX_FILES_PER_REQUEST = 31;
+const MAX_TOTAL_BYTES = 150 * 1024 * 1024; // مجموع حجم یک درخواست
+const MAX_INPUT_PIXELS = 60_000_000; // ~ عکس ۷۷۰۰×۷۷۰۰؛ جلوی «بمب پیکسلی» را می‌گیرد
+
+// حداکثر پردازش هم‌زمان تصویر در هر instance (sharp/heic حافظه و CPU زیادی می‌خورند)
+const MAX_CONCURRENT_PROCESSING = 3;
+let activeProcessing = 0;
+const waiters: (() => void)[] = [];
+async function acquireSlot() {
+  if (activeProcessing < MAX_CONCURRENT_PROCESSING) {
+    activeProcessing++;
+    return;
+  }
+  await new Promise<void>((resolve) => waiters.push(resolve));
+}
+function releaseSlot() {
+  const next = waiters.shift();
+  if (next) next(); // اسلات مستقیماً به نفر بعدی منتقل می‌شود
+  else activeProcessing--;
+}
 const MAX_DIM = 2048;
 const QUALITY = 85;
 
@@ -45,7 +71,7 @@ async function getUserIdFromToken(): Promise<string | null> {
   const token = cookieStore.get('token')?.value;
   if (!token) return null;
   try {
-    const decoded: any = jwt.verify(token, process.env.JWT_SECRET!);
+    const decoded: any = jwt.verify(token, process.env.JWT_SECRET!, { algorithms: ['HS256'] });
     return decoded.userId ?? null;
   } catch {
     return null;
@@ -81,7 +107,7 @@ async function processImage(
     }
 
     // پردازش با sharp — همیشه resize و optimize می‌کنه
-    const finalBuffer = await sharp(workingBuffer, { failOn: 'none' }) // failOn: none = تلرانس بالا
+    const finalBuffer = await sharp(workingBuffer, { failOn: 'none', limitInputPixels: MAX_INPUT_PIXELS }) // failOn: none = تلرانس بالا
       .rotate() // اصلاح orientation خودکار
       .resize(MAX_DIM, MAX_DIM, {
         fit: 'inside',
@@ -93,13 +119,15 @@ async function processImage(
     return { buffer: finalBuffer, ext: 'jpg', contentType: 'image/jpeg' };
 
   } catch (err: any) {
-    // اگه پردازش fail شد، فایل اصلی رو بفرست (fallback)
-    // contentType رو از روی پسوند مجاز تعیین می‌کنیم، نه mimeType خام کلاینت
-    console.error('Image processing failed, using original:', err?.message);
-    const ext = lowerName.split('.').pop() || 'jpg';
-    return { buffer, ext, contentType: EXT_TO_CONTENT_TYPE[ext] ?? 'application/octet-stream' };
+    // قبلاً اگر پردازش شکست می‌خورد «فایل خام کاربر» همان‌طور که بود در Storage عمومی
+    // ذخیره می‌شد (فقط با پسوند جعلی .jpg) — یعنی هر فایل دلخواهی قابل آپلود بود.
+    // حالا فایلی که به‌عنوان تصویر پردازش نشود رد می‌شود.
+    console.error('Image processing failed:', err?.message);
+    throw new ImageProcessingError();
   }
 }
+
+class ImageProcessingError extends Error {}
 
 export async function POST(req: Request) {
   try {
@@ -108,11 +136,32 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'ابتدا وارد حساب کاربری شوید' }, { status: 401 });
     }
 
+    // ۳۰ درخواست آپلود در ۱۰ دقیقه برای هر کاربر
+    const limit = rateLimit(`upload:${userId}`, 30, 10 * 60 * 1000);
+    if (!limit.ok) {
+      return NextResponse.json(
+        { error: 'تعداد آپلود زیاد است. کمی بعد دوباره تلاش کنید' },
+        { status: 429, headers: { 'Retry-After': String(limit.retryAfter) } }
+      );
+    }
+
     const formData = await req.formData();
     const files = formData.getAll('file') as File[];
 
     if (!files || files.length === 0) {
       return NextResponse.json({ error: 'هیچ فایلی ارسال نشده است' }, { status: 400 });
+    }
+
+    if (files.length > MAX_FILES_PER_REQUEST) {
+      return NextResponse.json(
+        { error: `در هر بار حداکثر ${MAX_FILES_PER_REQUEST} عکس می‌توانید آپلود کنید` },
+        { status: 400 }
+      );
+    }
+
+    const totalBytes = files.reduce((sum, f) => sum + (f?.size ?? 0), 0);
+    if (totalBytes > MAX_TOTAL_BYTES) {
+      return NextResponse.json({ error: 'حجم کل فایل‌ها بیش از حد مجاز است' }, { status: 413 });
     }
 
     const uploadedUrls: string[] = [];
@@ -133,7 +182,15 @@ export async function POST(req: Request) {
       }
 
       const rawBuffer = Buffer.from(await file.arrayBuffer());
-      const { buffer, ext, contentType } = await processImage(rawBuffer, file.type, file.name);
+
+      let processed;
+      await acquireSlot();
+      try {
+        processed = await processImage(rawBuffer, file.type, file.name);
+      } finally {
+        releaseSlot();
+      }
+      const { buffer, ext, contentType } = processed;
 
       const filename = `img-${Date.now()}-${Math.round(Math.random() * 1e9)}.${ext}`;
 
@@ -154,10 +211,14 @@ export async function POST(req: Request) {
     return NextResponse.json({ urls: uploadedUrls }, { status: 200 });
 
   } catch (error: any) {
+    if (error instanceof ImageProcessingError) {
+      return NextResponse.json(
+        { error: 'فایل ارسالی یک تصویر معتبر نیست یا قابل پردازش نبود' },
+        { status: 400 }
+      );
+    }
+    // پیام داخلی خطا (آدرس سرور S3 و ...) نباید به کلاینت نشت کند
     console.error('Upload Error:', error?.message);
-    return NextResponse.json(
-      { error: error?.message || 'خطای سرور در آپلود فایل' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'خطای سرور در آپلود فایل' }, { status: 500 });
   }
 }

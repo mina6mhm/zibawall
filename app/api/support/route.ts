@@ -4,6 +4,7 @@ import { cookies } from 'next/headers';
 import jwt from 'jsonwebtoken';
  
 import { prisma } from '@/lib/prisma';
+import { rateLimit } from '@/lib/rateLimit';
  
 export const dynamic = 'force-dynamic';
  
@@ -23,14 +24,23 @@ export async function POST(req: Request) {
  
     let decoded: any;
     try {
-      decoded = jwt.verify(token, process.env.JWT_SECRET!);
+      decoded = jwt.verify(token, process.env.JWT_SECRET!, { algorithms: ['HS256'] });
     } catch {
       return NextResponse.json({ error: 'توکن نامعتبر است' }, { status: 401 });
     }
  
+    // ضد اسپم: ۵ پیام در ۱۰ دقیقه برای هر کاربر
+    const limit = rateLimit(`support:${decoded.userId}`, 5, 10 * 60 * 1000);
+    if (!limit.ok) {
+      return NextResponse.json(
+        { error: 'تعداد پیام‌ها زیاد است. کمی بعد دوباره تلاش کنید' },
+        { status: 429, headers: { 'Retry-After': String(limit.retryAfter) } }
+      );
+    }
+
     // --- اعتبارسنجی متن پیام ---
-    const body = await req.json();
-    const message: string = (body.message || '').trim();
+    const body = await req.json().catch(() => ({}));
+    const message: string = typeof body?.message === 'string' ? body.message.trim() : '';
  
     if (!message) {
       return NextResponse.json(
@@ -101,7 +111,7 @@ export async function GET(req: Request) {
 
     let decoded: any;
     try {
-      decoded = jwt.verify(token, process.env.JWT_SECRET!);
+      decoded = jwt.verify(token, process.env.JWT_SECRET!, { algorithms: ['HS256'] });
     } catch {
       return NextResponse.json({ error: 'توکن نامعتبر است' }, { status: 401 });
     }
@@ -121,6 +131,7 @@ export async function GET(req: Request) {
     const tickets = await prisma.supportMessage.findMany({
       where: statusFilter ? { status: statusFilter as any } : undefined,
       orderBy: { updatedAt: 'desc' },
+      take: 300, // قبلاً همه‌ی تیکت‌ها یک‌جا بارگذاری می‌شد
       include: {
         user: { select: { name: true, phone: true, username: true } },
         replies: { orderBy: { createdAt: 'desc' }, take: 1 },
