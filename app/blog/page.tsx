@@ -1,74 +1,131 @@
-// app/blog/page.tsx
+// app/blog/[slug]/page.tsx
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import Image from 'next/image';
-import { ArrowRight } from 'lucide-react';
+import { notFound } from 'next/navigation';
+import { ArrowRight, Calendar } from 'lucide-react';
 import { Vazirmatn } from 'next/font/google';
-import { getAllPosts } from '@/lib/posts';
+import { MDXRemote } from 'next-mdx-remote/rsc';
+import { getAllPosts, getPostBySlug } from '@/lib/posts';
 
-// همون فونت نمایشی سنگین که توی لندینگ برای تیترها استفاده شده — برای هماهنگی هویت بصری
+// همون فونت نمایشی سنگین لندینگ — برای تیتر اصلی و تیترهای داخل متن مقاله
 const vazir = Vazirmatn({ subsets: ['arabic'], weight: '800', display: 'swap' });
 
-export const metadata = {
-  title: 'وبلاگ زیباوال',
-  description: 'مقالات و راهنمای زیباوال درباره‌ی نوبت‌دهی و مدیریت سالن‌های زیبایی.',
-};
+// فقط اسلاگ‌هایی که در زمان build ساخته شده‌اند معتبرند؛ بقیه مستقیماً 404 می‌شوند.
+// این کار هم جلوی رندر/خواندن فایل به ازای هر URL تصادفی (فشار روی سرور) را می‌گیرد
+// و هم جلوی ورودی‌های مخرب مثل ../ را در getPostBySlug.
+export const dynamicParams = false;
 
-export default function BlogIndexPage() {
-  const posts = getAllPosts();
+export function generateStaticParams() {
+  return getAllPosts().map((post) => ({ slug: post.slug }));
+}
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
+  const { slug } = await params;
+  try {
+    const post = getPostBySlug(slug);
+    if (!post) return {};
+    const description = (post.meta as { description?: string }).description;
+    return {
+      title: post.meta.title,
+      description,
+      openGraph: {
+        title: post.meta.title,
+        description,
+        type: 'article',
+        images: post.meta.image ? [post.meta.image] : undefined,
+      },
+    };
+  } catch {
+    return {};
+  }
+}
+
+export default async function BlogPostPage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
+
+  let post;
+  try {
+    post = getPostBySlug(slug);
+  } catch {
+    notFound();
+  }
+
+  if (!post) notFound();
 
   return (
     <div className="min-h-screen bg-white" dir="rtl">
       <header className="sticky top-0 z-30 bg-white/90 backdrop-blur-md border-b border-zinc-100">
-        <div className="max-w-5xl mx-auto flex items-center justify-between px-5 md:px-10 h-14 md:h-16">
-          <Link href="/" className="flex items-center gap-1.5 text-zinc-600 hover:text-zinc-900 transition-colors">
+        <div className="max-w-2xl mx-auto flex items-center gap-1.5 px-5 h-14 md:h-16">
+          <Link href="/blog" className="flex items-center gap-1.5 text-zinc-600 hover:text-zinc-900 transition-colors">
             <ArrowRight className="w-4 h-4 shrink-0" />
-            <span className="text-[13px] font-bold">بازگشت</span>
+            <span className="text-[13px] font-bold">بازگشت به وبلاگ</span>
           </Link>
-          <span className={`${vazir.className} text-zinc-900 text-[13px] md:text-sm`}>وبلاگ زیباوال</span>
         </div>
       </header>
 
-      <main className="max-w-5xl mx-auto px-5 md:px-10 py-8 md:py-14">
-        <h1 className={`${vazir.className} text-2xl md:text-[32px] text-zinc-900 mb-1.5`}>
-          آخرین مقالات
+      <main className="max-w-2xl mx-auto px-5 py-8 md:py-14">
+        <h1 className={`${vazir.className} text-[22px] md:text-3xl text-zinc-900 mb-3 leading-[1.5]`}>
+          {post.meta.title}
         </h1>
-        <p className="text-[13px] md:text-sm text-zinc-500 mb-8 md:mb-12">
-          راهنما و نکات کاربردی درباره‌ی سالن‌های زیبایی و نوبت‌دهی آنلاین
-        </p>
 
-        {posts.length === 0 ? (
-          <div className="text-center py-16 bg-zinc-50 rounded-2xl">
-            <p className="text-zinc-400 text-sm">هنوز مقاله‌ای منتشر نشده است.</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5">
-            {posts.map((post) => (
-              <Link
-                key={post.slug}
-                href={`/blog/${post.slug}`}
-                className="group bg-white border border-zinc-100 rounded-2xl overflow-hidden shadow-sm shadow-zinc-200/40 hover:shadow-md hover:-translate-y-0.5 transition-all"
-              >
-                <div className="relative w-full h-44 sm:h-40 bg-zinc-100">
-                  <Image
-                    src={post.image || '/images/default-blog.jpg'}
-                    alt={post.title}
-                    fill
-                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                    className="object-cover group-hover:scale-105 transition-transform duration-500"
-                  />
-                </div>
-                <div className="p-4 md:p-5">
-                  <h2 className="font-bold text-zinc-900 text-[15px] md:text-base mb-1.5 leading-snug">
-                    {post.title}
-                  </h2>
-                  <p className="text-[12.5px] md:text-[13px] text-zinc-500 leading-relaxed line-clamp-2">
-                    {post.description}
-                  </p>
-                </div>
-              </Link>
-            ))}
+        {post.meta.date && (
+          <div className="flex items-center gap-1.5 text-[12px] text-zinc-400 mb-6 md:mb-8">
+            <Calendar className="w-3.5 h-3.5" />
+            <span>{post.meta.date}</span>
           </div>
         )}
+
+        {post.meta.image && (
+          <div className="relative w-full h-52 md:h-72 rounded-2xl overflow-hidden bg-zinc-100 mb-8">
+            <Image
+              src={post.meta.image}
+              alt={post.meta.title}
+              fill
+              priority
+              sizes="(max-width: 672px) 100vw, 672px"
+              className="object-cover"
+            />
+          </div>
+        )}
+
+        <article
+          className="text-zinc-700 text-[14.5px] md:text-[15.5px] leading-[2]
+            [&_h1]:font-['inherit']
+            [&_h2]:text-[19px] md:[&_h2]:text-[22px] [&_h2]:font-extrabold [&_h2]:text-zinc-900 [&_h2]:mt-10 [&_h2]:mb-4 [&_h2]:leading-snug
+            [&_h3]:text-[16.5px] md:[&_h3]:text-lg [&_h3]:font-bold [&_h3]:text-zinc-900 [&_h3]:mt-8 [&_h3]:mb-3
+            [&_p]:mb-5
+            [&_ul]:list-disc [&_ul]:pr-5 [&_ul]:mb-5 [&_ul]:space-y-1.5
+            [&_ol]:list-decimal [&_ol]:pr-5 [&_ol]:mb-5 [&_ol]:space-y-1.5
+            [&_li]:leading-[1.9]
+            [&_a]:text-[#824c71] [&_a]:font-medium [&_a]:underline [&_a]:underline-offset-2
+            [&_strong]:font-bold [&_strong]:text-zinc-900
+            [&_blockquote]:border-r-4 [&_blockquote]:border-[#824c71]/30 [&_blockquote]:bg-[#824c71]/[0.04] [&_blockquote]:rounded-l-lg [&_blockquote]:pr-4 [&_blockquote]:py-2 [&_blockquote]:text-zinc-600 [&_blockquote]:my-6
+            [&_code]:bg-zinc-100 [&_code]:text-[#824c71] [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:rounded-md [&_code]:text-[13px]
+            [&_pre]:bg-zinc-900 [&_pre]:text-zinc-100 [&_pre]:p-4 [&_pre]:rounded-xl [&_pre]:overflow-x-auto [&_pre]:text-[13px] [&_pre]:my-6 [&_pre]:leading-relaxed
+            [&_pre_code]:bg-transparent [&_pre_code]:text-inherit [&_pre_code]:p-0
+            [&_img]:rounded-2xl [&_img]:my-6 [&_img]:w-full
+            [&_hr]:my-10 [&_hr]:border-zinc-100
+            [&_table]:w-full [&_table]:text-[13px] [&_table]:my-6
+            [&_th]:bg-zinc-50 [&_th]:p-2.5 [&_th]:text-right [&_th]:font-bold
+            [&_td]:p-2.5 [&_td]:border-t [&_td]:border-zinc-100"
+        >
+          <MDXRemote source={post.content} />
+        </article>
+
+        <div className="mt-12 pt-6 border-t border-zinc-100">
+          <Link
+            href="/blog"
+            className="inline-flex items-center gap-1.5 text-[13px] font-bold text-[#824c71] hover:text-[#6d3f5e] transition-colors"
+          >
+            <ArrowRight className="w-4 h-4" />
+            بازگشت به همه‌ی مقالات
+          </Link>
+        </div>
       </main>
     </div>
   );

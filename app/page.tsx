@@ -2,43 +2,47 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { Capacitor } from '@capacitor/core';
 import LandingScreen from '@/components/LandingScreen';
 
 const isStandaloneMode = () => {
   if (typeof window === 'undefined') return false;
   return (
-    // @ts-ignore
-    ('standalone' in window.navigator && window.navigator.standalone) ||
+    (window.navigator as any).standalone === true ||
     window.matchMedia('(display-mode: standalone)').matches
   );
 };
 
 export default function RootPage() {
-  const router = useRouter();
   const [checking, setChecking] = useState(true);
 
   useEffect(() => {
-  let redirected = false;
-  const timeout = setTimeout(() => setChecking(false), 2000); // fail-safe
+    let shouldRedirect = false;
 
-  try {
-    if (Capacitor.isNativePlatform() || isStandaloneMode()) {
-      redirected = true;
-      window.location.replace('/login'); // ناوبری سخت به‌جای router.replace
+    try {
+      shouldRedirect = Capacitor.isNativePlatform() || isStandaloneMode();
+    } catch (err) {
+      console.error('خطا در تشخیص پلتفرم:', err);
+    }
+
+    if (!shouldRedirect) {
+      setChecking(false);
       return;
     }
-  } catch (err) {
-    console.error('خطا در تشخیص پلتفرم:', err);
-  }
 
-  if (!redirected) setChecking(false);
-  return () => clearTimeout(timeout);
-}, [router]);
+    // ناوبری سخت به‌جای router.replace
+    window.location.replace('/login');
 
-  // تا وقتی چک انجام نشده چیزی رندر نکن تا لندینگ برای یک لحظه فلش نزنه
-  if (checking) return null;
+    // فقط اگر به هر دلیلی ناوبری انجام نشد، لندینگ را نشان بده تا کاربر روی صفحه‌ی خالی گیر نکند
+    const failSafe = setTimeout(() => setChecking(false), 5000);
+    return () => clearTimeout(failSafe);
+  }, []);
 
-  return <LandingScreen />;
+  // لندینگ همیشه در HTML سمت سرور وجود دارد (برای سئو و سرعت نمایش)،
+  // ولی تا وقتی چک پلتفرم انجام نشده مخفی می‌ماند تا برای کاربر اپ فلش نزند.
+  return (
+    <div className={checking ? 'contents invisible' : 'contents'}>
+      <LandingScreen />
+    </div>
+  );
 }
