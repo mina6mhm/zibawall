@@ -1,14 +1,14 @@
 // app/api/admin/salons/[id]/route.ts
 import { NextResponse } from 'next/server';
+import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { requireAdmin } from '@/lib/requireAdmin';
 
 export const dynamic = 'force-dynamic';
 
-// حذف کامل یک سالن (فقط ادمین). چون رابطه‌ی Salon → User با onDelete: Cascade
-// تعریف شده، این مسیر فقط خودِ سالن را حذف می‌کند و کاربرِ صاحب سالن دست‌نخورده
-// باقی می‌ماند. رکوردهای وابسته به سالن (نوبت‌ها، نظرات، پرسنل، مدیران و ...)
-// به‌خاطر Cascade روی خود مدل Salon به‌صورت خودکار حذف می‌شوند.
+// حذف کامل یک سالن (فقط ادمین). کاربرِ صاحب سالن دست‌نخورده می‌ماند.
+// ⚠️ به‌خاطر Cascade، همه‌ی نوبت‌ها (از جمله نوبت‌های پرداخت‌شده) هم پاک می‌شوند.
+// اگر سابقه‌ی مالی مهم است، به‌جای حذف فیزیکی از status (مثلاً SUSPENDED/DELETED) استفاده کنید.
 export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const admin = await requireAdmin();
@@ -18,12 +18,23 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
 
     const { id } = await params;
 
-    const salon = await prisma.salon.findUnique({ where: { id } });
-    if (!salon) {
-      return NextResponse.json({ error: 'سالن یافت نشد' }, { status: 404 });
+    try {
+      await prisma.salon.delete({ where: { id } });
+    } catch (e) {
+      if (e instanceof Prisma.PrismaClientKnownRequestError) {
+        // دو ادمین هم‌زمان حذف کنند: دومی قبلاً ۵۰۰ می‌گرفت
+        if (e.code === 'P2025') {
+          return NextResponse.json({ error: 'سالن یافت نشد' }, { status: 404 });
+        }
+        if (e.code === 'P2003') {
+          return NextResponse.json(
+            { error: 'این سالن به‌خاطر رکوردهای وابسته قابل حذف نیست' },
+            { status: 409 }
+          );
+        }
+      }
+      throw e;
     }
-
-    await prisma.salon.delete({ where: { id } });
 
     return NextResponse.json({ success: true }, { status: 200 });
   } catch (error) {

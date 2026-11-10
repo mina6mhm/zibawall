@@ -12,28 +12,29 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
     const { id } = await params;
     const body = await req.json().catch(() => ({}));
-    const reason: string = (body?.reason || '').trim();
+    // اگر reason عدد/آبجکت بود، .trim() می‌ترکید و ۵۰۰ می‌داد
+    const reason = typeof body?.reason === 'string' ? body.reason.trim().slice(0, 500) : '';
 
-    const salon = await prisma.salon.findUnique({ where: { id } });
-    if (!salon) {
-      return NextResponse.json({ error: 'سالنی یافت نشد' }, { status: 404 });
-    }
-
-    if (salon.status !== 'PENDING_APPROVAL') {
-      return NextResponse.json(
-        { error: 'این سالن در وضعیت در انتظار تایید نیست' },
-        { status: 400 }
-      );
-    }
-
-    const updatedSalon = await prisma.salon.update({
-      where: { id },
+    // تغییر وضعیت اتمیک: اگر دو ادمین هم‌زمان کلیک کنند، فقط یکی موفق می‌شود
+    const result = await prisma.salon.updateMany({
+      where: { id, status: 'PENDING_APPROVAL' },
       data: {
         status: 'REJECTED',
         rejectionReason: reason || null,
         reviewedAt: new Date(),
       },
     });
+
+    if (result.count === 0) {
+      const exists = await prisma.salon.findUnique({ where: { id }, select: { id: true } });
+      if (!exists) return NextResponse.json({ error: 'سالنی یافت نشد' }, { status: 404 });
+      return NextResponse.json(
+        { error: 'این سالن در وضعیت در انتظار تایید نیست' },
+        { status: 400 }
+      );
+    }
+
+    const updatedSalon = await prisma.salon.findUnique({ where: { id } });
 
     // TODO: در صورت نیاز، اینجا پیامک اطلاع‌رسانی رد شدن به سالن‌دار ارسال شود (lib/sms.ts)
 

@@ -1,12 +1,19 @@
 // app/api/booking/verify/route.ts
 import { NextResponse, after } from 'next/server';
-import { cookies } from 'next/headers';
-import jwt from 'jsonwebtoken';
 import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
+import { getAuthUser } from '@/lib/auth';
 import { verifyZarinpalPayment } from '@/lib/zarinpal';
 import { checkBookingSlotStillAvailable } from '@/lib/bookingSchedule';
 import { notifyBookingConfirmed } from '@/lib/bookingNotifications';
+
+export const dynamic = 'force-dynamic';
+
+type ResultKind = 'success' | 'failed' | 'slotTaken';
+type Outcome = { kind: 'confirmed'; firstTime: boolean } | { kind: 'slotTaken' };
+
+const MAX_TX_ATTEMPTS = 3;
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
@@ -14,27 +21,15 @@ export async function GET(req: Request) {
   const status = searchParams.get('Status');
   const bookingId = searchParams.get('bookingId');
 
-  const baseUrl = new URL(req.url).origin;
+  // پشت پروکسی origin درخواست ممکن است آدرس داخلی باشد؛ مثل مسیر pay از env استفاده می‌شود
+  const baseUrl = (process.env.NEXT_PUBLIC_BASE_URL || new URL(req.url).origin).replace(/\/+$/, '');
 
-  // این درخواست (برگشت از زرین‌پال) روی اپ‌های نیتیو داخل مرورگرِ سیستم اتفاق
-  // می‌افتد نه WebView خودِ اپ (به lib/openPaymentUrl.ts نگاه کنید)، پس کوکی
-  // لاگینِ اپ آنجا وجود ندارد. اگر همین‌جا کوکی معتبر داشتیم (یعنی همون مرورگری
-  // که verify را صدا زده لاگین هم بوده — حالت وب)، مستقیم به صفحه‌ی محافظت‌شده
-  // برمی‌گردیم؛ در غیر این صورت (حالت اپ نیتیو) به صفحه‌ی عمومی /payment/result
-  // که نیازی به لاگین ندارد، وگرنه کاربر به لاگین دوباره پرت می‌شود.
-  const hasValidSession = await (async () => {
-    try {
-      const cookieStore = await cookies();
-      const token = cookieStore.get('token')?.value;
-      if (!token) return false;
-      jwt.verify(token, process.env.JWT_SECRET!);
-      return true;
-    } catch {
-      return false;
-    }
-  })();
+  // برگشت از زرین‌پال روی اپ‌های نیتیو در مرورگر سیستم اتفاق می‌افتد (کوکی لاگین اپ آنجا نیست)
+  // → صفحه‌ی عمومی /payment/result؛ در حالت وب (کوکی معتبر) → /appointments
+  const auth = await getAuthUser();
+  const hasValidSession = !('error' in auth);
 
-  const redirectTo = (result: 'success' | 'failed' | 'slotTaken') =>
+  const redirectTo = (result: ResultKind) =>
     hasValidSession
       ? NextResponse.redirect(`${baseUrl}/appointments?paymentResult=${result}`)
       : NextResponse.redirect(`${baseUrl}/payment/result?status=${result}`);
@@ -44,68 +39,130 @@ export async function GET(req: Request) {
   const booking = await prisma.booking.findUnique({ where: { id: bookingId } });
   if (!booking || booking.authority !== authority) return redirectTo('failed');
 
-  if (status !== 'OK') {
+  // Idempotent: رفرش صفحه، دکمه‌ی back یا callback تکراری از درگاه.
+  // قبلاً verify دوباره صدا زده می‌شد و اگر زرین‌پال «قبلاً تایید شده» برمی‌گرداند،
+  // نوبتِ پرداخت‌شده و CONFIRMED به‌اشتباه FAILED می‌شد.
+  if (booking.paymentStatus === 'SUCCESS') {
+    return redirectTo(booking.status === 'CONFIRMED' ? 'success' : 'slotTaken');
+  }
+
+  // قبل از نوشتن FAILED، دوباره می‌خوانیم تا روی یک پرداخت موفقِ هم‌زمان ننویسیم
+  const markFailedUnlessPaid = async (): Promise<ResultKind> => {
+    const fresh = await prisma.booking.findUnique({
+      where: { id: booking.id },
+      select: { paymentStatus: true, status: true },
+    });
+    if (fresh?.paymentStatus === 'SUCCESS') {
+      return fresh.status === 'CONFIRMED' ? 'success' : 'slotTaken';
+    }
     await prisma.booking.update({ where: { id: booking.id }, data: { paymentStatus: 'FAILED' } });
+    return 'failed';
+  };
+
+  if (status !== 'OK') {
+    return redirectTo(await markFailedUnlessPaid());
+  }
+
+  let result: Awaited<ReturnType<typeof verifyZarinpalPayment>>;
+  try {
+    result = await verifyZarinpalPayment({ amountToman: booking.totalAmount, authority });
+  } catch (error) {
+    // خطای شبکه/timeout: وضعیت نامعلوم است؛ نوبت را FAILED نمی‌کنیم (زرین‌پال
+    // تراکنش تاییدنشده را خودکار برمی‌گرداند) و کاربر می‌تواند دوباره تلاش کند.
+    console.error('Error verifying booking payment:', error);
     return redirectTo('failed');
   }
 
-  try {
-    const result = await verifyZarinpalPayment({ amountToman: booking.totalAmount, authority });
+  if (!result.success) {
+    return redirectTo(await markFailedUnlessPaid());
+  }
 
-    if (result.success) {
-      // پول واقعاً از مشتری کم شده (زرین‌پال OK برگردونده). قبل از CONFIRM کردن،
-      // باید دوباره چک کنیم که بین لحظه‌ی ساخت هولد و همین الان، هولد منقضی
-      // نشده و کس دیگه‌ای همین اسلات رو نگرفته باشه — وگرنه دو نوبت تاییدشده
-      // برای یک ساعت/پرسنل خواهیم داشت (رجوع به توضیحات lib/bookingSchedule.ts).
+  // پول واقعاً کم شده. تایید نوبت داخل تراکنش Serializable + تلاش مجدد روی تداخل.
+  const confirmAfterPayment = async (): Promise<Outcome> => {
+    let lastError: unknown;
+
+    for (let attempt = 1; attempt <= MAX_TX_ATTEMPTS; attempt++) {
       try {
-        const outcome = await prisma.$transaction(
-          async (tx) => {
-            const check = await checkBookingSlotStillAvailable(booking, tx);
+        return await prisma.$transaction(
+          async (tx): Promise<Outcome> => {
+            const fresh = await tx.booking.findUnique({ where: { id: booking.id } });
+            if (!fresh) return { kind: 'slotTaken' };
 
-            if (!check.ok) {
-              // پول گرفته شده ولی اسلات دیگه در دسترس نیست: paymentStatus را SUCCESS
-              // نگه می‌داریم (چون واقعاً پرداخت شده و باید در حساب‌ها دیده بشه و
-              // دستی/از طریق زرین‌پال به مشتری استرداد بشه)، ولی خودِ نوبت را
-              // CANCELLED می‌کنیم تا اسلات را اشغال نکند و در پنل به‌عنوان نوبتِ
-              // نیازمند پیگیری استرداد مشخص باشد.
+            // callback هم‌زمان دیگری قبلاً کار را تمام کرده
+            if (fresh.paymentStatus === 'SUCCESS') {
+              return fresh.status === 'CONFIRMED'
+                ? { kind: 'confirmed', firstTime: false }
+                : { kind: 'slotTaken' };
+            }
+
+            // سالن‌دار هم‌زمان با پرداخت نوبت را لغو کرده: پول گرفته شده ولی نوبت
+            // نباید دوباره CONFIRMED شود؛ برای پیگیری استرداد SUCCESS ثبت می‌شود
+            const slotOk = fresh.status !== 'CANCELLED' && (await checkBookingSlotStillAvailable(fresh, tx)).ok;
+
+            if (!slotOk) {
               await tx.booking.update({
                 where: { id: booking.id },
                 data: { paymentStatus: 'SUCCESS', status: 'CANCELLED', refId: String(result.refId) },
               });
-              return { ok: false as const };
+              return { kind: 'slotTaken' };
             }
 
-            // از این لحظه نوبت CONFIRMED می‌شه و فقط از همین‌جا به بعد پیامک یادآوری براش مجاز می‌شه.
-            // سهم بیعانه طبق فرآیند فعلی توسط تیم پشتیبانی به شماره کارت ثبت‌شده‌ی سالن واریز می‌شود.
             await tx.booking.update({
               where: { id: booking.id },
               data: { paymentStatus: 'SUCCESS', status: 'CONFIRMED', refId: String(result.refId) },
             });
-            return { ok: true as const };
+            return { kind: 'confirmed', firstTime: true };
           },
-          { isolationLevel: Prisma.TransactionIsolationLevel.Serializable }
+          {
+            isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
+            // زیر فشار، انتظار برای کانکشن/تراکنش از پیش‌فرض (۲ و ۵ ثانیه) بیشتر می‌شود
+            maxWait: 10_000,
+            timeout: 15_000,
+          }
         );
-
-        if (!outcome.ok) {
-          return redirectTo('slotTaken');
+      } catch (e) {
+        lastError = e;
+        const isConflict = e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2034';
+        if (isConflict && attempt < MAX_TX_ATTEMPTS) {
+          await sleep(60 * attempt + Math.random() * 100);
+          continue;
         }
-        // پیامک تایید نوبت (همان لحظه)؛ اگر قبلاً SUCCESS بوده پیامک تکراری نمی‌رود.
-        if (booking.paymentStatus !== 'SUCCESS') {
-          after(() => notifyBookingConfirmed({ bookingId: booking.id, fallbackBaseUrl: baseUrl }));
-        }
-        return redirectTo('success');
-      } catch (txError) {
-        console.error('Error confirming booking after payment:', txError);
-        // اگر به‌خاطر تداخل تراکنش (P2034) شکست خورد، برای امنیت به‌جای CONFIRM
-        // کردن بدون چک، کاربر را به پیگیری دستی ارجاع می‌دهیم.
-        return redirectTo('slotTaken');
+        throw e;
       }
     }
+    throw lastError;
+  };
 
-    await prisma.booking.update({ where: { id: booking.id }, data: { paymentStatus: 'FAILED' } });
-    return redirectTo('failed');
-  } catch (error) {
-    console.error('Error verifying booking payment:', error);
-    return redirectTo('failed');
+  try {
+    const outcome = await confirmAfterPayment();
+
+    if (outcome.kind === 'slotTaken') return redirectTo('slotTaken');
+
+    // پیامک فقط یک‌بار (برنده‌ی تراکنش)؛ callbackهای تکراری دیگر پیامک نمی‌فرستند
+    if (outcome.firstTime) {
+      after(() => notifyBookingConfirmed({ bookingId: booking.id, fallbackBaseUrl: baseUrl }));
+    }
+    return redirectTo('success');
+  } catch (txError) {
+    // پول تایید شده ولی ثبت در دیتابیس شکست خورد → باید دستی پیگیری شود
+    console.error('PAYMENT_VERIFIED_BUT_NOT_CONFIRMED', {
+      bookingId: booking.id,
+      authority,
+      refId: result.refId,
+      error: txError,
+    });
+
+    // شاید callback هم‌زمان دیگری موفق شده باشد
+    try {
+      const latest = await prisma.booking.findUnique({
+        where: { id: booking.id },
+        select: { paymentStatus: true, status: true },
+      });
+      if (latest?.paymentStatus === 'SUCCESS' && latest.status === 'CONFIRMED') {
+        return redirectTo('success');
+      }
+    } catch {}
+
+    return redirectTo('slotTaken');
   }
 }

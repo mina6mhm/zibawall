@@ -12,31 +12,31 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
     const { id } = await params;
 
-    const salon = await prisma.salon.findUnique({ where: { id } });
-    if (!salon) {
-      return NextResponse.json({ error: 'سالنی یافت نشد' }, { status: 404 });
-    }
+    // تغییر وضعیت اتمیک (جلوگیری از تایید/رد هم‌زمان توسط دو ادمین)
+    const result = await prisma.salon.updateMany({
+      where: { id, status: { in: ['PENDING_APPROVAL', 'REJECTED'] } },
+      data: {
+        status: 'ACTIVE',
+        rejectionReason: null,
+        reviewedAt: new Date(),
+      },
+    });
 
-    if (salon.status !== 'PENDING_APPROVAL' && salon.status !== 'REJECTED') {
-      return NextResponse.json(
-        { error: 'این سالن در وضعیت قابل‌تایید نیست' },
-        { status: 400 }
-      );
+    if (result.count === 0) {
+      const exists = await prisma.salon.findUnique({ where: { id }, select: { id: true } });
+      if (!exists) return NextResponse.json({ error: 'سالنی یافت نشد' }, { status: 404 });
+      return NextResponse.json({ error: 'این سالن در وضعیت قابل‌تایید نیست' }, { status: 400 });
     }
 
     // اطمینان از این‌که اشتراک منقضی محسوب نشود (همان الگوی create-pending)
     const farFuture = new Date();
     farFuture.setFullYear(farFuture.getFullYear() + 100);
-
-    const updatedSalon = await prisma.salon.update({
-      where: { id },
-      data: {
-        status: 'ACTIVE',
-        rejectionReason: null,
-        reviewedAt: new Date(),
-        subscriptionExpiresAt: salon.subscriptionExpiresAt ?? farFuture,
-      },
+    await prisma.salon.updateMany({
+      where: { id, subscriptionExpiresAt: null },
+      data: { subscriptionExpiresAt: farFuture },
     });
+
+    const updatedSalon = await prisma.salon.findUnique({ where: { id } });
 
     // TODO: در صورت نیاز، اینجا پیامک تایید به سالن‌دار ارسال شود (lib/sms.ts)
 
