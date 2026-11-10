@@ -37,6 +37,8 @@ type Cell = { dayNumber: number | null; dateStr: string | null; dateObject: Date
 // حالت نمایش هدر/بدنه
 type ViewMode = 'calendar' | 'month' | 'year';
 
+const getTodayStr = () => toDateOnlyAnchor(new Date()).toISOString().slice(0, 10);
+
 export default function PersianCalendar({
   selectedDate,
   onSelectDate,
@@ -49,36 +51,43 @@ export default function PersianCalendar({
     () => initialMonth ?? new DateObject({ calendar: persian, locale: persian_fa })
   );
 
-  // هر بار ماهِ نمایش داده شده عوض بشه، به والد اطلاع می‌دیم (مثلاً برای فیلتر کردن لیست موارد موقت بر اساس همین ماه)
+  // هر بار ماهِ نمایش داده شده عوض بشه، به والد اطلاع می‌دیم
   useEffect(() => {
     onMonthChange?.(viewMonth.year, viewMonth.month.number);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [viewMonth.year, viewMonth.month.number]);
 
-  // حالت نمایش: تقویم روزها / انتخاب ماه / انتخاب سال
   const [mode, setMode] = useState<ViewMode>('calendar');
-
-  // سالی که در حالت "انتخاب ماه" روش کار می‌کنیم (لزوماً هنوز اعمال نشده روی viewMonth)
   const [pickerYear, setPickerYear] = useState<number>(() => viewMonth.year);
-
-  // ابتدای بازه‌ی سال‌ها در حالت "انتخاب سال"
   const [yearRangeStart, setYearRangeStart] = useState<number>(
     () => viewMonth.year - Math.floor(YEARS_PER_PAGE / 2)
   );
 
-  const todayStr = useMemo(() => toDateOnlyAnchor(new Date()).toISOString().slice(0, 10), []);
+  // «امروز» قبلاً فقط یک‌بار محاسبه می‌شد؛ اگر اپ شب باز می‌ماند (PWA / اپ کاپاسیتور در پس‌زمینه)
+  // صبح روز بعد هنوز روز قبل را «امروز» نشان می‌داد. حالا با برگشتن به اپ به‌روز می‌شود.
+  const [todayStr, setTodayStr] = useState<string>(getTodayStr);
+  useEffect(() => {
+    const refresh = () => setTodayStr(getTodayStr());
+    document.addEventListener('visibilitychange', refresh);
+    window.addEventListener('focus', refresh);
+    return () => {
+      document.removeEventListener('visibilitychange', refresh);
+      window.removeEventListener('focus', refresh);
+    };
+  }, []);
 
   const isCurrentMonth = useMemo(() => {
     const now = new DateObject({ calendar: persian, locale: persian_fa });
     return viewMonth.month.number === now.month.number && viewMonth.year === now.year;
-  }, [viewMonth]);
+    // todayStr برای محاسبه‌ی دوباره بعد از تغییر روز
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [viewMonth, todayStr]);
 
   // --- ناوبری تقویم اصلی ---
   const goToPrevMonth = () => setViewMonth((p) => new DateObject(p).subtract(1, 'month'));
   const goToNextMonth = () => setViewMonth((p) => new DateObject(p).add(1, 'month'));
   const goToToday = () => setViewMonth(new DateObject({ calendar: persian, locale: persian_fa }));
 
-  // --- باز کردن پنل‌ها ---
   const openMonthPicker = () => {
     setPickerYear(viewMonth.year);
     setMode('month');
@@ -88,19 +97,16 @@ export default function PersianCalendar({
     setMode('year');
   };
 
-  // انتخاب سال → می‌ریم سراغ انتخاب ماهِ همون سال
   const selectYear = (year: number) => {
     setPickerYear(year);
     setMode('month');
   };
 
-  // انتخاب ماه → اعمال روی تقویم و بازگشت
   const selectMonth = (monthNumber: number) => {
     setViewMonth(new DateObject({ calendar: persian, locale: persian_fa, year: pickerYear, month: monthNumber, day: 1 }));
     setMode('calendar');
   };
 
-  // --- یک ردیف فلش که کارکردش بسته به حالت عوض می‌شه ---
   const handleNext = () => {
     if (mode === 'calendar') goToNextMonth();
     else if (mode === 'month') setPickerYear((y) => y + 1);
@@ -114,7 +120,7 @@ export default function PersianCalendar({
 
   const weeks = useMemo(() => {
     const firstDay = new DateObject(viewMonth).set('day', 1);
-    // آفست نسبت به شنبه (شروع هفته‌ی فارسی) — بدون تکیه بر رفتار داخلی کتابخونه
+    // آفست نسبت به شنبه (شروع هفته‌ی فارسی)
     const offset = (firstDay.toDate().getDay() + 1) % 7;
     const length = viewMonth.month.length;
 
@@ -140,27 +146,31 @@ export default function PersianCalendar({
     [yearRangeStart]
   );
 
+  // نکته: همه‌ی دکمه‌ها type="button" دارند؛ بدون آن، اگر تقویم داخل <form> قرار بگیرد
+  // هر کلیک روی ماه/سال/روز فرم را submit می‌کند.
   return (
     <div className={`bg-white border border-zinc-100 rounded-2xl p-4 relative ${className}`}>
-      {/* هدر: یک ردیف فلش که بسته به حالت، ماه/سال/بازه رو جابه‌جا می‌کنه */}
       <div className="flex items-center justify-between mb-4">
         <button
+          type="button"
           onClick={handleNext}
           aria-label="بعدی"
           className="w-9 h-9 flex items-center justify-center rounded-xl bg-zinc-100 text-zinc-600 hover:bg-zinc-200 transition-colors shrink-0"
         >
-          <ChevronRight className="w-4.5 h-4.5" />
+          <ChevronRight className="w-[18px] h-[18px]" />
         </button>
 
         {mode === 'calendar' && (
           <div className="flex items-center gap-1">
             <button
+              type="button"
               onClick={openMonthPicker}
               className={`text-sm font-bold transition-colors px-2 py-1 rounded-lg hover:bg-zinc-50 ${isCurrentMonth ? 'text-zinc-800' : 'text-[#824c71]'}`}
             >
               {viewMonth.month.name}
             </button>
             <button
+              type="button"
               onClick={openYearPicker}
               className={`text-sm font-bold transition-colors px-2 py-1 rounded-lg hover:bg-zinc-50 ${isCurrentMonth ? 'text-zinc-800' : 'text-[#824c71]'}`}
             >
@@ -171,6 +181,7 @@ export default function PersianCalendar({
 
         {mode === 'month' && (
           <button
+            type="button"
             onClick={openYearPicker}
             className="text-sm font-bold text-[#824c71] px-2 py-1 rounded-lg hover:bg-zinc-50 transition-colors"
           >
@@ -185,17 +196,18 @@ export default function PersianCalendar({
         )}
 
         <button
+          type="button"
           onClick={handlePrev}
           aria-label="قبلی"
           className="w-9 h-9 flex items-center justify-center rounded-xl bg-zinc-100 text-zinc-600 hover:bg-zinc-200 transition-colors shrink-0"
         >
-          <ChevronLeft className="w-4.5 h-4.5" />
+          <ChevronLeft className="w-[18px] h-[18px]" />
         </button>
       </div>
 
       {mode === 'calendar' && !isCurrentMonth && (
         <div className="flex justify-center mb-3 -mt-1">
-          <button onClick={goToToday} className="text-[11px] font-medium text-[#824c71] underline underline-offset-2">
+          <button type="button" onClick={goToToday} className="text-[11px] font-medium text-[#824c71] underline underline-offset-2">
             بازگشت به امروز
           </button>
         </div>
@@ -209,6 +221,7 @@ export default function PersianCalendar({
               const isActive = pickerYear === viewMonth.year && monthNumber === viewMonth.month.number;
               return (
                 <button
+                  type="button"
                   key={label}
                   onClick={() => selectMonth(monthNumber)}
                   className={`py-2.5 rounded-xl text-xs font-bold transition-colors ${
@@ -224,6 +237,7 @@ export default function PersianCalendar({
           </div>
 
           <button
+            type="button"
             onClick={() => setMode('calendar')}
             className="w-full mt-3 py-2 rounded-xl text-xs font-medium text-zinc-500 hover:bg-zinc-50 transition-colors"
           >
@@ -239,6 +253,7 @@ export default function PersianCalendar({
               const isActive = year === viewMonth.year;
               return (
                 <button
+                  type="button"
                   key={year}
                   onClick={() => selectYear(year)}
                   className={`py-2.5 rounded-xl text-xs font-bold transition-colors ${
@@ -254,6 +269,7 @@ export default function PersianCalendar({
           </div>
 
           <button
+            type="button"
             onClick={() => setMode('calendar')}
             className="w-full mt-3 py-2 rounded-xl text-xs font-medium text-zinc-500 hover:bg-zinc-50 transition-colors"
           >
@@ -264,7 +280,6 @@ export default function PersianCalendar({
 
       {mode === 'calendar' && (
         <>
-          {/* هدر روزهای هفته */}
           <div className="grid grid-cols-7 mb-1">
             {WEEKDAY_LABELS.map((label, i) => (
               <div key={i} className="text-center text-[11px] font-bold text-zinc-400 py-1">
@@ -273,7 +288,6 @@ export default function PersianCalendar({
             ))}
           </div>
 
-          {/* شبکه‌ی روزها */}
           <div className="flex flex-col gap-1.5">
             {weeks.map((week, wi) => (
               <div key={wi} className="grid grid-cols-7 gap-1.5">
@@ -288,6 +302,7 @@ export default function PersianCalendar({
 
                   return (
                     <button
+                      type="button"
                       key={ci}
                       onClick={() => onSelectDate(cell.dateStr!, cell.dateObject!)}
                       className={`relative aspect-square rounded-xl flex items-center justify-center text-[13px] font-medium transition-all

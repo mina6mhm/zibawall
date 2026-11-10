@@ -43,8 +43,6 @@ const formatPriceDisplay = (rawDigits: string) => {
   return Number(rawDigits).toLocaleString('fa-IR');
 };
 
-const formatMoney = (n: number) => n.toLocaleString('fa-IR');
-
 const boxSmallClass =
   'w-full h-10 box-border flex items-center border border-zinc-200 rounded-lg bg-white focus-within:ring-1 focus-within:ring-[#824c71]/40 focus-within:border-[#824c71] overflow-hidden';
 const fillInputClass = 'w-full h-full bg-transparent outline-none border-0 px-3 text-sm';
@@ -55,12 +53,17 @@ export default function EditBookingModal({ isOpen, onClose, onSaved, booking }: 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
 
+  // لیست پرسنل؛ با لغو درخواست قبلی اگر مودال سریع بسته/باز شد
   useEffect(() => {
     if (!isOpen) return;
-    fetch('/api/staff')
+    const controller = new AbortController();
+    fetch('/api/staff', { signal: controller.signal })
       .then((res) => (res.ok ? res.json() : { staff: [] }))
       .then((data) => setStaffList(data.staff || []))
-      .catch(() => setStaffList([]));
+      .catch((err) => {
+        if (err?.name !== 'AbortError') setStaffList([]);
+      });
+    return () => controller.abort();
   }, [isOpen]);
 
   useEffect(() => {
@@ -99,7 +102,7 @@ export default function EditBookingModal({ isOpen, onClose, onSaved, booking }: 
   };
 
   const handleSubmit = async () => {
-    if (!booking) return;
+    if (!booking || isSubmitting) return;
     setError('');
 
     const name = service.name.trim();
@@ -115,6 +118,10 @@ export default function EditBookingModal({ isOpen, onClose, onSaved, booking }: 
       staffPercentage: service.staffPercentageDigits ? Number(service.staffPercentageDigits) : undefined,
     };
 
+    // باگ مهم نسخه‌ی قبل: فقط خدمت اول ارسال می‌شد، پس اگر نوبت چند خدمت داشت بقیه حذف می‌شدند.
+    // حالا بقیه‌ی خدمات دست‌نخورده همراه ارسال می‌شوند.
+    const otherServices = booking.services.slice(1);
+
     try {
       setIsSubmitting(true);
 
@@ -123,16 +130,16 @@ export default function EditBookingModal({ isOpen, onClose, onSaved, booking }: 
         customerPhone: booking.customerPhone,
         date: booking.date,
         startTime: booking.startTime,
-        services: [cleanedService],
+        services: [cleanedService, ...otherServices],
       };
 
-      const res = await fetch(`/api/booking?id=${booking.id}`, {
+      const res = await fetch(`/api/booking?id=${encodeURIComponent(booking.id)}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
 
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
 
       if (!res.ok) {
         setError(data.error || 'خطا در ذخیره تغییرات');
@@ -150,8 +157,18 @@ export default function EditBookingModal({ isOpen, onClose, onSaved, booking }: 
 
   if (!isOpen || !booking) return null;
 
+  // منطقه‌ی زمانی ثابت: بدون آن، کاربری که ساعت گوشی‌اش منطقه‌ی دیگری است (مثلاً خارج از ایران) ممکنه تاریخ یک روز جابه‌جا ببیند
   const formatDate = (isoDate: string) =>
-    new Date(isoDate).toLocaleDateString('fa-IR', { year: 'numeric', month: 'long', day: 'numeric' });
+    new Date(isoDate).toLocaleDateString('fa-IR', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      timeZone: 'Asia/Tehran',
+    });
+
+  // اگر پرسنل ثبت‌شده در نوبت دیگر در لیست نیست (حذف/تغییر نام شده)، باید همچنان به‌عنوان گزینه نمایش داده شود
+  const currentStaffMissing =
+    service.staffName !== '' && !staffList.some((s) => s.name === service.staffName);
 
   return (
     <div
@@ -165,7 +182,7 @@ export default function EditBookingModal({ isOpen, onClose, onSaved, booking }: 
       >
         <div className="flex justify-between items-center mb-5">
           <h3 className="text-base font-bold text-zinc-900">ویرایش نوبت</h3>
-          <button onClick={handleClose} className="p-1.5 text-zinc-400 bg-zinc-50 rounded-full">
+          <button type="button" onClick={handleClose} className="p-1.5 text-zinc-400 bg-zinc-50 rounded-full">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -241,6 +258,7 @@ export default function EditBookingModal({ isOpen, onClose, onSaved, booking }: 
                       className={`${fillInputClass} appearance-none pl-7`}
                     >
                       <option value="">بدون پرسنل مشخص</option>
+                      {currentStaffMissing && <option value={service.staffName}>{service.staffName}</option>}
                       {staffList.map((s) => (
                         <option key={s.id} value={s.name}>{s.name}</option>
                       ))}
@@ -263,6 +281,12 @@ export default function EditBookingModal({ isOpen, onClose, onSaved, booking }: 
                   </div>
                 </div>
               </div>
+
+              {booking.services.length > 1 && (
+                <p className="text-[11px] text-zinc-400">
+                  این نوبت {(booking.services.length - 1).toLocaleString('fa-IR')} خدمت دیگر هم دارد که بدون تغییر باقی می‌ماند.
+                </p>
+              )}
             </div>
           </div>
 

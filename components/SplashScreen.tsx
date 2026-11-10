@@ -8,12 +8,47 @@ import Image from 'next/image';
 const SPLASH_DURATION = 1800;
 const FADE_DURATION = 350;
 
+// --- تنظیمات تشخیص VPN ---
+const VPN_CHECK_URL = 'https://ipapi.co/json/';
+const VPN_CACHE_KEY = 'zw:vpn-check';
+// اگر VPN تشخیص داده نشد، نتیجه را مدت طولانی کش می‌کنیم (جلوگیری از فشار روی سرویس ثالث)
+const VPN_CACHE_TTL_CLEAN = 6 * 60 * 60 * 1000;
+// اگر VPN تشخیص داده شد، کش کوتاه است تا بعد از خاموش کردن فیلترشکن بنر زود برطرف شود
+const VPN_CACHE_TTL_VPN = 60 * 1000;
+const VPN_FETCH_TIMEOUT = 3000;
+const VPN_BANNER_DISMISSED_KEY = 'zw:vpn-banner-dismissed';
+const VPN_BANNER_AUTOHIDE = 8000;
+
+function readVpnCache(): boolean | null {
+  try {
+    const raw = localStorage.getItem(VPN_CACHE_KEY);
+    if (!raw) return null;
+    const { vpn, at } = JSON.parse(raw);
+    if (typeof vpn !== 'boolean' || typeof at !== 'number') return null;
+    const ttl = vpn ? VPN_CACHE_TTL_VPN : VPN_CACHE_TTL_CLEAN;
+    return Date.now() - at < ttl ? vpn : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeVpnCache(vpn: boolean) {
+  try {
+    localStorage.setItem(VPN_CACHE_KEY, JSON.stringify({ vpn, at: Date.now() }));
+  } catch {}
+}
+
+function wasBannerDismissed() {
+  try {
+    return sessionStorage.getItem(VPN_BANNER_DISMISSED_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
 export default function SplashScreen({ children }: { children: React.ReactNode }) {
-  // isVisible: آیا کامپوننت اسپلش هنوز توی DOM هست (بعد از فید کامل، حذف می‌شه)
   const [isVisible, setIsVisible] = useState(true);
-  // isFadingOut: مرحله‌ی شروع محو شدن (برای اجرای ترنزیشن opacity)
   const [isFadingOut, setIsFadingOut] = useState(false);
-  // بنر هشدار VPN — پیش‌فرض مخفی؛ فقط وقتی فیلترشکن روشن تشخیص داده بشه ظاهر می‌شه
   const [isBannerVisible, setIsBannerVisible] = useState(false);
 
   useEffect(() => {
@@ -25,9 +60,7 @@ export default function SplashScreen({ children }: { children: React.ReactNode }
     };
   }, []);
 
-  // نوار وضعیت بالای گوشی (status bar) رنگش رو از تگ theme-color می‌گیره، نه از
-  // پس‌زمینه‌ی داخل صفحه — پس تا وقتی اسپلش نمایشه این تگ رو موقتاً بنفش می‌کنیم
-  // و بعد از پایان اسپلش به رنگ عادی اپ (سفید) برش می‌گردونیم
+  // رنگ status bar از تگ theme-color گرفته می‌شود
   useEffect(() => {
     let meta = document.querySelector('meta[name="theme-color"]') as HTMLMetaElement | null;
     if (!meta) {
@@ -38,24 +71,57 @@ export default function SplashScreen({ children }: { children: React.ReactNode }
     meta.setAttribute('content', isVisible ? '#824c71' : '#ffffff');
   }, [isVisible]);
 
-  // تشخیص روشن بودن فیلترشکن: IP کاربر رو می‌گیریم — اگه کشور خارج از ایران بود
-  // یعنی احتمالاً از طریق VPN وصل شده، پس بنر هشدار رو نشون می‌دیم
+  // تشخیص VPN:
+  // - نتیجه کش می‌شود (هر بازکردن اپ یک درخواست به سرویس ثالث نمی‌رود)
+  // - تایم‌اوت دارد (اگر سرویس کند/بلاک بود، اپ معطل نمی‌ماند)
+  // - بنر جدا از اسپلش است، چون درخواست معمولاً بعد از ۱.۸ ثانیه تموم می‌شد و بنر هیچ‌وقت دیده نمی‌شد
   useEffect(() => {
-    let cancelled = false;
-    fetch('https://ipapi.co/json/')
-      .then((res) => res.json())
+    if (wasBannerDismissed()) return;
+
+    const cached = readVpnCache();
+    if (cached !== null) {
+      if (cached) setIsBannerVisible(true);
+      return;
+    }
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), VPN_FETCH_TIMEOUT);
+
+    fetch(VPN_CHECK_URL, { signal: controller.signal })
+      .then((res) => {
+        if (!res.ok) throw new Error('bad status');
+        return res.json();
+      })
       .then((data) => {
-        if (!cancelled && data?.country_code && data.country_code !== 'IR') {
-          setIsBannerVisible(true);
-        }
+        if (!data?.country_code) return; // مثلاً rate limit شده؛ چیزی کش نمی‌کنیم
+        const vpn = data.country_code !== 'IR';
+        writeVpnCache(vpn);
+        if (vpn) setIsBannerVisible(true);
       })
       .catch(() => {
-        // در صورت خطا (مثلاً عدم دسترسی به سرویس) بنر همون مخفی می‌مونه
-      });
+        // خطا/تایم‌اوت: بنر مخفی می‌ماند
+      })
+      .finally(() => clearTimeout(timeout));
+
     return () => {
-      cancelled = true;
+      clearTimeout(timeout);
+      controller.abort();
     };
   }, []);
+
+  const dismissBanner = () => {
+    setIsBannerVisible(false);
+    try {
+      sessionStorage.setItem(VPN_BANNER_DISMISSED_KEY, '1');
+    } catch {}
+  };
+
+  // بنر خودش بعد از چند ثانیه بسته می‌شود
+  useEffect(() => {
+    if (!isBannerVisible) return;
+    const t = setTimeout(() => setIsBannerVisible(false), VPN_BANNER_AUTOHIDE);
+    return () => clearTimeout(t);
+  }, [isBannerVisible]);
 
   return (
     <>
@@ -70,32 +136,6 @@ export default function SplashScreen({ children }: { children: React.ReactNode }
           }}
           dir="rtl"
         >
-          {/* بنر هشدار VPN — فقط وقتی فیلترشکن روشن تشخیص داده بشه */}
-          {isBannerVisible && (
-            <div className="mx-4 mt-4 sm:mx-6 sm:mt-6">
-              <div className="flex items-center justify-between gap-2 bg-amber-50 border border-amber-200 rounded-xl px-3.5 py-3">
-                <span className="w-5 h-5 rounded-full bg-amber-400 text-white flex items-center justify-center text-[11px] font-bold shrink-0">
-                  !
-                </span>
-
-                <p className="flex-1 text-center text-[13px] sm:text-sm font-medium text-amber-900 leading-relaxed">
-                  برای تجربه‌ی بهتر، فیلترشکن (VPN) خود را خاموش کنید
-                </p>
-
-                <button
-                  onClick={() => setIsBannerVisible(false)}
-                  className="w-6 h-6 flex items-center justify-center rounded-full text-zinc-400 hover:bg-black/5 transition-colors shrink-0"
-                  aria-label="بستن"
-                >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M18 6 6 18" /><path d="m6 6 12 12" />
-                  </svg>
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* لوگو، بزرگ و سفید، وسط صفحه */}
           <div className="flex-1 flex flex-col items-center justify-center px-6">
             <div className="w-36 h-36 sm:w-44 sm:h-44 relative">
               <Image
@@ -107,6 +147,36 @@ export default function SplashScreen({ children }: { children: React.ReactNode }
                 priority
               />
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* بنر هشدار VPN — روی اسپلش و بعد از آن نمایش داده می‌شود */}
+      {isBannerVisible && (
+        <div
+          className="fixed inset-x-0 z-[10000] px-4 sm:px-6"
+          style={{ top: 'max(1rem, env(safe-area-inset-top))' }}
+          dir="rtl"
+        >
+          <div className="flex items-center justify-between gap-2 bg-amber-50 border border-amber-200 rounded-xl px-3.5 py-3 shadow-sm">
+            <span className="w-5 h-5 rounded-full bg-amber-400 text-white flex items-center justify-center text-[11px] font-bold shrink-0">
+              !
+            </span>
+
+            <p className="flex-1 text-center text-[13px] sm:text-sm font-medium text-amber-900 leading-relaxed">
+              برای تجربه‌ی بهتر، فیلترشکن (VPN) خود را خاموش کنید
+            </p>
+
+            <button
+              type="button"
+              onClick={dismissBanner}
+              className="w-6 h-6 flex items-center justify-center rounded-full text-zinc-400 hover:bg-black/5 transition-colors shrink-0"
+              aria-label="بستن"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M18 6 6 18" /><path d="m6 6 12 12" />
+              </svg>
+            </button>
           </div>
         </div>
       )}
