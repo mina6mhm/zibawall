@@ -71,6 +71,21 @@ function getCityDistricts(
   return undefined;
 }
 
+// مرتب‌سازی محله‌ها فقط یک‌بار برای هر شیء districts انجام می‌شود (قبلاً با هر حرفِ جستجو
+// برای صدها محله دوباره localeCompare اجرا می‌شد و روی گوشی‌های ضعیف لگ می‌داد).
+// Intl.Collator هم بسیار سریع‌تر از localeCompare با locale مکرر است.
+const faCollator = new Intl.Collator("fa");
+const sortedNeighborhoodsCache = new WeakMap<object, string[]>();
+
+function getSortedNeighborhoods(districts: Record<string, string[]>): string[] {
+  let result = sortedNeighborhoodsCache.get(districts);
+  if (!result) {
+    result = Array.from(new Set(Object.values(districts).flat())).sort(faCollator.compare);
+    sortedNeighborhoodsCache.set(districts, result);
+  }
+  return result;
+}
+
 export default function RegionFilterModal({
   isOpen,
   onClose,
@@ -95,7 +110,7 @@ export default function RegionFilterModal({
   const [searchQuery, setSearchQuery] = useState("");
   const [limitMessage, setLimitMessage] = useState("");
 
-  // دریافت لیست مکان‌ها فقط وقتی مودال واقعاً باز می‌شود (قبلاً با mount شدن، حتی بسته، درخواست می‌رفت)
+  // دریافت لیست مکان‌ها فقط وقتی مودال واقعاً باز می‌شود
   useEffect(() => {
     if (!isOpen || locations.length > 0) return;
     let cancelled = false;
@@ -191,8 +206,7 @@ export default function RegionFilterModal({
     }
   };
 
-  // نکته: قبلاً alert() داخل updater تابع setState بود؛ در StrictMode دوبار اجرا می‌شد.
-  // حالا منطق بیرون از updater است و به‌جای alert یک پیام داخل مودال نشان داده می‌شود.
+  // منطق بیرون از updater است و به‌جای alert یک پیام داخل مودال نشان داده می‌شود.
   const toggleNeighborhood = (neighborhood: string) => {
     if (neighborhood === ALL_NEIGHBORHOODS) {
       setSelectedNeighborhoods([ALL_NEIGHBORHOODS]);
@@ -318,9 +332,8 @@ export default function RegionFilterModal({
     }
 
     if (step === "neighborhood" && activeCity?.districts) {
-      const allNeighborhoods = Array.from(
-        new Set(Object.values(activeCity.districts).flat())
-      ).sort((a, b) => a.localeCompare(b, "fa"));
+      // مرتب‌سازی کش‌شده؛ فقط فیلتر جستجو در هر رندر اجرا می‌شود
+      const allNeighborhoods = getSortedNeighborhoods(activeCity.districts);
 
       const displayNeighborhoods = maxNeighborhoods
         ? allNeighborhoods
@@ -391,6 +404,7 @@ export default function RegionFilterModal({
               <button
                 type="button"
                 onClick={handleBack}
+                aria-label="بازگشت"
                 className="p-1.5 hover:bg-zinc-100 rounded-full transition-colors ml-1"
               >
                 <ChevronLeft className="w-6 h-6 md:w-5 md:h-5 rotate-180 text-zinc-700" />
@@ -407,6 +421,7 @@ export default function RegionFilterModal({
           <button
             type="button"
             onClick={resetModal}
+            aria-label="بستن"
             className="p-2 bg-zinc-100 hover:bg-zinc-200 text-zinc-600 rounded-full transition-colors"
           >
             <X className="w-5 h-5" />
@@ -434,6 +449,7 @@ export default function RegionFilterModal({
                 <button
                   type="button"
                   onClick={() => setSearchQuery("")}
+                  aria-label="پاک کردن جستجو"
                   className="absolute left-3 p-1 rounded-full text-zinc-400 hover:text-zinc-600 hover:bg-zinc-200"
                 >
                   <X className="w-4 h-4" />

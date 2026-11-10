@@ -1,7 +1,7 @@
 // components/booking/EditBookingModal.tsx
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { X, Loader2, ChevronDown, Lock } from 'lucide-react';
 
 type ServiceRow = {
@@ -29,6 +29,11 @@ type EditBookingModalProps = {
   booking: BookingToEdit | null;
 };
 
+// کش سطح ماژول برای لیست پرسنل: با هر بار باز شدن مودال درخواست جدید نمی‌رود.
+// TTL کوتاه دارد تا اگر پرسنل جدید اضافه شد، بعد از چند دقیقه خودش تازه شود.
+const STAFF_CACHE_TTL = 2 * 60 * 1000;
+let staffCache: { data: StaffMember[]; at: number } | null = null;
+
 const emptyService = (): ServiceRow => ({ name: '', priceDigits: '', staffName: '', staffPercentageDigits: '' });
 const toPersianDigits = (str: string) => str.replace(/[0-9]/g, (d) => '۰۱۲۳۴۵۶۷۸۹'[Number(d)]);
 const toEnglishDigits = (str: string) =>
@@ -49,23 +54,41 @@ const fillInputClass = 'w-full h-full bg-transparent outline-none border-0 px-3 
 
 export default function EditBookingModal({ isOpen, onClose, onSaved, booking }: EditBookingModalProps) {
   const [service, setService] = useState<ServiceRow>(emptyService());
-  const [staffList, setStaffList] = useState<StaffMember[]>([]);
+  const [staffList, setStaffList] = useState<StaffMember[]>(staffCache?.data ?? []);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
 
-  // لیست پرسنل؛ با لغو درخواست قبلی اگر مودال سریع بسته/باز شد
+  // state برای نمایش (disable دکمه) است، ولی ref جلوی دابل‌تپ سریع را همان لحظه می‌گیرد
+  // (setState آسنکرون است و دو کلیک پشت‌سرهم ممکن است هر دو از گارد رد شوند)
+  const submittingRef = useRef(false);
+
+  // لیست پرسنل؛ از کش استفاده می‌کند و با بسته شدن مودال درخواست لغو می‌شود
   useEffect(() => {
     if (!isOpen) return;
+
+    if (staffCache && Date.now() - staffCache.at < STAFF_CACHE_TTL) {
+      setStaffList(staffCache.data);
+      return;
+    }
+
     const controller = new AbortController();
     fetch('/api/staff', { signal: controller.signal })
-      .then((res) => (res.ok ? res.json() : { staff: [] }))
-      .then((data) => setStaffList(data.staff || []))
-      .catch((err) => {
-        if (err?.name !== 'AbortError') setStaffList([]);
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (!data) return;
+        const list: StaffMember[] = data.staff || [];
+        staffCache = { data: list, at: Date.now() };
+        setStaffList(list);
+      })
+      .catch(() => {
+        // خطا یا لغو: لیست قبلی (اگر بود) می‌ماند
       });
     return () => controller.abort();
   }, [isOpen]);
 
+  // فقط وقتی «نوبتِ دیگری» انتخاب شد (id عوض شد) فرم ریست می‌شود.
+  // اگر والد لیست را دوباره fetch کند و reference آبجکت booking عوض شود،
+  // تغییراتی که کاربر وسط ویرایش زده نمی‌پرد.
   useEffect(() => {
     if (!isOpen || !booking) return;
     const s = booking.services[0];
@@ -73,14 +96,16 @@ export default function EditBookingModal({ isOpen, onClose, onSaved, booking }: 
       s
         ? {
             name: s.name,
-            priceDigits: s.price ? String(s.price) : '',
+            // مقدار ۰ هم معتبر است؛ فقط null/undefined خالی حساب می‌شود
+            priceDigits: s.price != null ? String(s.price) : '',
             staffName: s.staffName || '',
-            staffPercentageDigits: s.staffPercentage ? String(s.staffPercentage) : '',
+            staffPercentageDigits: s.staffPercentage != null ? String(s.staffPercentage) : '',
           }
         : emptyService()
     );
     setError('');
-  }, [isOpen, booking]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, booking?.id]);
 
   const handleClose = () => {
     setError('');
@@ -102,7 +127,7 @@ export default function EditBookingModal({ isOpen, onClose, onSaved, booking }: 
   };
 
   const handleSubmit = async () => {
-    if (!booking || isSubmitting) return;
+    if (!booking || submittingRef.current) return;
     setError('');
 
     const name = service.name.trim();
@@ -113,18 +138,19 @@ export default function EditBookingModal({ isOpen, onClose, onSaved, booking }: 
 
     const cleanedService = {
       name,
-      price: service.priceDigits ? Number(service.priceDigits) : undefined,
+      price: service.priceDigits !== '' ? Number(service.priceDigits) : undefined,
       staffName: service.staffName.trim() || undefined,
-      staffPercentage: service.staffPercentageDigits ? Number(service.staffPercentageDigits) : undefined,
+      staffPercentage:
+        service.staffPercentageDigits !== '' ? Number(service.staffPercentageDigits) : undefined,
     };
 
-    // باگ مهم نسخه‌ی قبل: فقط خدمت اول ارسال می‌شد، پس اگر نوبت چند خدمت داشت بقیه حذف می‌شدند.
-    // حالا بقیه‌ی خدمات دست‌نخورده همراه ارسال می‌شوند.
+    // بقیه‌ی خدمات نوبت دست‌نخورده همراه ارسال می‌شوند تا حذف نشوند
     const otherServices = booking.services.slice(1);
 
-    try {
-      setIsSubmitting(true);
+    submittingRef.current = true;
+    setIsSubmitting(true);
 
+    try {
       const payload = {
         customerName: booking.customerName ?? undefined,
         customerPhone: booking.customerPhone,
@@ -151,13 +177,14 @@ export default function EditBookingModal({ isOpen, onClose, onSaved, booking }: 
     } catch {
       setError('خطای ارتباط با سرور');
     } finally {
+      submittingRef.current = false;
       setIsSubmitting(false);
     }
   };
 
   if (!isOpen || !booking) return null;
 
-  // منطقه‌ی زمانی ثابت: بدون آن، کاربری که ساعت گوشی‌اش منطقه‌ی دیگری است (مثلاً خارج از ایران) ممکنه تاریخ یک روز جابه‌جا ببیند
+  // منطقه‌ی زمانی ثابت: بدون آن، کاربری که ساعت گوشی‌اش منطقه‌ی دیگری است ممکنه تاریخ یک روز جابه‌جا ببیند
   const formatDate = (isoDate: string) =>
     new Date(isoDate).toLocaleDateString('fa-IR', {
       year: 'numeric',

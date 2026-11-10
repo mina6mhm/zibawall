@@ -19,12 +19,23 @@ function urlBase64ToUint8Array(base64String: string) {
   return outputArray;
 }
 
+// ارسال اشتراک به سرور (سرور باید روی endpoint «upsert» کند، نه insert تکراری)
+async function sendSubscriptionToServer(subscription: PushSubscription) {
+  return fetch('/api/push/subscribe', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ subscription: subscription.toJSON() }),
+  });
+}
+
 export default function PushNotificationSetup() {
   const [state, setState] = useState<PushState>('checking');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
+    let cancelled = false;
+
     const check = async () => {
       if (
         typeof window === 'undefined' ||
@@ -32,41 +43,51 @@ export default function PushNotificationSetup() {
         !('PushManager' in window) ||
         !('Notification' in window)
       ) {
-        setState('unsupported');
+        if (!cancelled) setState('unsupported');
         return;
       }
 
       if (Notification.permission === 'denied') {
-        setState('denied');
+        if (!cancelled) setState('denied');
         return;
       }
 
       try {
         const registration = await navigator.serviceWorker.getRegistration('/sw.js');
         const existingSub = registration ? await registration.pushManager.getSubscription() : null;
+        if (cancelled) return;
         setState(existingSub ? 'subscribed' : 'not-subscribed');
+
+        // همگام‌سازی در پس‌زمینه: اگر ثبت قبلی روی سرور شکست خورده بود یا endpoint
+        // چرخیده بود، سرور دوباره با مرورگر هماهنگ می‌شود. خطا بی‌صدا نادیده گرفته می‌شود.
+        if (existingSub) {
+          sendSubscriptionToServer(existingSub).catch(() => {});
+        }
       } catch {
-        setState('not-subscribed');
+        if (!cancelled) setState('not-subscribed');
       }
     };
     check();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const handleEnable = async () => {
+    if (busy) return;
     setError('');
     setBusy(true);
     try {
       const publicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
       if (!publicKey) {
         setError('کلید VAPID روی سرور تنظیم نشده — با توسعه‌دهنده هماهنگ کن.');
-        setBusy(false);
         return;
       }
 
       const permission = await Notification.requestPermission();
       if (permission !== 'granted') {
         setState(permission === 'denied' ? 'denied' : 'not-subscribed');
-        setBusy(false);
         return;
       }
 
@@ -81,13 +102,11 @@ export default function PushNotificationSetup() {
         });
       }
 
-      const res = await fetch('/api/push/subscribe', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ subscription: subscription.toJSON() }),
-      });
+      const res = await sendSubscriptionToServer(subscription);
 
       if (!res.ok) {
+        // اگر سرور ثبت نکرد، اشتراک مرورگر را هم برمی‌داریم تا وضعیت «فعاله» دروغ نشان داده نشود
+        await subscription.unsubscribe().catch(() => {});
         const data = await res.json().catch(() => ({}));
         throw new Error(data.error || 'خطا در ثبت نوتیف');
       }
@@ -102,6 +121,7 @@ export default function PushNotificationSetup() {
   };
 
   const handleDisable = async () => {
+    if (busy) return;
     setError('');
     setBusy(true);
     try {
@@ -160,6 +180,7 @@ export default function PushNotificationSetup() {
 
         {state === 'not-subscribed' && (
           <button
+            type="button"
             onClick={handleEnable}
             disabled={busy}
             className="shrink-0 px-3.5 py-2 rounded-xl bg-[#824c71] text-white text-xs font-bold disabled:opacity-60 flex items-center gap-1.5"
@@ -171,6 +192,7 @@ export default function PushNotificationSetup() {
 
         {state === 'subscribed' && (
           <button
+            type="button"
             onClick={handleDisable}
             disabled={busy}
             className="shrink-0 px-3.5 py-2 rounded-xl bg-zinc-100 text-zinc-600 text-xs font-bold disabled:opacity-60 flex items-center gap-1.5"

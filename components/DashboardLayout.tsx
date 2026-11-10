@@ -53,14 +53,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const isSalonPage = pathname?.startsWith('/salon/');
 
   return (
-    <div className="flex h-screen bg-white text-zinc-900 dir-rtl font-sans selection:bg-zinc-200">
+    // قبلاً کلاس «dir-rtl» بود که در تیلویند وجود ندارد و اثری نداشت؛ جهت با attribute اعمال می‌شود.
+    // h-dvh به‌جای h-screen: روی موبایل با نوار آدرس مرورگر نمی‌پرد.
+    <div className="flex h-dvh bg-white text-zinc-900 font-sans selection:bg-zinc-200" dir="rtl">
       <aside className="hidden md:flex flex-col w-64 bg-white border-l border-zinc-100 shadow-[0_0_40px_rgba(0,0,0,0.02)] z-20">
         <div className="p-8 pb-6">
           <h1 className="text-xl font-black tracking-tighter text-zinc-900">زیباوال</h1>
         </div>
         <nav className="flex-1 px-4 space-y-0.5 mt-2 overflow-y-auto">
           {navItems.map((item) => {
-            const isActive = pathname?.startsWith(item.href);
+            const isActive = !!pathname?.startsWith(item.href);
             return (
               <Link
                 key={item.key}
@@ -78,7 +80,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       </aside>
 
       <div className="flex-1 flex flex-col relative w-full overflow-hidden">
-        <main className="flex-1 overflow-y-auto px-4 md:px-8 pb-[135px] md:pb-8">
+        {/* فضای خالیِ زیر محتوا فقط وقتی نوار پایین نمایش داده می‌شود لازم است */}
+        <main
+          className={`flex-1 overflow-y-auto px-4 md:px-8 md:pb-8 ${
+            isSalonPage ? 'pb-8' : 'pb-[135px]'
+          }`}
+        >
           <div className="max-w-6xl mx-auto h-full">{children}</div>
         </main>
       </div>
@@ -90,7 +97,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         >
           <div className="flex items-center justify-between px-2 h-[64px]">
             {navItems.map((item) => {
-              const isActive = pathname?.startsWith(item.href);
+              const isActive = !!pathname?.startsWith(item.href);
               return (
                 <Link
                   key={item.key}

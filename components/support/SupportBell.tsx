@@ -5,8 +5,9 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Bell } from 'lucide-react';
 
-const POLL_INTERVAL = 60_000;      // فاصله‌ی پایه‌ی پول (قبلاً ۳۰ ثانیه بود)
+const POLL_INTERVAL = 60_000;      // فاصله‌ی پایه‌ی پول
 const MAX_BACKOFF = 5 * 60_000;    // سقف فاصله هنگام خطای متوالی
+const FETCH_TIMEOUT = 10_000;      // اگر درخواست معلق ماند، لغو و دوباره زمان‌بندی می‌شود
 
 export default function SupportBell({ href = '/profile/support' }: { href?: string }) {
   const [unreadCount, setUnreadCount] = useState(0);
@@ -14,11 +15,12 @@ export default function SupportBell({ href = '/profile/support' }: { href?: stri
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout> | undefined;
     let controller: AbortController | null = null;
-    let stopped = false;
+    let stopped = false;      // unmount شده
+    let authBlocked = false;  // کاربر لاگین نیست؛ با برگشتن به اپ دوباره امتحان می‌شود
     let failures = 0;
 
     const schedule = () => {
-      if (stopped) return;
+      if (stopped || authBlocked) return;
       // backoff نمایی هنگام خطا + jitter تا هزاران کاربر هم‌زمان درخواست نزنند
       const base = Math.min(POLL_INTERVAL * 2 ** failures, MAX_BACKOFF);
       const delay = base * (0.8 + Math.random() * 0.4);
@@ -30,16 +32,24 @@ export default function SupportBell({ href = '/profile/support' }: { href?: stri
       // وقتی تب/اپ در پس‌زمینه است پول نمی‌کنیم؛ با برگشتن، visibilitychange دوباره شروع می‌کند
       if (document.visibilityState !== 'visible') return;
 
-      controller = new AbortController();
+      const ctrl = new AbortController();
+      controller = ctrl;
+      let timedOut = false;
+      // بدون تایم‌اوت، روی اینترنت ضعیف یک درخواست معلق کل زنجیره‌ی پول را برای همیشه می‌ایستاند
+      const timeoutId = setTimeout(() => {
+        timedOut = true;
+        ctrl.abort();
+      }, FETCH_TIMEOUT);
+
       try {
         const res = await fetch('/api/support/mine', {
-          signal: controller.signal,
+          signal: ctrl.signal,
           cache: 'no-store',
         });
 
         if (res.status === 401 || res.status === 403) {
-          // کاربر لاگین نیست؛ پول بی‌فایده است
-          stopped = true;
+          // کاربر لاگین نیست؛ پول بی‌فایده است (با برگشتن به اپ دوباره امتحان می‌شود)
+          authBlocked = true;
           return;
         }
 
@@ -51,8 +61,11 @@ export default function SupportBell({ href = '/profile/support' }: { href?: stri
           failures += 1;
         }
       } catch (error) {
-        if ((error as Error)?.name === 'AbortError') return;
+        // لغو عمدی (پس‌زمینه رفتن/unmount) -> زمان‌بندی نمی‌کنیم؛ تایم‌اوت -> خطا حساب می‌شود
+        if ((error as Error)?.name === 'AbortError' && !timedOut) return;
         failures += 1;
+      } finally {
+        clearTimeout(timeoutId);
       }
       schedule();
     };
@@ -60,6 +73,9 @@ export default function SupportBell({ href = '/profile/support' }: { href?: stri
     const onVisibilityChange = () => {
       if (timer) clearTimeout(timer);
       if (document.visibilityState === 'visible') {
+        // اگر درخواست قبلی هنوز در جریان بود، لغوش می‌کنیم تا دو زنجیره‌ی پول هم‌زمان نداشته باشیم
+        controller?.abort();
+        authBlocked = false;
         tick();
       } else {
         controller?.abort();

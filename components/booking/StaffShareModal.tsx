@@ -33,7 +33,7 @@ export default function StaffShareModal({ isOpen, onClose, staffBreakdown, total
             <h3 className="text-base font-bold text-zinc-900">سهم پرسنل</h3>
             <p className="text-xs text-zinc-400 mt-0.5">{dayLabel}</p>
           </div>
-          <button onClick={onClose} className="p-1.5 text-zinc-400 bg-zinc-50 rounded-full">
+          <button type="button" onClick={onClose} aria-label="بستن" className="p-1.5 text-zinc-400 bg-zinc-50 rounded-full">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -45,9 +45,10 @@ export default function StaffShareModal({ isOpen, onClose, staffBreakdown, total
           </div>
         ) : (
           <div className="space-y-2">
-            {staffBreakdown.map((row) => (
+            {staffBreakdown.map((row, index) => (
               <div
-                key={row.name}
+                // اگر دو پرسنل هم‌نام باشند، key تکراری باعث رندر اشتباه می‌شد
+                key={`${row.name}-${index}`}
                 className="flex items-center justify-between bg-zinc-50 rounded-xl p-3 border border-zinc-100"
               >
                 <div className="flex items-center gap-2">

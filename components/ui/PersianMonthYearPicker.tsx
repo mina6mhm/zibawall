@@ -29,13 +29,14 @@ export default function PersianMonthYearPicker({ value, onChange, className = ''
 
   useEffect(() => {
     if (!isOpen) return;
-    const handleClickOutside = (e: MouseEvent) => {
+    // pointerdown هم موس و هم لمس را پوشش می‌دهد (mousedown در بعضی وب‌ویوها درست کار نمی‌کند)
+    const handleClickOutside = (e: PointerEvent) => {
       if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) {
         setIsOpen(false);
       }
     };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener('pointerdown', handleClickOutside);
+    return () => document.removeEventListener('pointerdown', handleClickOutside);
   }, [isOpen]);
 
   return (
@@ -89,10 +90,12 @@ function PickerPanel({
     else setYearRangeStart((y) => y - YEARS_PER_PAGE);
   };
 
+  // همه‌ی دکمه‌ها type="button" دارند؛ بدون آن، داخل <form> هر کلیک فرم را submit می‌کرد.
   return (
     <div className="absolute z-50 top-full mt-2 left-1/2 -translate-x-1/2 w-72 bg-white border border-zinc-100 rounded-2xl shadow-lg shadow-zinc-200/60 p-4">
       <div className="flex items-center justify-between mb-3">
         <button
+          type="button"
           onClick={handleNext}
           aria-label="بعدی"
           className="w-8 h-8 flex items-center justify-center rounded-lg bg-zinc-100 text-zinc-600 hover:bg-zinc-200 transition-colors shrink-0"
@@ -102,6 +105,7 @@ function PickerPanel({
 
         {mode === 'month' ? (
           <button
+            type="button"
             onClick={() => {
               setYearRangeStart(pickerYear - Math.floor(YEARS_PER_PAGE / 2));
               setMode('year');
@@ -117,6 +121,7 @@ function PickerPanel({
         )}
 
         <button
+          type="button"
           onClick={handlePrev}
           aria-label="قبلی"
           className="w-8 h-8 flex items-center justify-center rounded-lg bg-zinc-100 text-zinc-600 hover:bg-zinc-200 transition-colors shrink-0"
@@ -132,6 +137,7 @@ function PickerPanel({
             const isActive = pickerYear === initialYear && monthNumber === initialMonth;
             return (
               <button
+                type="button"
                 key={monthLabel}
                 onClick={() => onSelect(pickerYear, monthNumber)}
                 className={`py-2.5 rounded-xl text-xs font-bold transition-colors ${
@@ -149,6 +155,7 @@ function PickerPanel({
             const isActive = year === initialYear;
             return (
               <button
+                type="button"
                 key={year}
                 onClick={() => {
                   setPickerYear(year);
