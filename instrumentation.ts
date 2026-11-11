@@ -19,7 +19,7 @@ export async function register() {
       const redis = getRedis();
       if (redis) {
         try {
-          const won = await redis.set('lock:booking-reminders', String(process.pid), 'PX', 50 * 60 * 1000, 'NX');
+          const won = await redis.set('lock:booking-reminders', 'locked', 'PX', 50 * 60 * 1000, 'NX');
           if (won !== 'OK') return;
         } catch {
           // Redis در دسترس نیست → اجرا بدون قفل
