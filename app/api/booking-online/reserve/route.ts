@@ -6,9 +6,10 @@ import { Prisma } from '@prisma/client';
 import type { BookingService, Staff } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { BOOKING_APP_FEE } from '@/lib/constants';
-import { timeToMin, validateSlotAgainstSchedule } from '@/lib/bookingSchedule';
+import { lockSalonDay, timeToMin, validateSlotAgainstSchedule } from '@/lib/bookingSchedule';
 import { notifyBookingConfirmed } from '@/lib/bookingNotifications';
 import { rateLimit } from '@/lib/rateLimit';
+import { isHHMM, isIsoDate, parseJsonBody } from '@/lib/http';
 
 // سقف تعداد خدمات در یک سبد؛ قبلاً بی‌نهایت بود و هر آیتم چند کوئری دیتابیس می‌زد
 const MAX_CART_ITEMS = 10;
@@ -22,6 +23,9 @@ type ReserveItem = {
 
 class SlotConflictError extends Error {}
 class ScheduleError extends Error {}
+
+const MAX_TX_ATTEMPTS = 4;
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 export async function POST(req: Request) {
   try {
@@ -41,7 +45,7 @@ export async function POST(req: Request) {
     }
 
     // ضد اسپم/رزرو الکی: ۲۰ تلاش رزرو در ۱۰ دقیقه برای هر کاربر
-    const limit = rateLimit(`reserve:${decoded.userId}`, 20, 10 * 60 * 1000);
+    const limit = await rateLimit(`reserve:${decoded.userId}`, 20, 10 * 60 * 1000);
     if (!limit.ok) {
       return NextResponse.json(
         { error: 'تعداد تلاش‌ها زیاد است. کمی بعد دوباره تلاش کنید' },
@@ -52,17 +56,43 @@ export async function POST(req: Request) {
     const user = await prisma.user.findUnique({ where: { id: decoded.userId } });
     if (!user) return NextResponse.json({ error: 'کاربر یافت نشد' }, { status: 404 });
 
-    const body = await req.json();
-    const { salonId, items } = body as { salonId?: string; items?: ReserveItem[] };
+    // JSON خراب/خالی قبلاً به catch بیرونی می‌رسید و ۵۰۰ می‌شد؛ حالا ۴۰۰
+    const parsed = await parseJsonBody(req);
+    if (!parsed.ok) return parsed.response;
+    const { salonId, items: rawItems } = parsed.body;
 
-    if (!salonId || !Array.isArray(items) || items.length === 0) {
+    if (typeof salonId !== 'string' || !salonId || !Array.isArray(rawItems) || rawItems.length === 0) {
       return NextResponse.json({ error: 'اطلاعات ناقص است' }, { status: 400 });
     }
-    if (items.length > MAX_CART_ITEMS) {
+    if (rawItems.length > MAX_CART_ITEMS) {
       return NextResponse.json(
         { error: `در هر رزرو حداکثر ${MAX_CART_ITEMS} خدمت مجاز است` },
         { status: 400 }
       );
+    }
+
+    // شکل هر آیتم سبد را قبل از هر کوئری دیتابیس چک می‌کنیم: آیتم null/غیرآبجکت، تاریخ یا ساعت
+    // خراب قبلاً TypeError یا خطای Prisma (۵۰۰) می‌ساخت
+    const items: ReserveItem[] = [];
+    for (const raw of rawItems) {
+      const it = raw as Record<string, unknown> | null;
+      if (
+        !it ||
+        typeof it !== 'object' ||
+        typeof it.serviceId !== 'string' ||
+        !it.serviceId ||
+        !isIsoDate(it.date) ||
+        !isHHMM(it.startTime) ||
+        (it.staffId !== undefined && it.staffId !== null && typeof it.staffId !== 'string')
+      ) {
+        return NextResponse.json({ error: 'اطلاعات یکی از خدمات ناقص یا نامعتبر است' }, { status: 400 });
+      }
+      items.push({
+        serviceId: it.serviceId,
+        staffId: (it.staffId as string | null | undefined) || undefined,
+        date: it.date,
+        startTime: it.startTime,
+      });
     }
 
     const salon = await prisma.salon.findUnique({ where: { id: salonId } });
@@ -147,10 +177,15 @@ export async function POST(req: Request) {
     // تا اگه دو درخواست همزمان برای یک پرسنل/ساعت بیان، فقط یکی موفق بشه
     // (چک قبلی که بیرون از تراکنش بود race condition داشت: هر دو درخواست
     // می‌تونستن قبل از commit شدن اولی از چک تداخل رد بشن)
-    let group;
-    try {
-      group = await prisma.$transaction(
+    // روزهای درگیر به ترتیب ثابت قفل می‌شوند (مثل مسیر verify): درخواست‌های هم‌زمان برای یک
+    // سالن/روز پشت سر هم می‌ایستند و دو تراکنش با ترتیب معکوس قفل، deadlock نمی‌سازند
+    const lockDays = Array.from(new Set(prepared.map((p) => p.item.date))).sort();
+
+    const runReserveTx = () =>
+      prisma.$transaction(
         async (tx) => {
+          for (const d of lockDays) await lockSalonDay(tx, salonId, d);
+
           const now = new Date();
           const existingBookings = await tx.booking.findMany({
             where: {
@@ -284,8 +319,31 @@ export async function POST(req: Request) {
 
           return createdGroup;
         },
-        { isolationLevel: Prisma.TransactionIsolationLevel.Serializable }
+        {
+          isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
+          // زیر فشار، انتظار برای کانکشن/قفل از پیش‌فرض (۲ و ۵ ثانیه) بیشتر می‌شود
+          maxWait: 10_000,
+          timeout: 15_000,
+        }
       );
+
+    let group;
+    try {
+      // P2034 (تداخل Serializable) در ترافیک بالا طبیعی است و نباید به کاربر «همزمان یک نفر دیگر
+      // رزرو کرد» نشان داده شود مگر اینکه واقعاً اسلات پر شده باشد؛ چند بار با تاخیر تصادفی تلاش می‌کنیم.
+      // (تلاش مجدد، اسلات را با داده‌ی تازه چک می‌کند و تداخل واقعی را به‌صورت SlotConflictError می‌گیرد)
+      for (let attempt = 1; ; attempt++) {
+        try {
+          group = await runReserveTx();
+          break;
+        } catch (e: any) {
+          if (e?.code === 'P2034' && attempt < MAX_TX_ATTEMPTS) {
+            await sleep(40 * attempt + Math.random() * 120);
+            continue;
+          }
+          throw e;
+        }
+      }
     } catch (err: any) {
       if (err instanceof SlotConflictError) {
         return NextResponse.json({ error: err.message }, { status: 409 });
@@ -298,6 +356,13 @@ export async function POST(req: Request) {
         return NextResponse.json(
           { error: 'همزمان یک نفر دیگر همین ساعت را رزرو کرد، لطفاً دوباره تلاش کنید' },
           { status: 409 }
+        );
+      }
+      // Pool دیتابیس پر است (P2024) یا تراکنش بسته شد (P2028): سرور شلوغ است، نه خطای کاربر
+      if (err?.code === 'P2024' || err?.code === 'P2028') {
+        return NextResponse.json(
+          { error: 'سرور در حال حاضر شلوغ است. چند ثانیه بعد دوباره تلاش کنید' },
+          { status: 503, headers: { 'Retry-After': '3' } }
         );
       }
       throw err;

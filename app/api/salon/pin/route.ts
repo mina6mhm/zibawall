@@ -28,7 +28,7 @@ export async function POST(req: Request) {
     }
 
     // هر کلیک یک رکورد Payment و یک درخواست به زرین‌پال می‌سازد؛ بدون محدودیت، قابل سوءاستفاده است
-    const rl = rateLimit(`pin:${auth.userId}`, 5, 10 * 60 * 1000);
+    const rl = await rateLimit(`pin:${auth.userId}`, 5, 10 * 60 * 1000);
     if (!rl.ok) {
       return NextResponse.json(
         { error: 'درخواست‌های پیاپی زیاد است. کمی بعد دوباره تلاش کنید' },
@@ -55,7 +55,7 @@ export async function POST(req: Request) {
     }
 
     // دوبار کلیک: authority دوم، اولی را بی‌اعتبار می‌کرد و پرداخت با اولی «ناموفق» دیده می‌شد
-    if (!acquirePaymentLock(`pin:${salon.id}`)) {
+    if (!(await acquirePaymentLock(`pin:${salon.id}`))) {
       return NextResponse.json(
         { error: 'درخواست پرداخت در حال پردازش است. چند ثانیه صبر کنید' },
         { status: 429 }
@@ -109,6 +109,6 @@ export async function POST(req: Request) {
       { status: 502 }
     );
   } finally {
-    if (lockKey && !succeeded) releasePaymentLock(lockKey);
+    if (lockKey && !succeeded) await releasePaymentLock(lockKey);
   }
 }

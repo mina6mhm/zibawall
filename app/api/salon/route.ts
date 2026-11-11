@@ -188,7 +188,7 @@ export async function PUT(req: Request) {
       return NextResponse.json({ error: auth.error }, { status: auth.status });
     }
 
-    const limit = rateLimit(`salon-put:${auth.userId}`, 30, 10 * 60 * 1000);
+    const limit = await rateLimit(`salon-put:${auth.userId}`, 30, 10 * 60 * 1000);
     if (!limit.ok) {
       return NextResponse.json(
         { error: 'تعداد درخواست‌ها زیاد است. کمی بعد دوباره تلاش کنید' },

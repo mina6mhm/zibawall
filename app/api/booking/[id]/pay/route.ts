@@ -5,6 +5,7 @@ import { getAuthUser } from '@/lib/auth';
 import { requestZarinpalPayment } from '@/lib/zarinpal';
 import { checkBookingSlotStillAvailable } from '@/lib/bookingSchedule';
 import { acquirePaymentLock, releasePaymentLock } from '@/lib/paymentLock';
+import { recordAuthority } from '@/lib/paymentAuthority';
 
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   let lockKey: string | null = null;
@@ -40,7 +41,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       return NextResponse.json({ error: 'مبلغ نوبت نامعتبر است' }, { status: 400 });
     }
 
-    if (!acquirePaymentLock(`booking:${booking.id}`)) {
+    if (!(await acquirePaymentLock(`booking:${booking.id}`))) {
       return NextResponse.json(
         { error: 'درخواست پرداخت در حال پردازش است. چند ثانیه صبر کنید' },
         { status: 429 }
@@ -77,6 +78,10 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       return NextResponse.json({ error: 'این نوبت قبلاً پرداخت یا لغو شده است' }, { status: 400 });
     }
 
+    // همه‌ی authorityها ثبت می‌شوند (نه فقط آخری): با دوبار کلیک روی چند سرور، پرداخت با
+    // authority قدیمی‌تر هم در verify معتبر می‌ماند
+    await recordAuthority({ bookingId: booking.id }, authority);
+
     succeeded = true; // قفل تا پایان TTL می‌ماند تا کلیک تکراری authority دوم نسازد
     return NextResponse.json({ paymentUrl }, { status: 200 });
   } catch (error) {
@@ -87,6 +92,6 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       { status: 502 }
     );
   } finally {
-    if (lockKey && !succeeded) releasePaymentLock(lockKey);
+    if (lockKey && !succeeded) await releasePaymentLock(lockKey);
   }
 }

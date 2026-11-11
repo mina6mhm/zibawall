@@ -22,7 +22,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: auth.error }, { status: auth.status });
     }
 
-    const limit = rateLimit(`create-pending:${auth.userId}`, 5, 60 * 60 * 1000);
+    const limit = await rateLimit(`create-pending:${auth.userId}`, 5, 60 * 60 * 1000);
     if (!limit.ok) {
       return NextResponse.json(
         { error: 'تعداد درخواست‌ها زیاد است. کمی بعد دوباره تلاش کنید' },

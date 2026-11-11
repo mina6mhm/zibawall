@@ -26,7 +26,7 @@ export async function POST(
     }
 
     // ضد اسپم: ۲۰ ثبت در ۱۰ دقیقه برای هر کاربر
-    const limit = rateLimit(`review:${auth.userId}`, 20, 10 * 60 * 1000);
+    const limit = await rateLimit(`review:${auth.userId}`, 20, 10 * 60 * 1000);
     if (!limit.ok) {
       return NextResponse.json(
         { error: 'تعداد درخواست‌ها زیاد است. کمی بعد دوباره تلاش کنید' },

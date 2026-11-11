@@ -30,10 +30,10 @@ export async function POST(req: Request) {
     // ضد brute-force: کد ۵ رقمی فقط ۹۰هزار حالت دارد و قبلاً هیچ محدودیتی روی تعداد
     // تلاش نبود؛ یعنی هر حسابی در ۹۰ ثانیه قابل تصاحب بود.
     const mobileKey = `verify-otp:mobile:${mobile}`;
-    const mobileLimit = rateLimit(mobileKey, 8, 90 * 1000);
+    const mobileLimit = await rateLimit(mobileKey, 8, 90 * 1000);
     if (!mobileLimit.ok) return tooMany(mobileLimit.retryAfter);
 
-    const ipLimit = rateLimit(`verify-otp:ip:${getClientIp(req)}`, 60, 10 * 60 * 1000);
+    const ipLimit = await rateLimit(`verify-otp:ip:${getClientIp(req)}`, 60, 10 * 60 * 1000);
     if (!ipLimit.ok) return tooMany(ipLimit.retryAfter);
 
     const user = await prisma.user.findUnique({ where: { phone: mobile } });
@@ -61,7 +61,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'کد وارد شده اشتباه است' }, { status: 400 });
     }
 
-    resetRateLimit(mobileKey);
+    await resetRateLimit(mobileKey);
 
     const secret = process.env.JWT_SECRET;
     if (!secret) throw new Error('JWT_SECRET is not defined');

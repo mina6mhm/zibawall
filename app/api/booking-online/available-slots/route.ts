@@ -38,7 +38,7 @@ export async function GET(req: Request) {
 
 async function handleGet(req: Request) {
   // مسیر عمومی و پرکوئری است؛ ۱۲۰ درخواست در دقیقه برای هر IP کافی است
-  const limit = rateLimit(`slots:${getClientIp(req)}`, 120, 60 * 1000);
+  const limit = await rateLimit(`slots:${getClientIp(req)}`, 120, 60 * 1000);
   if (!limit.ok) {
     return NextResponse.json(
       { error: 'تعداد درخواست‌ها زیاد است. کمی بعد دوباره تلاش کنید' },

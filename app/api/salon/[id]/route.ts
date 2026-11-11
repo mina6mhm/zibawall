@@ -10,7 +10,7 @@ const MAX_REVIEWS = 200;
 
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const limit = rateLimit(`salon-detail:${getClientIp(req)}`, 120, 60 * 1000);
+    const limit = await rateLimit(`salon-detail:${getClientIp(req)}`, 120, 60 * 1000);
     if (!limit.ok) {
       return NextResponse.json(
         { error: 'تعداد درخواست‌ها زیاد است. کمی بعد دوباره تلاش کنید' },

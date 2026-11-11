@@ -13,6 +13,19 @@ export async function register() {
 
   const runReminders = async () => {
     try {
+      // چند instance = چند زمان‌بند؛ اگر Redis تنظیم باشد فقط یکی از آن‌ها در هر ساعت اجرا می‌کند
+      // (جلوگیری از ارسال هم‌زمانِ تکراری یادآوری). اگر Redis نبود/قطع بود، مثل قبل اجرا می‌شود.
+      const { getRedis } = await import('@/lib/redis');
+      const redis = getRedis();
+      if (redis) {
+        try {
+          const won = await redis.set('lock:booking-reminders', String(process.pid), 'PX', 50 * 60 * 1000, 'NX');
+          if (won !== 'OK') return;
+        } catch {
+          // Redis در دسترس نیست → اجرا بدون قفل
+        }
+      }
+
       const { sendBookingReminders } = await import('@/lib/bookingReminders');
       const result = await sendBookingReminders();
       if (result.sent > 0) {

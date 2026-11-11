@@ -1,9 +1,10 @@
 // app/api/support/[id]/reply/route.ts
 import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
-import jwt from 'jsonwebtoken';
 
 import { prisma } from '@/lib/prisma';
+import { getAuthUser } from '@/lib/auth';
+import { rateLimit } from '@/lib/rateLimit';
+import { parseJsonBody, tooManyRequests } from '@/lib/http';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,21 +16,21 @@ export async function POST(
   try {
     const { id } = await params;
 
-    const cookieStore = await cookies();
-    const token = cookieStore.get('token')?.value;
-    if (!token) {
-      return NextResponse.json({ error: 'ابتدا وارد حساب کاربری شوید' }, { status: 401 });
+    const auth = await getAuthUser();
+    if ('error' in auth) {
+      return NextResponse.json({ error: auth.error }, { status: auth.status });
     }
 
-    let decoded: any;
-    try {
-      decoded = jwt.verify(token, process.env.JWT_SECRET!, { algorithms: ['HS256'] });
-    } catch {
-      return NextResponse.json({ error: 'توکن نامعتبر است' }, { status: 401 });
-    }
+    // قبلاً این مسیر هیچ محدودیتی نداشت و یک کاربر می‌توانست هزاران پیام در یک مکالمه بسازد
+    // (مسیر ساخت تیکت جدید محدودیت داشت ولی ادامه‌ی مکالمه نه)
+    const limit = await rateLimit(`support-reply:${auth.userId}`, 20, 10 * 60 * 1000);
+    if (!limit.ok) return tooManyRequests(limit.retryAfter, 'تعداد پیام‌ها زیاد است. کمی بعد دوباره تلاش کنید');
 
-    const body = await req.json();
-    const message: string = (body.message || '').trim();
+    const parsed = await parseJsonBody(req);
+    if (!parsed.ok) return parsed.response;
+
+    // قبلاً `(body.message || '').trim()` برای message غیررشته (مثل عدد) خطای ۵۰۰ می‌داد
+    const message: string = typeof parsed.body.message === 'string' ? parsed.body.message.trim() : '';
 
     if (!message) {
       return NextResponse.json({ error: 'متن پیام نمی‌تواند خالی باشد' }, { status: 400 });
@@ -43,14 +44,14 @@ export async function POST(
       return NextResponse.json({ error: 'مکالمه یافت نشد' }, { status: 404 });
     }
 
-    const isOwner = ticket.userId === decoded.userId;
+    const isOwner = ticket.userId === auth.userId;
     let sender: 'USER' | 'ADMIN';
 
     if (isOwner) {
       sender = 'USER';
     } else {
       const me = await prisma.user.findUnique({
-        where: { id: decoded.userId },
+        where: { id: auth.userId },
         select: { role: true },
       });
       if (me?.role !== 'ADMIN') {
@@ -59,12 +60,13 @@ export async function POST(
       sender = 'ADMIN';
     }
 
-    const reply = await prisma.supportReply.create({
-      data: { ticketId: id, message, sender },
-    });
-
     // --- بروزرسانی وضعیت و پرچم‌های دیده‌شدن ---
-    const updateData: any = {};
+    const updateData: {
+      seenByUser?: boolean;
+      seenByAdmin?: boolean;
+      status?: 'IN_PROGRESS' | 'ANSWERED';
+      repliedAt?: Date;
+    } = {};
     if (sender === 'ADMIN') {
       updateData.seenByUser = false;   // کاربر باید دوباره ببینه
       updateData.seenByAdmin = true;
@@ -79,10 +81,12 @@ export async function POST(
       }
     }
 
-    const updatedTicket = await prisma.supportMessage.update({
-      where: { id },
-      data: updateData,
-    });
+    // ساخت پاسخ + بروزرسانی تیکت در «یک» تراکنش: قبلاً اگر مرحله‌ی دوم خطا می‌داد،
+    // پاسخ ساخته می‌شد ولی وضعیت/پرچم‌ها بروز نمی‌شد (ادمین پیام جدید را نمی‌دید)
+    const [reply, updatedTicket] = await prisma.$transaction([
+      prisma.supportReply.create({ data: { ticketId: id, message, sender } }),
+      prisma.supportMessage.update({ where: { id }, data: updateData }),
+    ]);
 
     return NextResponse.json({ success: true, reply, ticket: updatedTicket }, { status: 201 });
 

@@ -137,7 +137,7 @@ export async function POST(req: Request) {
     }
 
     // ۳۰ درخواست آپلود در ۱۰ دقیقه برای هر کاربر
-    const limit = rateLimit(`upload:${userId}`, 30, 10 * 60 * 1000);
+    const limit = await rateLimit(`upload:${userId}`, 30, 10 * 60 * 1000);
     if (!limit.ok) {
       return NextResponse.json(
         { error: 'تعداد آپلود زیاد است. کمی بعد دوباره تلاش کنید' },

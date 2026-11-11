@@ -1,8 +1,11 @@
 // app/api/salon/schedule/public/route.ts
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { tehranDayOffset } from '@/lib/http';
 
 export const dynamic = 'force-dynamic';
+
+const PUBLIC_CACHE = { 'Cache-Control': 'public, max-age=10, s-maxage=30, stale-while-revalidate=60' };
 
 const WEEK_DAYS = ['شنبه', 'یکشنبه', 'دوشنبه', 'سه‌شنبه', 'چهارشنبه', 'پنجشنبه', 'جمعه'];
 
@@ -80,13 +83,18 @@ export async function GET(req: Request) {
 
     const closedDays = WEEK_DAYS.filter((d) => weeklySchedule[d]?.open === false);
 
-const overrides = await prisma.salonScheduleOverride.findMany({
-  where: { salonId, isClosed: true },
-  select: { date: true },
-});
-const closedDates = overrides.map((o) => o.date);
+    // فقط تعطیلی‌های امروز به بعد (روز گذشته برای تقویم رزرو بی‌معناست) و با سقف تعداد؛
+    // قبلاً در این مسیر عمومی و پرترافیک همه‌ی تاریخچه‌ی تعطیلی‌های سالن خوانده می‌شد
+    const overrides = await prisma.salonScheduleOverride.findMany({
+      where: { salonId, isClosed: true, date: { gte: tehranDayOffset(-1) } },
+      select: { date: true },
+      orderBy: { date: 'asc' },
+      take: 400,
+    });
+    const closedDates = overrides.map((o) => o.date);
 
-return NextResponse.json({ closedDays, closedDates });
+    // کش کوتاه برای CDN/پروکسی: این مسیر عمومی با هر بازدید صفحه‌ی رزرو صدا زده می‌شود
+    return NextResponse.json({ closedDays, closedDates }, { headers: PUBLIC_CACHE });
   } catch (error) {
     console.error('Error fetching public salon schedule:', error);
     return NextResponse.json({ error: 'خطای سرور' }, { status: 500 });

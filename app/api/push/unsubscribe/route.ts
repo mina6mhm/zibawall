@@ -3,6 +3,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireUser } from '@/lib/requireUser';
+import { parseJsonBody } from '@/lib/http';
 
 export async function POST(req: Request) {
   const auth = await requireUser();
@@ -11,8 +12,11 @@ export async function POST(req: Request) {
   }
 
   try {
-    const { endpoint } = await req.json();
-    if (endpoint) {
+    const parsed = await parseJsonBody(req);
+    if (!parsed.ok) return parsed.response;
+    const { endpoint } = parsed.body;
+
+    if (typeof endpoint === 'string' && endpoint) {
       await prisma.pushSubscription.deleteMany({
         where: { endpoint, userId: auth.user.id },
       });

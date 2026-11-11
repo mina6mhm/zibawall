@@ -7,6 +7,7 @@ import { verifyZarinpalPayment } from '@/lib/zarinpal';
 import { checkBookingSlotStillAvailable, lockSalonDay } from '@/lib/bookingSchedule';
 import { dateOnlyIso } from '@/lib/dateUtils';
 import { notifyBookingConfirmed } from '@/lib/bookingNotifications';
+import { isAuthorityOf } from '@/lib/paymentAuthority';
 
 export const dynamic = 'force-dynamic';
 
@@ -38,7 +39,10 @@ export async function GET(req: Request) {
   if (!bookingId || !authority) return redirectTo('failed');
 
   const booking = await prisma.booking.findUnique({ where: { id: bookingId } });
-  if (!booking || booking.authority !== authority) return redirectTo('failed');
+  // هر authority ثبت‌شده برای همین نوبت معتبر است (نه فقط آخرین‌ی که روی رکورد نوشته شده)
+  if (!booking || !(await isAuthorityOf({ bookingId: booking.id }, booking.authority, authority))) {
+    return redirectTo('failed');
+  }
 
   // Idempotent: رفرش صفحه، دکمه‌ی back یا callback تکراری از درگاه.
   // قبلاً verify دوباره صدا زده می‌شد و اگر زرین‌پال «قبلاً تایید شده» برمی‌گرداند،

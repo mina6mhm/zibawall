@@ -1,31 +1,27 @@
 // app/api/support/mine/route.ts
 import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
-import jwt from 'jsonwebtoken';
 
 import { prisma } from '@/lib/prisma';
+import { getAuthUser } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
+// سقف تعداد تیکت‌ها در یک پاسخ — این مسیر با زنگ اعلان (SupportBell) مرتب صدا زده می‌شود
+const MAX_TICKETS = 200;
+
 export async function GET() {
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get('token')?.value;
-
-    if (!token) {
-      return NextResponse.json({ error: 'ابتدا وارد حساب کاربری شوید' }, { status: 401 });
-    }
-
-    let decoded: any;
-    try {
-      decoded = jwt.verify(token, process.env.JWT_SECRET!, { algorithms: ['HS256'] });
-    } catch {
-      return NextResponse.json({ error: 'توکن نامعتبر است' }, { status: 401 });
+    // getAuthUser وجود userId معتبر در توکن را هم چک می‌کند؛ قبلاً با توکنِ بدون userId
+    // شرط where حذف می‌شد (undefined = بدون فیلتر) و تیکت‌های «همه‌ی کاربران» برمی‌گشت
+    const auth = await getAuthUser();
+    if ('error' in auth) {
+      return NextResponse.json({ error: auth.error }, { status: auth.status });
     }
 
     const tickets = await prisma.supportMessage.findMany({
-      where: { userId: decoded.userId },
+      where: { userId: auth.userId },
       orderBy: { updatedAt: 'desc' },
+      take: MAX_TICKETS,
       include: {
         replies: { orderBy: { createdAt: 'desc' }, take: 1 },
       },

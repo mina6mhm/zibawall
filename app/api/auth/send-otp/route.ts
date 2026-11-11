@@ -31,7 +31,7 @@ async function releaseOtpLock(mobile: string, otpCode: string) {
 export async function POST(req: Request) {
   try {
     // محدودیت per-IP: جلوی ساخت انبوه کاربر (upsert) و پیامک‌بمبی را می‌گیرد
-    const ipLimit = rateLimit(`send-otp:ip:${getClientIp(req)}`, 10, 10 * 60 * 1000);
+    const ipLimit = await rateLimit(`send-otp:ip:${getClientIp(req)}`, 10, 10 * 60 * 1000);
     if (!ipLimit.ok) {
       return tooMany(ipLimit.retryAfter, 'تعداد درخواست‌ها زیاد است. کمی بعد دوباره تلاش کنید');
     }

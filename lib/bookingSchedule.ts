@@ -50,10 +50,14 @@ export function minToTime(min: number): string {
 
 // پارس امن فیلد JSON دیتابیس closedRanges به آرایه‌ای از بازه‌های معتبر
 // "HH:MM"-"HH:MM"؛ هر چیز نامعتبر (فرمت غلط، start >= end) نادیده گرفته میشه
+// سقف تعداد بازه‌ی تعطیلی در یک روز: بدون آن می‌شد آرایه‌ی صدها‌هزارتایی را در JSON ذخیره کرد
+const MAX_CLOSED_RANGES = 48;
+
 export function parseClosedRanges(raw: unknown): TimeRange[] {
   if (!Array.isArray(raw)) return [];
   const timeRe = /^\d{2}:\d{2}$/;
   return raw
+    .slice(0, MAX_CLOSED_RANGES)
     .filter(
       (r): r is TimeRange =>
         !!r &&

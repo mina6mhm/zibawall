@@ -1,36 +1,27 @@
 //app/api/support/route.ts
 import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
-import jwt from 'jsonwebtoken';
- 
+
 import { prisma } from '@/lib/prisma';
+import { getAuthUser } from '@/lib/auth';
 import { rateLimit } from '@/lib/rateLimit';
+import { parseJsonBody } from '@/lib/http';
  
 export const dynamic = 'force-dynamic';
+
+const SUPPORT_STATUSES = ['PENDING', 'IN_PROGRESS', 'ANSWERED', 'CLOSED'] as const;
  
 // ثبت پیام پشتیبانی جدید توسط کاربر لاگین‌کرده
 export async function POST(req: Request) {
   try {
     // --- بررسی احراز هویت (اجباری) ---
-    const cookieStore = await cookies();
-    const token = cookieStore.get('token')?.value;
- 
-    if (!token) {
-      return NextResponse.json(
-        { error: 'برای ارسال پیام ابتدا وارد حساب کاربری خود شوید' },
-        { status: 401 }
-      );
+    const auth = await getAuthUser();
+    if ('error' in auth) {
+      return NextResponse.json({ error: auth.error }, { status: auth.status });
     }
- 
-    let decoded: any;
-    try {
-      decoded = jwt.verify(token, process.env.JWT_SECRET!, { algorithms: ['HS256'] });
-    } catch {
-      return NextResponse.json({ error: 'توکن نامعتبر است' }, { status: 401 });
-    }
+    const userId = auth.userId;
  
     // ضد اسپم: ۵ پیام در ۱۰ دقیقه برای هر کاربر
-    const limit = rateLimit(`support:${decoded.userId}`, 5, 10 * 60 * 1000);
+    const limit = await rateLimit(`support:${userId}`, 5, 10 * 60 * 1000);
     if (!limit.ok) {
       return NextResponse.json(
         { error: 'تعداد پیام‌ها زیاد است. کمی بعد دوباره تلاش کنید' },
@@ -39,8 +30,9 @@ export async function POST(req: Request) {
     }
 
     // --- اعتبارسنجی متن پیام ---
-    const body = await req.json().catch(() => ({}));
-    const message: string = typeof body?.message === 'string' ? body.message.trim() : '';
+    const parsed = await parseJsonBody(req);
+    if (!parsed.ok) return parsed.response;
+    const message: string = typeof parsed.body.message === 'string' ? parsed.body.message.trim() : '';
  
     if (!message) {
       return NextResponse.json(
@@ -58,7 +50,7 @@ export async function POST(req: Request) {
  
     // --- دریافت اطلاعات کامل کاربر و سالنش (برای اسنپ‌شات) ---
     const user = await prisma.user.findUnique({
-      where: { id: decoded.userId },
+      where: { id: userId },
       select: {
         id: true,
         name: true,
@@ -102,22 +94,13 @@ export async function POST(req: Request) {
 // دریافت لیست پیام‌ها (فقط ادمین)
 export async function GET(req: Request) {
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get('token')?.value;
-
-    if (!token) {
-      return NextResponse.json({ error: 'ابتدا وارد حساب کاربری شوید' }, { status: 401 });
-    }
-
-    let decoded: any;
-    try {
-      decoded = jwt.verify(token, process.env.JWT_SECRET!, { algorithms: ['HS256'] });
-    } catch {
-      return NextResponse.json({ error: 'توکن نامعتبر است' }, { status: 401 });
+    const auth = await getAuthUser();
+    if ('error' in auth) {
+      return NextResponse.json({ error: auth.error }, { status: auth.status });
     }
 
     const adminUser = await prisma.user.findUnique({
-      where: { id: decoded.userId },
+      where: { id: auth.userId },
       select: { role: true }
     });
 
@@ -127,9 +110,13 @@ export async function GET(req: Request) {
 
     const { searchParams } = new URL(req.url);
     const statusFilter = searchParams.get('status');
+    // فیلتر نامعتبر قبلاً با `as any` مستقیم به Prisma می‌رفت و ۵۰۰ می‌داد
+    if (statusFilter && !SUPPORT_STATUSES.includes(statusFilter as (typeof SUPPORT_STATUSES)[number])) {
+      return NextResponse.json({ error: 'وضعیت نامعتبر است' }, { status: 400 });
+    }
 
     const tickets = await prisma.supportMessage.findMany({
-      where: statusFilter ? { status: statusFilter as any } : undefined,
+      where: statusFilter ? { status: statusFilter as (typeof SUPPORT_STATUSES)[number] } : undefined,
       orderBy: { updatedAt: 'desc' },
       take: 300, // قبلاً همه‌ی تیکت‌ها یک‌جا بارگذاری می‌شد
       include: {

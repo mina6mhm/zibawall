@@ -1,22 +1,17 @@
 // app/api/support/[id]/route.ts
 import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
-import jwt from 'jsonwebtoken';
 
 import { prisma } from '@/lib/prisma';
+import { getAuthUser } from '@/lib/auth';
+import { parseJsonBody } from '@/lib/http';
 
 export const dynamic = 'force-dynamic';
 
-async function getAuth() {
-  const cookieStore = await cookies();
-  const token = cookieStore.get('token')?.value;
-  if (!token) return null;
-  try {
-    return jwt.verify(token, process.env.JWT_SECRET!, { algorithms: ['HS256'] }) as any;
-  } catch {
-    return null;
-  }
-}
+const SUPPORT_STATUSES = ['PENDING', 'IN_PROGRESS', 'ANSWERED', 'CLOSED'] as const;
+type SupportStatusValue = (typeof SUPPORT_STATUSES)[number];
+
+// سقف تعداد پیام‌های یک مکالمه در یک پاسخ (مکالمه‌ی بی‌انتها نباید کل جدول را یک‌جا بکشد)
+const MAX_REPLIES = 500;
 
 // GET: گرفتن کل مکالمه (پیام اول + همه‌ی پاسخ‌ها)
 export async function GET(
@@ -25,15 +20,15 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
-    const decoded = await getAuth();
-    if (!decoded) {
-      return NextResponse.json({ error: 'ابتدا وارد حساب کاربری شوید' }, { status: 401 });
+    const auth = await getAuthUser();
+    if ('error' in auth) {
+      return NextResponse.json({ error: auth.error }, { status: auth.status });
     }
 
     const ticket = await prisma.supportMessage.findUnique({
       where: { id },
       include: {
-        replies: { orderBy: { createdAt: 'asc' } },
+        replies: { orderBy: { createdAt: 'asc' }, take: MAX_REPLIES },
         user: { select: { name: true, phone: true, username: true } },
       },
     });
@@ -42,12 +37,12 @@ export async function GET(
       return NextResponse.json({ error: 'مکالمه یافت نشد' }, { status: 404 });
     }
 
-    const isOwner = ticket.userId === decoded.userId;
+    const isOwner = ticket.userId === auth.userId;
     let isAdmin = false;
 
     if (!isOwner) {
       const me = await prisma.user.findUnique({
-        where: { id: decoded.userId },
+        where: { id: auth.userId },
         select: { role: true },
       });
       isAdmin = me?.role === 'ADMIN';
@@ -70,9 +65,9 @@ export async function PATCH(
 ) {
   try {
     const { id } = await params;
-    const decoded = await getAuth();
-    if (!decoded) {
-      return NextResponse.json({ error: 'ابتدا وارد حساب کاربری شوید' }, { status: 401 });
+    const auth = await getAuthUser();
+    if ('error' in auth) {
+      return NextResponse.json({ error: auth.error }, { status: auth.status });
     }
 
     const ticket = await prisma.supportMessage.findUnique({ where: { id } });
@@ -80,11 +75,13 @@ export async function PATCH(
       return NextResponse.json({ error: 'مکالمه یافت نشد' }, { status: 404 });
     }
 
-    const body = await req.json();
+    const parsed = await parseJsonBody(req);
+    if (!parsed.ok) return parsed.response;
+    const body = parsed.body;
 
     // --- کاربر: علامت‌گذاری دیده‌شدن ---
     if (body.seen === true || body.seenByUser === true) {
-      if (ticket.userId !== decoded.userId) {
+      if (ticket.userId !== auth.userId) {
         return NextResponse.json({ error: 'دسترسی غیرمجاز' }, { status: 403 });
       }
       const updated = await prisma.supportMessage.update({
@@ -96,16 +93,22 @@ export async function PATCH(
 
     // --- ادمین: علامت‌گذاری دیده‌شدن یا تغییر وضعیت ---
     const adminUser = await prisma.user.findUnique({
-      where: { id: decoded.userId },
+      where: { id: auth.userId },
       select: { role: true },
     });
     if (adminUser?.role !== 'ADMIN') {
       return NextResponse.json({ error: 'شما دسترسی ادمین ندارید' }, { status: 403 });
     }
 
-    const data: any = {};
+    const data: { seenByAdmin?: boolean; status?: SupportStatusValue } = {};
     if (body.seenByAdmin === true) data.seenByAdmin = true;
-    if (body.status) data.status = body.status;
+    if (body.status !== undefined && body.status !== null && body.status !== '') {
+      // وضعیت نامعتبر قبلاً مستقیم به Prisma می‌رفت و ۵۰۰ می‌داد
+      if (!SUPPORT_STATUSES.includes(body.status as SupportStatusValue)) {
+        return NextResponse.json({ error: 'وضعیت نامعتبر است' }, { status: 400 });
+      }
+      data.status = body.status as SupportStatusValue;
+    }
 
     if (Object.keys(data).length === 0) {
       return NextResponse.json({ error: 'داده‌ای برای بروزرسانی ارسال نشده' }, { status: 400 });
@@ -127,9 +130,9 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params;
-    const decoded = await getAuth();
-    if (!decoded) {
-      return NextResponse.json({ error: 'ابتدا وارد حساب کاربری شوید' }, { status: 401 });
+    const auth = await getAuthUser();
+    if ('error' in auth) {
+      return NextResponse.json({ error: auth.error }, { status: auth.status });
     }
 
     const ticket = await prisma.supportMessage.findUnique({ where: { id } });
@@ -137,11 +140,11 @@ export async function DELETE(
       return NextResponse.json({ error: 'مکالمه یافت نشد' }, { status: 404 });
     }
 
-    const isOwner = ticket.userId === decoded.userId;
+    const isOwner = ticket.userId === auth.userId;
 
     if (!isOwner) {
       const me = await prisma.user.findUnique({
-        where: { id: decoded.userId },
+        where: { id: auth.userId },
         select: { role: true },
       });
       if (me?.role !== 'ADMIN') {
@@ -151,7 +154,7 @@ export async function DELETE(
 
     // اول پاسخ‌ها حذف می‌شن (برای احتیاط، حتی اگه cascade در schema ست شده باشه)
     await prisma.supportReply.deleteMany({ where: { ticketId: id } });
-    await prisma.supportMessage.delete({ where: { id } });
+    await prisma.supportMessage.deleteMany({ where: { id } });
 
     return NextResponse.json({ success: true }, { status: 200 });
 

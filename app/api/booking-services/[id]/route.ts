@@ -2,6 +2,11 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getSalonFromCookieToken as getSalonFromToken } from '@/lib/salonAccess';
+import { intInRange, parseJsonBody } from '@/lib/http';
+
+const MAX_NAME_LENGTH = 100;
+const MAX_DURATION_MIN = 24 * 60;
+const MAX_PRICE = 1_000_000_000;
 
 // PUT: ویرایش خدمت
 export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -13,18 +18,33 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
   if (!existing || existing.salonId !== salon.id)
     return NextResponse.json({ error: 'خدمتی یافت نشد' }, { status: 404 });
 
-  const body = await req.json();
-  const { name, durationMin, price, isActive } = body;
+  const parsed = await parseJsonBody(req);
+  if (!parsed.ok) return parsed.response;
+  const { name, durationMin, price, isActive } = parsed.body;
 
-  const updated = await prisma.bookingService.update({
-    where: { id },
-    data: {
-      ...(name !== undefined && { name: String(name).trim() }),
-      ...(durationMin !== undefined && { durationMin: Number(durationMin) }),
-      ...(price !== undefined && { price: Number(price) }),
-      ...(isActive !== undefined && { isActive: Boolean(isActive) }),
-    },
-  });
+  // قبلاً Number('abc') = NaN مستقیم به Prisma می‌رفت و ۵۰۰ می‌داد
+  const data: { name?: string; durationMin?: number; price?: number; isActive?: boolean } = {};
+
+  if (name !== undefined) {
+    const cleanName = typeof name === 'string' ? name.trim() : '';
+    if (!cleanName || cleanName.length > MAX_NAME_LENGTH) {
+      return NextResponse.json({ error: 'نام خدمت نامعتبر است' }, { status: 400 });
+    }
+    data.name = cleanName;
+  }
+  if (durationMin !== undefined) {
+    const duration = intInRange(durationMin, 1, MAX_DURATION_MIN);
+    if (duration === null) return NextResponse.json({ error: 'مدت زمان نامعتبر است' }, { status: 400 });
+    data.durationMin = duration;
+  }
+  if (price !== undefined) {
+    const cleanPrice = intInRange(price, 0, MAX_PRICE);
+    if (cleanPrice === null) return NextResponse.json({ error: 'قیمت نامعتبر است' }, { status: 400 });
+    data.price = cleanPrice;
+  }
+  if (isActive !== undefined) data.isActive = Boolean(isActive);
+
+  const updated = await prisma.bookingService.update({ where: { id }, data });
 
   return NextResponse.json({ service: updated });
 }
@@ -39,6 +59,6 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
   if (!existing || existing.salonId !== salon.id)
     return NextResponse.json({ error: 'خدمتی یافت نشد' }, { status: 404 });
 
-  await prisma.bookingService.delete({ where: { id } });
+  await prisma.bookingService.deleteMany({ where: { id, salonId: salon.id } });
   return NextResponse.json({ success: true });
 }

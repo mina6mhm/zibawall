@@ -5,6 +5,7 @@ import { getAuthUser } from '@/lib/auth';
 import { requestZarinpalPayment } from '@/lib/zarinpal';
 import { checkGroupSlotsStillAvailable } from '@/lib/bookingSchedule';
 import { acquirePaymentLock, releasePaymentLock } from '@/lib/paymentLock';
+import { recordAuthority } from '@/lib/paymentAuthority';
 
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   let lockKey: string | null = null;
@@ -36,7 +37,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     }
 
     // جلوگیری از دوبار کلیک: هر درخواست یک authority جدید می‌سازد و روی رکورد می‌نویسد
-    if (!acquirePaymentLock(`group:${group.id}`)) {
+    if (!(await acquirePaymentLock(`group:${group.id}`))) {
       return NextResponse.json(
         { error: 'درخواست پرداخت در حال پردازش است. چند ثانیه صبر کنید' },
         { status: 429 }
@@ -76,6 +77,9 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       return NextResponse.json({ error: 'این رزرو قبلاً پرداخت یا لغو شده است' }, { status: 400 });
     }
 
+    // همه‌ی authorityها ثبت می‌شوند (نه فقط آخری) — به توضیح lib/paymentAuthority.ts نگاه کنید
+    await recordAuthority({ bookingGroupId: group.id }, authority);
+
     succeeded = true; // قفل تا پایان TTL می‌ماند تا کلیک تکراری authority دوم نسازد
     return NextResponse.json({ paymentUrl }, { status: 200 });
   } catch (error) {
@@ -86,6 +90,6 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       { status: 502 }
     );
   } finally {
-    if (lockKey && !succeeded) releasePaymentLock(lockKey);
+    if (lockKey && !succeeded) await releasePaymentLock(lockKey);
   }
 }

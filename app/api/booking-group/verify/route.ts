@@ -7,6 +7,7 @@ import { verifyZarinpalPayment } from '@/lib/zarinpal';
 import { checkGroupSlotsStillAvailable, lockSalonDay } from '@/lib/bookingSchedule';
 import { dateOnlyIso } from '@/lib/dateUtils';
 import { notifyBookingConfirmed } from '@/lib/bookingNotifications';
+import { isAuthorityOf } from '@/lib/paymentAuthority';
 
 export const dynamic = 'force-dynamic';
 
@@ -41,7 +42,10 @@ export async function GET(req: Request) {
     where: { id: groupId },
     include: { bookings: { select: { status: true } } },
   });
-  if (!group || group.authority !== authority) return redirectTo('failed');
+  // هر authority ثبت‌شده برای همین رزرو معتبر است (نه فقط آخرین‌ی که روی رکورد نوشته شده)
+  if (!group || !(await isAuthorityOf({ bookingGroupId: group.id }, group.authority, authority))) {
+    return redirectTo('failed');
+  }
 
   // Idempotent: رفرش صفحه، دکمه‌ی back، callback تکراری یا باز کردن دوباره‌ی لینک از History.
   // قبلاً این حالت دوباره تایید/لغو را اجرا می‌کرد و می‌توانست نوبتِ پرداخت‌شده‌ی CONFIRMED را

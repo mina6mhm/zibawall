@@ -316,6 +316,7 @@ model BookingGroup {
   refId         String?
 
   bookings      Booking[]
+  paymentAuthorities PaymentAuthority[]
 
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
@@ -365,6 +366,8 @@ model Booking {
   bookingGroupId String?
   bookingGroup   BookingGroup? @relation(fields: [bookingGroupId], references: [id], onDelete: SetNull)
 
+  paymentAuthorities PaymentAuthority[]
+
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
 
@@ -375,6 +378,27 @@ model Booking {
   @@index([status, expiresAt])       // پاک‌سازی/شمارش هولدهای منقضی
   @@index([customerPhone])
   @@index([bookingGroupId])
+}
+
+// همه‌ی authorityهایی که زرین‌پال برای پرداخت یک نوبت/رزرو صادر کرده.
+// قبلاً فقط «آخرین» authority روی خود رکورد نوشته می‌شد؛ با دوبار کلیک (مخصوصاً روی چند سرور)
+// authority اول بی‌اعتبار می‌شد و پرداختِ موفق کاربر «ناموفق» دیده می‌شد. حالا verify هر authority
+// ثبت‌شده‌ی همان نوبت/رزرو را می‌پذیرد. دقیقاً یکی از bookingId / bookingGroupId پر است.
+model PaymentAuthority {
+  id             String        @id @default(uuid())
+  authority      String        @unique
+
+  bookingId      String?
+  booking        Booking?      @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  bookingGroupId String?
+  bookingGroup   BookingGroup? @relation(fields: [bookingGroupId], references: [id], onDelete: Cascade)
+
+  createdAt      DateTime      @default(now())
+
+  @@index([bookingId])
+  @@index([bookingGroupId])
+  @@index([createdAt])
 }
 
 model Staff {
