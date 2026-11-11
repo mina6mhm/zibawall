@@ -10,6 +10,9 @@ const HOUR = 60 * 60 * 1000;
 // ایران از ۱۴۰۱ ساعت تابستانی ندارد؛ آفست ثابت است.
 const IRAN_OFFSET = '+03:30';
 const CONCURRENCY = 10;
+// صفحه‌بندی خواندن کاندیدها (سقف کل = اندازه‌ی صفحه × تعداد صفحه = ۵۰٬۰۰۰ نوبت در یک اجرا)
+const CANDIDATE_PAGE_SIZE = 1000;
+const MAX_CANDIDATE_PAGES = 50;
 
 // booking.date نیمه‌شب UTC است؛ timeZone: 'UTC' جلوی یک‌روز جابه‌جایی را می‌گیرد
 const jalaliDate = new Intl.DateTimeFormat('fa-IR-u-ca-persian', {
@@ -40,23 +43,40 @@ export async function sendBookingReminders(): Promise<{ sent: number; checked: n
     // قبلاً پنجره روی «نیمه‌شب UTC روز نوبت» اعمال می‌شد نه ساعت واقعی نوبت؛
     // یعنی یادآوری حوالی ۳:۳۰ بامداد می‌رفت. حالا روزهای کاندید را از DB می‌گیریم
     // و پنجره را روی زمان واقعی شروع نوبت (به وقت تهران) اعمال می‌کنیم.
-    const candidates = await prisma.booking.findMany({
-      where: {
-        status: 'CONFIRMED',
-        paymentStatus: 'SUCCESS',
-        reminderSentAt: null,
-        customerId: { not: null },
-        date: { gte: new Date(windowStart - 21 * HOUR), lte: new Date(windowEnd + 4 * HOUR) },
-      },
-      select: {
-        id: true,
-        customerId: true,
-        date: true,
-        startTime: true,
-        salon: { select: { name: true } },
-      },
-      take: 2000,
-    });
+    // صفحه‌بندی با cursor: قبلاً take:2000 بدون ترتیب بود و وقتی نوبت‌های دو روز کاندید از ۲۰۰۰ بیشتر
+    // می‌شد، نوبت‌های «موعدرسیده» ممکن بود هیچ‌وقت در همان ۲۰۰۰ تا نیفتند و یادآوری نگیرند.
+    const candidates: {
+      id: string;
+      customerId: string | null;
+      date: Date;
+      startTime: string;
+      salon: { name: string };
+    }[] = [];
+    let cursorId: string | undefined;
+    for (let page = 0; page < MAX_CANDIDATE_PAGES; page++) {
+      const rows = await prisma.booking.findMany({
+        where: {
+          status: 'CONFIRMED',
+          paymentStatus: 'SUCCESS',
+          reminderSentAt: null,
+          customerId: { not: null },
+          date: { gte: new Date(windowStart - 21 * HOUR), lte: new Date(windowEnd + 4 * HOUR) },
+        },
+        select: {
+          id: true,
+          customerId: true,
+          date: true,
+          startTime: true,
+          salon: { select: { name: true } },
+        },
+        orderBy: { id: 'asc' },
+        take: CANDIDATE_PAGE_SIZE,
+        ...(cursorId ? { cursor: { id: cursorId }, skip: 1 } : {}),
+      });
+      candidates.push(...rows);
+      if (rows.length < CANDIDATE_PAGE_SIZE) break;
+      cursorId = rows[rows.length - 1].id;
+    }
 
     const due = candidates.filter((b) => {
       const t = bookingStartInstant(b.date, b.startTime).getTime();

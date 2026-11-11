@@ -29,6 +29,12 @@ const MAX_FILES_PER_REQUEST = 31;
 const MAX_TOTAL_BYTES = 150 * 1024 * 1024; // مجموع حجم یک درخواست
 const MAX_INPUT_PIXELS = 60_000_000; // ~ عکس ۷۷۰۰×۷۷۰۰؛ جلوی «بمب پیکسلی» را می‌گیرد
 
+// سقف «درخواست آپلودِ هم‌زمان» در هر instance. formData() کل بدنه (تا ۱۵۰ مگابایت) را در رم می‌خواند؛
+// سقف MAX_CONCURRENT_PROCESSING فقط پردازش sharp را محدود می‌کرد، نه این بافرها را: ۵۰ آپلود هم‌زمان
+// = چند گیگابایت رم و کشته شدن پروسه (OOM) که کل سایت را پایین می‌آورد. بالاتر از سقف، ۵۰۳ + Retry-After.
+const MAX_CONCURRENT_UPLOADS = 4;
+let activeUploads = 0;
+
 // حداکثر پردازش هم‌زمان تصویر در هر instance (sharp/heic حافظه و CPU زیادی می‌خورند)
 const MAX_CONCURRENT_PROCESSING = 3;
 let activeProcessing = 0;
@@ -130,6 +136,7 @@ async function processImage(
 class ImageProcessingError extends Error {}
 
 export async function POST(req: Request) {
+  let counted = false;
   try {
     const userId = await getUserIdFromToken();
     if (!userId) {
@@ -144,6 +151,21 @@ export async function POST(req: Request) {
         { status: 429, headers: { 'Retry-After': String(limit.retryAfter) } }
       );
     }
+
+    // رد زودهنگام بدنه‌ی بزرگ، قبل از اینکه چیزی در رم خوانده شود (سربار multipart ≈ چند کیلوبایت)
+    const declaredLength = Number(req.headers.get('content-length'));
+    if (Number.isFinite(declaredLength) && declaredLength > MAX_TOTAL_BYTES + 1024 * 1024) {
+      return NextResponse.json({ error: 'حجم کل فایل‌ها بیش از حد مجاز است' }, { status: 413 });
+    }
+
+    if (activeUploads >= MAX_CONCURRENT_UPLOADS) {
+      return NextResponse.json(
+        { error: 'سرور در حال پردازش آپلودهای دیگر است. چند ثانیه بعد دوباره تلاش کنید' },
+        { status: 503, headers: { 'Retry-After': '5' } }
+      );
+    }
+    activeUploads++;
+    counted = true;
 
     const formData = await req.formData();
     const files = formData.getAll('file') as File[];
@@ -220,5 +242,7 @@ export async function POST(req: Request) {
     // پیام داخلی خطا (آدرس سرور S3 و ...) نباید به کلاینت نشت کند
     console.error('Upload Error:', error?.message);
     return NextResponse.json({ error: 'خطای سرور در آپلود فایل' }, { status: 500 });
+  } finally {
+    if (counted) activeUploads--;
   }
 }

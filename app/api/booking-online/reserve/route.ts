@@ -2,11 +2,16 @@
 import { NextResponse, after } from 'next/server';
 import { cookies } from 'next/headers';
 import jwt from 'jsonwebtoken';
-import { Prisma } from '@prisma/client';
 import type { BookingService, Staff } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { BOOKING_APP_FEE } from '@/lib/constants';
-import { lockSalonDay, timeToMin, validateSlotAgainstSchedule } from '@/lib/bookingSchedule';
+import {
+  isLockTimeoutError,
+  isSlotInPast,
+  lockSalonDay,
+  timeToMin,
+  validateSlotAgainstSchedule,
+} from '@/lib/bookingSchedule';
 import { notifyBookingConfirmed } from '@/lib/bookingNotifications';
 import { rateLimit } from '@/lib/rateLimit';
 import { isHHMM, isIsoDate, parseJsonBody } from '@/lib/http';
@@ -227,9 +232,8 @@ export async function POST(req: Request) {
             // گذشته نبودن زمان را دوباره داخل تراکنش هم چک می‌کنیم (نه فقط
             // بیرون از تراکنش)، چون ممکنه بین شروع درخواست و رسیدن به این‌جا
             // چند دقیقه طول کشیده باشه و اسلات درخواستی همین حین گذشته باشه.
-            const nowInsideTx = new Date();
-            const slotDateTime = new Date(`${p.item.date}T${p.item.startTime}:00Z`);
-            if (slotDateTime.getTime() <= nowInsideTx.getTime()) {
+            // (با isSlotInPast: ساعت نوبت به وقت تهران است؛ قبلاً با Z/UTC مقایسه می‌شد و تا ۳.۵ ساعت اشتباه بود)
+            if (isSlotInPast(p.item.date, p.item.startTime)) {
               throw new ScheduleError(`ساعت ${p.item.startTime} در تاریخ ${p.item.date} گذشته است`);
             }
 
@@ -320,7 +324,10 @@ export async function POST(req: Request) {
           return createdGroup;
         },
         {
-          isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
+          // سطح ایزولاسیون عمداً پیش‌فرض (READ COMMITTED) است: درستیِ «بدون double-booking» را
+          // lockSalonDay (advisory lock روی سالن/روز) تضمین می‌کند. Serializable با این قفل همراه شود
+          // اسنپ‌شات را قبل از انتظار برای قفل می‌گیرد و درخواست‌های هم‌زمان را بی‌دلیل با P2034 رد می‌کند
+          // (توضیح کامل: کامنت lockSalonDay در lib/bookingSchedule.ts).
           // زیر فشار، انتظار برای کانکشن/قفل از پیش‌فرض (۲ و ۵ ثانیه) بیشتر می‌شود
           maxWait: 10_000,
           timeout: 15_000,
@@ -358,8 +365,9 @@ export async function POST(req: Request) {
           { status: 409 }
         );
       }
-      // Pool دیتابیس پر است (P2024) یا تراکنش بسته شد (P2028): سرور شلوغ است، نه خطای کاربر
-      if (err?.code === 'P2024' || err?.code === 'P2028') {
+      // Pool دیتابیس پر است (P2024)، تراکنش بسته شد (P2028) یا مهلت انتظار برای قفل سالن/روز تمام شد:
+      // سرور شلوغ است، نه خطای کاربر
+      if (err?.code === 'P2024' || err?.code === 'P2028' || isLockTimeoutError(err)) {
         return NextResponse.json(
           { error: 'سرور در حال حاضر شلوغ است. چند ثانیه بعد دوباره تلاش کنید' },
           { status: 503, headers: { 'Retry-After': '3' } }

@@ -15,14 +15,24 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: 'salonId و serviceId الزامی هستند' }, { status: 400 });
   }
 
-  const staff = await prisma.staff.findMany({
-    where: {
-      salonId,
-      bookingServices: { some: { bookingServiceId: serviceId } },
-    },
-    select: { id: true, name: true },
-    orderBy: { name: 'asc' },
-  });
+  try {
+    const staff = await prisma.staff.findMany({
+      where: {
+        salonId,
+        bookingServices: { some: { bookingServiceId: serviceId } },
+      },
+      select: { id: true, name: true },
+      orderBy: { name: 'asc' },
+      take: 200,
+    });
 
-  return NextResponse.json({ staff });
+    // کش کوتاه برای CDN/پروکسی (مثل booking-services/public): لیست پرسنل به‌ندرت عوض می‌شود
+    return NextResponse.json(
+      { staff },
+      { headers: { 'Cache-Control': 'public, max-age=10, s-maxage=30, stale-while-revalidate=60' } }
+    );
+  } catch (error) {
+    console.error('Error fetching eligible staff:', error);
+    return NextResponse.json({ error: 'خطای سرور' }, { status: 500 });
+  }
 }

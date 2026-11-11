@@ -4,7 +4,7 @@ import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { getAuthUser } from '@/lib/auth';
 import { verifyZarinpalPayment } from '@/lib/zarinpal';
-import { checkGroupSlotsStillAvailable, lockSalonDay } from '@/lib/bookingSchedule';
+import { checkGroupSlotsStillAvailable, isLockTimeoutError, lockSalonDay } from '@/lib/bookingSchedule';
 import { dateOnlyIso } from '@/lib/dateUtils';
 import { notifyBookingConfirmed } from '@/lib/bookingNotifications';
 import { isAuthorityOf } from '@/lib/paymentAuthority';
@@ -87,7 +87,7 @@ export async function GET(req: Request) {
     return redirectTo(await markFailedUnlessPaid());
   }
 
-  // پول واقعاً کم شده. تایید گروه داخل تراکنش Serializable + قفل روز سالن + تلاش مجدد روی تداخل.
+  // پول واقعاً کم شده. تایید گروه داخل تراکنش + قفل روز سالن + تلاش مجدد روی تداخل/مهلت قفل.
   const confirmAfterPayment = async (): Promise<Outcome> => {
     let lastError: unknown;
 
@@ -144,7 +144,7 @@ export async function GET(req: Request) {
             return { kind: 'confirmed', firstTime: true };
           },
           {
-            isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
+            // READ COMMITTED + lockSalonDay (توضیح: کامنت lockSalonDay در lib/bookingSchedule.ts)
             // زیر فشار، انتظار برای کانکشن/تراکنش از پیش‌فرض (۲ و ۵ ثانیه) بیشتر می‌شود
             maxWait: 10_000,
             timeout: 15_000,
@@ -152,7 +152,9 @@ export async function GET(req: Request) {
         );
       } catch (e) {
         lastError = e;
-        const isConflict = e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2034';
+        // P2034 = تداخل تراکنش؛ مهلت قفل = شلوغیِ لحظه‌ای همان سالن/روز. پول گرفته شده، پس دوباره تلاش می‌کنیم
+        const isConflict =
+          (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2034') || isLockTimeoutError(e);
         if (isConflict && attempt < MAX_TX_ATTEMPTS) {
           await sleep(60 * attempt + Math.random() * 100);
           continue;

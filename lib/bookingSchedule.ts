@@ -300,6 +300,9 @@ export async function validateSlotAgainstSchedule(params: {
  */
 const DAY_MS = 24 * 60 * 60 * 1000;
 
+/** حداکثر انتظار برای قفل «سالن/روز» (میلی‌ثانیه) */
+const LOCK_WAIT_MS = 6_000;
+
 /**
  * قفل سطح-دیتابیس برای «یک سالن در یک روز».
  * داخل همان $transaction که نوبت را CONFIRM می‌کنی، «قبل از» checkBookingSlotStillAvailable صدایش بزن:
@@ -316,7 +319,29 @@ const DAY_MS = 24 * 60 * 60 * 1000;
  * پشت سر هم می‌چیند.
  */
 export async function lockSalonDay(tx: Prisma.TransactionClient, salonId: string, dateStr: string) {
+  // ⚠️ دو نکته‌ی مهم برای رفتار درست زیر فشار:
+  //
+  // ۱) این تراکنش‌ها باید در سطح پیش‌فرض READ COMMITTED اجرا شوند، نه Serializable.
+  //    در Serializable/Repeatable Read اسنپ‌شات داده همان لحظه‌ی «اولین دستور» گرفته می‌شود و
+  //    اولین دستور همین SELECT قفل است؛ یعنی اسنپ‌شات «قبل از» انتظار برای قفل گرفته می‌شود و
+  //    بعد از آزاد شدن قفل، تراکنش نوبتِ تازه‌کامیت‌شده‌ی نفر قبلی را نمی‌بیند و با P2034 رد می‌شود
+  //    (یعنی روی یک سالن/روز شلوغ، کاربر «ساعت پر شد»ِ کاذب می‌گیرد). با READ COMMITTED هر کوئری
+  //    بعد از گرفتن قفل داده‌ی تازه را می‌بیند و خود قفل، تک‌نفره بودنِ بخش بحرانی را تضمین می‌کند.
+  //
+  // ۲) هر درخواستِ منتظرِ قفل یک کانکشن از Pool دیتابیس را نگه می‌دارد. بدون سقف انتظار، صدها
+  //    درخواست هم‌زمان برای یک سالن می‌توانند کل Pool را خالی کنند و بقیه‌ی سایت هم بایستد.
+  //    lock_timeout انتظار را محدود می‌کند؛ خطای آن را با isLockTimeoutError بگیر (۵۰۳ نمایش بده).
+  await tx.$executeRawUnsafe(`SET LOCAL lock_timeout = '${LOCK_WAIT_MS}ms'`);
   await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${salonId + ':' + dateStr}))`;
+}
+
+/** آیا خطا به‌خاطر تمام شدن مهلت انتظار برای قفل (SQLSTATE 55P03) است؟ */
+export function isLockTimeoutError(e: unknown): boolean {
+  const err = e as { code?: string; meta?: { code?: string; message?: string }; message?: string } | null;
+  if (!err) return false;
+  if (err.meta?.code === '55P03') return true;
+  const msg = `${err.meta?.message ?? ''} ${err.message ?? ''}`;
+  return /55P03|lock timeout|lock_timeout/i.test(msg);
 }
 
 export type BookingToCheck = {
