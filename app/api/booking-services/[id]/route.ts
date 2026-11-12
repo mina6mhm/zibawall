@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getSalonFromCookieToken as getSalonFromToken } from '@/lib/salonAccess';
 import { intInRange, parseJsonBody } from '@/lib/http';
+import { isValidCardNumber, MAX_SERVICE_DEPOSIT } from '@/lib/deposit';
 
 const MAX_NAME_LENGTH = 100;
 const MAX_DURATION_MIN = 24 * 60;
@@ -20,10 +21,10 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
 
   const parsed = await parseJsonBody(req);
   if (!parsed.ok) return parsed.response;
-  const { name, durationMin, price, isActive } = parsed.body;
+  const { name, durationMin, price, depositAmount, isActive } = parsed.body;
 
   // قبلاً Number('abc') = NaN مستقیم به Prisma می‌رفت و ۵۰۰ می‌داد
-  const data: { name?: string; durationMin?: number; price?: number; isActive?: boolean } = {};
+  const data: { name?: string; durationMin?: number; price?: number; depositAmount?: number; isActive?: boolean } = {};
 
   if (name !== undefined) {
     const cleanName = typeof name === 'string' ? name.trim() : '';
@@ -41,6 +42,21 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     const cleanPrice = intInRange(price, 0, MAX_PRICE);
     if (cleanPrice === null) return NextResponse.json({ error: 'قیمت نامعتبر است' }, { status: 400 });
     data.price = cleanPrice;
+  }
+  if (depositAmount !== undefined) {
+    const cleanDeposit = depositAmount === null || depositAmount === '' ? 0 : intInRange(depositAmount, 0, MAX_SERVICE_DEPOSIT);
+    if (cleanDeposit === null) return NextResponse.json({ error: 'مبلغ بیعانه نامعتبر است' }, { status: 400 });
+    data.depositAmount = cleanDeposit;
+  }
+
+  // بیعانه‌ی مثبت: نیازمند کارت معتبر و حداکثر برابر قیمت (با مقادیر نهایی، چه عوض شده چه نشده)
+  const finalPrice = data.price ?? existing.price;
+  const finalDeposit = data.depositAmount ?? existing.depositAmount;
+  if (data.depositAmount !== undefined && finalDeposit > 0 && !isValidCardNumber(salon.cardNumber)) {
+    return NextResponse.json({ error: 'برای تعیین بیعانه ابتدا شماره کارت ۱۶ رقمی سالن را ثبت کنید' }, { status: 400 });
+  }
+  if ((data.depositAmount !== undefined || data.price !== undefined) && finalDeposit > 0 && finalPrice > 0 && finalDeposit > finalPrice) {
+    return NextResponse.json({ error: 'بیعانه نمی‌تواند از قیمت خدمت بیشتر باشد' }, { status: 400 });
   }
   if (isActive !== undefined) data.isActive = Boolean(isActive);
 

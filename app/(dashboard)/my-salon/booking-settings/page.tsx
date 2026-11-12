@@ -14,6 +14,7 @@ import PersianCalendar, { CalendarDayMarker } from '@/components/ui/PersianCalen
 import persian from 'react-date-object/calendars/persian';
 import persian_fa from 'react-date-object/locales/persian_fa';
 import { toDateOnlyAnchor } from '@/lib/dateUtils';
+import { BOOKING_APP_FEE } from '@/lib/constants';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -22,6 +23,7 @@ type BookingService = {
   name: string;
   durationMin: number;
   price: number;
+  depositAmount: number;
   isActive: boolean;
 };
 
@@ -274,9 +276,14 @@ type ServiceFormProps = {
   initial?: Partial<BookingService>;
   onSave: (data: Omit<BookingService, 'id' | 'isActive'>) => Promise<void>;
   onClose: () => void;
+  /** شماره کارت ثبت‌شده‌ی سالن ('' = ثبت نشده) — بیعانه به همین کارت تسویه می‌شود */
+  cardNumber: string;
+  onCardSaved: (card: string) => void;
 };
 
-function ServiceFormModal({ initial, onSave, onClose }: ServiceFormProps) {
+const isValidCard = (c: string) => /^\d{16}$/.test(c);
+
+function ServiceFormModal({ initial, onSave, onClose, cardNumber, onCardSaved }: ServiceFormProps) {
   const [name, setName] = useState(initial?.name ?? '');
   const [durHour, setDurHour] = useState(
     initial?.durationMin != null ? String(Math.floor(initial.durationMin / 60)) : '1'
@@ -285,10 +292,15 @@ function ServiceFormModal({ initial, onSave, onClose }: ServiceFormProps) {
     initial?.durationMin != null ? String(initial.durationMin % 60).padStart(2, '0') : '00'
   );
   const [priceRaw, setPriceRaw] = useState(initial?.price ? String(initial.price) : '');
+  const [depositRaw, setDepositRaw] = useState(initial?.depositAmount ? String(initial.depositAmount) : '');
+  const [cardRaw, setCardRaw] = useState('');
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState('');
 
   const handlePriceChange = (val: string) => setPriceRaw(toEnglishDigits(val));
+  const handleDepositChange = (val: string) => setDepositRaw(toEnglishDigits(val));
+  const depositNum = depositRaw ? Number(depositRaw) : 0;
+  const needsCard = depositNum > 0 && !isValidCard(cardNumber);
   const sanitizeHour = (val: string) => toEnglishDigits(val).slice(0, 2);
   const sanitizeMinute = (val: string) => {
     let digits = toEnglishDigits(val).slice(0, 2);
@@ -300,13 +312,34 @@ function ServiceFormModal({ initial, onSave, onClose }: ServiceFormProps) {
     if (!name.trim()) return setErr('نام خدمات الزامی است');
     const dMin = (Number(durHour) || 0) * 60 + (Number(durMin) || 0);
     if (!dMin) return setErr('مدت زمان معتبر وارد کنید');
+    const priceNum = priceRaw ? Number(priceRaw) : 0;
+    if (depositNum > 0 && priceNum > 0 && depositNum > priceNum) {
+      return setErr('بیعانه نمی‌تواند از قیمت خدمت بیشتر باشد');
+    }
+    if (needsCard && !isValidCard(cardRaw)) {
+      return setErr('برای دریافت بیعانه، شماره کارت ۱۶ رقمی را وارد کنید');
+    }
     setErr('');
     setSaving(true);
     try {
+      // اول کارت (اگر لازم بود) ذخیره می‌شود، چون API خدمات بدون کارت معتبر بیعانه را رد می‌کند
+      if (needsCard) {
+        const cardRes = await fetch('/api/salon', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ cardNumber: cardRaw }),
+        });
+        if (!cardRes.ok) {
+          const d = await cardRes.json().catch(() => ({}));
+          throw new Error(d.error || 'خطا در ذخیره‌ی شماره کارت');
+        }
+        onCardSaved(cardRaw);
+      }
       await onSave({
         name: name.trim(),
         durationMin: dMin,
-        price: priceRaw ? Number(priceRaw) : 0,
+        price: priceNum,
+        depositAmount: depositNum,
       });
       onClose();
     } catch (e: any) {
@@ -383,6 +416,63 @@ function ServiceFormModal({ initial, onSave, onClose }: ServiceFormProps) {
             </div>
           </div>
 
+          <div>
+            <label className="block text-xs font-medium text-zinc-600 mb-1.5">
+              مبلغ بیعانه (تومان)
+              <span className="text-zinc-400 font-normal mr-1">اختیاری</span>
+            </label>
+            <input
+              value={displayNumber(depositRaw)}
+              onChange={(e) => handleDepositChange(e.target.value)}
+              placeholder="مثلاً 200,000"
+              dir="ltr"
+              inputMode="numeric"
+              className="w-full border border-zinc-200 rounded-[10px] px-3.5 py-2.5 text-sm text-left focus:outline-none focus:border-[#824c71] focus:ring-1 focus:ring-[#824c71]/20"
+            />
+            <p className="text-[10px] text-zinc-400 mt-1 leading-5">
+              مشتری هنگام رزرو این مبلغ را به‌همراه هزینه‌ی خدمات اپ ({formatPrice(BOOKING_APP_FEE)} تومان) پرداخت می‌کند
+              و بیعانه به شماره کارت شما واریز می‌شود.
+            </p>
+          </div>
+
+          {depositNum > 0 && (
+            <div className="bg-zinc-50 rounded-[10px] p-3.5 space-y-2.5">
+              <div className="flex items-center justify-between text-xs text-zinc-500">
+                <span>بیعانه‌ی شما</span>
+                <span className="font-bold text-zinc-800">{formatPrice(depositNum)} تومان</span>
+              </div>
+              <div className="flex items-center justify-between text-xs text-zinc-500">
+                <span>هزینه‌ی خدمات اپ</span>
+                <span className="font-bold text-zinc-800">{formatPrice(BOOKING_APP_FEE)} تومان</span>
+              </div>
+              <div className="flex items-center justify-between text-xs border-t border-zinc-200 pt-2.5">
+                <span className="text-zinc-600 font-medium">مبلغ پرداختی مشتری</span>
+                <span className="font-bold text-[#824c71]">{formatPrice(depositNum + BOOKING_APP_FEE)} تومان</span>
+              </div>
+
+              {needsCard ? (
+                <div className="pt-1">
+                  <label className="block text-xs font-medium text-zinc-600 mb-1.5">
+                    شماره کارت برای واریز بیعانه <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    value={cardRaw}
+                    onChange={(e) => setCardRaw(toEnglishDigits(e.target.value).slice(0, 16))}
+                    placeholder="۱۶ رقم شماره کارت"
+                    dir="ltr"
+                    inputMode="numeric"
+                    className="w-full border border-zinc-200 bg-white rounded-[10px] px-3.5 py-2.5 text-sm text-left tracking-wider focus:outline-none focus:border-[#824c71] focus:ring-1 focus:ring-[#824c71]/20"
+                  />
+                  <p className="text-[10px] text-zinc-400 mt-1">شماره کارت باید به نام صاحب سالن باشد.</p>
+                </div>
+              ) : (
+                <p className="text-[11px] text-zinc-400 pt-0.5" dir="ltr">
+                  واریز به کارت: {cardNumber.replace(/(\d{4})(?=\d)/g, '$1 ')}
+                </p>
+              )}
+            </div>
+          )}
+
           {err && <p className="text-red-500 text-xs font-medium">{err}</p>}
 
           <button
@@ -405,10 +495,14 @@ function ServicesTab({
   services,
   staff,
   onRefresh,
+  cardNumber,
+  onCardSaved,
 }: {
   services: BookingService[];
   staff: StaffMember[];
   onRefresh: () => void;
+  cardNumber: string;
+  onCardSaved: (card: string) => void;
 }) {
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<BookingService | null>(null);
@@ -489,6 +583,11 @@ function ServicesTab({
                         قیمت: {formatPrice(s.price)} تومان
                       </span>
                     )}
+                    {s.depositAmount > 0 && (
+                      <span className="inline-flex items-center gap-1 text-[#824c71] font-medium">
+                        بیعانه: {formatPrice(s.depositAmount)} تومان
+                      </span>
+                    )}
                   </div>
                   {s.isActive && !servicesWithStaff.has(s.id) && (
                     <p className="text-[11px] text-amber-600 bg-amber-50 rounded-full px-2.5 py-1 inline-flex items-center gap-1 mt-0.5">
@@ -544,6 +643,8 @@ function ServicesTab({
       {showForm && (
         <ServiceFormModal
           initial={editing ?? undefined}
+          cardNumber={cardNumber}
+          onCardSaved={onCardSaved}
           onSave={handleSave}
           onClose={() => { setShowForm(false); setEditing(null); }}
         />
@@ -1780,6 +1881,7 @@ export default function BookingSettingsPage() {
   const [hasSalon, setHasSalon] = useState<boolean | null>(null);
   const [salonName, setSalonName] = useState('');
   const [bookingEnabled, setBookingEnabled] = useState(false);
+  const [cardNumber, setCardNumber] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -1803,6 +1905,7 @@ export default function BookingSettingsPage() {
       setHasSalon(true);
       setSalonName(profileData.salon.name);
       setBookingEnabled(!!profileData.salon.bookingEnabled);
+      setCardNumber(typeof profileData.salon.cardNumber === 'string' ? profileData.salon.cardNumber : '');
 
       const [svcRes, staffRes, schedRes] = await Promise.all([
         fetch('/api/booking-services'),
@@ -1971,7 +2074,13 @@ export default function BookingSettingsPage() {
       />
 
       {tab === 0 && (
-        <ServicesTab services={services} staff={staff} onRefresh={fetchAll} />
+        <ServicesTab
+          services={services}
+          staff={staff}
+          onRefresh={fetchAll}
+          cardNumber={cardNumber}
+          onCardSaved={setCardNumber}
+        />
       )}
       {tab === 1 && (
         <StaffTab staff={staff} services={services} onRefresh={fetchAll} />

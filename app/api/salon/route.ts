@@ -259,6 +259,13 @@ export async function PUT(req: Request) {
     if (body.cardNumber !== undefined) {
       const c = typeof body.cardNumber === 'string' ? body.cardNumber.trim() : '';
       if (c !== '' && !/^\d{16}$/.test(c)) return bad('شماره کارت باید دقیقاً ۱۶ رقم باشد');
+      // بیعانه‌ی خدمت‌ها به این کارت تسویه می‌شود؛ تا بیعانه‌ای تعریف است نباید خالی شود
+      if (c === '') {
+        const withDeposit = await prisma.bookingService.count({
+          where: { salonId: existingSalon.id, depositAmount: { gt: 0 } },
+        });
+        if (withDeposit > 0) return bad('تا وقتی برای خدمات بیعانه تعریف شده، شماره کارت قابل حذف نیست');
+      }
       data.cardNumber = c;
     }
 

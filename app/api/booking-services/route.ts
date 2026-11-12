@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma';
 import { getSalonFromCookieToken as getSalonFromToken } from '@/lib/salonAccess';
 import { rateLimit } from '@/lib/rateLimit';
 import { intInRange, parseJsonBody, tooManyRequests } from '@/lib/http';
+import { isValidCardNumber, MAX_SERVICE_DEPOSIT } from '@/lib/deposit';
 
 const MAX_SERVICES_PER_SALON = 200;
 const MAX_NAME_LENGTH = 100;
@@ -35,7 +36,7 @@ export async function POST(req: Request) {
 
   const parsed = await parseJsonBody(req);
   if (!parsed.ok) return parsed.response;
-  const { name, durationMin, price } = parsed.body;
+  const { name, durationMin, price, depositAmount } = parsed.body;
 
   const cleanName = typeof name === 'string' ? name.trim() : '';
   if (!cleanName) return NextResponse.json({ error: 'نام خدمات الزامی است' }, { status: 400 });
@@ -49,6 +50,20 @@ export async function POST(req: Request) {
   // قیمت اختیاری است (خالی = ۰)
   const cleanPrice = price === undefined || price === null || price === '' ? 0 : intInRange(price, 0, MAX_PRICE);
   if (cleanPrice === null) return NextResponse.json({ error: 'قیمت نامعتبر است' }, { status: 400 });
+
+  // بیعانه اختیاری است (خالی = ۰). بیعانه‌ی مثبت یعنی پول باید به کارت سالن‌دار تسویه شود،
+  // پس بدون شماره کارت معتبر قابل ثبت نیست؛ و از قیمت خدمت (اگر قیمت دارد) بیشتر نمی‌شود.
+  const cleanDeposit =
+    depositAmount === undefined || depositAmount === null || depositAmount === ''
+      ? 0
+      : intInRange(depositAmount, 0, MAX_SERVICE_DEPOSIT);
+  if (cleanDeposit === null) return NextResponse.json({ error: 'مبلغ بیعانه نامعتبر است' }, { status: 400 });
+  if (cleanDeposit > 0 && !isValidCardNumber(salon.cardNumber)) {
+    return NextResponse.json({ error: 'برای تعیین بیعانه ابتدا شماره کارت ۱۶ رقمی سالن را ثبت کنید' }, { status: 400 });
+  }
+  if (cleanDeposit > 0 && cleanPrice > 0 && cleanDeposit > cleanPrice) {
+    return NextResponse.json({ error: 'بیعانه نمی‌تواند از قیمت خدمت بیشتر باشد' }, { status: 400 });
+  }
 
   const count = await prisma.bookingService.count({ where: { salonId: salon.id } });
   if (count >= MAX_SERVICES_PER_SALON) {
@@ -64,6 +79,7 @@ export async function POST(req: Request) {
       name: cleanName,
       durationMin: duration,
       price: cleanPrice,
+      depositAmount: cleanDeposit,
     },
   });
 

@@ -5,6 +5,7 @@ import jwt from 'jsonwebtoken';
 import type { BookingService, Staff } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { BOOKING_APP_FEE } from '@/lib/constants';
+import { isValidCardNumber, MAX_ONLINE_PAYMENT } from '@/lib/deposit';
 import {
   isLockTimeoutError,
   isSlotInPast,
@@ -166,14 +167,27 @@ export async function POST(req: Request) {
       prepared.push({ item, service, staff: assignedStaff, startMin, endMin });
     }
 
-    // محاسبه مبالغ کل سبد — هزینه پلتفرم فقط یک بار روی کل گروه
-    // نکته: BookingService فیلد depositAmount ندارد (فقط مدل Booking این فیلد
-    // را دارد)، پس فعلاً بیعانه‌ی سطح خدمت وجود ندارد و همیشه صفر است.
-    // اگر در آینده بیعانه‌ی واقعی روی خدمات اضافه شد، اینجا باید از
-    // service.depositAmount خوانده شود (بعد از افزودن فیلد به schema.prisma).
-    const totalDeposit = 0;
+    // محاسبه مبالغ کل سبد — هزینه پلتفرم فقط یک بار روی کل گروه.
+    // بیعانه‌ی هر خدمت از «دیتابیس» (service.depositAmount) خوانده می‌شود، نه از ورودی کلاینت؛
+    // مثال: بیعانه ۲۰۰٬۰۰۰ + هزینه‌ی اپ ۳۰٬۰۰۰ = ۲۳۰٬۰۰۰ که یک‌جا در درگاه پرداخت می‌شود.
+    const totalDeposit = prepared.reduce((sum, p) => sum + (p.service.depositAmount ?? 0), 0);
     const appFee = BOOKING_APP_FEE;
     const totalAmount = totalDeposit + appFee;
+
+    // بیعانه باید به کارت سالن‌دار تسویه شود؛ اگر سالن (بعد از تعریف بیعانه) کارت معتبر ندارد،
+    // نباید پولی گرفته شود که مقصد تسویه‌اش نامشخص است
+    if (totalDeposit > 0 && !isValidCardNumber(salon.cardNumber)) {
+      return NextResponse.json(
+        { error: 'این سالن فعلاً امکان دریافت بیعانه ندارد. با سالن تماس بگیرید' },
+        { status: 409 }
+      );
+    }
+    if (totalAmount > MAX_ONLINE_PAYMENT) {
+      return NextResponse.json(
+        { error: 'مجموع بیعانه‌ی خدمات انتخابی از سقف پرداخت آنلاین بیشتر است. تعداد خدمات را کمتر کنید' },
+        { status: 400 }
+      );
+    }
 
     const holdExpiresAt = totalAmount > 0 ? new Date(Date.now() + 10 * 60 * 1000) : null;
     const dates = Array.from(new Set(prepared.map((p) => p.item.date)));
@@ -310,7 +324,9 @@ export async function POST(req: Request) {
                     ...(p.staff.commissionPercent != null ? { staffPercentage: p.staff.commissionPercent } : {}),
                   },
                 ],
-                depositAmount: 0,
+                // بیعانه‌ی همین خدمت (اسنپ‌شات لحظه‌ی رزرو، برای نمایش به سالن‌دار/حسابداری).
+                // پول واقعی فقط روی گروه (totalAmount) پرداخت می‌شود؛ هزینه‌ی اپ هم فقط روی گروه است.
+                depositAmount: p.service.depositAmount ?? 0,
                 appFee: 0,
                 totalAmount: 0,
                 status: totalAmount > 0 ? 'PENDING_PAYMENT' : 'CONFIRMED',

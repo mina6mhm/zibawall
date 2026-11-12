@@ -114,7 +114,7 @@ export async function PUT(req: Request) {
       return NextResponse.json({ error: 'اطلاعات ارسالی نامعتبر است' }, { status: 400 });
     }
 
-    const { customerName, services, depositAmount } = body as Record<string, any>;
+    const { customerName, services } = body as Record<string, any>;
     const customerPhone = normalizeDigits(body.customerPhone);
 
     if (!customerPhone || !mobileRegex.test(customerPhone)) {
@@ -127,32 +127,8 @@ export async function PUT(req: Request) {
       return NextResponse.json({ error: 'حداقل یک خدمت معتبر وارد کنید' }, { status: 400 });
     }
 
-    // Infinity/NaN/مقدار نجومی قبلاً به خطای دیتابیس یا مبلغ نامعتبر تبدیل می‌شد
-    if (
-      depositAmount !== undefined &&
-      depositAmount !== null &&
-      (typeof depositAmount !== 'number' ||
-        !Number.isFinite(depositAmount) ||
-        depositAmount < 0 ||
-        depositAmount > MAX_AMOUNT)
-    ) {
-      return NextResponse.json({ error: 'مبلغ بیعانه نامعتبر است' }, { status: 400 });
-    }
-
-    const finalDepositAmount =
-      typeof depositAmount === 'number' && depositAmount > 0 ? Math.round(depositAmount) : 0;
-
-    // مبلغ نوبتی که پرداختش شروع یا انجام شده نباید عوض شود: verify با مبلغ ذخیره‌شده تایید می‌کند و
-    // تغییر مبلغ بعد از پرداخت یا بعد از ساخت authority، تایید را خراب یا حسابداری را نادرست می‌کند
-    const paymentLocked = existingBooking.paymentStatus === 'SUCCESS' || !!existingBooking.authority;
-    if (paymentLocked && finalDepositAmount !== existingBooking.depositAmount) {
-      return NextResponse.json(
-        { error: 'مبلغ بیعانه‌ی نوبتی که پرداخت آن شروع یا انجام شده قابل تغییر نیست' },
-        { status: 400 }
-      );
-    }
-
-    const totalAmount = finalDepositAmount + existingBooking.appFee;
+    // مبلغ بیعانه/کل عمداً از ورودی خوانده نمی‌شود: بیعانه را «خدمت» تعیین می‌کند و هنگام رزرو
+    // در نوبت ثبت می‌شود؛ سالن‌دار فقط خدمات/پرسنل/قیمتِ نمایشی را ویرایش می‌کند، نه مبلغ پرداخت‌شده.
 
     const trimmedName = typeof customerName === 'string' ? customerName.trim().slice(0, 100) : '';
 
@@ -169,8 +145,6 @@ export async function PUT(req: Request) {
         customerName: trimmedName || null,
         customerPhone,
         services: cleanedServices,
-        depositAmount: finalDepositAmount,
-        totalAmount,
       },
     });
     if (updated.count === 0) {

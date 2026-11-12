@@ -428,6 +428,7 @@ model BookingService {
   name          String
   durationMin   Int      // مدت به دقیقه، مثلاً 90
   price         Int      // قیمت کل
+  depositAmount Int      @default(0) // بیعانه‌ی این خدمت (تومان)؛ هنگام رزرو به‌علاوه‌ی هزینه‌ی اپ از مشتری گرفته و به کارت سالن‌دار تسویه می‌شود
   isActive      Boolean  @default(true)
   staffMembers  StaffBookingService[]
   createdAt     DateTime @default(now())
