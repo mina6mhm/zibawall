@@ -59,6 +59,7 @@ model Salon {
   workingHours          String
   closedDays            String[]
   cardNumber            String
+  shebaNumber           String      @default("")  // شماره شبا (IR + ۲۴ رقم) — اختیاری
   schedule              SalonSchedule?
   bookingServices       BookingService[]
 

@@ -940,16 +940,8 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
                 </button>
 
                 {totalDeposit > 0 && (
-                  <div className="bg-zinc-50 rounded-2xl p-4 mb-5 space-y-2.5">
-                    <div className="flex items-center justify-between text-xs text-zinc-500">
-                      <span>بیعانه‌ی خدمات (واریز به سالن)</span>
-                      <span className="font-bold text-zinc-800">{toPersian(formatPrice(totalDeposit))} تومان</span>
-                    </div>
-                    <div className="flex items-center justify-between text-xs text-zinc-500">
-                      <span>هزینه‌ی خدمات اپ</span>
-                      <span className="font-bold text-zinc-800">{toPersian(formatPrice(appFee))} تومان</span>
-                    </div>
-                    <div className="flex items-center justify-between text-sm border-t border-zinc-200 pt-2.5">
+                  <div className="bg-zinc-50 rounded-2xl p-4 mb-5">
+                    <div className="flex items-center justify-between text-sm">
                       <span className="font-bold text-zinc-700">مبلغ قابل پرداخت</span>
                       <span className="font-bold text-[#824c71]">{toPersian(formatPrice(totalPayable))} تومان</span>
                     </div>

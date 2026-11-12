@@ -23,7 +23,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     const salon = await prisma.salon.findUnique({
       where: { id: salonIdString },
       // شماره کارت بانکی صاحب سالن نباید در API عمومی باشد
-      omit: { cardNumber: true, reminderSentAt: true },
+      omit: { cardNumber: true, shebaNumber: true, reminderSentAt: true },
       include: {
         socials: true,
         reviews: {

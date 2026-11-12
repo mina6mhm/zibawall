@@ -8,6 +8,7 @@ import { prisma } from '@/lib/prisma';
 import { getAuthUser } from '@/lib/auth';
 import { getSalonAccessForUserId } from '@/lib/salonAccess';
 import { rateLimit } from '@/lib/rateLimit';
+import { normalizeShebaInput, isValidSheba } from '@/lib/card';
 import {
   cleanString,
   cleanStringArray,
@@ -53,6 +54,7 @@ async function buildPublicList(): Promise<ListEntry> {
       },
       omit: {
         cardNumber: true,
+        shebaNumber: true,
         description: true,
         portfolios: true,
         phones: true,
@@ -267,6 +269,13 @@ export async function PUT(req: Request) {
         if (withDeposit > 0) return bad('تا وقتی برای خدمات بیعانه تعریف شده، شماره کارت قابل حذف نیست');
       }
       data.cardNumber = c;
+    }
+
+    if (body.shebaNumber !== undefined) {
+      const raw = typeof body.shebaNumber === 'string' ? body.shebaNumber.trim() : '';
+      const sh = raw === '' ? '' : normalizeShebaInput(raw);
+      if (sh !== '' && !isValidSheba(sh)) return bad('شماره شبا معتبر نیست؛ باید IR و ۲۴ رقم باشد');
+      data.shebaNumber = sh;
     }
 
     if (body.tags !== undefined) data.tags = cleanTags(body.tags) as Prisma.InputJsonValue;

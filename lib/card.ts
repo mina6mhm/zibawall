@@ -56,3 +56,34 @@ export function getBankName(card: string): string | null {
 export function formatCardNumber(card: string): string {
   return card.replace(/(\d{4})(?=\d)/g, '$1 ').trim();
 }
+
+// ─── شماره شبا (IBAN ایران) ───────────────────────────────────────────────────
+// قالب: IR + ۲۴ رقم (جمعاً ۲۶ کاراکتر). اعتبارسنجی با الگوریتم mod-97 (ISO 13616) انجام می‌شود
+// تا تایپ اشتباه یک رقم تقریباً همیشه گرفته شود.
+
+/** ورودی کاربر → «IR» + ارقام لاتین (حروف و فاصله‌ی اضافه حذف می‌شود). فقط ۲۴ رقم نگه داشته می‌شود. */
+export function normalizeShebaInput(v: string): string {
+  const digits = v
+    .replace(/[۰-۹]/g, (d) => String(d.charCodeAt(0) - '۰'.charCodeAt(0)))
+    .replace(/[٠-٩]/g, (d) => String(d.charCodeAt(0) - '٠'.charCodeAt(0)))
+    .replace(/[^0-9]/g, '')
+    .slice(0, 24);
+  return digits.length > 0 ? `IR${digits}` : '';
+}
+
+/** شبا معتبر = IR + ۲۴ رقم + عبور از mod-97 */
+export function isValidSheba(sheba: unknown): sheba is string {
+  if (typeof sheba !== 'string' || !/^IR\d{24}$/.test(sheba)) return false;
+  // چهار کاراکتر اول به انتهای رشته می‌رود و IR → ۱۸۲۷
+  const rearranged = sheba.slice(4) + '1827' + sheba.slice(2, 4);
+  let rem = 0;
+  for (let i = 0; i < rearranged.length; i++) {
+    rem = (rem * 10 + (rearranged.charCodeAt(i) - 48)) % 97;
+  }
+  return rem === 1;
+}
+
+/** IR12 3456 7890 ... برای نمایش */
+export function formatSheba(sheba: string): string {
+  return sheba.replace(/(.{4})(?=.)/g, '$1 ').trim();
+}

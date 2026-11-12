@@ -7,7 +7,7 @@ import Link from 'next/link';
 import {
   ArrowRight, Loader2, Store, CalendarClock, Settings2,
   Plus, Trash2, Pencil, X, Check, ChevronDown, Users, Clock, CalendarOff,
-  AlertTriangle,
+  AlertTriangle, CreditCard, Landmark, ShieldCheck,
 } from 'lucide-react';
 import { DateObject } from 'react-multi-date-picker';
 import PersianCalendar, { CalendarDayMarker } from '@/components/ui/PersianCalendar';
@@ -15,7 +15,7 @@ import persian from 'react-date-object/calendars/persian';
 import persian_fa from 'react-date-object/locales/persian_fa';
 import { toDateOnlyAnchor } from '@/lib/dateUtils';
 import { BOOKING_APP_FEE } from '@/lib/constants';
-import { formatCardNumber, getBankName, isValidCardNumber } from '@/lib/card';
+import { formatCardNumber, getBankName, isValidCardNumber, isValidSheba, formatSheba } from '@/lib/card';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -220,7 +220,7 @@ function TabBar({
   ];
 
   return (
-    <div className="bg-white border border-zinc-100 rounded-[10px] p-4 mb-6">
+    <div className="bg-white border border-zinc-100 rounded-2xl shadow-sm p-4 mb-5">
       <div className="flex items-start">
         {steps.map((step, i) => {
           const isActive = active === i;
@@ -499,118 +499,205 @@ function ServiceFormModal({ initial, onSave, onClose, cardNumber, onCardSaved }:
   );
 }
 
-// ─── Card Number Section ──────────────────────────────────────────────────────
-// بیعانه‌ی مشتری‌ها به همین کارت واریز می‌شود؛ پس هم اعتبارسنجی Luhn دارد و هم نام بانک را
-// نشان می‌دهد تا سالن‌دار با یک نگاه مطمئن شود درست وارد کرده است.
+// ─── Payment Info Section (کارت + شبا) ─────────────────────────────────────────
+// بیعانه‌ی مشتری‌ها به همین حساب واریز می‌شود؛ پس شماره کارت اعتبارسنجی Luhn دارد، شبا اعتبارسنجی
+// mod-97 و نام بانک هم نشان داده می‌شود تا سالن‌دار با یک نگاه مطمئن شود درست وارد کرده است.
+// شبا اختیاری است، ولی اگر وارد شد باید معتبر باشد.
 
-function CardNumberSection({
+function PaymentInfoSection({
   cardNumber,
+  shebaNumber,
   hasDeposits,
   onSaved,
 }: {
   cardNumber: string;
+  shebaNumber: string;
   hasDeposits: boolean;
-  onSaved: (card: string) => void;
+  onSaved: (card: string, sheba: string) => void;
 }) {
   const hasCard = isValidCardNumber(cardNumber);
+  const hasSheba = isValidSheba(shebaNumber);
   const [editing, setEditing] = useState(false);
-  const [raw, setRaw] = useState('');
+  const [cardRaw, setCardRaw] = useState('');
+  const [shebaDigits, setShebaDigits] = useState(''); // فقط ۲۴ رقم، بدون «IR»
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState('');
 
-  const typedValid = isValidCardNumber(raw);
-  const typedBank = raw.length >= 6 ? getBankName(raw) : null;
+  const startEdit = () => {
+    setCardRaw(hasCard ? cardNumber : '');
+    setShebaDigits(hasSheba ? shebaNumber.slice(2) : '');
+    setErr('');
+    setEditing(true);
+  };
+
+  const cardValid = isValidCardNumber(cardRaw);
+  const bank = cardRaw.length >= 6 ? getBankName(cardRaw) : null;
+  const shebaFull = shebaDigits ? `IR${shebaDigits}` : '';
+  const shebaValid = shebaFull === '' || isValidSheba(shebaFull);
 
   const save = async () => {
-    if (!typedValid) return setErr('شماره کارت ۱۶ رقمی معتبر وارد کنید');
+    if (!cardValid) return setErr('شماره کارت ۱۶ رقمی معتبر وارد کنید');
+    if (!shebaValid) return setErr('شماره شبا معتبر نیست؛ ۲۴ رقم بعد از IR را دوباره بررسی کنید');
     setSaving(true);
     setErr('');
     try {
       const res = await fetch('/api/salon', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ cardNumber: raw }),
+        body: JSON.stringify({ cardNumber: cardRaw, shebaNumber: shebaFull }),
       });
       if (!res.ok) {
         const d = await res.json().catch(() => ({}));
-        throw new Error(d.error || 'خطا در ذخیره‌ی شماره کارت');
+        throw new Error(d.error || 'خطا در ذخیره‌ی اطلاعات حساب');
       }
-      onSaved(raw);
+      onSaved(cardRaw, shebaFull);
       setEditing(false);
-      setRaw('');
     } catch (e: any) {
-      setErr(e.message || 'خطا در ذخیره‌ی شماره کارت');
+      setErr(e.message || 'خطا در ذخیره‌ی اطلاعات حساب');
     } finally {
       setSaving(false);
     }
   };
 
+  const inputCls =
+    'w-full bg-white border border-violet-200 rounded-[10px] px-3.5 py-2.5 text-sm text-left tracking-wider placeholder:text-zinc-300 focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-200';
+
   return (
-    <div className="border border-zinc-100 rounded-[10px] p-4 mb-4 bg-white">
+    <div className="bg-violet-50 border border-violet-200 rounded-2xl p-4 sm:p-5 mb-5 shadow-sm">
+      {/* هدر */}
       <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <p className="text-sm font-bold text-zinc-900">شماره کارت دریافت بیعانه</p>
-          <p className="text-[11px] text-zinc-400 mt-0.5 leading-5">
-            مبلغ بیعانه‌ی مشتری‌ها به این کارت واریز می‌شود. حتماً کارتی به نام خودتان و با شماره‌ی درست وارد کنید.
-          </p>
+        <div className="flex items-start gap-3 min-w-0">
+          <div className="w-10 h-10 rounded-[12px] bg-violet-100 text-violet-600 flex items-center justify-center shrink-0">
+            <Landmark className="w-5 h-5" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-sm font-bold text-violet-950">اطلاعات حساب دریافت بیعانه</p>
+            <p className="text-[11px] text-violet-700/70 mt-0.5 leading-5">
+              بیعانه‌ی مشتری‌ها به این حساب واریز می‌شود. حتماً حسابی به نام خودتان و با اطلاعات درست وارد کنید.
+            </p>
+          </div>
         </div>
         {!editing && (
           <button
-            onClick={() => { setEditing(true); setErr(''); }}
-            className="text-xs font-bold text-[#824c71] bg-[#824c71]/10 rounded-full px-3 py-1.5 shrink-0"
+            onClick={startEdit}
+            className="text-xs font-bold text-violet-700 bg-white border border-violet-200 hover:bg-violet-100 transition-colors rounded-full px-3.5 py-1.5 shrink-0"
           >
-            {hasCard ? 'تغییر کارت' : 'ثبت کارت'}
+            {hasCard ? 'ویرایش' : 'ثبت اطلاعات'}
           </button>
         )}
       </div>
 
-      {!editing && hasCard && (
-        <div className="mt-3 flex items-center justify-between gap-3 bg-zinc-50 rounded-[10px] px-3.5 py-2.5">
-          <span className="text-sm font-bold text-zinc-800 tracking-wider" dir="ltr">{formatCardNumber(cardNumber)}</span>
-          {getBankName(cardNumber) && <span className="text-[11px] text-zinc-500 shrink-0">{getBankName(cardNumber)}</span>}
+      {/* حالت نمایش */}
+      {!editing && (hasCard || hasSheba) && (
+        <div className="mt-4 space-y-2">
+          {hasCard && (
+            <div className="flex items-center justify-between gap-3 bg-white rounded-[10px] px-3.5 py-3 border border-violet-100">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <CreditCard className="w-4 h-4 text-violet-400 shrink-0" />
+                <div className="min-w-0">
+                  <p className="text-[10px] text-zinc-400 mb-0.5">شماره کارت</p>
+                  <p className="text-sm font-bold text-zinc-800 tracking-wider" dir="ltr">{formatCardNumber(cardNumber)}</p>
+                </div>
+              </div>
+              {getBankName(cardNumber) && (
+                <span className="text-[11px] text-violet-700 bg-violet-50 rounded-full px-2.5 py-1 shrink-0">
+                  {getBankName(cardNumber)}
+                </span>
+              )}
+            </div>
+          )}
+          <div className="flex items-center gap-2.5 bg-white rounded-[10px] px-3.5 py-3 border border-violet-100">
+            <ShieldCheck className="w-4 h-4 text-violet-400 shrink-0" />
+            <div className="min-w-0">
+              <p className="text-[10px] text-zinc-400 mb-0.5">شماره شبا</p>
+              {hasSheba ? (
+                <p className="text-sm font-bold text-zinc-800 tracking-wider break-all" dir="ltr">{formatSheba(shebaNumber)}</p>
+              ) : (
+                <p className="text-xs text-zinc-400">ثبت نشده — اختیاری</p>
+              )}
+            </div>
+          </div>
         </div>
       )}
 
       {!editing && !hasCard && (
-        <p className={`mt-3 text-[12px] rounded-[10px] px-3 py-2 ${hasDeposits ? 'bg-red-50 text-red-600' : 'bg-amber-50 text-amber-700'}`}>
+        <p className={`mt-4 text-[12px] rounded-[10px] px-3 py-2 ${hasDeposits ? 'bg-red-50 text-red-600' : 'bg-white/70 text-violet-700'}`}>
           {hasDeposits
             ? 'برای خدماتی که بیعانه دارند شماره کارت ثبت نشده است؛ تا ثبت کارت، رزرو این خدمات انجام نمی‌شود.'
             : 'برای تعیین بیعانه‌ی خدمات، ابتدا شماره کارت خود را ثبت کنید.'}
         </p>
       )}
 
+      {/* حالت ویرایش */}
       {editing && (
-        <div className="mt-3 space-y-2.5">
-          <input
-            value={formatCardNumber(raw)}
-            onChange={(e) => setRaw(toEnglishDigits(e.target.value).slice(0, 16))}
-            placeholder="۱۶ رقم شماره کارت"
-            dir="ltr"
-            inputMode="numeric"
-            autoFocus
-            className="w-full border border-zinc-200 rounded-[10px] px-3.5 py-2.5 text-sm text-left tracking-wider focus:outline-none focus:border-[#824c71] focus:ring-1 focus:ring-[#824c71]/20"
-          />
-          {raw.length === 16 && !typedValid && (
-            <p className="text-[11px] text-red-500">این شماره کارت معتبر نیست؛ ارقام را دوباره بررسی کنید.</p>
-          )}
-          {typedValid && (
-            <p className="text-[11px] text-emerald-600">
-              {typedBank ? `شماره کارت معتبر است — ${typedBank}` : 'شماره کارت معتبر است'}
-            </p>
-          )}
+        <div className="mt-4 space-y-3.5">
+          <div>
+            <label className="flex items-center gap-1.5 text-xs font-medium text-violet-900 mb-1.5">
+              <CreditCard className="w-3.5 h-3.5 text-violet-400" />
+              شماره کارت <span className="text-red-500">*</span>
+            </label>
+            <input
+              value={formatCardNumber(cardRaw)}
+              onChange={(e) => setCardRaw(toEnglishDigits(e.target.value).slice(0, 16))}
+              placeholder="۱۶ رقم شماره کارت"
+              dir="ltr"
+              inputMode="numeric"
+              autoFocus
+              className={inputCls}
+            />
+            {cardRaw.length === 16 && !cardValid && (
+              <p className="text-[11px] text-red-500 mt-1">این شماره کارت معتبر نیست؛ ارقام را دوباره بررسی کنید.</p>
+            )}
+            {cardValid && (
+              <p className="text-[11px] text-emerald-600 mt-1">
+                {bank ? `شماره کارت معتبر است — ${bank}` : 'شماره کارت معتبر است'}
+              </p>
+            )}
+          </div>
+
+          <div>
+            <label className="flex items-center gap-1.5 text-xs font-medium text-violet-900 mb-1.5">
+              <ShieldCheck className="w-3.5 h-3.5 text-violet-400" />
+              شماره شبا
+              <span className="text-violet-700/60 font-normal">اختیاری</span>
+            </label>
+            <div className="relative" dir="ltr">
+              <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-bold text-violet-500 pointer-events-none">IR</span>
+              <input
+                value={shebaDigits.replace(/(\d{4})(?=\d)/g, '$1 ')}
+                onChange={(e) => setShebaDigits(toEnglishDigits(e.target.value).slice(0, 24))}
+                placeholder="۲۴ رقم بعد از IR"
+                inputMode="numeric"
+                className={`${inputCls} pl-10`}
+              />
+            </div>
+            {shebaDigits.length === 24 && !shebaValid && (
+              <p className="text-[11px] text-red-500 mt-1">این شماره شبا معتبر نیست؛ ارقام را دوباره بررسی کنید.</p>
+            )}
+            {shebaDigits.length > 0 && shebaDigits.length < 24 && (
+              <p className="text-[11px] text-violet-700/70 mt-1">
+                {(24 - shebaDigits.length).toLocaleString('fa-IR')} رقم دیگر مانده
+              </p>
+            )}
+            {shebaDigits.length === 24 && shebaValid && (
+              <p className="text-[11px] text-emerald-600 mt-1">شماره شبا معتبر است</p>
+            )}
+          </div>
+
           {err && <p className="text-red-500 text-xs font-medium">{err}</p>}
-          <div className="flex items-center gap-2">
+
+          <div className="flex items-center gap-2 pt-0.5">
             <button
               onClick={save}
-              disabled={saving || !typedValid}
-              className="flex-1 bg-[#824c71] text-white rounded-[10px] py-2.5 text-sm font-bold disabled:opacity-50 flex items-center justify-center gap-2"
+              disabled={saving || !cardValid || !shebaValid}
+              className="flex-1 bg-violet-600 hover:bg-violet-700 transition-colors text-white rounded-[10px] py-2.5 text-sm font-bold disabled:opacity-50 flex items-center justify-center gap-2"
             >
               {saving && <Loader2 className="w-4 h-4 animate-spin" />}
-              ذخیره کارت
+              ذخیره
             </button>
             <button
-              onClick={() => { setEditing(false); setRaw(''); setErr(''); }}
-              className="px-4 py-2.5 text-sm text-zinc-500 bg-zinc-50 rounded-[10px]"
+              onClick={() => { setEditing(false); setErr(''); }}
+              className="px-4 py-2.5 text-sm text-violet-700 bg-white border border-violet-200 rounded-[10px] hover:bg-violet-100 transition-colors"
             >
               انصراف
             </button>
@@ -628,13 +715,15 @@ function ServicesTab({
   staff,
   onRefresh,
   cardNumber,
-  onCardSaved,
+  shebaNumber,
+  onPaymentSaved,
 }: {
   services: BookingService[];
   staff: StaffMember[];
   onRefresh: () => void;
   cardNumber: string;
-  onCardSaved: (card: string) => void;
+  shebaNumber: string;
+  onPaymentSaved: (card: string, sheba: string) => void;
 }) {
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<BookingService | null>(null);
@@ -680,14 +769,15 @@ function ServicesTab({
 
   return (
     <div>
-      <CardNumberSection
+      <PaymentInfoSection
         cardNumber={cardNumber}
+        shebaNumber={shebaNumber}
         hasDeposits={services.some((s) => s.isActive && s.depositAmount > 0)}
-        onSaved={onCardSaved}
+        onSaved={onPaymentSaved}
       />
 
       {services.length === 0 ? (
-        <div className="text-center py-12 bg-zinc-50 rounded-[10px] mb-4">
+        <div className="text-center py-12 bg-white border border-dashed border-zinc-200 rounded-2xl mb-4">
           <Clock className="w-8 h-8 text-zinc-300 mx-auto mb-2" />
           <p className="text-zinc-500 text-sm font-medium">هنوز خدمتی تعریف نشده</p>
           <p className="text-zinc-400 text-xs mt-1">خدمات سالن را با مدت زمان و قیمت وارد کنید</p>
@@ -697,8 +787,8 @@ function ServicesTab({
           {services.map((s) => (
             <div
               key={s.id}
-              className={`border rounded-[10px] p-4 transition-all ${
-                s.isActive ? 'bg-white border-zinc-100' : 'bg-zinc-50 border-zinc-100 opacity-60'
+              className={`border rounded-2xl p-4 transition-all ${
+                s.isActive ? 'bg-white border-zinc-100 shadow-sm hover:shadow-md' : 'bg-zinc-50 border-zinc-100 opacity-60'
               }`}
             >
               <div className="flex items-start justify-between gap-3">
@@ -711,18 +801,18 @@ function ServicesTab({
                       </span>
                     )}
                   </div>
-                  <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-[12px] text-zinc-500 mb-1">
-                    <span className="inline-flex items-center gap-1">
+                  <div className="flex flex-wrap gap-1.5 text-[11.5px] mt-1.5 mb-1">
+                    <span className="inline-flex items-center gap-1 bg-zinc-100 text-zinc-600 rounded-full px-2.5 py-1">
                       <Clock className="w-3 h-3 text-zinc-400" />
                       {toPersianDigits(minToDuration(s.durationMin))}
                     </span>
                     {s.price > 0 && (
-                      <span className="inline-flex items-center gap-1">
+                      <span className="inline-flex items-center gap-1 bg-zinc-100 text-zinc-600 rounded-full px-2.5 py-1">
                         قیمت: {formatPrice(s.price)} تومان
                       </span>
                     )}
                     {s.depositAmount > 0 && (
-                      <span className="inline-flex items-center gap-1 text-[#824c71] font-medium">
+                      <span className="inline-flex items-center gap-1 bg-[#824c71]/10 text-[#824c71] font-medium rounded-full px-2.5 py-1">
                         بیعانه: {formatPrice(s.depositAmount)} تومان
                       </span>
                     )}
@@ -782,7 +872,7 @@ function ServicesTab({
         <ServiceFormModal
           initial={editing ?? undefined}
           cardNumber={cardNumber}
-          onCardSaved={onCardSaved}
+          onCardSaved={(c) => onPaymentSaved(c, shebaNumber)}
           onSave={handleSave}
           onClose={() => { setShowForm(false); setEditing(null); }}
         />
@@ -998,7 +1088,7 @@ function StaffTab({
             const isOpen = expanded === s.id;
 
             return (
-              <div key={s.id} className="border border-zinc-100 rounded-[10px] overflow-hidden bg-white self-start">
+              <div key={s.id} className="border border-zinc-100 rounded-2xl overflow-hidden bg-white shadow-sm self-start">
                 <button
                   className="w-full flex items-center justify-between px-4 py-5 text-right"
                   onClick={() => setExpanded(isOpen ? null : s.id)}
@@ -1918,7 +2008,7 @@ function ScheduleTab({
   return (
     <div>
       {/* Grid */}
-      <div className="bg-white border border-zinc-100 rounded-[10px] p-4 mb-4">
+      <div className="bg-white border border-zinc-100 rounded-2xl shadow-sm p-4 mb-4">
         <p className="text-sm font-bold text-zinc-800 mb-3">فاصله شروع نوبت‌ها</p>
         <div className="flex gap-2">
           {[15, 30, 60].map((g) => (
@@ -1941,7 +2031,7 @@ function ScheduleTab({
       </div>
 
       {/* Weekly */}
-      <div className="bg-white border border-zinc-100 rounded-[10px] overflow-hidden mb-4">
+      <div className="bg-white border border-zinc-100 rounded-2xl shadow-sm overflow-hidden mb-4">
         <p className="text-sm font-bold text-zinc-800 px-4 pt-4 pb-3 border-b border-zinc-50">برنامه هفتگی سالن</p>
         {WEEK_DAYS.map((day, idx) => {
           const d = local[day] ?? { open: false, start: '09:00', end: '20:00' };
@@ -2020,6 +2110,7 @@ export default function BookingSettingsPage() {
   const [salonName, setSalonName] = useState('');
   const [bookingEnabled, setBookingEnabled] = useState(false);
   const [cardNumber, setCardNumber] = useState('');
+  const [shebaNumber, setShebaNumber] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -2044,6 +2135,7 @@ export default function BookingSettingsPage() {
       setSalonName(profileData.salon.name);
       setBookingEnabled(!!profileData.salon.bookingEnabled);
       setCardNumber(typeof profileData.salon.cardNumber === 'string' ? profileData.salon.cardNumber : '');
+      setShebaNumber(typeof profileData.salon.shebaNumber === 'string' ? profileData.salon.shebaNumber : '');
 
       const [svcRes, staffRes, schedRes] = await Promise.all([
         fetch('/api/booking-services'),
@@ -2145,12 +2237,15 @@ export default function BookingSettingsPage() {
         </Link>
         <div>
           <h1 className="text-xl md:text-2xl font-bold text-zinc-900">نوبت‌دهی آنلاین</h1>
-          <p className="text-zinc-500 text-xs md:text-sm mt-0.5">{salonName}</p>
+          <p className="text-zinc-500 text-xs md:text-sm mt-0.5 flex items-center gap-1.5">
+            <Store className="w-3.5 h-3.5 text-zinc-400" />
+            {salonName}
+          </p>
         </div>
       </div>
 
       {/* Toggle Card */}
-      <div className={`border rounded-[10px] p-4 mb-6 flex items-center justify-between gap-4 transition-colors ${
+      <div className={`border rounded-2xl p-4 mb-5 flex items-center justify-between gap-4 shadow-sm transition-colors ${
         bookingEnabled ? 'bg-[#824c71]/5 border-[#824c71]/20' : 'bg-white border-zinc-100'
       }`}>
         <div className="flex items-start gap-3">
@@ -2217,7 +2312,8 @@ export default function BookingSettingsPage() {
           staff={staff}
           onRefresh={fetchAll}
           cardNumber={cardNumber}
-          onCardSaved={setCardNumber}
+          shebaNumber={shebaNumber}
+          onPaymentSaved={(c, sh) => { setCardNumber(c); setShebaNumber(sh); }}
         />
       )}
       {tab === 1 && (
