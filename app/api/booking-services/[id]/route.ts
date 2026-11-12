@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma';
 import { getSalonFromCookieToken as getSalonFromToken } from '@/lib/salonAccess';
 import { intInRange, parseJsonBody } from '@/lib/http';
 import { isValidCardNumber, MAX_SERVICE_DEPOSIT } from '@/lib/deposit';
+import { isValidSheba } from '@/lib/card';
 
 const MAX_NAME_LENGTH = 100;
 const MAX_DURATION_MIN = 24 * 60;
@@ -52,8 +53,8 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
   // بیعانه‌ی مثبت: نیازمند کارت معتبر و حداکثر برابر قیمت (با مقادیر نهایی، چه عوض شده چه نشده)
   const finalPrice = data.price ?? existing.price;
   const finalDeposit = data.depositAmount ?? existing.depositAmount;
-  if (data.depositAmount !== undefined && finalDeposit > 0 && !isValidCardNumber(salon.cardNumber)) {
-    return NextResponse.json({ error: 'برای تعیین بیعانه ابتدا شماره کارت ۱۶ رقمی سالن را ثبت کنید' }, { status: 400 });
+  if (data.depositAmount !== undefined && finalDeposit > 0 && (!isValidCardNumber(salon.cardNumber) || !isValidSheba(salon.shebaNumber))) {
+    return NextResponse.json({ error: 'برای تعیین بیعانه ابتدا شماره کارت و شماره شبا سالن را ثبت کنید' }, { status: 400 });
   }
   if ((data.depositAmount !== undefined || data.price !== undefined) && finalDeposit > 0 && finalPrice > 0 && finalDeposit > finalPrice) {
     return NextResponse.json({ error: 'بیعانه نمی‌تواند از قیمت خدمت بیشتر باشد' }, { status: 400 });

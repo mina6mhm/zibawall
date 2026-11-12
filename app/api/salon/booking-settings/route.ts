@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma';
 import { getAuthUser } from '@/lib/auth';
 import { getSalonForUserId } from '@/lib/salonAccess';
 import { parseJsonBody } from '@/lib/http';
+import { isValidCardNumber, isValidSheba } from '@/lib/card';
 
 export async function PATCH(req: Request) {
   try {
@@ -21,6 +22,13 @@ export async function PATCH(req: Request) {
 
     if (typeof bookingEnabled !== 'boolean') {
       return NextResponse.json({ error: 'مقدار نامعتبر است' }, { status: 400 });
+    }
+
+    if (bookingEnabled && (!isValidCardNumber(salon.cardNumber) || !isValidSheba(salon.shebaNumber))) {
+      return NextResponse.json(
+        { error: 'برای فعال‌سازی نوبت‌دهی ابتدا شماره کارت و شماره شبا را ثبت کنید' },
+        { status: 400 }
+      );
     }
 
     const updated = await prisma.salon.update({

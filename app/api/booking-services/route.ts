@@ -5,6 +5,7 @@ import { getSalonFromCookieToken as getSalonFromToken } from '@/lib/salonAccess'
 import { rateLimit } from '@/lib/rateLimit';
 import { intInRange, parseJsonBody, tooManyRequests } from '@/lib/http';
 import { isValidCardNumber, MAX_SERVICE_DEPOSIT } from '@/lib/deposit';
+import { isValidSheba } from '@/lib/card';
 
 const MAX_SERVICES_PER_SALON = 200;
 const MAX_NAME_LENGTH = 100;
@@ -58,8 +59,8 @@ export async function POST(req: Request) {
       ? 0
       : intInRange(depositAmount, 0, MAX_SERVICE_DEPOSIT);
   if (cleanDeposit === null) return NextResponse.json({ error: 'مبلغ بیعانه نامعتبر است' }, { status: 400 });
-  if (cleanDeposit > 0 && !isValidCardNumber(salon.cardNumber)) {
-    return NextResponse.json({ error: 'برای تعیین بیعانه ابتدا شماره کارت ۱۶ رقمی سالن را ثبت کنید' }, { status: 400 });
+  if (cleanDeposit > 0 && (!isValidCardNumber(salon.cardNumber) || !isValidSheba(salon.shebaNumber))) {
+    return NextResponse.json({ error: 'برای تعیین بیعانه ابتدا شماره کارت و شماره شبا سالن را ثبت کنید' }, { status: 400 });
   }
   if (cleanDeposit > 0 && cleanPrice > 0 && cleanDeposit > cleanPrice) {
     return NextResponse.json({ error: 'بیعانه نمی‌تواند از قیمت خدمت بیشتر باشد' }, { status: 400 });

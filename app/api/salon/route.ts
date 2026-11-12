@@ -266,7 +266,7 @@ export async function PUT(req: Request) {
         const withDeposit = await prisma.bookingService.count({
           where: { salonId: existingSalon.id, depositAmount: { gt: 0 } },
         });
-        if (withDeposit > 0) return bad('تا وقتی برای خدمات بیعانه تعریف شده، شماره کارت قابل حذف نیست');
+        if (withDeposit > 0 || existingSalon.bookingEnabled) return bad('شماره کارت الزامی است و تا وقتی نوبت‌دهی فعال است یا برای خدمات بیعانه تعریف شده، قابل حذف نیست');
       }
       data.cardNumber = c;
     }
@@ -275,6 +275,12 @@ export async function PUT(req: Request) {
       const raw = typeof body.shebaNumber === 'string' ? body.shebaNumber.trim() : '';
       const sh = raw === '' ? '' : normalizeShebaInput(raw);
       if (sh !== '' && !isValidSheba(sh)) return bad('شماره شبا معتبر نیست؛ باید IR و ۲۴ رقم باشد');
+      if (sh === '') {
+        const withDeposit = await prisma.bookingService.count({
+          where: { salonId: existingSalon.id, depositAmount: { gt: 0 } },
+        });
+        if (withDeposit > 0 || existingSalon.bookingEnabled) return bad('شماره شبا الزامی است و قابل حذف نیست');
+      }
       data.shebaNumber = sh;
     }
 
