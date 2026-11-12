@@ -307,7 +307,7 @@ model BookingGroup {
   customerName  String?
 
   totalDeposit  Int           @default(0)
-  appFee        Int           @default(25000)
+  appFee        Int           @default(30000)
   totalAmount   Int
 
   paymentStatus PaymentStatus @default(PENDING)
@@ -350,7 +350,7 @@ model Booking {
   staffName     String?       // اسم پرسنل، اختیاری و آزاد
 
   depositAmount Int           @default(0)     // بیعانه‌ی اختیاری، برای خود سالن
-  appFee        Int           @default(25000) // هزینه‌ی ثابت اپ، اسنپ‌شات لحظه‌ی ساخت نوبت
+  appFee        Int           @default(30000) // هزینه‌ی ثابت اپ، اسنپ‌شات لحظه‌ی ساخت نوبت
   totalAmount   Int           // depositAmount + appFee ، مبلغی که مشتری واریز می‌کند
 
   paymentStatus PaymentStatus @default(PENDING)

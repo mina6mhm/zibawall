@@ -10,7 +10,7 @@ import { acquirePaymentLock, releasePaymentLock } from '@/lib/paymentLock';
 // هزینه و مدت پین کردن سالن — این عدد فقط داخل درخواست به زرین‌پال استفاده می‌شود
 // و در پاسخ این API یا هر جای دیگر رابط کاربری خودمان نمایش داده نمی‌شود؛
 // مبلغ را فقط خودِ درگاه زرین‌پال به کاربر نشان می‌دهد.
-const PIN_PRICE_TOMAN = 3_000_000;
+const PIN_PRICE_TOMAN = 5_000_000;
 const PIN_DURATION_DAYS = 30;
 const PIN_PLAN_ID = 'salon-pin-30d';
 
