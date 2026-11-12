@@ -3,20 +3,22 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { MessageCircle, Store, ChevronLeft, ShieldCheck } from 'lucide-react';
+import { MessageCircle, Store, ChevronLeft, ShieldCheck, Wallet } from 'lucide-react';
 import PushNotificationSetup from '@/components/admin/PushNotificationSetup';
 
 export default function AdminHubPage() {
   const [pendingSupportCount, setPendingSupportCount] = useState<number | null>(null);
   const [pendingSalonsCount, setPendingSalonsCount] = useState<number | null>(null);
+  const [pendingSettlementsCount, setPendingSettlementsCount] = useState<number | null>(null);
   const [accessDenied, setAccessDenied] = useState(false);
 
   useEffect(() => {
     const fetchCounts = async () => {
       try {
-        const [supportRes, salonsRes] = await Promise.all([
+        const [supportRes, salonsRes, settlementsRes] = await Promise.all([
           fetch('/api/support?status=PENDING'),
           fetch('/api/admin/salons?status=PENDING_APPROVAL'),
+          fetch('/api/admin/settlements'),
         ]);
 
         if (supportRes.status === 403 || salonsRes.status === 403) {
@@ -31,6 +33,10 @@ export default function AdminHubPage() {
         if (salonsRes.ok) {
           const data = await salonsRes.json();
           setPendingSalonsCount(data.salons?.length ?? 0);
+        }
+        if (settlementsRes.ok) {
+          const data = await settlementsRes.json();
+          setPendingSettlementsCount(data.items?.length ?? 0);
         }
       } catch (error) {
         console.error('خطا در دریافت اطلاعات پنل مدیریت:', error);
@@ -55,6 +61,14 @@ export default function AdminHubPage() {
       icon: Store,
       href: '/admin/salons',
       count: pendingSalonsCount,
+    },
+    {
+      key: 'settlements',
+      label: 'تسویه‌ی بیعانه‌ها',
+      description: 'واریز بیعانه‌ی مشتری‌ها به کارت سالن‌دارها',
+      icon: Wallet,
+      href: '/admin/settlements',
+      count: pendingSettlementsCount,
     },
     {
       key: 'support',

@@ -359,6 +359,8 @@ model Booking {
   refId         String?
 
   reminderSentAt DateTime?    // برای جلوگیری از ارسال تکراری پیامک یادآوری ۲۴ ساعته
+  depositSettledAt     DateTime? // زمانی که بیعانه‌ی این نوبت به کارت سالن‌دار واریز (تسویه) شد؛ null = هنوز واریز نشده
+  depositSettlementRef String?   // کد پیگیری واریز (ثبت‌شده توسط ادمین)
   confirmationSmsSentAt DateTime? // جلوگیری از ارسال تکراری پیامک تایید (callback پرداخت idempotent شود)
 
   // اگر این نوبت بخشی از یک سبد چند-خدمتی رزرو آنلاین باشد، به گروهش وصل می‌شود
@@ -372,6 +374,7 @@ model Booking {
   updatedAt     DateTime      @updatedAt
 
   @@index([salonId])
+  @@index([paymentStatus, depositSettledAt])
   @@index([customerId])
   @@index([salonId, date, status])   // چک تداخل اسلات (داغ‌ترین query)
   @@index([date, status])            // زمان‌بند یادآوری

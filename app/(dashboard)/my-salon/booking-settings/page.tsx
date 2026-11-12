@@ -15,6 +15,7 @@ import persian from 'react-date-object/calendars/persian';
 import persian_fa from 'react-date-object/locales/persian_fa';
 import { toDateOnlyAnchor } from '@/lib/dateUtils';
 import { BOOKING_APP_FEE } from '@/lib/constants';
+import { formatCardNumber, getBankName, isValidCardNumber } from '@/lib/card';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -281,7 +282,7 @@ type ServiceFormProps = {
   onCardSaved: (card: string) => void;
 };
 
-const isValidCard = (c: string) => /^\d{16}$/.test(c);
+const isValidCard = (c: string) => isValidCardNumber(c);
 
 function ServiceFormModal({ initial, onSave, onClose, cardNumber, onCardSaved }: ServiceFormProps) {
   const [name, setName] = useState(initial?.name ?? '');
@@ -463,11 +464,20 @@ function ServiceFormModal({ initial, onSave, onClose, cardNumber, onCardSaved }:
                     inputMode="numeric"
                     className="w-full border border-zinc-200 bg-white rounded-[10px] px-3.5 py-2.5 text-sm text-left tracking-wider focus:outline-none focus:border-[#824c71] focus:ring-1 focus:ring-[#824c71]/20"
                   />
-                  <p className="text-[10px] text-zinc-400 mt-1">شماره کارت باید به نام صاحب سالن باشد.</p>
+                  {cardRaw.length === 16 && !isValidCard(cardRaw) ? (
+                    <p className="text-[11px] text-red-500 mt-1">این شماره کارت معتبر نیست؛ ارقام را دوباره بررسی کنید.</p>
+                  ) : (
+                    <p className="text-[10px] text-zinc-400 mt-1">
+                      {isValidCard(cardRaw) && getBankName(cardRaw)
+                        ? `${getBankName(cardRaw)} — `
+                        : ''}
+                      شماره کارت باید به نام صاحب سالن باشد؛ بیعانه دقیقاً به همین کارت واریز می‌شود.
+                    </p>
+                  )}
                 </div>
               ) : (
                 <p className="text-[11px] text-zinc-400 pt-0.5" dir="ltr">
-                  واریز به کارت: {cardNumber.replace(/(\d{4})(?=\d)/g, '$1 ')}
+                  واریز به کارت: {formatCardNumber(cardNumber)}
                 </p>
               )}
             </div>
@@ -485,6 +495,128 @@ function ServiceFormModal({ initial, onSave, onClose, cardNumber, onCardSaved }:
           </button>
         </div>
       </div>
+    </div>
+  );
+}
+
+// ─── Card Number Section ──────────────────────────────────────────────────────
+// بیعانه‌ی مشتری‌ها به همین کارت واریز می‌شود؛ پس هم اعتبارسنجی Luhn دارد و هم نام بانک را
+// نشان می‌دهد تا سالن‌دار با یک نگاه مطمئن شود درست وارد کرده است.
+
+function CardNumberSection({
+  cardNumber,
+  hasDeposits,
+  onSaved,
+}: {
+  cardNumber: string;
+  hasDeposits: boolean;
+  onSaved: (card: string) => void;
+}) {
+  const hasCard = isValidCardNumber(cardNumber);
+  const [editing, setEditing] = useState(false);
+  const [raw, setRaw] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [err, setErr] = useState('');
+
+  const typedValid = isValidCardNumber(raw);
+  const typedBank = raw.length >= 6 ? getBankName(raw) : null;
+
+  const save = async () => {
+    if (!typedValid) return setErr('شماره کارت ۱۶ رقمی معتبر وارد کنید');
+    setSaving(true);
+    setErr('');
+    try {
+      const res = await fetch('/api/salon', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ cardNumber: raw }),
+      });
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}));
+        throw new Error(d.error || 'خطا در ذخیره‌ی شماره کارت');
+      }
+      onSaved(raw);
+      setEditing(false);
+      setRaw('');
+    } catch (e: any) {
+      setErr(e.message || 'خطا در ذخیره‌ی شماره کارت');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="border border-zinc-100 rounded-[10px] p-4 mb-4 bg-white">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-sm font-bold text-zinc-900">شماره کارت دریافت بیعانه</p>
+          <p className="text-[11px] text-zinc-400 mt-0.5 leading-5">
+            مبلغ بیعانه‌ی مشتری‌ها به این کارت واریز می‌شود. حتماً کارتی به نام خودتان و با شماره‌ی درست وارد کنید.
+          </p>
+        </div>
+        {!editing && (
+          <button
+            onClick={() => { setEditing(true); setErr(''); }}
+            className="text-xs font-bold text-[#824c71] bg-[#824c71]/10 rounded-full px-3 py-1.5 shrink-0"
+          >
+            {hasCard ? 'تغییر کارت' : 'ثبت کارت'}
+          </button>
+        )}
+      </div>
+
+      {!editing && hasCard && (
+        <div className="mt-3 flex items-center justify-between gap-3 bg-zinc-50 rounded-[10px] px-3.5 py-2.5">
+          <span className="text-sm font-bold text-zinc-800 tracking-wider" dir="ltr">{formatCardNumber(cardNumber)}</span>
+          {getBankName(cardNumber) && <span className="text-[11px] text-zinc-500 shrink-0">{getBankName(cardNumber)}</span>}
+        </div>
+      )}
+
+      {!editing && !hasCard && (
+        <p className={`mt-3 text-[12px] rounded-[10px] px-3 py-2 ${hasDeposits ? 'bg-red-50 text-red-600' : 'bg-amber-50 text-amber-700'}`}>
+          {hasDeposits
+            ? 'برای خدماتی که بیعانه دارند شماره کارت ثبت نشده است؛ تا ثبت کارت، رزرو این خدمات انجام نمی‌شود.'
+            : 'برای تعیین بیعانه‌ی خدمات، ابتدا شماره کارت خود را ثبت کنید.'}
+        </p>
+      )}
+
+      {editing && (
+        <div className="mt-3 space-y-2.5">
+          <input
+            value={formatCardNumber(raw)}
+            onChange={(e) => setRaw(toEnglishDigits(e.target.value).slice(0, 16))}
+            placeholder="۱۶ رقم شماره کارت"
+            dir="ltr"
+            inputMode="numeric"
+            autoFocus
+            className="w-full border border-zinc-200 rounded-[10px] px-3.5 py-2.5 text-sm text-left tracking-wider focus:outline-none focus:border-[#824c71] focus:ring-1 focus:ring-[#824c71]/20"
+          />
+          {raw.length === 16 && !typedValid && (
+            <p className="text-[11px] text-red-500">این شماره کارت معتبر نیست؛ ارقام را دوباره بررسی کنید.</p>
+          )}
+          {typedValid && (
+            <p className="text-[11px] text-emerald-600">
+              {typedBank ? `شماره کارت معتبر است — ${typedBank}` : 'شماره کارت معتبر است'}
+            </p>
+          )}
+          {err && <p className="text-red-500 text-xs font-medium">{err}</p>}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={save}
+              disabled={saving || !typedValid}
+              className="flex-1 bg-[#824c71] text-white rounded-[10px] py-2.5 text-sm font-bold disabled:opacity-50 flex items-center justify-center gap-2"
+            >
+              {saving && <Loader2 className="w-4 h-4 animate-spin" />}
+              ذخیره کارت
+            </button>
+            <button
+              onClick={() => { setEditing(false); setRaw(''); setErr(''); }}
+              className="px-4 py-2.5 text-sm text-zinc-500 bg-zinc-50 rounded-[10px]"
+            >
+              انصراف
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -548,6 +680,12 @@ function ServicesTab({
 
   return (
     <div>
+      <CardNumberSection
+        cardNumber={cardNumber}
+        hasDeposits={services.some((s) => s.isActive && s.depositAmount > 0)}
+        onSaved={onCardSaved}
+      />
+
       {services.length === 0 ? (
         <div className="text-center py-12 bg-zinc-50 rounded-[10px] mb-4">
           <Clock className="w-8 h-8 text-zinc-300 mx-auto mb-2" />

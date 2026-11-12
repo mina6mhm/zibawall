@@ -10,7 +10,5 @@ export const MAX_SERVICE_DEPOSIT = 20_000_000;
 /** سقف مبلغ یک پرداخت آنلاین (تومان) — جمع بیعانه‌ها + هزینه‌ی اپ؛ محافظ سقف درگاه و Int دیتابیس */
 export const MAX_ONLINE_PAYMENT = 100_000_000;
 
-/** شماره کارت معتبر = دقیقاً ۱۶ رقم لاتین */
-export function isValidCardNumber(card: unknown): card is string {
-  return typeof card === 'string' && /^\d{16}$/.test(card);
-}
+// شماره کارت معتبر (۱۶ رقم + Luhn) — تعریف مشترک در lib/card.ts
+export { isValidCardNumber } from '@/lib/card';
