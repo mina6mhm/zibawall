@@ -3,21 +3,17 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { CalendarClock } from 'lucide-react';
+import { CalendarClock, Pin, MapPin, Star, Bookmark } from 'lucide-react';
 
-// کامپوننت آیکون بوک‌مارک
-const BookmarkIcon = ({
-  isActive,
-  className,
-}: {
-  isActive: boolean;
-  className?: string;
-}) => (
+const toPersianDigits = (str: string) => str.replace(/[0-9]/g, (d) => '۰۱۲۳۴۵۶۷۸۹'[Number(d)]);
+const formatRating = (num: number) => (Number.isInteger(num) ? String(num) : num.toFixed(1));
+
+const BookmarkIcon = ({ isActive, className }: { isActive: boolean; className?: string }) => (
   <svg
     viewBox="0 0 24 24"
     className={className}
     stroke="currentColor"
-    strokeWidth="2.2"
+    strokeWidth="2"
     strokeLinecap="round"
     strokeLinejoin="round"
     fill={isActive ? 'currentColor' : 'none'}
@@ -26,43 +22,34 @@ const BookmarkIcon = ({
   </svg>
 );
 
-// Alert نوبت‌دهی، دقیقاً مشابه داشبورد
-function BookingDisabledAlert({
-  isOpen,
-  onClose,
-}: {
-  isOpen: boolean;
-  onClose: () => void;
-}) {
+function BookingDisabledAlert({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
   if (!isOpen) return null;
-
   return (
-    <div
-      className="fixed inset-0 z-[200] flex items-center justify-center bg-black/40 backdrop-blur-sm px-5"
-      onClick={onClose}
-    >
-      <div
-        className="bg-white rounded-xl p-6 max-w-sm w-full shadow-xl"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="w-12 h-12 bg-amber-50 rounded-xl flex items-center justify-center mb-4 mx-auto">
+    <div className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center bg-zinc-900/40 px-4 pb-4" onClick={onClose}>
+      <div className="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl" onClick={(e) => e.stopPropagation()}>
+        <div className="w-12 h-12 bg-amber-50 rounded-2xl flex items-center justify-center mb-4 mx-auto">
           <CalendarClock className="w-6 h-6 text-amber-500" />
         </div>
-
-        <h3 className="text-base font-bold text-zinc-900 text-center mb-2">
-          نوبت‌دهی آنلاین فعال نیست
-        </h3>
-
-        <p className="text-sm text-zinc-500 text-center leading-relaxed mb-5">
-          این سالن هنوز سیستم نوبت‌دهی آنلاین را فعال نکرده است. برای رزرو وقت با سالن تماس بگیرید.
+        <h3 className="text-base font-extrabold text-zinc-900 text-center mb-2">نوبت‌دهی آنلاین فعال نیست</h3>
+        <p className="text-[13px] text-zinc-500 text-center leading-6 mb-5">
+          این سالن هنوز نوبت‌دهی آنلاین را فعال نکرده است. برای رزرو وقت، مستقیم با سالن تماس بگیرید.
         </p>
-
-        <button
-          onClick={onClose}
-          className="w-full bg-[#824c71] hover:bg-[#6e3f60] text-white rounded-[10px] py-3 text-sm font-bold"
-        >
+        <button onClick={onClose} className="w-full h-12 bg-[#824c71] text-white rounded-2xl text-sm font-bold active:scale-[0.98] transition">
           متوجه شدم
         </button>
+      </div>
+    </div>
+  );
+}
+
+function SalonSkeleton() {
+  return (
+    <div className="animate-pulse">
+      <div className="aspect-[16/10] rounded-t-[20px] bg-zinc-100" />
+      <div className="rounded-b-[20px] border border-t-0 border-zinc-200 px-4 pt-3.5 pb-4">
+        <div className="h-4 w-2/3 rounded bg-zinc-100" />
+        <div className="mt-2 h-3 w-1/2 rounded bg-zinc-100" />
+        <div className="mt-4 h-10 rounded-full bg-zinc-100" />
       </div>
     </div>
   );
@@ -75,19 +62,15 @@ export default function BookmarksPage() {
   const [savedBookmarkIds, setSavedBookmarkIds] = useState<(number | string)[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
-  // فقط برای رفتار دکمه نوبت‌دهی
   const [showBookingAlert, setShowBookingAlert] = useState(false);
 
   useEffect(() => {
     const fetchBookmarkedSalons = async () => {
       setIsLoading(true);
       setError(null);
-
       try {
         const savedBookmarksStr = localStorage.getItem('bookmarkedSalons');
         const bookmarkIds = savedBookmarksStr ? JSON.parse(savedBookmarksStr) : [];
-
         setSavedBookmarkIds(bookmarkIds);
 
         if (bookmarkIds.length === 0) {
@@ -97,325 +80,156 @@ export default function BookmarksPage() {
         }
 
         const response = await fetch('/api/salon');
-
-        if (!response.ok) {
-          throw new Error('خطا در دریافت اطلاعات سالن‌ها');
-        }
-
+        if (!response.ok) throw new Error('خطا در دریافت اطلاعات سالن‌ها');
         const data = await response.json();
-
         if (data.salons) {
-          const filtered = data.salons.filter((salon: any) =>
-            bookmarkIds.includes(salon.id)
-          );
-
-          setBookmarkedSalons(filtered);
+          setBookmarkedSalons(data.salons.filter((salon: any) => bookmarkIds.includes(salon.id)));
         }
       } catch (err) {
         console.error('Error fetching salons:', err);
-        setError('مشکلی در دریافت اطلاعات پیش آمد.');
+        setError('اتصال به سرور برقرار نشد. اینترنت خود را بررسی کنید و دوباره تلاش کنید.');
       } finally {
         setIsLoading(false);
       }
     };
-
     fetchBookmarkedSalons();
   }, []);
 
-  const handleRemoveBookmark = (
-    salonId: number | string,
-    e: React.MouseEvent
-  ) => {
+  const handleRemoveBookmark = (salonId: number | string, e: React.MouseEvent) => {
     e.stopPropagation();
-
     const updatedIds = savedBookmarkIds.filter((id) => id !== salonId);
-
     localStorage.setItem('bookmarkedSalons', JSON.stringify(updatedIds));
-
     setSavedBookmarkIds(updatedIds);
-
-    setBookmarkedSalons((prev) =>
-      prev.filter((salon) => salon.id !== salonId)
-    );
+    setBookmarkedSalons((prev) => prev.filter((salon) => salon.id !== salonId));
   };
 
-  // رفتار دکمه نوبت‌دهی، مشابه داشبورد
-  const handleBookingClick = (
-    salon: any,
-    e: React.MouseEvent
-  ) => {
+  const handleBookingClick = (salon: any, e: React.MouseEvent) => {
     e.stopPropagation();
-
-    if (salon.bookingEnabled) {
-      router.push(`/salon/${salon.id}/book`);
-    } else {
-      setShowBookingAlert(true);
-    }
+    if (salon.bookingEnabled) router.push(`/salon/${salon.id}/book`);
+    else setShowBookingAlert(true);
   };
 
   return (
     <>
-      <div className="max-w-3xl mx-auto pt-8 pb-32 px-4 md:pt-10 md:px-0">
-
-        {/* عنوان صفحه */}
-        <div className="mb-7">
-          <h1 className="text-xl md:text-2xl font-bold text-zinc-900">
-            نشان‌شده‌ها
-          </h1>
-
-          <p className="text-zinc-500 text-xs md:text-sm mt-0.5">
-            سالن‌هایی که ذخیره کرده‌اید
-          </p>
+      <div className="max-w-3xl mx-auto min-h-screen bg-white pt-6 pb-32 px-2 md:pt-10">
+        <div className="mb-6 px-0">
+          <h1 className="text-[17px] md:text-xl font-extrabold text-zinc-900">نشان‌شده‌ها</h1>
+          <p className="text-zinc-500 text-xs md:text-sm mt-0.5">سالن‌هایی که ذخیره کرده‌اید</p>
         </div>
 
-        {/* لیست کارت‌ها */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           {isLoading ? (
-
-            /* Loading */
-            [1, 2, 3, 4].map((n) => (
-              <div
-                key={n}
-                className="bg-zinc-100 rounded-2xl h-44 animate-pulse"
-              />
-            ))
-
+            [1, 2, 3, 4].map((n) => <SalonSkeleton key={n} />)
           ) : error ? (
-
-            /* Error */
-            <div className="col-span-full py-8 text-center text-red-500 font-medium">
-              {error}
+            <div className="col-span-full py-10 text-center">
+              <p className="text-sm font-medium text-zinc-700 leading-6">{error}</p>
+              <button onClick={() => window.location.reload()} className="mt-4 h-10 px-5 rounded-full bg-[#824c71] text-white text-sm font-bold">
+                تلاش دوباره
+              </button>
             </div>
-
           ) : bookmarkedSalons.length > 0 ? (
-
             bookmarkedSalons.map((salon) => {
-
-              const salonReviews = salon.reviews || [];
-
-              const validReviews = salonReviews.filter(
-                (review: any) => review.rating && review.rating > 0
-              );
-
+              const validReviews = (salon.reviews || []).filter((r: any) => r.rating && r.rating > 0);
               const totalVotes = validReviews.length;
+              const salonTags = (salon.tags || []).map((t: any) => (typeof t === 'object' && t !== null ? t.name : t));
 
-              const averageRating =
+              const avgRatingNum =
                 totalVotes > 0
-                  ? (
-                      validReviews.reduce(
-                        (acc: number, review: any) =>
-                          acc + review.rating,
-                        0
-                      ) / totalVotes
-                    ).toFixed(1)
-                  : salon.rating
-                    ? String(salon.rating)
-                    : null;
+                  ? validReviews.reduce((acc: number, r: any) => acc + r.rating, 0) / totalVotes
+                  : typeof salon.rating === 'number' && salon.rating > 0
+                  ? salon.rating
+                  : null;
 
-              const salonTags = (salon.tags || []).map(
-                (t: any) =>
-                  typeof t === 'object' && t !== null
-                    ? t.name
-                    : t
-              );
+              const averageRating = avgRatingNum !== null ? formatRating(avgRatingNum) : null;
+              const reviewsCount = totalVotes > 0 ? totalVotes : salon.reviewsCount || 0;
+              const isPinned = !!salon.pinnedUntil && new Date(salon.pinnedUntil) > new Date();
 
               return (
-                <div
-                  key={salon.id}
-                  onClick={() => router.push(`/salon/${salon.id}`)}
-                  dir="ltr"
-                  className="h-44 cursor-pointer bg-white rounded-2xl border border-zinc-200 overflow-hidden shadow-[0_1px_4px_rgba(0,0,0,0.06)] hover:shadow-[0_4px_14px_rgba(0,0,0,0.1)] active:scale-[0.99] transition-all flex items-stretch group relative"
-                >
-
-                  {/* تصویر سالن */}
-                  <div className="w-28 sm:w-32 h-full bg-zinc-200 relative overflow-hidden shrink-0">
+                <article key={salon.id} onClick={() => router.push(`/salon/${salon.id}`)} className="group cursor-pointer active:scale-[0.995] transition-transform">
+                  <div className="relative aspect-[16/10] overflow-hidden bg-zinc-100 rounded-t-[20px]">
                     {salon.imageUrl ? (
                       <img
                         src={salon.imageUrl}
                         alt={salon.name}
-                        className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        loading="lazy"
+                        className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                       />
                     ) : (
-                      <div className="absolute inset-0 flex items-center justify-center text-zinc-400 bg-zinc-100 text-xs">
-                        بدون تصویر
-                      </div>
+                      <div className="absolute inset-0 flex items-center justify-center text-zinc-400 text-xs">بدون تصویر</div>
+                    )}
+                    <div className="absolute inset-x-0 top-0 h-20 bg-gradient-to-b from-black/25 to-transparent pointer-events-none" />
+
+                    {isPinned && (
+                      <span className="absolute top-3 right-3 flex items-center gap-1 bg-white/95 text-amber-600 rounded-full pl-2.5 pr-2 py-1 text-[11px] font-bold shadow-sm">
+                        <Pin className="w-3 h-3 fill-amber-500" strokeWidth={2} />
+                        ویژه
+                      </span>
+                    )}
+
+                    <button
+                      onClick={(e) => handleRemoveBookmark(salon.id, e)}
+                      aria-label="حذف از نشان‌ها"
+                      aria-pressed={true}
+                      className="absolute top-3 left-3 w-9 h-9 flex items-center justify-center rounded-full bg-white/95 shadow-sm active:scale-90 transition text-[#824c71]"
+                    >
+                      <BookmarkIcon isActive={true} className="w-[18px] h-[18px]" />
+                    </button>
+
+                    {averageRating && (
+                      <span className="absolute bottom-3 right-3 flex items-center gap-1 bg-white/95 rounded-full px-2.5 py-1 shadow-sm">
+                        <Star className="w-3.5 h-3.5 fill-yellow-500 text-yellow-500" strokeWidth={2} />
+                        <span className="text-[12.5px] font-extrabold text-zinc-900">{toPersianDigits(averageRating)}</span>
+                        <span className="text-[11px] text-zinc-500">({toPersianDigits(String(reviewsCount))})</span>
+                      </span>
                     )}
                   </div>
 
-                  {/* محتوای کارت */}
-                  <div
-                    dir="rtl"
-                    className="flex-1 min-w-0 h-full p-3 flex flex-col overflow-hidden"
-                  >
+                  <div className="rounded-b-[20px] border border-t-0 border-zinc-200 bg-white px-4 pt-3.5 pb-4">
+                    <h3 className="font-extrabold text-zinc-900 text-[16px] leading-snug truncate">{salon.name}</h3>
+                    <p className="flex items-center gap-1 mt-1 text-zinc-500 min-w-0">
+                      <MapPin className="w-[14px] h-[14px] shrink-0" strokeWidth={2} />
+                      <span className="text-[12.5px] truncate">{salon.address || 'آدرس ثبت نشده'}</span>
+                    </p>
 
-                    {/* محتوای اصلی */}
-                    <div className="flex-1 min-h-0 overflow-hidden">
-
-                      {/* نام سالن + بوکمارک */}
-                      <div className="flex items-start justify-between gap-2">
-
-                        <h3 className="font-bold text-zinc-900 text-[15px] leading-tight truncate flex-1">
-                          {salon.name}
-                        </h3>
-
-                        <button
-                          onClick={(e) =>
-                            handleRemoveBookmark(salon.id, e)
-                          }
-                          className="shrink-0 w-9 h-9 -mt-1.5 -ml-1.5 flex items-center justify-center rounded-full active:bg-zinc-100 transition-colors text-[#824c71]"
-                        >
-                          <BookmarkIcon
-                            isActive={true}
-                            className="w-5 h-5"
-                          />
-                        </button>
-
+                    <div className="flex items-center gap-3 mt-3.5">
+                      <div className="flex-1 min-w-0 flex items-center gap-1.5 overflow-hidden">
+                        {salonTags.slice(0, 2).map((tag: string, idx: number) => (
+                          <span key={idx} className="bg-[#f5ebf2] text-[#824c71] text-[11px] px-2.5 py-1 rounded-full font-medium whitespace-nowrap truncate max-w-[130px]">
+                            {tag}
+                          </span>
+                        ))}
+                        {salonTags.length > 2 && (
+                          <span className="text-zinc-500 text-[11px] font-medium shrink-0">+{toPersianDigits(String(salonTags.length - 2))}</span>
+                        )}
                       </div>
 
-                      {/* آدرس */}
-                      <div className="flex items-center gap-1 text-zinc-500 mt-1 min-w-0">
-                        <svg
-                          width="13"
-                          height="13"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2.2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          className="shrink-0"
-                        >
-                          <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
-                          <circle cx="12" cy="10" r="3" />
-                        </svg>
-
-                        <span className="text-[12.5px] truncate">
-                          {salon.address || 'بدون آدرس'}
-                        </span>
-                      </div>
-
-                      {/* امتیاز */}
-                      {averageRating && (
-                        <div className="flex items-center gap-1 mt-1.5">
-                          <svg
-                            width="14"
-                            height="14"
-                            viewBox="0 0 24 24"
-                            fill="#EAB308"
-                            stroke="#EAB308"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          >
-                            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-                          </svg>
-
-                          <span className="font-bold text-[12.5px] text-zinc-900">
-                            {averageRating}
-                          </span>
-
-                          <span className="text-[11px] text-zinc-500">
-                            (
-                            {totalVotes > 0
-                              ? totalVotes
-                              : salon.reviewsCount || 0}{' '}
-                            نظر)
-                          </span>
-                        </div>
-                      )}
-
-                      {/* تگ‌ها */}
-                      {salonTags && salonTags.length > 0 && (
-                        <div className="flex items-center gap-1 mt-2 overflow-hidden flex-nowrap">
-
-                          {salonTags
-                            .slice(0, 2)
-                            .map(
-                              (
-                                tag: string,
-                                idx: number
-                              ) => (
-                                <span
-                                  key={idx}
-                                  className="bg-zinc-100 text-zinc-600 text-[11px] px-2 py-1 rounded-md font-medium whitespace-nowrap shrink-0"
-                                >
-                                  {tag}
-                                </span>
-                              )
-                            )}
-
-                          {salonTags.length > 2 && (
-                            <span className="bg-zinc-100 text-zinc-500 text-[11px] px-2 py-1 rounded-md font-medium shrink-0">
-                              +{salonTags.length - 2}
-                            </span>
-                          )}
-
-                        </div>
-                      )}
-
-                    </div>
-
-                    {/* دکمه نوبت‌دهی - دقیقاً مشابه داشبورد */}
-                    <div className="flex mt-2 shrink-0">
                       <button
-                        onClick={(e) =>
-                          handleBookingClick(salon, e)
-                        }
-                        className="flex items-center justify-center gap-1.5 bg-[#824c71] text-white text-[13px] font-bold px-4 py-2 rounded-lg hover:bg-[#824c71]/90 active:scale-95 transition-all shadow-sm"
+                        onClick={(e) => handleBookingClick(salon, e)}
+                        className="shrink-0 h-10 px-5 rounded-full bg-[#824c71] text-white text-[13px] font-bold active:scale-95 transition"
                       >
                         نوبت‌دهی
                       </button>
                     </div>
-
                   </div>
-                </div>
+                </article>
               );
             })
-
           ) : (
-
-            /* لیست خالی */
-            <div className="col-span-full py-16 md:py-20 text-center flex flex-col items-center justify-center">
-
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="w-12 h-12 md:w-16 md:h-16 text-zinc-300 mb-3 md:mb-4"
-              >
-                <path d="M6 4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v17.5l-6-4-6 4V4z" />
-              </svg>
-
-              <h2 className="text-[15px] md:text-lg font-bold text-zinc-700 mb-1.5 md:mb-2">
-                لیست نشان‌شده‌ها خالی است
-              </h2>
-
-              <p className="text-[13px] md:text-sm text-zinc-500 mb-5 md:mb-6">
-                شما هنوز هیچ سالنی را ذخیره نکرده‌اید.
-              </p>
-
-              <button
-                onClick={() => router.push('/')}
-                className="bg-[#824c71] text-white px-6 py-3 md:py-2.5 rounded-full text-[13px] md:text-sm font-bold hover:bg-[#824c71]/80 transition-colors active:scale-[0.98]"
-              >
+            <div className="col-span-full py-16 flex flex-col items-center text-center">
+              <span className="w-16 h-16 rounded-full bg-[#f5ebf2] text-[#824c71] flex items-center justify-center mb-4">
+                <Bookmark className="w-7 h-7" strokeWidth={1.8} />
+              </span>
+              <h2 className="text-[15px] font-extrabold text-zinc-900">لیست نشان‌شده‌ها خالی است</h2>
+              <p className="text-[13px] text-zinc-500 mt-1.5 leading-6">شما هنوز هیچ سالنی را ذخیره نکرده‌اید.</p>
+              <button onClick={() => router.push('/')} className="mt-5 h-11 px-6 rounded-full bg-[#824c71] text-white text-sm font-bold active:scale-95 transition">
                 مشاهده سالن‌ها
               </button>
-
             </div>
           )}
-
         </div>
       </div>
 
-      {/* Alert نوبت‌دهی */}
-      <BookingDisabledAlert
-        isOpen={showBookingAlert}
-        onClose={() => setShowBookingAlert(false)}
-      />
+      <BookingDisabledAlert isOpen={showBookingAlert} onClose={() => setShowBookingAlert(false)} />
     </>
   );
 }

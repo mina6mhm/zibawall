@@ -268,7 +268,7 @@ const GENDER_OPTIONS: { value: GenderFilter; label: string }[] = [
 ];
 
 function FiltersSheet({
-  isOpen, onClose, homeServiceOnly, onToggleHomeService, genderFilter, onSetGender, onClear,
+  isOpen, onClose, homeServiceOnly, onToggleHomeService, genderFilter, onSetGender,
 }: {
   isOpen: boolean;
   onClose: () => void;
@@ -276,13 +276,12 @@ function FiltersSheet({
   onToggleHomeService: () => void;
   genderFilter: GenderFilter;
   onSetGender: (v: GenderFilter) => void;
-  onClear: () => void;
 }) {
   if (!isOpen) return null;
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center px-3 pb-24">
+    <div className="fixed inset-0 z-50 flex items-end justify-center">
       <div className="absolute inset-0 bg-zinc-900/40" onClick={onClose} />
-      <div className="relative w-full max-w-md bg-white rounded-[28px] px-5 pt-3 pb-6 shadow-2xl">
+      <div className="relative w-full bg-white rounded-t-[28px] px-5 pt-3 pb-32 shadow-2xl">
         <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-zinc-200" />
         <div className="flex items-center justify-between mb-5">
           <h3 className="text-[17px] font-extrabold text-zinc-900">فیلترها</h3>
@@ -340,20 +339,6 @@ function FiltersSheet({
           </span>
         </button>
 
-        <div className="flex gap-2.5 mt-6">
-          <button
-            onClick={onClear}
-            className="h-12 px-5 rounded-2xl border border-zinc-200 text-[14px] font-bold text-zinc-700 active:scale-95 transition"
-          >
-            پاک کردن
-          </button>
-          <button
-            onClick={onClose}
-            className="flex-1 h-12 rounded-2xl bg-[#824c71] text-white text-[14px] font-bold shadow-[0_8px_18px_-8px_#824c71] active:scale-[0.98] transition"
-          >
-            اعمال فیلترها
-          </button>
-        </div>
       </div>
     </div>
   );
@@ -851,10 +836,6 @@ export default function DashboardHomePage() {
         onToggleHomeService={() => setHomeServiceOnly((p) => !p)}
         genderFilter={genderFilter}
         onSetGender={setGenderFilter}
-        onClear={() => {
-          setHomeServiceOnly(false);
-          setGenderFilter('ALL');
-        }}
       />
 
       <BookingDisabledAlert isOpen={showBookingAlert} onClose={() => setShowBookingAlert(false)} />
