@@ -140,6 +140,10 @@ function AppointmentsContent() {
     return `${get('year')}/${get('month')}/${get('day')}`;
   };
 
+  // نام روز هفته به فارسی: شنبه، یکشنبه، دوشنبه، ...
+  const formatWeekday = (isoDate: string) =>
+    new Intl.DateTimeFormat('fa-IR-u-ca-persian', { weekday: 'long' }).format(new Date(isoDate));
+
   const formatMoney = (amount: number) => amount.toLocaleString('fa-IR');
 
   // همه‌ی آیتم‌ها رو صاف می‌کنیم و بر اساس وضعیت + تاریخ به سه دسته تقسیم می‌کنیم.
@@ -179,8 +183,8 @@ function AppointmentsContent() {
   };
 
   // یک کارتِ نوبت — ردیف ۱: اسم سالن (راست) و قیمت کل (چپ، فقط اگر ثبت
-  // شده باشه)؛ ردیف ۲: برای هر خدمت — تاریخ+ساعت (با یک دایره‌ی رنگ برند)، بعد
-  // اسم خدمت و بعد اسم پرسنل (با آیکون)، همگی با استایل یکسان؛ بعد یک بوردر؛
+  // شده باشه)؛ ردیف ۲: برای هر خدمت — روز هفته + تاریخ + ساعت (با یک دایره‌ی
+  // رنگ برند)، بعد اسم خدمت و بعد اسم پرسنل (با آیکون)؛ بعد یک بوردر؛
   // زیر بوردر وضعیت نوبت (راست) و لینک «مشاهده سالن» (چپ).
   const renderCard = ({ appt, item }: FlatItem) => {
     const statusInfo = STATUS_LABELS[item.status];
@@ -201,14 +205,14 @@ function AppointmentsContent() {
           )}
         </div>
 
-        {/* ردیف ۲: تاریخ/ساعت، سپس خدمت، سپس پرسنل، همگی با یک استایل (آیکون بنفش + متن پررنگ) */}
+        {/* ردیف ۲: روز هفته + تاریخ/ساعت، سپس خدمت، سپس پرسنل */}
         <div className="flex flex-col gap-1.5 mb-3">
           {item.services.map((s, idx) => (
             <div key={idx} className="flex items-center gap-3 flex-wrap text-xs text-zinc-700">
               <span className="flex items-center gap-1.5 shrink-0">
                 <span className="w-2 h-2 rounded-full bg-[#824c71] shrink-0" />
                 <span className="font-bold whitespace-nowrap">
-                  {formatDate(item.date)} - <span dir="ltr">{toPersianDigits(item.startTime)}</span>
+                  {formatWeekday(item.date)} {formatDate(item.date)} - <span dir="ltr">{toPersianDigits(item.startTime)}</span>
                 </span>
               </span>
               <span className="flex items-center gap-1.5 min-w-0">
@@ -263,15 +267,15 @@ function AppointmentsContent() {
 
   return (
     <div className="flex flex-col min-h-screen bg-white pb-24">
-      {/* هدر — دقیقاً هم‌سبک با هدر صفحه‌ی پروفایل */}
-      <div className="bg-white px-4 pt-6 pb-5">
+      {/* هدر — کنارها هم‌فاصله با کارت‌ها */}
+      <div className="bg-white px-2 pt-6 pb-5">
         <div className="max-w-lg mx-auto">
           <h1 className="text-base font-bold text-zinc-900">نوبت‌های من</h1>
           <p className="text-xs text-zinc-500 mt-1">نوبت‌هایی که برای شما ثبت شده است</p>
         </div>
       </div>
 
-      <div className="max-w-lg mx-auto w-full px-4 mt-1">
+      <div className="max-w-lg mx-auto w-full px-2 mt-1">
         {notice && (
           <div
             className={`flex items-center gap-2 rounded-[10px] p-3.5 mb-5 text-sm font-medium ${
@@ -296,25 +300,25 @@ function AppointmentsContent() {
             <div className="flex justify-center mb-7">
               <div className="inline-flex items-center gap-1 bg-zinc-100 rounded-full p-1">
                 {TABS.map((tab) => {
-                const count = listByTab[tab.key].length;
-                const isActive = activeTab === tab.key;
-                return (
-                  <button
-                    key={tab.key}
-                    onClick={() => setActiveTab(tab.key)}
-                    className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-bold transition-colors ${
-                      isActive ? 'bg-[#824c71] text-white' : 'text-zinc-500'
-                    }`}
-                  >
-                    {tab.label}
-                    {count > 0 && (
-                      <span className={isActive ? 'text-white/70' : 'text-zinc-400'}>
-                        {toPersianDigits(String(count))}
-                      </span>
-                    )}
-                  </button>
-                );
-              })}
+                  const count = listByTab[tab.key].length;
+                  const isActive = activeTab === tab.key;
+                  return (
+                    <button
+                      key={tab.key}
+                      onClick={() => setActiveTab(tab.key)}
+                      className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-bold transition-colors ${
+                        isActive ? 'bg-[#824c71] text-white' : 'text-zinc-500'
+                      }`}
+                    >
+                      {tab.label}
+                      {count > 0 && (
+                        <span className={isActive ? 'text-white/70' : 'text-zinc-400'}>
+                          {toPersianDigits(String(count))}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
