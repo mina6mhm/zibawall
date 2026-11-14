@@ -1,198 +1,32 @@
 //app/(dashboard)/dashboard/page.tsx
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { CATEGORIES, CATEGORY_MAPPING } from '@/lib/data'; 
+import { CATEGORIES, CATEGORY_MAPPING } from '@/lib/data';
 import RegionFilterModal from '@/components/RegionFilterModal';
-import { Home, Check, Pin, SlidersHorizontal, X, CalendarClock } from 'lucide-react';
-import LandingScreen from '@/components/LandingScreen';
+import {
+  Home, Pin, SlidersHorizontal, X, CalendarClock, Search, MapPin, ChevronDown, Star,
+  Scissors, Hand, Eye, Droplets, Palette, Gem, Feather, Flower2, Sparkles, SearchX,
+} from 'lucide-react';
 
-// کلید ذخیره‌ی موقعیت اسکرول در sessionStorage برای برگشت از صفحه‌ی سالن
 const SCROLL_STORAGE_KEY = 'dashboardScrollPosition';
+const BRAND = '#824c71';
 
-// --- آیکون‌های وکتور اختصاصی هر دسته (SVG داخل کد، بدون هیچ فایل تصویری) ---
-// هر آیکون روی بوم ۴۸×۴۸ طراحی شده و از سه رنگ برند استفاده می‌کنه:
-// خط اصلی (بنفش برند)، پر‌کننده‌ی ملایم و یک رنگ تاکیدی صورتی.
-const ICON_STROKE = '#824c71';
-const ICON_FILL = '#824c71';
-const ICON_ACCENT = '#d98fb8';
+// ---------- دسته‌ها ----------
+type IconType = React.ComponentType<{ className?: string; strokeWidth?: number }>;
 
-type IconPalette = { stroke: string; fill: string; accent: string };
-type CategoryIconProps = { className?: string; palette?: IconPalette };
-
-// پالت پیش‌فرض (رنگ برند) برای دسته‌های ناشناخته
-const DEFAULT_PALETTE: IconPalette = { stroke: ICON_STROKE, fill: ICON_FILL, accent: ICON_ACCENT };
-
-const svgBase = {
-  viewBox: '0 0 48 48',
-  fill: 'none',
-  xmlns: 'http://www.w3.org/2000/svg',
-  'aria-hidden': true,
-  focusable: false,
-} as const;
-
-const lp = (c: { stroke: string }) => ({
-  stroke: c.stroke,
-  strokeWidth: 2.2,
-  strokeLinecap: 'round' as const,
-  strokeLinejoin: 'round' as const,
-});
-
-// مو: قیچی آرایشگری
-const HairIcon = ({ className, palette }: CategoryIconProps) => {
-  const c = palette ?? DEFAULT_PALETTE;
-  return (
-  <svg {...svgBase} className={className}>
-    <circle cx="13" cy="36" r="6" fill={c.fill} fillOpacity="0.14" {...lp(c)} />
-    <circle cx="35" cy="36" r="6" fill={c.fill} fillOpacity="0.14" {...lp(c)} />
-    <path d="M17.5 31.5 L34 7" {...lp(c)} />
-    <path d="M30.5 31.5 L14 7" {...lp(c)} />
-    <circle cx="24" cy="22" r="1.6" fill={c.accent} />
-    <path d="M38 12c1.5-.6 2.6-1.7 3.2-3.2.6 1.5 1.7 2.6 3.2 3.2-1.5.6-2.6 1.7-3.2 3.2-.6-1.5-1.7-2.6-3.2-3.2Z" fill={c.accent} />
-  </svg>
-  );
+const CATEGORY_ICON_MAP: Record<string, IconType> = {
+  'خدمات مو': Scissors,
+  'خدمات ناخن': Hand,
+  'خدمات ابرو و مژه': Eye,
+  'خدمات پوست و زیبایی': Droplets,
+  'خدمات آرایش و میکاپ': Palette,
+  'پکیج‌های عروس': Gem,
+  'موزدایی و بدن': Feather,
+  'خدمات ماساژ و اسپا': Flower2,
 };
 
-// ناخن: لاک ناخن
-const NailsIcon = ({ className, palette }: CategoryIconProps) => {
-  const c = palette ?? DEFAULT_PALETTE;
-  return (
-  <svg {...svgBase} className={className}>
-    <rect x="19.5" y="4.5" width="9" height="11" rx="3" fill={c.accent} fillOpacity="0.5" {...lp(c)} />
-    <rect x="21.5" y="15.5" width="5" height="6" {...lp(c)} />
-    <rect x="13" y="21.5" width="22" height="21" rx="6.5" fill={c.fill} fillOpacity="0.14" {...lp(c)} />
-    <path d="M18.5 28v8" stroke={c.accent} strokeWidth="2.4" strokeLinecap="round" />
-    <circle cx="29" cy="35" r="1.6" fill={c.accent} />
-  </svg>
-  );
-};
-
-// ابرو و مژه: چشم با مژه‌های بلند
-const BrowsLashesIcon = ({ className, palette }: CategoryIconProps) => {
-  const c = palette ?? DEFAULT_PALETTE;
-  return (
-  <svg {...svgBase} className={className}>
-    <path d="M5 28Q24 12 43 28Q24 41 5 28Z" fill={c.fill} fillOpacity="0.1" {...lp(c)} />
-    <circle cx="24" cy="27" r="5.5" fill={c.fill} fillOpacity="0.18" {...lp(c)} />
-    <circle cx="24" cy="27" r="2" fill={c.stroke} />
-    <path d="M24 19.5V11" {...lp(c)} />
-    <path d="M15 22.5 11.5 15" {...lp(c)} />
-    <path d="M33 22.5 36.5 15" {...lp(c)} />
-    <path d="M9.2 25.6 5 20.5" {...lp(c)} />
-    <path d="M38.8 25.6 43 20.5" {...lp(c)} />
-  </svg>
-  );
-};
-
-// پوست و زیبایی: قطره‌ی سرم + درخشش
-const SkinIcon = ({ className, palette }: CategoryIconProps) => {
-  const c = palette ?? DEFAULT_PALETTE;
-  return (
-  <svg {...svgBase} className={className}>
-    <path d="M22 8C22 8 10 22 10 30a12 12 0 0 0 24 0C34 22 22 8 22 8Z" fill={c.fill} fillOpacity="0.14" {...lp(c)} />
-    <path d="M16 30a6 6 0 0 0 5 5.9" stroke={c.accent} strokeWidth="2.4" strokeLinecap="round" />
-    <path d="M37 6c.8 2.8 2.2 4.2 5 5-2.8.8-4.2 2.2-5 5-.8-2.8-2.2-4.2-5-5 2.8-.8 4.2-2.2 5-5Z" fill={c.accent} />
-    <circle cx="40.5" cy="21.5" r="1.6" fill={c.stroke} />
-  </svg>
-  );
-};
-
-// آرایش و میکاپ: رژلب
-const MakeupIcon = ({ className, palette }: CategoryIconProps) => {
-  const c = palette ?? DEFAULT_PALETTE;
-  return (
-  <svg {...svgBase} className={className}>
-    <path d="M19 22V14.5C19 10 22 7 25 5.5c1 2.5 4 4 4 9V22Z" fill={c.accent} fillOpacity="0.55" {...lp(c)} />
-    <rect x="18" y="22" width="12" height="7" rx="1.5" fill={c.fill} fillOpacity="0.14" {...lp(c)} />
-    <rect x="15" y="29" width="18" height="14" rx="3.5" fill={c.fill} fillOpacity="0.14" {...lp(c)} />
-    <path d="M15 35.5h18" {...lp(c)} />
-  </svg>
-  );
-};
-
-// پکیج‌های عروس: حلقه‌ی الماس
-const BridalIcon = ({ className, palette }: CategoryIconProps) => {
-  const c = palette ?? DEFAULT_PALETTE;
-  return (
-  <svg {...svgBase} className={className}>
-    <circle cx="24" cy="32" r="10.5" fill={c.fill} fillOpacity="0.1" {...lp(c)} />
-    <path d="M17.5 12.5 20.5 7h7l3 5.5L24 21Z" fill={c.accent} fillOpacity="0.55" {...lp(c)} />
-    <path d="M17.5 12.5h13" {...lp(c)} />
-    <path d="M20.5 7 24 12.5 27.5 7" {...lp(c)} />
-    <path d="M24 12.5V21" {...lp(c)} />
-    <path d="M9 9.5l1 2.2 2.2 1-2.2 1-1 2.2-1-2.2-2.2-1 2.2-1Z" fill={c.accent} />
-  </svg>
-  );
-};
-
-// موزدایی و بدن: تیغ
-const HairRemovalIcon = ({ className, palette }: CategoryIconProps) => {
-  const c = palette ?? DEFAULT_PALETTE;
-  return (
-  <svg {...svgBase} className={className}>
-    <rect x="12" y="6" width="24" height="12" rx="4" fill={c.fill} fillOpacity="0.14" {...lp(c)} />
-    <path d="M17 12h14" stroke={c.accent} strokeWidth="2.6" strokeLinecap="round" />
-    <path d="M19 18v3h10v-3" {...lp(c)} />
-    <rect x="20.5" y="21" width="7" height="22" rx="3.5" fill={c.fill} fillOpacity="0.14" {...lp(c)} />
-    <path d="M24 27v9" stroke={c.accent} strokeWidth="2.2" strokeLinecap="round" />
-    <circle cx="41" cy="14" r="1.8" fill={c.accent} />
-    <circle cx="7" cy="30" r="1.4" fill={c.accent} />
-  </svg>
-  );
-};
-
-// ماساژ و اسپا: گل نیلوفر آبی
-const MassageSpaIcon = ({ className, palette }: CategoryIconProps) => {
-  const c = palette ?? DEFAULT_PALETTE;
-  return (
-  <svg {...svgBase} className={className}>
-    <path d="M24 8C30 15 30 26 24 33 18 26 18 15 24 8Z" fill={c.accent} fillOpacity="0.5" {...lp(c)} />
-    <path d="M23 33.5C15.5 33.5 9 29.5 7 21.5 14.5 20.5 21 24.5 23 33.5Z" fill={c.fill} fillOpacity="0.14" {...lp(c)} />
-    <path d="M25 33.5C32.5 33.5 39 29.5 41 21.5 33.5 20.5 27 24.5 25 33.5Z" fill={c.fill} fillOpacity="0.14" {...lp(c)} />
-    <path d="M8 40c4-2.4 8-2.4 12 0s8 2.4 12 0 6-2 8-1" {...lp(c)} />
-  </svg>
-  );
-};
-
-// آیکون پیش‌فرض برای دسته‌های ناشناخته
-const DefaultCategoryIcon = ({ className, palette }: CategoryIconProps) => {
-  const c = palette ?? DEFAULT_PALETTE;
-  return (
-  <svg {...svgBase} className={className}>
-    <path d="M24 6c1.6 7 5 10.4 12 12-7 1.6-10.4 5-12 12-1.6-7-5-10.4-12-12 7-1.6 10.4-5 12-12Z" fill={c.accent} fillOpacity="0.5" {...lp(c)} />
-    <circle cx="37" cy="36" r="3" fill={c.fill} fillOpacity="0.14" {...lp(c)} />
-  </svg>
-  );
-};
-
-const CATEGORY_ICON_MAP: Record<string, React.ComponentType<CategoryIconProps>> = {
-  'خدمات مو': HairIcon,
-  'خدمات ناخن': NailsIcon,
-  'خدمات ابرو و مژه': BrowsLashesIcon,
-  'خدمات پوست و زیبایی': SkinIcon,
-  'خدمات آرایش و میکاپ': MakeupIcon,
-  'پکیج‌های عروس': BridalIcon,
-  'موزدایی و بدن': HairRemovalIcon,
-  'خدمات ماساژ و اسپا': MassageSpaIcon,
-};
-
-const getCategoryIcon = (category: string): React.ComponentType<CategoryIconProps> =>
-  CATEGORY_ICON_MAP[category] || DefaultCategoryIcon;
-
-// --- تم رنگی دسته‌ها: همه در طیف رنگ برند (#824c71) با گرادیان ملایم ---
-// from/to: گرادیان تایل در حالت عادی | activeFrom/activeTo: گرادیان کمی پررنگ‌تر در حالت انتخاب
-const CATEGORY_THEME = {
-  from: '#FCF6FA',
-  to: '#F2E3ED',
-  activeFrom: '#F8EAF2',
-  activeTo: '#EBD2E2',
-  stroke: '#824c71',
-  accent: '#d98fb8',
-  text: '#824c71',
-};
-
-// --- عنوان کوتاه‌شده برای نمایش روی کارت ---
 const CATEGORY_DISPLAY_LABEL: Record<string, string> = {
   'خدمات مو': 'مو',
   'خدمات ناخن': 'ناخن',
@@ -204,10 +38,11 @@ const CATEGORY_DISPLAY_LABEL: Record<string, string> = {
   'خدمات ماساژ و اسپا': 'ماساژ و اسپا',
 };
 
-const getCategoryLabel = (category: string): string => CATEGORY_DISPLAY_LABEL[category] || category;
+const getCategoryIcon = (c: string): IconType => CATEGORY_ICON_MAP[c] || Sparkles;
+const getCategoryLabel = (c: string) => CATEGORY_DISPLAY_LABEL[c] || c;
 
+// ---------- ابزارهای متن و جستجو ----------
 const toPersianDigits = (str: string) => str.replace(/[0-9]/g, (d) => '۰۱۲۳۴۵۶۷۸۹'[Number(d)]);
-
 const formatRating = (num: number) => (Number.isInteger(num) ? String(num) : num.toFixed(1));
 
 const normalizeChars = (text: string) => {
@@ -229,44 +64,34 @@ const SYNONYM_GROUPS = [
   ['ناخن', 'کاشت', 'ترمیم', 'ژلیش', 'لمینت', 'مانیکور', 'پدیکور'],
   ['مژه', 'ابرو', 'اکستنشن', 'فیبروز', 'میکروبلیدینگ', 'لیفت', 'تاتو'],
   ['فیشیال', 'پاکسازی', 'پوست', 'میکرودرم', 'مزوتراپی'],
-  ['اپیلاسیون', 'لیزر', 'موزدایی', 'وکس', 'اصلاح']
+  ['اپیلاسیون', 'لیزر', 'موزدایی', 'وکس', 'اصلاح'],
 ];
 
 const getDistance = (a: string, b: string) => {
   if (a.length === 0) return b.length;
   if (b.length === 0) return a.length;
-  const matrix = [];
-  for (let i = 0; i <= b.length; i++) matrix[i] = [i];
-  for (let j = 0; j <= a.length; j++) matrix[0][j] = j;
+  const m: number[][] = [];
+  for (let i = 0; i <= b.length; i++) m[i] = [i];
+  for (let j = 0; j <= a.length; j++) m[0][j] = j;
   for (let i = 1; i <= b.length; i++) {
     for (let j = 1; j <= a.length; j++) {
-      if (b.charAt(i - 1) === a.charAt(j - 1)) {
-        matrix[i][j] = matrix[i - 1][j - 1];
-      } else {
-        matrix[i][j] = Math.min(
-          matrix[i - 1][j - 1] + 1,
-          Math.min(matrix[i][j - 1] + 1,
-          matrix[i - 1][j] + 1)
-        );
-      }
+      m[i][j] =
+        b.charAt(i - 1) === a.charAt(j - 1)
+          ? m[i - 1][j - 1]
+          : Math.min(m[i - 1][j - 1] + 1, m[i][j - 1] + 1, m[i - 1][j] + 1);
     }
   }
-  return matrix[b.length][a.length];
+  return m[b.length][a.length];
 };
 
 const getSynonyms = (word: string): string[] => {
   for (const group of SYNONYM_GROUPS) {
     const normalizedGroup = group.map(normalizeChars);
-    
-    const isMatch = normalizedGroup.some(w => {
+    const isMatch = normalizedGroup.some((w) => {
       if (w === word) return true;
-      if (word.length > 3) {
-        const maxDist = word.length > 5 ? 2 : 1;
-        return getDistance(w, word) <= maxDist;
-      }
+      if (word.length > 3) return getDistance(w, word) <= (word.length > 5 ? 2 : 1);
       return false;
     });
-
     if (isMatch) return normalizedGroup;
   }
   return [word];
@@ -276,21 +101,24 @@ const isFuzzyMatch = (text: string, searchWord: string) => {
   if (!text) return false;
   const textNoSpace = text.replace(/\s+/g, '');
   const searchNoSpace = searchWord.replace(/\s+/g, '');
-  
   if (textNoSpace.includes(searchNoSpace)) return true;
-  
   if (searchNoSpace.length > 3) {
-    const words = text.split(/\s+/);
     const maxDist = searchNoSpace.length > 5 ? 2 : 1;
-    return words.some(w => getDistance(w, searchNoSpace) <= maxDist);
+    return text.split(/\s+/).some((w) => getDistance(w, searchNoSpace) <= maxDist);
   }
   return false;
 };
 
-const BookmarkIcon = ({ isActive, className }: { isActive: boolean, className?: string }) => (
-  <svg viewBox="0 0 24 24" className={className} 
-       stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"
-       fill={isActive ? "currentColor" : "none"} 
+// ---------- اجزای کوچک ----------
+const BookmarkIcon = ({ isActive, className }: { isActive: boolean; className?: string }) => (
+  <svg
+    viewBox="0 0 24 24"
+    className={className}
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    fill={isActive ? 'currentColor' : 'none'}
   >
     <path d="M6 4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v17.5l-6-4-6 4V4z" />
   </svg>
@@ -298,88 +126,99 @@ const BookmarkIcon = ({ isActive, className }: { isActive: boolean, className?: 
 
 type GenderFilter = 'ALL' | 'FEMALE' | 'MALE';
 
-function FilterPill({
-  label,
-  isActive,
-  onClick,
-}: {
-  label: string;
-  isActive: boolean;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className={`flex-1 flex items-center justify-center px-3 py-2 rounded-full text-[13px] font-medium transition-all active:scale-95 ${
-        isActive
-          ? 'bg-[#824c71] text-white shadow-sm'
-          : 'text-zinc-600 hover:text-zinc-900'
-      }`}
-    >
-      {label}
-    </button>
-  );
-}
+const GENDER_OPTIONS: { value: GenderFilter; label: string }[] = [
+  { value: 'ALL', label: 'همه' },
+  { value: 'FEMALE', label: 'بانوان' },
+  { value: 'MALE', label: 'آقایان' },
+];
 
-function FiltersModal({
-  isOpen,
-  onClose,
-  homeServiceOnly,
-  onToggleHomeService,
-  genderFilter,
-  onToggleGender,
-  onClear,
+function FiltersSheet({
+  isOpen, onClose, homeServiceOnly, onToggleHomeService, genderFilter, onSetGender, onClear, resultCount,
 }: {
   isOpen: boolean;
   onClose: () => void;
   homeServiceOnly: boolean;
   onToggleHomeService: () => void;
   genderFilter: GenderFilter;
-  onToggleGender: (value: Exclude<GenderFilter, 'ALL'>) => void;
+  onSetGender: (v: GenderFilter) => void;
   onClear: () => void;
+  resultCount: number;
 }) {
   if (!isOpen) return null;
-
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center">
-      <div className="absolute inset-0 bg-black/40" onClick={onClose} />
-
-      <div className="relative w-full max-w-md bg-white rounded-b-3xl px-4 pt-4 pb-6 shadow-xl">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-base font-bold text-zinc-900">فیلترها</h3>
+    <div className="fixed inset-0 z-50 flex items-end justify-center">
+      <div className="absolute inset-0 bg-zinc-900/40" onClick={onClose} />
+      <div className="relative w-full max-w-md bg-white rounded-t-[28px] px-5 pt-3 pb-6 shadow-2xl">
+        <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-zinc-200" />
+        <div className="flex items-center justify-between mb-5">
+          <h3 className="text-[17px] font-extrabold text-zinc-900">فیلترها</h3>
           <button
             onClick={onClose}
-            className="w-8 h-8 flex items-center justify-center rounded-full text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600 transition-colors"
+            aria-label="بستن"
+            className="w-9 h-9 flex items-center justify-center rounded-full bg-zinc-100 text-zinc-500 active:scale-95 transition"
           >
-            <X className="w-[18px] h-[18px]" strokeWidth={2.3} />
+            <X className="w-4 h-4" strokeWidth={2.4} />
           </button>
         </div>
 
-        <div className="flex items-stretch gap-2">
-          <button
-            onClick={onToggleHomeService}
-            className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-3 rounded-full border text-[13px] font-medium transition-all active:scale-[0.99] ${
-              homeServiceOnly
-                ? 'border-[#824c71] bg-[#824c71]/5 text-[#824c71]'
-                : 'border-zinc-200 text-zinc-600'
-            }`}
-          >
-            <Home className="w-4 h-4 shrink-0" strokeWidth={2.3} />
-            خدمات در منزل
-          </button>
+        <p className="text-[13px] font-bold text-zinc-900 mb-2.5">مخاطب</p>
+        <div className="flex bg-zinc-100 rounded-2xl p-1 mb-5" role="radiogroup">
+          {GENDER_OPTIONS.map((o) => {
+            const active = genderFilter === o.value;
+            return (
+              <button
+                key={o.value}
+                role="radio"
+                aria-checked={active}
+                onClick={() => onSetGender(o.value)}
+                className={`flex-1 h-10 rounded-xl text-[13px] font-bold transition-all ${
+                  active ? 'bg-white text-[#824c71] shadow-sm' : 'text-zinc-500'
+                }`}
+              >
+                {o.label}
+              </button>
+            );
+          })}
+        </div>
 
-          <div className="flex-1 flex items-center gap-0.5 bg-zinc-100 rounded-full p-1">
-            <FilterPill
-              label="بانوان"
-              isActive={genderFilter === 'FEMALE'}
-              onClick={() => onToggleGender('FEMALE')}
+        <button
+          onClick={onToggleHomeService}
+          role="switch"
+          aria-checked={homeServiceOnly}
+          className="w-full flex items-center gap-3 rounded-2xl border border-zinc-200 p-3.5 text-right active:scale-[0.99] transition"
+        >
+          <span className="w-10 h-10 rounded-xl bg-[#824c71]/10 text-[#824c71] flex items-center justify-center shrink-0">
+            <Home className="w-5 h-5" strokeWidth={2.1} />
+          </span>
+          <span className="flex-1 min-w-0">
+            <span className="block text-[14px] font-bold text-zinc-900">خدمات در منزل</span>
+            <span className="block text-[12px] text-zinc-500 mt-0.5">فقط سالن‌هایی که به محل شما می‌آیند</span>
+          </span>
+          <span
+            dir="ltr"
+            className={`relative w-11 h-6 rounded-full shrink-0 transition-colors ${homeServiceOnly ? 'bg-[#824c71]' : 'bg-zinc-300'}`}
+          >
+            <span
+              className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${
+                homeServiceOnly ? 'translate-x-5' : ''
+              }`}
             />
-            <FilterPill
-              label="آقایون"
-              isActive={genderFilter === 'MALE'}
-              onClick={() => onToggleGender('MALE')}
-            />
-          </div>
+          </span>
+        </button>
+
+        <div className="flex gap-2.5 mt-6">
+          <button
+            onClick={onClear}
+            className="h-12 px-5 rounded-2xl border border-zinc-200 text-[14px] font-bold text-zinc-700 active:scale-95 transition"
+          >
+            پاک کردن
+          </button>
+          <button
+            onClick={onClose}
+            className="flex-1 h-12 rounded-2xl bg-[#824c71] text-white text-[14px] font-bold shadow-[0_8px_18px_-8px_#824c71] active:scale-[0.98] transition"
+          >
+            نمایش {toPersianDigits(String(resultCount))} سالن
+          </button>
         </div>
       </div>
     </div>
@@ -389,19 +228,16 @@ function FiltersModal({
 function BookingDisabledAlert({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
   if (!isOpen) return null;
   return (
-    <div
-      className="fixed inset-0 z-[200] flex items-center justify-center bg-black/40 backdrop-blur-sm px-5"
-      onClick={onClose}
-    >
-      <div className="bg-white rounded-xl p-6 max-w-sm w-full shadow-xl" onClick={(e) => e.stopPropagation()}>
-        <div className="w-12 h-12 bg-amber-50 rounded-xl flex items-center justify-center mb-4 mx-auto">
+    <div className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center bg-zinc-900/40 px-4 pb-4" onClick={onClose}>
+      <div className="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl" onClick={(e) => e.stopPropagation()}>
+        <div className="w-12 h-12 bg-amber-50 rounded-2xl flex items-center justify-center mb-4 mx-auto">
           <CalendarClock className="w-6 h-6 text-amber-500" />
         </div>
-        <h3 className="text-base font-bold text-zinc-900 text-center mb-2">نوبت‌دهی آنلاین فعال نیست</h3>
-        <p className="text-sm text-zinc-500 text-center leading-relaxed mb-5">
-          این سالن هنوز سیستم نوبت‌دهی آنلاین را فعال نکرده است. برای رزرو وقت با سالن تماس بگیرید.
+        <h3 className="text-base font-extrabold text-zinc-900 text-center mb-2">نوبت‌دهی آنلاین فعال نیست</h3>
+        <p className="text-[13px] text-zinc-500 text-center leading-6 mb-5">
+          این سالن هنوز نوبت‌دهی آنلاین را فعال نکرده است. برای رزرو وقت، مستقیم با سالن تماس بگیرید.
         </p>
-        <button onClick={onClose} className="w-full bg-[#824c71] hover:bg-[#6e3f60] text-white rounded-[10px] py-3 text-sm font-bold">
+        <button onClick={onClose} className="w-full h-12 bg-[#824c71] text-white rounded-2xl text-sm font-bold active:scale-[0.98] transition">
           متوجه شدم
         </button>
       </div>
@@ -409,21 +245,33 @@ function BookingDisabledAlert({ isOpen, onClose }: { isOpen: boolean; onClose: (
   );
 }
 
+function SalonSkeleton() {
+  return (
+    <div className="animate-pulse">
+      <div className="aspect-[16/10] rounded-[22px] bg-zinc-100" />
+      <div className="mt-3 h-4 w-2/3 rounded bg-zinc-100" />
+      <div className="mt-2 h-3 w-1/2 rounded bg-zinc-100" />
+      <div className="mt-4 h-10 rounded-full bg-zinc-100" />
+    </div>
+  );
+}
+
+// ---------- صفحه ----------
 export default function DashboardHomePage() {
   const router = useRouter();
-  
+
   const [salons, setSalons] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const [bookmarkedSalons, setBookmarkedSalons] = useState<(number|string)[]>([]);
+  const [bookmarkedSalons, setBookmarkedSalons] = useState<(number | string)[]>([]);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
-  
+
   const [selectedProvince, setSelectedProvince] = useState<string>('تهران');
   const [selectedCity, setSelectedCity] = useState<string>('تهران');
   const [selectedNeighborhoods, setSelectedNeighborhoods] = useState<string[]>([]);
-  
+
   const [isRegionModalOpen, setIsRegionModalOpen] = useState(false);
   const [isFiltersModalOpen, setIsFiltersModalOpen] = useState(false);
   const [homeServiceOnly, setHomeServiceOnly] = useState(false);
@@ -433,13 +281,11 @@ export default function DashboardHomePage() {
 
   useEffect(() => {
     let hideTimer: ReturnType<typeof setTimeout>;
-
     const checkIpLocation = async () => {
       try {
         const res = await fetch('https://ipwho.is/');
         if (!res.ok) return;
         const data = await res.json();
-
         if (data?.success !== false && data?.country_code && data.country_code !== 'IR') {
           setShowVpnWarning(true);
           hideTimer = setTimeout(() => setShowVpnWarning(false), 6000);
@@ -448,25 +294,14 @@ export default function DashboardHomePage() {
         // بی‌سروصدا رد می‌شود
       }
     };
-
     checkIpLocation();
-
     return () => clearTimeout(hideTimer);
   }, []);
 
-  const toggleGender = (value: Exclude<GenderFilter, 'ALL'>) => {
-    setGenderFilter((prev) => (prev === value ? 'ALL' : value));
-  };
+  const toggleCategory = (category: string) =>
+    setSelectedCategories((prev) => (prev.includes(category) ? prev.filter((c) => c !== category) : [...prev, category]));
 
-  const toggleCategory = (category: string) => {
-    setSelectedCategories((prev) =>
-      prev.includes(category) ? prev.filter((c) => c !== category) : [...prev, category]
-    );
-  };
-
-  const removeNeighborhood = (nhToRemove: string) => {
-    setSelectedNeighborhoods((prev) => prev.filter((nh) => nh !== nhToRemove));
-  };
+  const removeNeighborhood = (nh: string) => setSelectedNeighborhoods((prev) => prev.filter((x) => x !== nh));
 
   const categoryList = CATEGORIES.filter((c: string) => c !== 'همه');
 
@@ -476,39 +311,24 @@ export default function DashboardHomePage() {
       setError(null);
       try {
         const response = await fetch('/api/salon');
-        if (!response.ok) {
-          throw new Error('خطا در دریافت اطلاعات سالن‌ها');
-        }
-        
+        if (!response.ok) throw new Error('خطا در دریافت اطلاعات سالن‌ها');
         const data = await response.json();
-        
-        if (data.salons) {
-          setSalons(data.salons);
-        }
-
+        if (data.salons) setSalons(data.salons);
         const savedBookmarks = localStorage.getItem('bookmarkedSalons');
-        if (savedBookmarks) {
-          setBookmarkedSalons(JSON.parse(savedBookmarks));
-        }
+        if (savedBookmarks) setBookmarkedSalons(JSON.parse(savedBookmarks));
       } catch (err) {
         console.error('Error fetching salons:', err);
-        setError('مشکلی در برقراری ارتباط با سرور پیش آمد.');
+        setError('اتصال به سرور برقرار نشد. اینترنت خود را بررسی کنید و دوباره تلاش کنید.');
       } finally {
         setIsLoading(false);
       }
     };
-
     fetchSalonsData();
   }, []);
 
-  // بعد از این‌که لیست سالن‌ها لود شد، اگر قبلاً موقعیت اسکرول ذخیره شده بود
-  // (یعنی کاربر از صفحه‌ی جزئیات سالن برگشته)، به همون نقطه برمی‌گردیم.
-  // چون بعد از لود شدن دیتا، عکس‌های کارت‌ها هنوز ممکنه لود نشده باشن و ارتفاع واقعی صفحه
-  // کمتر از حد لازم باشه، به‌جای یک تلاش، تا رسیدن ارتفاع صفحه به مقدار لازم (یا رسیدن به
-  // حداکثر تعداد تلاش) هر ۵۰ میلی‌ثانیه دوباره امتحان می‌کنیم.
+  // بازگرداندن موقعیت اسکرول بعد از برگشت از صفحه‌ی سالن
   useEffect(() => {
     if (isLoading) return;
-
     const savedScroll = sessionStorage.getItem(SCROLL_STORAGE_KEY);
     if (!savedScroll) return;
 
@@ -516,416 +336,371 @@ export default function DashboardHomePage() {
     sessionStorage.removeItem(SCROLL_STORAGE_KEY);
 
     let attempts = 0;
-    const maxAttempts = 40; // حداکثر حدود ۲ ثانیه تلاش
+    const maxAttempts = 40;
     let timeoutId: ReturnType<typeof setTimeout>;
 
     const tryScroll = () => {
       attempts++;
       const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
-
       if (maxScroll >= targetY || attempts >= maxAttempts) {
         window.scrollTo(0, targetY);
       } else {
         timeoutId = setTimeout(tryScroll, 50);
       }
     };
-
     tryScroll();
-
     return () => clearTimeout(timeoutId);
   }, [isLoading]);
 
-  const handleBookmarkClick = async (salonId: number | string, e: React.MouseEvent) => {
+  const handleBookmarkClick = (salonId: number | string, e: React.MouseEvent) => {
     e.stopPropagation();
     const isBookmarked = bookmarkedSalons.includes(salonId);
-    
     setBookmarkedSalons((prev) => {
-      const newBookmarks = isBookmarked 
-        ? prev.filter((id) => id !== salonId) 
-        : [...prev, salonId];
-      localStorage.setItem('bookmarkedSalons', JSON.stringify(newBookmarks));
-      return newBookmarks;
+      const next = isBookmarked ? prev.filter((id) => id !== salonId) : [...prev, salonId];
+      localStorage.setItem('bookmarkedSalons', JSON.stringify(next));
+      return next;
     });
   };
 
-  const isCurrentSalonBookmarked = (salonId: number | string) => bookmarkedSalons.includes(salonId);
+  const isBookmarked = (salonId: number | string) => bookmarkedSalons.includes(salonId);
 
   const handleBookingClick = (salon: any, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (salon.bookingEnabled) {
-      router.push(`/salon/${salon.id}/book`);
-    } else {
-      setShowBookingAlert(true);
-    }
+    if (salon.bookingEnabled) router.push(`/salon/${salon.id}/book`);
+    else setShowBookingAlert(true);
   };
 
-  // کلیک روی کارت سالن: قبل از رفتن به صفحه‌ی جزئیات، موقعیت فعلی اسکرول ذخیره می‌شود
   const handleSalonCardClick = (salonId: number | string) => {
     sessionStorage.setItem(SCROLL_STORAGE_KEY, String(window.scrollY));
     router.push(`/salon/${salonId}`);
   };
 
-  const filteredSalons = salons.filter((salon) => {
-    const salonTags = (salon.tags || []).map((t: any) => typeof t === 'object' && t !== null ? t.name : t);
+  const filteredSalons = useMemo(
+    () =>
+      salons.filter((salon) => {
+        const salonTags = (salon.tags || []).map((t: any) => (typeof t === 'object' && t !== null ? t.name : t));
 
-    const matchesCategory =
-      selectedCategories.length === 0 ||
-      selectedCategories.every((cat) => {
-        const validTagsForCategory = CATEGORY_MAPPING[cat] || [];
-        return salonTags.some((tag: string) => validTagsForCategory.includes(tag));
-      });
+        const matchesCategory =
+          selectedCategories.length === 0 ||
+          selectedCategories.every((cat) => {
+            const valid = CATEGORY_MAPPING[cat] || [];
+            return salonTags.some((tag: string) => valid.includes(tag));
+          });
 
-    const matchesProvince = salon.province ? salon.province === selectedProvince : true;
-    const matchesCity = salon.city ? salon.city === selectedCity : true;
-    
-    const salonNeighborhoods = Array.isArray(salon.neighborhoods) 
-      ? salon.neighborhoods 
-      : (salon.district ? [salon.district] : []);
+        const matchesProvince = salon.province ? salon.province === selectedProvince : true;
+        const matchesCity = salon.city ? salon.city === selectedCity : true;
 
-    const matchesLocation =
-      selectedProvince === 'تهران' && selectedCity === 'تهران' && selectedNeighborhoods.length > 0
-        ? selectedNeighborhoods.includes('همه محله‌ها') || salonNeighborhoods.some((nh: string) => selectedNeighborhoods.includes(nh))
-        : true;
+        const salonNeighborhoods = Array.isArray(salon.neighborhoods)
+          ? salon.neighborhoods
+          : salon.district
+          ? [salon.district]
+          : [];
 
-    const matchesHomeService = !homeServiceOnly || !!salon.hasHomeService;
+        const matchesLocation =
+          selectedProvince === 'تهران' && selectedCity === 'تهران' && selectedNeighborhoods.length > 0
+            ? selectedNeighborhoods.includes('همه محله‌ها') ||
+              salonNeighborhoods.some((nh: string) => selectedNeighborhoods.includes(nh))
+            : true;
 
-    const matchesGender =
-      genderFilter === 'ALL' ||
-      salon.genderAudience === genderFilter ||
-      salon.genderAudience === 'BOTH';
+        const matchesHomeService = !homeServiceOnly || !!salon.hasHomeService;
+        const matchesGender =
+          genderFilter === 'ALL' || salon.genderAudience === genderFilter || salon.genderAudience === 'BOTH';
 
-    if (!matchesCategory || !matchesProvince || !matchesCity || !matchesLocation || !matchesHomeService || !matchesGender) return false;
-    
-    if (!searchQuery.trim()) return true;
+        if (!matchesCategory || !matchesProvince || !matchesCity || !matchesLocation || !matchesHomeService || !matchesGender)
+          return false;
 
-    const searchTerms = normalizeChars(searchQuery).split(/\s+/).filter(Boolean);
-    
-    const normalizedName = normalizeChars(salon.name || '');
-    const normalizedAddress = normalizeChars(salon.address || '');
-    const normalizedTags = salonTags.map((tag: string) => normalizeChars(tag));
+        if (!searchQuery.trim()) return true;
 
-    return searchTerms.every((term) => {
-      const synonyms = getSynonyms(term);
-      
-      return synonyms.some((syn) => {
-        return (
-          isFuzzyMatch(normalizedName, syn) ||
-          isFuzzyMatch(normalizedAddress, syn) ||
-          normalizedTags.some((tag: string) => isFuzzyMatch(tag, syn))
+        const searchTerms = normalizeChars(searchQuery).split(/\s+/).filter(Boolean);
+        const normalizedName = normalizeChars(salon.name || '');
+        const normalizedAddress = normalizeChars(salon.address || '');
+        const normalizedTags = salonTags.map((tag: string) => normalizeChars(tag));
+
+        return searchTerms.every((term) =>
+          getSynonyms(term).some(
+            (syn) =>
+              isFuzzyMatch(normalizedName, syn) ||
+              isFuzzyMatch(normalizedAddress, syn) ||
+              normalizedTags.some((tag: string) => isFuzzyMatch(tag, syn))
+          )
         );
-      });
-    });
-  });
+      }),
+    [salons, selectedCategories, selectedProvince, selectedCity, selectedNeighborhoods, homeServiceOnly, genderFilter, searchQuery]
+  );
 
-  const hasActiveExtraFilters = homeServiceOnly || genderFilter !== 'ALL';
+  const extraFilterCount = (homeServiceOnly ? 1 : 0) + (genderFilter !== 'ALL' ? 1 : 0);
+  const hasActiveExtraFilters = extraFilterCount > 0;
+  const showNeighborhoodChips = selectedNeighborhoods.length > 0 && !selectedNeighborhoods.includes('همه محله‌ها');
+
+  const resetAll = () => {
+    setSearchQuery('');
+    setSelectedCategories([]);
+    setSelectedProvince('تهران');
+    setSelectedCity('تهران');
+    setSelectedNeighborhoods([]);
+    setHomeServiceOnly(false);
+    setGenderFilter('ALL');
+  };
 
   return (
     <>
-      <div className="flex flex-col min-h-screen bg-white pb-24">
+      <div className="flex flex-col min-h-screen bg-white pb-28">
         {showVpnWarning && (
-          <div className="mx-4 mt-3 flex items-center justify-between gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
+          <div role="status" className="mx-4 mt-3 flex items-center justify-between gap-3 rounded-2xl bg-amber-50 px-4 py-3">
             <div className="flex items-center gap-2.5 min-w-0">
-              <span className="shrink-0 w-5 h-5 rounded-full bg-amber-400 text-white flex items-center justify-center text-[11px] font-bold">
-                !
-              </span>
-              <p className="text-[13px] font-medium text-zinc-800 leading-snug">
-                برای تجربه بهتر، فیلترشکن خود را خاموش کنید.
-              </p>
+              <span className="shrink-0 w-5 h-5 rounded-full bg-amber-400 text-white flex items-center justify-center text-[11px] font-bold">!</span>
+              <p className="text-[13px] font-medium text-zinc-800 leading-snug">برای تجربه بهتر، فیلترشکن خود را خاموش کنید.</p>
             </div>
-            <button
-              onClick={() => setShowVpnWarning(false)}
-              aria-label="بستن هشدار"
-              className="shrink-0 text-zinc-400 hover:text-zinc-600 transition-colors"
-            >
+            <button onClick={() => setShowVpnWarning(false)} aria-label="بستن هشدار" className="shrink-0 text-zinc-400 hover:text-zinc-600">
               <X className="w-4 h-4" strokeWidth={2.3} />
             </button>
           </div>
         )}
 
-        {/* هدر */}
-        <div className="sticky top-0 z-20 bg-white px-4 pt-3 md:pt-5 pb-2 md:pb-3">
-          <div className="flex items-start mb-3 md:mb-5 w-full">
-            <div className="flex flex-col gap-3 overflow-hidden w-full">
-              <button 
-                onClick={() => setIsRegionModalOpen(true)}
-                className="flex items-center gap-1 w-fit text-zinc-800 hover:text-zinc-600 transition-colors"
-              >
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
-                  <circle cx="12" cy="10" r="3" />
-                </svg>
-                <span className="font-bold text-sm">
-                  {selectedProvince}، {selectedCity}
-                </span>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="m6 9 6 6 6-6" />
-                </svg>
-              </button>
-
-              {selectedNeighborhoods.length > 0 && !selectedNeighborhoods.includes('همه محله‌ها') && (
-                <div className="flex items-center gap-2 overflow-x-auto hide-scrollbar w-full pb-1">
-                  {selectedNeighborhoods.map((nh) => (
-                    <span 
-                      key={nh} 
-                      className="flex items-center gap-1.5 bg-[#e3c9dc]/20 text-[#824c71] px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap border border-[#d3aec8]"
-                    >
-                      {nh}
-                      <button 
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          removeNeighborhood(nh);
-                        }} 
-                        className="hover:bg-rose-200 text-[#824c71] rounded-full p-0.5 transition-colors flex items-center justify-center"
-                      >
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M18 6 6 18"/><path d="m6 6 12 12"/>
-                        </svg>
-                      </button>
-                    </span>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-{/* سرچ‌باکس + آیکون فیلترها */}
-<div className="flex items-center gap-2">
-  <div className="flex-1 min-w-0">
-    <div className="flex gap-2">
-      <div className="flex-1 flex items-center bg-zinc-100 rounded-full px-4 py-3 h-12 transition-colors focus-within:bg-white focus-within:border focus-within:border-[#824c71]/40 focus-within:ring-2 focus-within:ring-[#824c71]/10">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="text-zinc-400 ml-2 shrink-0">
-          <circle cx="11" cy="11" r="8" />
-          <path d="m21 21-4.3-4.3" />
-        </svg>
-        <input 
-          type="text" 
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="جستجوی سالن، خدمات یا..." 
-          className="bg-transparent border-none outline-none text-sm w-full text-zinc-900 placeholder:text-zinc-500"
-        />
-        {searchQuery && (
-          <button onClick={() => setSearchQuery('')} className="text-zinc-400 hover:text-zinc-600 shrink-0">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M18 6 6 18"/><path d="m6 6 12 12"/>
-            </svg>
+        {/* هدر چسبان */}
+        <header className="sticky top-0 z-20 bg-white px-4 pt-4 pb-3">
+          <button
+            onClick={() => setIsRegionModalOpen(true)}
+            className="group flex items-center gap-2.5 mb-3.5 text-right"
+            aria-label="تغییر منطقه"
+          >
+            <span className="w-10 h-10 rounded-full bg-[#824c71]/10 text-[#824c71] flex items-center justify-center">
+              <MapPin className="w-5 h-5" strokeWidth={2.2} />
+            </span>
+            <span className="flex flex-col leading-tight">
+              <span className="text-[11px] text-zinc-500">منطقه‌ی شما</span>
+              <span className="flex items-center gap-1 text-[15px] font-extrabold text-zinc-900">
+                {selectedProvince}، {selectedCity}
+                <ChevronDown className="w-4 h-4 text-zinc-400 group-active:translate-y-0.5 transition-transform" strokeWidth={2.4} />
+              </span>
+            </span>
           </button>
-        )}
-      </div>
-    </div>
-  </div>
-  <button
-    onClick={() => setIsFiltersModalOpen(true)}
-    aria-label="فیلترها"
-    className={`relative shrink-0 w-11 h-11 flex items-center justify-center rounded-full transition-all active:scale-95 ${
-      hasActiveExtraFilters
-        ? 'bg-[#824c71]/10 text-[#824c71]'
-        : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'
-    }`}
-  >
-    <SlidersHorizontal className="w-[18px] h-[18px]" strokeWidth={2.2} />
-    {hasActiveExtraFilters && (
-      <span className="absolute top-1.5 left-1.5 w-2 h-2 rounded-full bg-[#824c71] border-2 border-white" />
-    )}
-  </button>
-</div>
-        </div>
 
-        {/* دسته‌بندی‌ها — هر دسته یک تایل با گرادیان ملایم در طیف رنگ برند؛
-            حالت انتخاب‌شده: حلقه‌ی نازک برند دور تایل + سایه‌ی نرم + آیکون کمی بزرگ‌تر + نام هم‌رنگ. */}
-        <div className="px-4 mt-3 md:mt-4">
-          <h2 className="text-base md:text-lg font-bold text-zinc-900 mb-4">دسته‌بندی خدمات</h2>
-          <div className="grid grid-cols-4 gap-x-2 gap-y-3.5">
+          <div className="flex items-center gap-2.5">
+            <label className="flex-1 min-w-0 flex items-center gap-2.5 h-12 px-4 rounded-2xl bg-zinc-50 border border-zinc-200 transition focus-within:bg-white focus-within:border-[#824c71]/50 focus-within:ring-4 focus-within:ring-[#824c71]/10">
+              <Search className="w-[18px] h-[18px] text-zinc-400 shrink-0" strokeWidth={2.2} />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="جستجوی سالن، خدمات یا آدرس"
+                className="bg-transparent outline-none text-sm w-full text-zinc-900 placeholder:text-zinc-400"
+              />
+              {searchQuery && (
+                <button onClick={() => setSearchQuery('')} aria-label="پاک کردن جستجو" className="shrink-0 w-5 h-5 rounded-full bg-zinc-300 text-white flex items-center justify-center">
+                  <X className="w-3 h-3" strokeWidth={3} />
+                </button>
+              )}
+            </label>
+
+            <button
+              onClick={() => setIsFiltersModalOpen(true)}
+              aria-label="فیلترها"
+              className={`relative shrink-0 w-12 h-12 flex items-center justify-center rounded-2xl border transition active:scale-95 ${
+                hasActiveExtraFilters
+                  ? 'bg-[#824c71] border-[#824c71] text-white'
+                  : 'bg-white border-zinc-200 text-zinc-700'
+              }`}
+            >
+              <SlidersHorizontal className="w-[18px] h-[18px]" strokeWidth={2.2} />
+              {hasActiveExtraFilters && (
+                <span className="absolute -top-1.5 -left-1.5 min-w-[18px] h-[18px] px-1 rounded-full bg-white text-[#824c71] border border-[#824c71] text-[10px] font-extrabold flex items-center justify-center">
+                  {toPersianDigits(String(extraFilterCount))}
+                </span>
+              )}
+            </button>
+          </div>
+
+          {showNeighborhoodChips && (
+            <div className="flex items-center gap-2 overflow-x-auto hide-scrollbar mt-3">
+              {selectedNeighborhoods.map((nh) => (
+                <span key={nh} className="flex items-center gap-1 bg-[#824c71]/10 text-[#824c71] pl-1.5 pr-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap">
+                  {nh}
+                  <button onClick={() => removeNeighborhood(nh)} aria-label={`حذف ${nh}`} className="w-4 h-4 rounded-full hover:bg-[#824c71]/15 flex items-center justify-center">
+                    <X className="w-3 h-3" strokeWidth={2.8} />
+                  </button>
+                </span>
+              ))}
+            </div>
+          )}
+        </header>
+
+        {/* دسته‌بندی‌ها */}
+        <section className="mt-2">
+          <div className="flex items-center justify-between px-4 mb-3">
+            <h2 className="text-[17px] font-extrabold text-zinc-900">دسته‌بندی خدمات</h2>
+            {selectedCategories.length > 0 && (
+              <button onClick={() => setSelectedCategories([])} className="text-xs font-bold text-[#824c71]">
+                حذف انتخاب‌ها
+              </button>
+            )}
+          </div>
+          <div className="flex gap-3 overflow-x-auto hide-scrollbar px-4 pb-1">
             {categoryList.map((category: string) => {
-              const CategoryIcon = getCategoryIcon(category);
-              const theme = CATEGORY_THEME;
+              const Icon = getCategoryIcon(category);
               const isActive = selectedCategories.includes(category);
               return (
                 <button
                   key={category}
                   onClick={() => toggleCategory(category)}
                   aria-pressed={isActive}
-                  className="flex flex-col items-center gap-1.5 active:scale-95 transition-transform"
+                  className="shrink-0 w-[68px] flex flex-col items-center gap-2 active:scale-95 transition-transform"
                 >
                   <span
-                    className="w-[62px] h-[62px] rounded-[20px] flex items-center justify-center transition-all duration-200"
-                    style={{
-                      background: isActive
-                        ? `linear-gradient(145deg, ${theme.activeFrom}, ${theme.activeTo})`
-                        : `linear-gradient(145deg, ${theme.from}, ${theme.to})`,
-                      boxShadow: isActive
-                        ? `0 0 0 1.5px ${theme.stroke}, 0 8px 16px -8px ${theme.stroke}8C`
-                        : `inset 0 0 0 1px ${theme.stroke}1A`,
-                    }}
-                  >
-                    <CategoryIcon
-                      className={`w-[34px] h-[34px] transition-transform duration-200 ${isActive ? 'scale-110' : ''}`}
-                      palette={{ stroke: theme.stroke, fill: theme.stroke, accent: theme.accent }}
-                    />
-                  </span>
-                  <span
-                    className={`w-full text-[11px] text-center leading-[1.3] transition-colors ${
-                      isActive ? 'font-bold' : 'text-zinc-700 font-medium'
+                    className={`w-[60px] h-[60px] rounded-full flex items-center justify-center transition-all duration-200 ${
+                      isActive
+                        ? 'bg-[#824c71] text-white shadow-[0_10px_20px_-8px_#824c71]'
+                        : 'bg-[#f7eff4] text-[#824c71]'
                     }`}
-                    style={isActive ? { color: theme.text } : undefined}
                   >
+                    <Icon className="w-[26px] h-[26px]" strokeWidth={1.8} />
+                  </span>
+                  <span className={`text-[11.5px] leading-tight text-center ${isActive ? 'font-extrabold text-[#824c71]' : 'font-medium text-zinc-600'}`}>
                     {getCategoryLabel(category)}
                   </span>
                 </button>
               );
             })}
           </div>
-        </div>
+        </section>
 
         {/* لیست سالن‌ها */}
-        <div className="px-4 mt-4 md:mt-6">
-          <h2 className="text-base md:text-lg font-bold text-zinc-900 mb-3 md:mb-4">
-            {searchQuery ? `نتایج جستجو برای "${searchQuery}"` : 'سالن‌های پیشنهادی'}
-          </h2>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <section className="px-4 mt-7">
+          <div className="flex items-baseline justify-between mb-4">
+            <h2 className="text-[17px] font-extrabold text-zinc-900 truncate">
+              {searchQuery ? `نتایج «${searchQuery}»` : 'سالن‌های پیشنهادی'}
+            </h2>
+            {!isLoading && !error && (
+              <span className="text-xs text-zinc-500 shrink-0 mr-3">{toPersianDigits(String(filteredSalons.length))} سالن</span>
+            )}
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-5 gap-y-7">
             {isLoading ? (
-              [1, 2, 3, 4].map((n) => (
-                <div key={n} className="bg-zinc-100 rounded-2xl h-44 animate-pulse"></div>
-              ))
+              [1, 2, 3, 4].map((n) => <SalonSkeleton key={n} />)
             ) : error ? (
-              <div className="col-span-full py-8 text-center text-red-500 font-medium">{error}</div>
+              <div className="col-span-full py-10 text-center">
+                <p className="text-sm font-medium text-zinc-700 leading-6">{error}</p>
+                <button onClick={() => window.location.reload()} className="mt-4 h-10 px-5 rounded-full bg-[#824c71] text-white text-sm font-bold">
+                  تلاش دوباره
+                </button>
+              </div>
             ) : filteredSalons.length > 0 ? (
               filteredSalons.map((salon) => {
-                const salonReviews = salon.reviews || [];
-                const validReviews = salonReviews.filter((review: any) => review.rating && review.rating > 0);
+                const validReviews = (salon.reviews || []).filter((r: any) => r.rating && r.rating > 0);
                 const totalVotes = validReviews.length;
+                const salonTags = (salon.tags || []).map((t: any) => (typeof t === 'object' && t !== null ? t.name : t));
 
-                const salonTags = (salon.tags || []).map((t: any) => typeof t === 'object' && t !== null ? t.name : t);
-
-                const avgRatingNum = totalVotes > 0
-                  ? validReviews.reduce((acc: number, review: any) => acc + review.rating, 0) / totalVotes
-                  : (typeof salon.rating === 'number' && salon.rating > 0 ? salon.rating : null);
+                const avgRatingNum =
+                  totalVotes > 0
+                    ? validReviews.reduce((acc: number, r: any) => acc + r.rating, 0) / totalVotes
+                    : typeof salon.rating === 'number' && salon.rating > 0
+                    ? salon.rating
+                    : null;
 
                 const averageRating = avgRatingNum !== null ? formatRating(avgRatingNum) : null;
-                const reviewsCount = totalVotes > 0 ? totalVotes : (salon.reviewsCount || 0);
-
+                const reviewsCount = totalVotes > 0 ? totalVotes : salon.reviewsCount || 0;
                 const isPinned = !!salon.pinnedUntil && new Date(salon.pinnedUntil) > new Date();
-                  
+                const saved = isBookmarked(salon.id);
+
                 return (
-                  <div 
-                    key={salon.id}
-                    onClick={() => handleSalonCardClick(salon.id)}
-                    dir="ltr"
-                    className="h-44 cursor-pointer bg-white rounded-2xl border border-zinc-200 overflow-hidden shadow-[0_1px_4px_rgba(0,0,0,0.06)] hover:shadow-[0_4px_14px_rgba(0,0,0,0.1)] active:scale-[0.99] transition-all flex items-stretch group relative"
-                  >
-                    <div className="w-28 sm:w-32 h-full bg-zinc-200 relative overflow-hidden shrink-0">
+                  <article key={salon.id} onClick={() => handleSalonCardClick(salon.id)} className="group cursor-pointer">
+                    <div className="relative aspect-[16/10] rounded-[22px] overflow-hidden bg-zinc-100">
                       {salon.imageUrl ? (
-                        <img src={salon.imageUrl} alt={salon.name} className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                        <img
+                          src={salon.imageUrl}
+                          alt={salon.name}
+                          loading="lazy"
+                          className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                        />
                       ) : (
-                        <div className="absolute inset-0 flex items-center justify-center text-zinc-400 bg-zinc-100 text-xs">بدون تصویر</div>
+                        <div className="absolute inset-0 flex items-center justify-center text-zinc-400 text-xs">بدون تصویر</div>
+                      )}
+                      <div className="absolute inset-x-0 top-0 h-20 bg-gradient-to-b from-black/25 to-transparent pointer-events-none" />
+
+                      {isPinned && (
+                        <span className="absolute top-3 right-3 flex items-center gap-1 bg-white/95 text-amber-600 rounded-full pl-2.5 pr-2 py-1 text-[11px] font-bold shadow-sm">
+                          <Pin className="w-3 h-3 fill-amber-500" strokeWidth={2} />
+                          ویژه
+                        </span>
+                      )}
+
+                      <button
+                        onClick={(e) => handleBookmarkClick(salon.id, e)}
+                        aria-label={saved ? 'حذف از نشان‌ها' : 'افزودن به نشان‌ها'}
+                        aria-pressed={saved}
+                        className={`absolute top-3 left-3 w-9 h-9 flex items-center justify-center rounded-full bg-white/95 shadow-sm active:scale-90 transition ${
+                          saved ? 'text-[#824c71]' : 'text-zinc-600'
+                        }`}
+                      >
+                        <BookmarkIcon isActive={saved} className="w-[18px] h-[18px]" />
+                      </button>
+
+                      {averageRating && (
+                        <span className="absolute bottom-3 right-3 flex items-center gap-1 bg-white/95 rounded-full px-2.5 py-1 shadow-sm">
+                          <Star className="w-3.5 h-3.5 fill-yellow-500 text-yellow-500" strokeWidth={2} />
+                          <span className="text-[12.5px] font-extrabold text-zinc-900">{toPersianDigits(averageRating)}</span>
+                          <span className="text-[11px] text-zinc-500">({toPersianDigits(String(reviewsCount))})</span>
+                        </span>
                       )}
                     </div>
 
-                    <div dir="rtl" className="flex-1 min-w-0 h-full p-3 flex flex-col overflow-hidden">
-                      
-                      <div className="flex-1 min-h-0 overflow-hidden">
-                        <div className="flex items-start justify-between gap-2">
-                          <div className="flex items-center gap-1.5 min-w-0 flex-1">
-                            {isPinned && (
-                              <span className="shrink-0 flex items-center gap-0.5 bg-amber-50 text-amber-600 rounded-full px-1.5 py-0.5">
-                                <Pin className="w-2.5 h-2.5 fill-amber-500" strokeWidth={2} />
-                              </span>
-                            )}
-                            <h3 className="font-bold text-zinc-900 text-[15px] leading-tight truncate">{salon.name}</h3>
-                          </div>
+                    <div className="px-1 pt-3">
+                      <h3 className="font-extrabold text-zinc-900 text-[16px] leading-snug truncate">{salon.name}</h3>
+                      <p className="flex items-center gap-1 mt-1 text-zinc-500 min-w-0">
+                        <MapPin className="w-[14px] h-[14px] shrink-0" strokeWidth={2} />
+                        <span className="text-[12.5px] truncate">{salon.address || 'آدرس ثبت نشده'}</span>
+                      </p>
 
-                          <button 
-                            onClick={(e) => handleBookmarkClick(salon.id, e)}
-                            className={`shrink-0 w-9 h-9 -mt-1.5 -ml-1.5 flex items-center justify-center rounded-full active:bg-zinc-100 transition-colors ${
-                              isCurrentSalonBookmarked(salon.id) ? 'text-[#824c71]' : 'text-zinc-400'
-                            }`}
-                          >
-                            <BookmarkIcon isActive={isCurrentSalonBookmarked(salon.id)} className="w-5 h-5" />
-                          </button>
-                        </div>
-
-                        <div className="flex items-center gap-1 text-zinc-500 mt-1 min-w-0">
-                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
-                            <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
-                            <circle cx="12" cy="10" r="3" />
-                          </svg>
-                          <span className="text-[12.5px] truncate">{salon.address || 'بدون آدرس'}</span>
-                        </div>
-
-                        {averageRating && (
-                          <div className="flex items-center gap-1 mt-1.5">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="#EAB308" stroke="#EAB308" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-                            </svg>
-                            <span className="font-bold text-[12.5px] text-zinc-900">{toPersianDigits(averageRating)}</span>
-                            <span className="text-[11px] text-zinc-500">
-                              ({toPersianDigits(String(reviewsCount))} نظر)
+                      <div className="flex items-center gap-3 mt-3.5">
+                        <div className="flex-1 min-w-0 flex items-center gap-1.5 overflow-hidden">
+                          {salonTags.slice(0, 2).map((tag: string, idx: number) => (
+                            <span key={idx} className="bg-[#f7eff4] text-[#824c71] text-[11px] px-2.5 py-1 rounded-full font-medium whitespace-nowrap truncate max-w-[130px]">
+                              {tag}
                             </span>
-                          </div>
-                        )}
+                          ))}
+                          {salonTags.length > 2 && (
+                            <span className="text-zinc-500 text-[11px] font-medium shrink-0">+{toPersianDigits(String(salonTags.length - 2))}</span>
+                          )}
+                        </div>
 
-                        {salonTags && salonTags.length > 0 && (
-                          <div className="flex items-center gap-1 mt-2 overflow-hidden flex-nowrap">
-                            {salonTags.slice(0, 2).map((tag: string, idx: number) => (
-                              <span key={idx} className="bg-zinc-100 text-zinc-600 text-[11px] px-2 py-1 rounded-md font-medium whitespace-nowrap shrink-0">
-                                {tag}
-                              </span>
-                            ))}
-                            {salonTags.length > 2 && (
-                              <span className="bg-zinc-100 text-zinc-500 text-[11px] px-2 py-1 rounded-md font-medium shrink-0">
-                                +{salonTags.length - 2}
-                              </span>
-                            )}
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="flex mt-2 shrink-0">
                         <button
                           onClick={(e) => handleBookingClick(salon, e)}
-                          className="flex items-center justify-center gap-1.5 bg-[#824c71] text-white text-[13px] font-bold px-4 py-2 rounded-lg hover:bg-[#824c71]/90 active:scale-95 transition-all shadow-sm"
+                          className={`shrink-0 h-10 px-5 rounded-full text-[13px] font-bold active:scale-95 transition ${
+                            salon.bookingEnabled
+                              ? 'bg-[#824c71] text-white shadow-[0_8px_16px_-8px_#824c71]'
+                              : 'border border-zinc-300 text-zinc-500'
+                          }`}
                         >
                           نوبت‌دهی
                         </button>
                       </div>
                     </div>
-                  </div>
+                  </article>
                 );
               })
             ) : (
-              <div className="col-span-full py-8 text-center flex flex-col items-center justify-center">
-                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-zinc-300 mb-3">
-                  <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
-                </svg>
-                <p className="text-zinc-600 font-medium">نتیجه‌ای یافت نشد!</p>
-                <p className="text-zinc-400 text-sm mt-1">لطفاً عبارت دیگری را جستجو کنید یا منطقه را تغییر دهید.</p>
-                <button 
-                  onClick={() => { 
-                    setSearchQuery(''); 
-                    setSelectedCategories([]); 
-                    setSelectedProvince('تهران'); 
-                    setSelectedCity('تهران'); 
-                    setSelectedNeighborhoods([]); 
-                    setHomeServiceOnly(false);
-                    setGenderFilter('ALL');
-                  }}
-                  className="mt-4 text-[#824c71] font-medium text-sm hover:text-[#824c71]/80"
-                >
+              <div className="col-span-full py-12 flex flex-col items-center text-center">
+                <span className="w-16 h-16 rounded-full bg-[#f7eff4] text-[#824c71] flex items-center justify-center mb-4">
+                  <SearchX className="w-7 h-7" strokeWidth={1.8} />
+                </span>
+                <p className="text-[15px] font-extrabold text-zinc-900">سالنی با این مشخصات پیدا نشد</p>
+                <p className="text-[13px] text-zinc-500 mt-1.5 leading-6">عبارت جستجو را تغییر دهید یا فیلترها و منطقه را بازنشانی کنید.</p>
+                <button onClick={resetAll} className="mt-5 h-11 px-6 rounded-full bg-[#824c71] text-white text-sm font-bold active:scale-95 transition">
                   پاک کردن فیلترها
                 </button>
               </div>
             )}
           </div>
-        </div>
+        </section>
       </div>
 
-      <RegionFilterModal 
-        isOpen={isRegionModalOpen} 
-        onClose={() => setIsRegionModalOpen(false)} 
+      <RegionFilterModal
+        isOpen={isRegionModalOpen}
+        onClose={() => setIsRegionModalOpen(false)}
         initialProvince={selectedProvince}
         initialCity={selectedCity}
         initialNeighborhoods={selectedNeighborhoods}
-        
         onSelectLocation={(province: string, city: string, neighborhoods: string[]) => {
           if (province !== selectedProvince || city !== selectedCity) {
             setSelectedProvince(province);
@@ -935,27 +710,26 @@ export default function DashboardHomePage() {
             setSelectedProvince(province);
             setSelectedCity(city);
             setSelectedNeighborhoods((prev) => {
-              if (neighborhoods.includes('همه محله‌ها')) {
-                return ['همه محله‌ها'];
-              }
+              if (neighborhoods.includes('همه محله‌ها')) return ['همه محله‌ها'];
               const combined = [...prev, ...neighborhoods].filter((nh) => nh !== 'همه محله‌ها');
-              return Array.from(new Set(combined)); 
+              return Array.from(new Set(combined));
             });
           }
-        }} 
+        }}
       />
 
-      <FiltersModal
+      <FiltersSheet
         isOpen={isFiltersModalOpen}
         onClose={() => setIsFiltersModalOpen(false)}
         homeServiceOnly={homeServiceOnly}
-        onToggleHomeService={() => setHomeServiceOnly((prev) => !prev)}
+        onToggleHomeService={() => setHomeServiceOnly((p) => !p)}
         genderFilter={genderFilter}
-        onToggleGender={toggleGender}
+        onSetGender={setGenderFilter}
         onClear={() => {
           setHomeServiceOnly(false);
           setGenderFilter('ALL');
         }}
+        resultCount={filteredSalons.length}
       />
 
       <BookingDisabledAlert isOpen={showBookingAlert} onClose={() => setShowBookingAlert(false)} />
