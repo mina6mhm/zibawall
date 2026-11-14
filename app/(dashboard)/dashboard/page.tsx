@@ -280,9 +280,9 @@ function FiltersSheet({
 }) {
   if (!isOpen) return null;
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center">
+    <div className="fixed inset-0 z-50 flex items-end justify-center px-3 pb-24">
       <div className="absolute inset-0 bg-zinc-900/40" onClick={onClose} />
-      <div className="relative w-full max-w-md bg-white rounded-t-[28px] px-5 pt-3 pb-6 shadow-2xl">
+      <div className="relative w-full max-w-md bg-white rounded-[28px] px-5 pt-3 pb-6 shadow-2xl">
         <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-zinc-200" />
         <div className="flex items-center justify-between mb-5">
           <h3 className="text-[17px] font-extrabold text-zinc-900">فیلترها</h3>
@@ -382,8 +382,8 @@ function BookingDisabledAlert({ isOpen, onClose }: { isOpen: boolean; onClose: (
 function SalonSkeleton() {
   return (
     <div className="animate-pulse">
-      <div className="relative z-10 aspect-[16/10] rounded-[20px] bg-zinc-100" />
-      <div className="-mt-5 rounded-b-[20px] border border-t-0 border-zinc-200 px-4 pt-[34px] pb-4">
+      <div className="aspect-[16/10] rounded-t-[20px] bg-zinc-100" />
+      <div className="rounded-b-[20px] border border-t-0 border-zinc-200 px-4 pt-3.5 pb-4">
         <div className="h-4 w-2/3 rounded bg-zinc-100" />
         <div className="mt-2 h-3 w-1/2 rounded bg-zinc-100" />
         <div className="mt-4 h-10 rounded-full bg-zinc-100" />
@@ -582,7 +582,7 @@ export default function DashboardHomePage() {
     <>
       <div className="flex flex-col min-h-screen bg-white pb-28">
         {showVpnWarning && (
-          <div role="status" className="mx-4 mt-3 flex items-center justify-between gap-3 rounded-2xl bg-amber-50 px-4 py-3">
+          <div role="status" className="mx-2 mt-3 flex items-center justify-between gap-3 rounded-2xl bg-amber-50 px-4 py-3">
             <div className="flex items-center gap-2.5 min-w-0">
               <span className="shrink-0 w-5 h-5 rounded-full bg-amber-400 text-white flex items-center justify-center text-[11px] font-bold">!</span>
               <p className="text-[13px] font-medium text-zinc-800 leading-snug">برای تجربه بهتر، فیلترشکن خود را خاموش کنید.</p>
@@ -594,7 +594,7 @@ export default function DashboardHomePage() {
         )}
 
         {/* هدر چسبان */}
-        <header className="sticky top-0 z-20 bg-white px-4 pt-4 pb-3">
+        <header className="sticky top-0 z-20 bg-white px-2 pt-4 pb-3">
           <button
             onClick={() => setIsRegionModalOpen(true)}
             className="group flex items-center gap-2.5 mb-3.5 text-right"
@@ -604,7 +604,6 @@ export default function DashboardHomePage() {
               <MapPin className="w-5 h-5" strokeWidth={2.2} />
             </span>
             <span className="flex flex-col leading-tight">
-              <span className="text-[11px] text-zinc-500">منطقه‌ی شما</span>
               <span className="flex items-center gap-1 text-[15px] font-extrabold text-zinc-900">
                 {selectedProvince}، {selectedCity}
                 <ChevronDown className="w-4 h-4 text-zinc-400 group-active:translate-y-0.5 transition-transform" strokeWidth={2.4} />
@@ -613,7 +612,7 @@ export default function DashboardHomePage() {
           </button>
 
           <div className="flex items-center gap-2.5">
-            <label className="flex-1 min-w-0 flex items-center gap-2.5 h-12 px-4 rounded-2xl bg-zinc-50 border border-zinc-200 transition focus-within:bg-white focus-within:border-[#824c71]/50 focus-within:ring-4 focus-within:ring-[#824c71]/10">
+            <label className="flex-1 min-w-0 flex items-center gap-2.5 h-12 px-4 rounded-full bg-zinc-50 border border-zinc-200 transition focus-within:bg-white focus-within:border-[#824c71]/50 focus-within:ring-4 focus-within:ring-[#824c71]/10">
               <Search className="w-[18px] h-[18px] text-zinc-400 shrink-0" strokeWidth={2.2} />
               <input
                 type="text"
@@ -632,7 +631,7 @@ export default function DashboardHomePage() {
             <button
               onClick={() => setIsFiltersModalOpen(true)}
               aria-label="فیلترها"
-              className={`relative shrink-0 w-12 h-12 flex items-center justify-center rounded-2xl border transition active:scale-95 ${
+              className={`relative shrink-0 w-12 h-12 flex items-center justify-center rounded-full border transition active:scale-95 ${
                 hasActiveExtraFilters
                   ? 'bg-[#824c71] border-[#824c71] text-white'
                   : 'bg-white border-zinc-200 text-zinc-700'
@@ -663,10 +662,10 @@ export default function DashboardHomePage() {
 
         {/* دسته‌بندی‌ها */}
         <section className="mt-2">
-          <div className="flex items-center justify-between px-4 mb-3">
+          <div className="flex items-center justify-between px-2 mb-3">
             <h2 className="text-[17px] font-extrabold text-zinc-900">دسته‌بندی خدمات</h2>
           </div>
-          <div className="flex gap-3 overflow-x-auto hide-scrollbar px-4 pb-1">
+          <div className="flex gap-3 overflow-x-auto hide-scrollbar px-2 pb-1">
             {categoryList.map((category: string) => {
               const Icon = getCategoryIcon(category);
               const isActive = selectedCategories.includes(category);
@@ -680,7 +679,7 @@ export default function DashboardHomePage() {
                   <span
                     className="w-[62px] h-[62px] rounded-full flex items-center justify-center transition-all duration-200"
                     style={{
-                      background: isActive ? '#f5ebf2' : '#f5ebf2',
+                      background: isActive ? '#e3cbd9' : '#f5ebf2',
                       boxShadow: isActive ? `0 10px 18px -10px ${BRAND}99` : 'none',
                     }}
                   >
@@ -699,14 +698,14 @@ export default function DashboardHomePage() {
         </section>
 
         {/* لیست سالن‌ها */}
-        <section className="px-4 mt-7">
+        <section className="px-2 mt-7">
           <div className="flex items-baseline justify-between mb-4">
             <h2 className="text-[17px] font-extrabold text-zinc-900 truncate">
               {searchQuery ? `نتایج «${searchQuery}»` : 'سالن‌های پیشنهادی'}
             </h2>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5 -mx-2">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             {isLoading ? (
               [1, 2, 3, 4].map((n) => <SalonSkeleton key={n} />)
             ) : error ? (
@@ -736,7 +735,7 @@ export default function DashboardHomePage() {
 
                 return (
                   <article key={salon.id} onClick={() => handleSalonCardClick(salon.id)} className="group cursor-pointer active:scale-[0.995] transition-transform">
-                    <div className="relative z-10 aspect-[16/10] overflow-hidden bg-zinc-100 rounded-[20px]">
+                    <div className="relative aspect-[16/10] overflow-hidden bg-zinc-100 rounded-t-[20px]">
                       {salon.imageUrl ? (
                         <img
                           src={salon.imageUrl}
@@ -776,7 +775,7 @@ export default function DashboardHomePage() {
                       )}
                     </div>
 
-                    <div className="relative -mt-5 rounded-b-[20px] border border-t-0 border-zinc-200 bg-white px-4 pt-[34px] pb-4">
+                    <div className="rounded-b-[20px] border border-t-0 border-zinc-200 bg-white px-4 pt-3.5 pb-4">
                       <h3 className="font-extrabold text-zinc-900 text-[16px] leading-snug truncate">{salon.name}</h3>
                       <p className="flex items-center gap-1 mt-1 text-zinc-500 min-w-0">
                         <MapPin className="w-[14px] h-[14px] shrink-0" strokeWidth={2} />
