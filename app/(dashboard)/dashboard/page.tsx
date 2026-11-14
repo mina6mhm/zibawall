@@ -685,12 +685,8 @@ export default function DashboardHomePage() {
                   <span
                     className="w-[62px] h-[62px] rounded-full flex items-center justify-center transition-all duration-200"
                     style={{
-                      background: isActive
-                        ? 'linear-gradient(145deg, #F8EAF2, #EBD2E2)'
-                        : 'linear-gradient(145deg, #FCF6FA, #F2E3ED)',
-                      boxShadow: isActive
-                        ? `0 0 0 1.5px ${BRAND}, 0 8px 16px -8px ${BRAND}8C`
-                        : `inset 0 0 0 1px ${BRAND}1A`,
+                      background: isActive ? '#ecd6e5' : '#f7eff4',
+                      boxShadow: isActive ? `0 10px 18px -10px ${BRAND}99` : 'none',
                     }}
                   >
                     <Icon
@@ -792,10 +788,10 @@ export default function DashboardHomePage() {
                         <span className="text-[12.5px] truncate">{salon.address || 'آدرس ثبت نشده'}</span>
                       </p>
 
-                      <div className="flex items-center gap-3 mt-3.5">
-                        <div className="flex-1 min-w-0 flex items-center gap-1.5 overflow-hidden">
+                      {salonTags.length > 0 && (
+                        <div className="flex items-center gap-1.5 mt-3.5 overflow-hidden">
                           {salonTags.slice(0, 2).map((tag: string, idx: number) => (
-                            <span key={idx} className="bg-[#f7eff4] text-[#824c71] text-[11px] px-2.5 py-1 rounded-full font-medium whitespace-nowrap truncate max-w-[130px]">
+                            <span key={idx} className="bg-[#f7eff4] text-[#824c71] text-[11px] px-2.5 py-1 rounded-full font-medium whitespace-nowrap truncate max-w-[48%]">
                               {tag}
                             </span>
                           ))}
@@ -803,18 +799,14 @@ export default function DashboardHomePage() {
                             <span className="text-zinc-500 text-[11px] font-medium shrink-0">+{toPersianDigits(String(salonTags.length - 2))}</span>
                           )}
                         </div>
+                      )}
 
-                        <button
-                          onClick={(e) => handleBookingClick(salon, e)}
-                          className={`shrink-0 h-10 px-5 rounded-full text-[13px] font-bold active:scale-95 transition ${
-                            salon.bookingEnabled
-                              ? 'bg-[#824c71] text-white shadow-[0_8px_16px_-8px_#824c71]'
-                              : 'border border-zinc-300 text-zinc-500'
-                          }`}
-                        >
-                          نوبت‌دهی
-                        </button>
-                      </div>
+                      <button
+                        onClick={(e) => handleBookingClick(salon, e)}
+                        className="w-full mt-3.5 h-11 rounded-full bg-[#824c71] text-white text-[14px] font-bold shadow-[0_8px_16px_-8px_#824c71] active:scale-[0.98] transition"
+                      >
+                        نوبت‌دهی آنلاین
+                      </button>
                     </div>
                   </article>
                 );
