@@ -6,26 +6,162 @@ import { useRouter } from 'next/navigation';
 import { CATEGORIES, CATEGORY_MAPPING } from '@/lib/data';
 import RegionFilterModal from '@/components/RegionFilterModal';
 import {
-  Home, Pin, SlidersHorizontal, X, CalendarClock, Search, MapPin, ChevronDown, Star,
-  Scissors, Hand, Eye, Droplets, Palette, Gem, Feather, Flower2, Sparkles, SearchX,
+  Home, Pin, SlidersHorizontal, X, CalendarClock, Search, MapPin, ChevronDown, Star, SearchX,
 } from 'lucide-react';
 
 const SCROLL_STORAGE_KEY = 'dashboardScrollPosition';
 const BRAND = '#824c71';
 
 // ---------- دسته‌ها ----------
-type IconType = React.ComponentType<{ className?: string; strokeWidth?: number }>;
+type IconPalette = { stroke: string; fill: string; accent: string };
+type CategoryIconProps = { className?: string; palette?: IconPalette };
+const DEFAULT_PALETTE: IconPalette = { stroke: '#824c71', fill: '#824c71', accent: '#d98fb8' };
 
-const CATEGORY_ICON_MAP: Record<string, IconType> = {
-  'خدمات مو': Scissors,
-  'خدمات ناخن': Hand,
-  'خدمات ابرو و مژه': Eye,
-  'خدمات پوست و زیبایی': Droplets,
-  'خدمات آرایش و میکاپ': Palette,
-  'پکیج‌های عروس': Gem,
-  'موزدایی و بدن': Feather,
-  'خدمات ماساژ و اسپا': Flower2,
+const svgBase = {
+  viewBox: '0 0 48 48',
+  fill: 'none',
+  xmlns: 'http://www.w3.org/2000/svg',
+  'aria-hidden': true,
+  focusable: false,
+} as const;
+
+const lp = (c: { stroke: string }) => ({
+  stroke: c.stroke,
+  strokeWidth: 2.2,
+  strokeLinecap: 'round' as const,
+  strokeLinejoin: 'round' as const,
+});
+
+const HairIcon = ({ className, palette }: CategoryIconProps) => {
+  const c = palette ?? DEFAULT_PALETTE;
+  return (
+    <svg {...svgBase} className={className}>
+      <circle cx="13" cy="36" r="6" fill={c.fill} fillOpacity="0.14" {...lp(c)} />
+      <circle cx="35" cy="36" r="6" fill={c.fill} fillOpacity="0.14" {...lp(c)} />
+      <path d="M17.5 31.5 L34 7" {...lp(c)} />
+      <path d="M30.5 31.5 L14 7" {...lp(c)} />
+      <circle cx="24" cy="22" r="1.6" fill={c.accent} />
+      <path d="M38 12c1.5-.6 2.6-1.7 3.2-3.2.6 1.5 1.7 2.6 3.2 3.2-1.5.6-2.6 1.7-3.2 3.2-.6-1.5-1.7-2.6-3.2-3.2Z" fill={c.accent} />
+    </svg>
+  );
 };
+
+const NailsIcon = ({ className, palette }: CategoryIconProps) => {
+  const c = palette ?? DEFAULT_PALETTE;
+  return (
+    <svg {...svgBase} className={className}>
+      <rect x="19.5" y="4.5" width="9" height="11" rx="3" fill={c.accent} fillOpacity="0.5" {...lp(c)} />
+      <rect x="21.5" y="15.5" width="5" height="6" {...lp(c)} />
+      <rect x="13" y="21.5" width="22" height="21" rx="6.5" fill={c.fill} fillOpacity="0.14" {...lp(c)} />
+      <path d="M18.5 28v8" stroke={c.accent} strokeWidth="2.4" strokeLinecap="round" />
+      <circle cx="29" cy="35" r="1.6" fill={c.accent} />
+    </svg>
+  );
+};
+
+const BrowsLashesIcon = ({ className, palette }: CategoryIconProps) => {
+  const c = palette ?? DEFAULT_PALETTE;
+  return (
+    <svg {...svgBase} className={className}>
+      <path d="M5 28Q24 12 43 28Q24 41 5 28Z" fill={c.fill} fillOpacity="0.1" {...lp(c)} />
+      <circle cx="24" cy="27" r="5.5" fill={c.fill} fillOpacity="0.18" {...lp(c)} />
+      <circle cx="24" cy="27" r="2" fill={c.stroke} />
+      <path d="M24 19.5V11" {...lp(c)} />
+      <path d="M15 22.5 11.5 15" {...lp(c)} />
+      <path d="M33 22.5 36.5 15" {...lp(c)} />
+      <path d="M9.2 25.6 5 20.5" {...lp(c)} />
+      <path d="M38.8 25.6 43 20.5" {...lp(c)} />
+    </svg>
+  );
+};
+
+const SkinIcon = ({ className, palette }: CategoryIconProps) => {
+  const c = palette ?? DEFAULT_PALETTE;
+  return (
+    <svg {...svgBase} className={className}>
+      <path d="M22 8C22 8 10 22 10 30a12 12 0 0 0 24 0C34 22 22 8 22 8Z" fill={c.fill} fillOpacity="0.14" {...lp(c)} />
+      <path d="M16 30a6 6 0 0 0 5 5.9" stroke={c.accent} strokeWidth="2.4" strokeLinecap="round" />
+      <path d="M37 6c.8 2.8 2.2 4.2 5 5-2.8.8-4.2 2.2-5 5-.8-2.8-2.2-4.2-5-5 2.8-.8 4.2-2.2 5-5Z" fill={c.accent} />
+      <circle cx="40.5" cy="21.5" r="1.6" fill={c.stroke} />
+    </svg>
+  );
+};
+
+const MakeupIcon = ({ className, palette }: CategoryIconProps) => {
+  const c = palette ?? DEFAULT_PALETTE;
+  return (
+    <svg {...svgBase} className={className}>
+      <path d="M19 22V14.5C19 10 22 7 25 5.5c1 2.5 4 4 4 9V22Z" fill={c.accent} fillOpacity="0.55" {...lp(c)} />
+      <rect x="18" y="22" width="12" height="7" rx="1.5" fill={c.fill} fillOpacity="0.14" {...lp(c)} />
+      <rect x="15" y="29" width="18" height="14" rx="3.5" fill={c.fill} fillOpacity="0.14" {...lp(c)} />
+      <path d="M15 35.5h18" {...lp(c)} />
+    </svg>
+  );
+};
+
+const BridalIcon = ({ className, palette }: CategoryIconProps) => {
+  const c = palette ?? DEFAULT_PALETTE;
+  return (
+    <svg {...svgBase} className={className}>
+      <circle cx="24" cy="32" r="10.5" fill={c.fill} fillOpacity="0.1" {...lp(c)} />
+      <path d="M17.5 12.5 20.5 7h7l3 5.5L24 21Z" fill={c.accent} fillOpacity="0.55" {...lp(c)} />
+      <path d="M17.5 12.5h13" {...lp(c)} />
+      <path d="M20.5 7 24 12.5 27.5 7" {...lp(c)} />
+      <path d="M24 12.5V21" {...lp(c)} />
+      <path d="M9 9.5l1 2.2 2.2 1-2.2 1-1 2.2-1-2.2-2.2-1 2.2-1Z" fill={c.accent} />
+    </svg>
+  );
+};
+
+const HairRemovalIcon = ({ className, palette }: CategoryIconProps) => {
+  const c = palette ?? DEFAULT_PALETTE;
+  return (
+    <svg {...svgBase} className={className}>
+      <rect x="12" y="6" width="24" height="12" rx="4" fill={c.fill} fillOpacity="0.14" {...lp(c)} />
+      <path d="M17 12h14" stroke={c.accent} strokeWidth="2.6" strokeLinecap="round" />
+      <path d="M19 18v3h10v-3" {...lp(c)} />
+      <rect x="20.5" y="21" width="7" height="22" rx="3.5" fill={c.fill} fillOpacity="0.14" {...lp(c)} />
+      <path d="M24 27v9" stroke={c.accent} strokeWidth="2.2" strokeLinecap="round" />
+      <circle cx="41" cy="14" r="1.8" fill={c.accent} />
+      <circle cx="7" cy="30" r="1.4" fill={c.accent} />
+    </svg>
+  );
+};
+
+const MassageSpaIcon = ({ className, palette }: CategoryIconProps) => {
+  const c = palette ?? DEFAULT_PALETTE;
+  return (
+    <svg {...svgBase} className={className}>
+      <path d="M24 8C30 15 30 26 24 33 18 26 18 15 24 8Z" fill={c.accent} fillOpacity="0.5" {...lp(c)} />
+      <path d="M23 33.5C15.5 33.5 9 29.5 7 21.5 14.5 20.5 21 24.5 23 33.5Z" fill={c.fill} fillOpacity="0.14" {...lp(c)} />
+      <path d="M25 33.5C32.5 33.5 39 29.5 41 21.5 33.5 20.5 27 24.5 25 33.5Z" fill={c.fill} fillOpacity="0.14" {...lp(c)} />
+      <path d="M8 40c4-2.4 8-2.4 12 0s8 2.4 12 0 6-2 8-1" {...lp(c)} />
+    </svg>
+  );
+};
+
+const DefaultCategoryIcon = ({ className, palette }: CategoryIconProps) => {
+  const c = palette ?? DEFAULT_PALETTE;
+  return (
+    <svg {...svgBase} className={className}>
+      <path d="M24 6c1.6 7 5 10.4 12 12-7 1.6-10.4 5-12 12-1.6-7-5-10.4-12-12 7-1.6 10.4-5 12-12Z" fill={c.accent} fillOpacity="0.5" {...lp(c)} />
+      <circle cx="37" cy="36" r="3" fill={c.fill} fillOpacity="0.14" {...lp(c)} />
+    </svg>
+  );
+};
+
+const CATEGORY_ICON_MAP: Record<string, React.ComponentType<CategoryIconProps>> = {
+  'خدمات مو': HairIcon,
+  'خدمات ناخن': NailsIcon,
+  'خدمات ابرو و مژه': BrowsLashesIcon,
+  'خدمات پوست و زیبایی': SkinIcon,
+  'خدمات آرایش و میکاپ': MakeupIcon,
+  'پکیج‌های عروس': BridalIcon,
+  'موزدایی و بدن': HairRemovalIcon,
+  'خدمات ماساژ و اسپا': MassageSpaIcon,
+};
+
+const getCategoryIcon = (c: string): React.ComponentType<CategoryIconProps> => CATEGORY_ICON_MAP[c] || DefaultCategoryIcon;
 
 const CATEGORY_DISPLAY_LABEL: Record<string, string> = {
   'خدمات مو': 'مو',
@@ -38,7 +174,6 @@ const CATEGORY_DISPLAY_LABEL: Record<string, string> = {
   'خدمات ماساژ و اسپا': 'ماساژ و اسپا',
 };
 
-const getCategoryIcon = (c: string): IconType => CATEGORY_ICON_MAP[c] || Sparkles;
 const getCategoryLabel = (c: string) => CATEGORY_DISPLAY_LABEL[c] || c;
 
 // ---------- ابزارهای متن و جستجو ----------
@@ -133,7 +268,7 @@ const GENDER_OPTIONS: { value: GenderFilter; label: string }[] = [
 ];
 
 function FiltersSheet({
-  isOpen, onClose, homeServiceOnly, onToggleHomeService, genderFilter, onSetGender, onClear, resultCount,
+  isOpen, onClose, homeServiceOnly, onToggleHomeService, genderFilter, onSetGender, onClear,
 }: {
   isOpen: boolean;
   onClose: () => void;
@@ -142,7 +277,6 @@ function FiltersSheet({
   genderFilter: GenderFilter;
   onSetGender: (v: GenderFilter) => void;
   onClear: () => void;
-  resultCount: number;
 }) {
   if (!isOpen) return null;
   return (
@@ -217,7 +351,7 @@ function FiltersSheet({
             onClick={onClose}
             className="flex-1 h-12 rounded-2xl bg-[#824c71] text-white text-[14px] font-bold shadow-[0_8px_18px_-8px_#824c71] active:scale-[0.98] transition"
           >
-            نمایش {toPersianDigits(String(resultCount))} سالن
+            اعمال فیلترها
           </button>
         </div>
       </div>
@@ -247,11 +381,13 @@ function BookingDisabledAlert({ isOpen, onClose }: { isOpen: boolean; onClose: (
 
 function SalonSkeleton() {
   return (
-    <div className="animate-pulse">
-      <div className="aspect-[16/10] rounded-[22px] bg-zinc-100" />
-      <div className="mt-3 h-4 w-2/3 rounded bg-zinc-100" />
-      <div className="mt-2 h-3 w-1/2 rounded bg-zinc-100" />
-      <div className="mt-4 h-10 rounded-full bg-zinc-100" />
+    <div className="animate-pulse rounded-[24px] border border-zinc-200 overflow-hidden">
+      <div className="aspect-[16/10] bg-zinc-100" />
+      <div className="p-4">
+        <div className="h-4 w-2/3 rounded bg-zinc-100" />
+        <div className="mt-2 h-3 w-1/2 rounded bg-zinc-100" />
+        <div className="mt-4 h-10 rounded-full bg-zinc-100" />
+      </div>
     </div>
   );
 }
@@ -547,13 +683,20 @@ export default function DashboardHomePage() {
                   className="shrink-0 w-[68px] flex flex-col items-center gap-2 active:scale-95 transition-transform"
                 >
                   <span
-                    className={`w-[60px] h-[60px] rounded-full flex items-center justify-center transition-all duration-200 ${
-                      isActive
-                        ? 'bg-[#824c71] text-white shadow-[0_10px_20px_-8px_#824c71]'
-                        : 'bg-[#f7eff4] text-[#824c71]'
-                    }`}
+                    className="w-[62px] h-[62px] rounded-full flex items-center justify-center transition-all duration-200"
+                    style={{
+                      background: isActive
+                        ? 'linear-gradient(145deg, #F8EAF2, #EBD2E2)'
+                        : 'linear-gradient(145deg, #FCF6FA, #F2E3ED)',
+                      boxShadow: isActive
+                        ? `0 0 0 1.5px ${BRAND}, 0 8px 16px -8px ${BRAND}8C`
+                        : `inset 0 0 0 1px ${BRAND}1A`,
+                    }}
                   >
-                    <Icon className="w-[26px] h-[26px]" strokeWidth={1.8} />
+                    <Icon
+                      className={`w-[34px] h-[34px] transition-transform duration-200 ${isActive ? 'scale-110' : ''}`}
+                      palette={{ stroke: BRAND, fill: BRAND, accent: '#d98fb8' }}
+                    />
                   </span>
                   <span className={`text-[11.5px] leading-tight text-center ${isActive ? 'font-extrabold text-[#824c71]' : 'font-medium text-zinc-600'}`}>
                     {getCategoryLabel(category)}
@@ -570,12 +713,9 @@ export default function DashboardHomePage() {
             <h2 className="text-[17px] font-extrabold text-zinc-900 truncate">
               {searchQuery ? `نتایج «${searchQuery}»` : 'سالن‌های پیشنهادی'}
             </h2>
-            {!isLoading && !error && (
-              <span className="text-xs text-zinc-500 shrink-0 mr-3">{toPersianDigits(String(filteredSalons.length))} سالن</span>
-            )}
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-5 gap-y-7">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             {isLoading ? (
               [1, 2, 3, 4].map((n) => <SalonSkeleton key={n} />)
             ) : error ? (
@@ -604,8 +744,8 @@ export default function DashboardHomePage() {
                 const saved = isBookmarked(salon.id);
 
                 return (
-                  <article key={salon.id} onClick={() => handleSalonCardClick(salon.id)} className="group cursor-pointer">
-                    <div className="relative aspect-[16/10] rounded-[22px] overflow-hidden bg-zinc-100">
+                  <article key={salon.id} onClick={() => handleSalonCardClick(salon.id)} className="group cursor-pointer rounded-[24px] border border-zinc-200 bg-white overflow-hidden active:scale-[0.995] transition-transform">
+                    <div className="relative aspect-[16/10] overflow-hidden bg-zinc-100 border-b border-zinc-200">
                       {salon.imageUrl ? (
                         <img
                           src={salon.imageUrl}
@@ -645,7 +785,7 @@ export default function DashboardHomePage() {
                       )}
                     </div>
 
-                    <div className="px-1 pt-3">
+                    <div className="px-4 pt-3.5 pb-4">
                       <h3 className="font-extrabold text-zinc-900 text-[16px] leading-snug truncate">{salon.name}</h3>
                       <p className="flex items-center gap-1 mt-1 text-zinc-500 min-w-0">
                         <MapPin className="w-[14px] h-[14px] shrink-0" strokeWidth={2} />
@@ -729,7 +869,6 @@ export default function DashboardHomePage() {
           setHomeServiceOnly(false);
           setGenderFilter('ALL');
         }}
-        resultCount={filteredSalons.length}
       />
 
       <BookingDisabledAlert isOpen={showBookingAlert} onClose={() => setShowBookingAlert(false)} />
