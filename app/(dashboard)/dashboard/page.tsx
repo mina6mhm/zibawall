@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { CATEGORIES, CATEGORY_MAPPING } from '@/lib/data';
 import RegionFilterModal from '@/components/RegionFilterModal';
 import {
-  Home, Pin, SlidersHorizontal, X, CalendarClock, Search, MapPin, ChevronDown, Star, SearchX,
+  Home, Pin, SlidersHorizontal, X, CalendarClock, Search, MapPin, ChevronDown, Star, SearchX, Phone,
 } from 'lucide-react';
 
 const SCROLL_STORAGE_KEY = 'dashboardScrollPosition';
@@ -282,7 +282,7 @@ function FiltersSheet({
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center">
       <div className="absolute inset-0 bg-zinc-900/40" onClick={onClose} />
-      <div className="relative w-full max-w-md bg-white rounded-t-[28px] px-5 pt-3 pb-6 shadow-2xl">
+      <div className="relative w-full max-w-md bg-white rounded-t-2xl px-5 pt-3 pb-6 shadow-2xl">
         <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-zinc-200" />
         <div className="flex items-center justify-between mb-5">
           <h3 className="text-[17px] font-extrabold text-zinc-900">فیلترها</h3>
@@ -296,7 +296,7 @@ function FiltersSheet({
         </div>
 
         <p className="text-[13px] font-bold text-zinc-900 mb-2.5">مخاطب</p>
-        <div className="flex bg-zinc-100 rounded-2xl p-1 mb-5" role="radiogroup">
+        <div className="flex bg-zinc-100 rounded-xl p-1 mb-5" role="radiogroup">
           {GENDER_OPTIONS.map((o) => {
             const active = genderFilter === o.value;
             return (
@@ -305,7 +305,7 @@ function FiltersSheet({
                 role="radio"
                 aria-checked={active}
                 onClick={() => onSetGender(o.value)}
-                className={`flex-1 h-10 rounded-xl text-[13px] font-bold transition-all ${
+                className={`flex-1 h-10 rounded-lg text-[13px] font-bold transition-all ${
                   active ? 'bg-white text-[#824c71] shadow-sm' : 'text-zinc-500'
                 }`}
               >
@@ -319,9 +319,9 @@ function FiltersSheet({
           onClick={onToggleHomeService}
           role="switch"
           aria-checked={homeServiceOnly}
-          className="w-full flex items-center gap-3 rounded-2xl border border-zinc-200 p-3.5 text-right active:scale-[0.99] transition"
+          className="w-full flex items-center gap-3 rounded-xl border border-zinc-200 p-3.5 text-right active:scale-[0.99] transition"
         >
-          <span className="w-10 h-10 rounded-xl bg-[#824c71]/10 text-[#824c71] flex items-center justify-center shrink-0">
+          <span className="w-10 h-10 rounded-xl bg-[#f5ebf2] text-[#824c71] flex items-center justify-center shrink-0">
             <Home className="w-5 h-5" strokeWidth={2.1} />
           </span>
           <span className="flex-1 min-w-0">
@@ -343,13 +343,13 @@ function FiltersSheet({
         <div className="flex gap-2.5 mt-6">
           <button
             onClick={onClear}
-            className="h-12 px-5 rounded-2xl border border-zinc-200 text-[14px] font-bold text-zinc-700 active:scale-95 transition"
+            className="h-12 px-5 rounded-xl border border-zinc-200 text-[14px] font-bold text-zinc-700 active:scale-95 transition"
           >
             پاک کردن
           </button>
           <button
             onClick={onClose}
-            className="flex-1 h-12 rounded-2xl bg-[#824c71] text-white text-[14px] font-bold shadow-[0_8px_18px_-8px_#824c71] active:scale-[0.98] transition"
+            className="flex-1 h-12 rounded-xl bg-[#824c71] text-white text-[14px] font-bold shadow-[0_8px_18px_-8px_#824c71] active:scale-[0.98] transition"
           >
             اعمال فیلترها
           </button>
@@ -363,15 +363,15 @@ function BookingDisabledAlert({ isOpen, onClose }: { isOpen: boolean; onClose: (
   if (!isOpen) return null;
   return (
     <div className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center bg-zinc-900/40 px-4 pb-4" onClick={onClose}>
-      <div className="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl" onClick={(e) => e.stopPropagation()}>
-        <div className="w-12 h-12 bg-amber-50 rounded-2xl flex items-center justify-center mb-4 mx-auto">
+      <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl" onClick={(e) => e.stopPropagation()}>
+        <div className="w-12 h-12 bg-amber-50 rounded-xl flex items-center justify-center mb-4 mx-auto">
           <CalendarClock className="w-6 h-6 text-amber-500" />
         </div>
         <h3 className="text-base font-extrabold text-zinc-900 text-center mb-2">نوبت‌دهی آنلاین فعال نیست</h3>
         <p className="text-[13px] text-zinc-500 text-center leading-6 mb-5">
           این سالن هنوز نوبت‌دهی آنلاین را فعال نکرده است. برای رزرو وقت، مستقیم با سالن تماس بگیرید.
         </p>
-        <button onClick={onClose} className="w-full h-12 bg-[#824c71] text-white rounded-2xl text-sm font-bold active:scale-[0.98] transition">
+        <button onClick={onClose} className="w-full h-12 bg-[#824c71] text-white rounded-xl text-sm font-bold active:scale-[0.98] transition">
           متوجه شدم
         </button>
       </div>
@@ -381,12 +381,12 @@ function BookingDisabledAlert({ isOpen, onClose }: { isOpen: boolean; onClose: (
 
 function SalonSkeleton() {
   return (
-    <div className="animate-pulse rounded-[24px] border border-zinc-200 overflow-hidden">
+    <div className="animate-pulse rounded-xl border border-zinc-200 overflow-hidden">
       <div className="aspect-[16/10] bg-zinc-100" />
       <div className="p-4">
         <div className="h-4 w-2/3 rounded bg-zinc-100" />
         <div className="mt-2 h-3 w-1/2 rounded bg-zinc-100" />
-        <div className="mt-4 h-10 rounded-full bg-zinc-100" />
+        <div className="mt-4 h-10 rounded-xl bg-zinc-100" />
       </div>
     </div>
   );
@@ -582,7 +582,7 @@ export default function DashboardHomePage() {
     <>
       <div className="flex flex-col min-h-screen bg-white pb-28">
         {showVpnWarning && (
-          <div role="status" className="mx-4 mt-3 flex items-center justify-between gap-3 rounded-2xl bg-amber-50 px-4 py-3">
+          <div role="status" className="mx-4 mt-3 flex items-center justify-between gap-3 rounded-xl bg-amber-50 px-4 py-3">
             <div className="flex items-center gap-2.5 min-w-0">
               <span className="shrink-0 w-5 h-5 rounded-full bg-amber-400 text-white flex items-center justify-center text-[11px] font-bold">!</span>
               <p className="text-[13px] font-medium text-zinc-800 leading-snug">برای تجربه بهتر، فیلترشکن خود را خاموش کنید.</p>
@@ -600,7 +600,7 @@ export default function DashboardHomePage() {
             className="group flex items-center gap-2.5 mb-3.5 text-right"
             aria-label="تغییر منطقه"
           >
-            <span className="w-10 h-10 rounded-full bg-[#824c71]/10 text-[#824c71] flex items-center justify-center">
+            <span className="w-10 h-10 rounded-xl bg-[#f5ebf2] text-[#824c71] flex items-center justify-center">
               <MapPin className="w-5 h-5" strokeWidth={2.2} />
             </span>
             <span className="flex flex-col leading-tight">
@@ -613,7 +613,7 @@ export default function DashboardHomePage() {
           </button>
 
           <div className="flex items-center gap-2.5">
-            <label className="flex-1 min-w-0 flex items-center gap-2.5 h-12 px-4 rounded-2xl bg-zinc-50 border border-zinc-200 transition focus-within:bg-white focus-within:border-[#824c71]/50 focus-within:ring-4 focus-within:ring-[#824c71]/10">
+            <label className="flex-1 min-w-0 flex items-center gap-2.5 h-12 px-4 rounded-xl bg-zinc-50 border border-zinc-200 transition focus-within:bg-white focus-within:border-[#824c71]/50 focus-within:ring-4 focus-within:ring-[#824c71]/10">
               <Search className="w-[18px] h-[18px] text-zinc-400 shrink-0" strokeWidth={2.2} />
               <input
                 type="text"
@@ -632,7 +632,7 @@ export default function DashboardHomePage() {
             <button
               onClick={() => setIsFiltersModalOpen(true)}
               aria-label="فیلترها"
-              className={`relative shrink-0 w-12 h-12 flex items-center justify-center rounded-2xl border transition active:scale-95 ${
+              className={`relative shrink-0 w-12 h-12 flex items-center justify-center rounded-xl border transition active:scale-95 ${
                 hasActiveExtraFilters
                   ? 'bg-[#824c71] border-[#824c71] text-white'
                   : 'bg-white border-zinc-200 text-zinc-700'
@@ -650,7 +650,7 @@ export default function DashboardHomePage() {
           {showNeighborhoodChips && (
             <div className="flex items-center gap-2 overflow-x-auto hide-scrollbar mt-3">
               {selectedNeighborhoods.map((nh) => (
-                <span key={nh} className="flex items-center gap-1 bg-[#824c71]/10 text-[#824c71] pl-1.5 pr-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap">
+                <span key={nh} className="flex items-center gap-1 bg-[#f5ebf2] text-[#824c71] pl-1.5 pr-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap">
                   {nh}
                   <button onClick={() => removeNeighborhood(nh)} aria-label={`حذف ${nh}`} className="w-4 h-4 rounded-full hover:bg-[#824c71]/15 flex items-center justify-center">
                     <X className="w-3 h-3" strokeWidth={2.8} />
@@ -665,11 +665,6 @@ export default function DashboardHomePage() {
         <section className="mt-2">
           <div className="flex items-center justify-between px-4 mb-3">
             <h2 className="text-[17px] font-extrabold text-zinc-900">دسته‌بندی خدمات</h2>
-            {selectedCategories.length > 0 && (
-              <button onClick={() => setSelectedCategories([])} className="text-xs font-bold text-[#824c71]">
-                حذف انتخاب‌ها
-              </button>
-            )}
           </div>
           <div className="flex gap-3 overflow-x-auto hide-scrollbar px-4 pb-1">
             {categoryList.map((category: string) => {
@@ -683,9 +678,9 @@ export default function DashboardHomePage() {
                   className="shrink-0 w-[68px] flex flex-col items-center gap-2 active:scale-95 transition-transform"
                 >
                   <span
-                    className="w-[62px] h-[62px] rounded-full flex items-center justify-center transition-all duration-200"
+                    className="w-[62px] h-[62px] rounded-2xl flex items-center justify-center transition-all duration-200"
                     style={{
-                      background: isActive ? '#ecd6e5' : '#f7eff4',
+                      background: isActive ? '#f5ebf2' : '#f5ebf2',
                       boxShadow: isActive ? `0 10px 18px -10px ${BRAND}99` : 'none',
                     }}
                   >
@@ -717,7 +712,7 @@ export default function DashboardHomePage() {
             ) : error ? (
               <div className="col-span-full py-10 text-center">
                 <p className="text-sm font-medium text-zinc-700 leading-6">{error}</p>
-                <button onClick={() => window.location.reload()} className="mt-4 h-10 px-5 rounded-full bg-[#824c71] text-white text-sm font-bold">
+                <button onClick={() => window.location.reload()} className="mt-4 h-10 px-5 rounded-xl bg-[#824c71] text-white text-sm font-bold">
                   تلاش دوباره
                 </button>
               </div>
@@ -740,7 +735,7 @@ export default function DashboardHomePage() {
                 const saved = isBookmarked(salon.id);
 
                 return (
-                  <article key={salon.id} onClick={() => handleSalonCardClick(salon.id)} className="group cursor-pointer rounded-[24px] border border-zinc-200 bg-white overflow-hidden active:scale-[0.995] transition-transform">
+                  <article key={salon.id} onClick={() => handleSalonCardClick(salon.id)} className="group cursor-pointer rounded-xl border border-zinc-200 bg-white overflow-hidden active:scale-[0.995] transition-transform">
                     <div className="relative aspect-[16/10] overflow-hidden bg-zinc-100 border-b border-zinc-200">
                       {salon.imageUrl ? (
                         <img
@@ -755,7 +750,7 @@ export default function DashboardHomePage() {
                       <div className="absolute inset-x-0 top-0 h-20 bg-gradient-to-b from-black/25 to-transparent pointer-events-none" />
 
                       {isPinned && (
-                        <span className="absolute top-3 right-3 flex items-center gap-1 bg-white/95 text-amber-600 rounded-full pl-2.5 pr-2 py-1 text-[11px] font-bold shadow-sm">
+                        <span className="absolute top-3 right-3 flex items-center gap-1 bg-white/95 text-amber-600 rounded-lg pl-2.5 pr-2 py-1 text-[11px] font-bold shadow-sm">
                           <Pin className="w-3 h-3 fill-amber-500" strokeWidth={2} />
                           ویژه
                         </span>
@@ -765,7 +760,7 @@ export default function DashboardHomePage() {
                         onClick={(e) => handleBookmarkClick(salon.id, e)}
                         aria-label={saved ? 'حذف از نشان‌ها' : 'افزودن به نشان‌ها'}
                         aria-pressed={saved}
-                        className={`absolute top-3 left-3 w-9 h-9 flex items-center justify-center rounded-full bg-white/95 shadow-sm active:scale-90 transition ${
+                        className={`absolute top-3 left-3 w-9 h-9 flex items-center justify-center rounded-lg bg-white/95 shadow-sm active:scale-90 transition ${
                           saved ? 'text-[#824c71]' : 'text-zinc-600'
                         }`}
                       >
@@ -773,7 +768,7 @@ export default function DashboardHomePage() {
                       </button>
 
                       {averageRating && (
-                        <span className="absolute bottom-3 right-3 flex items-center gap-1 bg-white/95 rounded-full px-2.5 py-1 shadow-sm">
+                        <span className="absolute bottom-3 right-3 flex items-center gap-1 bg-white/95 rounded-lg px-2.5 py-1 shadow-sm">
                           <Star className="w-3.5 h-3.5 fill-yellow-500 text-yellow-500" strokeWidth={2} />
                           <span className="text-[12.5px] font-extrabold text-zinc-900">{toPersianDigits(averageRating)}</span>
                           <span className="text-[11px] text-zinc-500">({toPersianDigits(String(reviewsCount))})</span>
@@ -791,7 +786,7 @@ export default function DashboardHomePage() {
                       {salonTags.length > 0 && (
                         <div className="flex items-center gap-1.5 mt-3.5 overflow-hidden">
                           {salonTags.slice(0, 2).map((tag: string, idx: number) => (
-                            <span key={idx} className="bg-[#f7eff4] text-[#824c71] text-[11px] px-2.5 py-1 rounded-full font-medium whitespace-nowrap truncate max-w-[48%]">
+                            <span key={idx} className="bg-[#f5ebf2] text-[#824c71] text-[11px] px-2.5 py-1 rounded-md font-medium whitespace-nowrap truncate max-w-[48%]">
                               {tag}
                             </span>
                           ))}
@@ -801,24 +796,43 @@ export default function DashboardHomePage() {
                         </div>
                       )}
 
-                      <button
-                        onClick={(e) => handleBookingClick(salon, e)}
-                        className="w-full mt-3.5 h-11 rounded-full bg-[#824c71] text-white text-[14px] font-bold shadow-[0_8px_16px_-8px_#824c71] active:scale-[0.98] transition"
-                      >
-                        نوبت‌دهی آنلاین
-                      </button>
+                      <div className="flex items-center gap-2.5 mt-3.5">
+                        <button
+                          onClick={(e) => handleBookingClick(salon, e)}
+                          className="flex-1 h-11 rounded-xl bg-[#824c71] text-white text-[14px] font-bold active:scale-[0.98] transition"
+                        >
+                          نوبت‌دهی آنلاین
+                        </button>
+                        {(() => {
+                          const phone = salon.phone || salon.phoneNumber || salon.tel;
+                          return phone ? (
+                            <a
+                              href={`tel:${phone}`}
+                              onClick={(e) => e.stopPropagation()}
+                              aria-label="تماس با سالن"
+                              className="shrink-0 w-11 h-11 rounded-xl border border-[#824c71] text-[#824c71] flex items-center justify-center active:scale-95 transition"
+                            >
+                              <Phone className="w-[18px] h-[18px]" strokeWidth={2.2} />
+                            </a>
+                          ) : (
+                            <span aria-hidden className="shrink-0 w-11 h-11 rounded-xl border border-zinc-200 text-zinc-300 flex items-center justify-center">
+                              <Phone className="w-[18px] h-[18px]" strokeWidth={2.2} />
+                            </span>
+                          );
+                        })()}
+                      </div>
                     </div>
                   </article>
                 );
               })
             ) : (
               <div className="col-span-full py-12 flex flex-col items-center text-center">
-                <span className="w-16 h-16 rounded-full bg-[#f7eff4] text-[#824c71] flex items-center justify-center mb-4">
+                <span className="w-16 h-16 rounded-2xl bg-[#f5ebf2] text-[#824c71] flex items-center justify-center mb-4">
                   <SearchX className="w-7 h-7" strokeWidth={1.8} />
                 </span>
                 <p className="text-[15px] font-extrabold text-zinc-900">سالنی با این مشخصات پیدا نشد</p>
                 <p className="text-[13px] text-zinc-500 mt-1.5 leading-6">عبارت جستجو را تغییر دهید یا فیلترها و منطقه را بازنشانی کنید.</p>
-                <button onClick={resetAll} className="mt-5 h-11 px-6 rounded-full bg-[#824c71] text-white text-sm font-bold active:scale-95 transition">
+                <button onClick={resetAll} className="mt-5 h-11 px-6 rounded-xl bg-[#824c71] text-white text-sm font-bold active:scale-95 transition">
                   پاک کردن فیلترها
                 </button>
               </div>
@@ -867,5 +881,3 @@ export default function DashboardHomePage() {
     </>
   );
 }
-
-
