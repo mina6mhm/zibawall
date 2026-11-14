@@ -381,9 +381,9 @@ function BookingDisabledAlert({ isOpen, onClose }: { isOpen: boolean; onClose: (
 
 function SalonSkeleton() {
   return (
-    <div className="animate-pulse rounded-[24px] border border-zinc-200 overflow-hidden">
-      <div className="aspect-[16/10] bg-zinc-100" />
-      <div className="p-4">
+    <div className="animate-pulse">
+      <div className="relative z-10 aspect-[16/10] rounded-[20px] bg-zinc-100" />
+      <div className="-mt-5 rounded-b-[20px] border border-t-0 border-zinc-200 px-4 pt-[34px] pb-4">
         <div className="h-4 w-2/3 rounded bg-zinc-100" />
         <div className="mt-2 h-3 w-1/2 rounded bg-zinc-100" />
         <div className="mt-4 h-10 rounded-full bg-zinc-100" />
@@ -706,7 +706,7 @@ export default function DashboardHomePage() {
             </h2>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5 -mx-2">
             {isLoading ? (
               [1, 2, 3, 4].map((n) => <SalonSkeleton key={n} />)
             ) : error ? (
@@ -735,8 +735,8 @@ export default function DashboardHomePage() {
                 const saved = isBookmarked(salon.id);
 
                 return (
-                  <article key={salon.id} onClick={() => handleSalonCardClick(salon.id)} className="group cursor-pointer rounded-[24px] border border-zinc-200 bg-white overflow-hidden active:scale-[0.995] transition-transform">
-                    <div className="relative aspect-[16/10] overflow-hidden bg-zinc-100 border-b border-zinc-200">
+                  <article key={salon.id} onClick={() => handleSalonCardClick(salon.id)} className="group cursor-pointer active:scale-[0.995] transition-transform">
+                    <div className="relative z-10 aspect-[16/10] overflow-hidden bg-zinc-100 rounded-[20px]">
                       {salon.imageUrl ? (
                         <img
                           src={salon.imageUrl}
@@ -776,7 +776,7 @@ export default function DashboardHomePage() {
                       )}
                     </div>
 
-                    <div className="px-4 pt-3.5 pb-4">
+                    <div className="relative -mt-5 rounded-b-[20px] border border-t-0 border-zinc-200 bg-white px-4 pt-[34px] pb-4">
                       <h3 className="font-extrabold text-zinc-900 text-[16px] leading-snug truncate">{salon.name}</h3>
                       <p className="flex items-center gap-1 mt-1 text-zinc-500 min-w-0">
                         <MapPin className="w-[14px] h-[14px] shrink-0" strokeWidth={2} />
