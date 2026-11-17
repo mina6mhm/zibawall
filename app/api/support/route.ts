@@ -5,6 +5,7 @@ import { prisma } from '@/lib/prisma';
 import { getAuthUser } from '@/lib/auth';
 import { rateLimit } from '@/lib/rateLimit';
 import { parseJsonBody } from '@/lib/http';
+import { notifyAdminSupportMessagePush } from '@/lib/push';
  
 export const dynamic = 'force-dynamic';
 
@@ -77,6 +78,14 @@ export async function POST(req: Request) {
       }
     });
  
+    // نوتیف Web Push به ادمین‌ها — مستقل از ثبت پیام؛ خطای آن نباید ثبت تیکت را خراب کند
+    notifyAdminSupportMessagePush({
+      ticketId: supportMessage.id,
+      senderName: user.name,
+      senderPhone: user.phone,
+      message,
+    }).catch((err) => console.error('Support web push error:', err));
+
     return NextResponse.json(
       { success: true, supportMessage },
       { status: 201 }

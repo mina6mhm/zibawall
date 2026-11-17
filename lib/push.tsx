@@ -101,6 +101,26 @@ export async function notifyAdminNewSalonPendingPush(salon: {
   await sendWebPushToAdmins({ title, body, url: '/admin/salons' });
 }
 
+// نوتیف پیام پشتیبانی برای ادمین‌ها — هم تیکت جدید، هم ادامه‌ی مکالمه از طرف کاربر
+export async function notifyAdminSupportMessagePush(msg: {
+  ticketId: string;
+  senderName?: string | null;
+  senderPhone?: string | null;
+  message: string;
+  isReply?: boolean;
+}) {
+  const title = msg.isReply ? '💬 پاسخ جدید کاربر در پشتیبانی' : '💬 پیام جدید پشتیبانی';
+  const who = msg.senderName || msg.senderPhone || 'کاربر';
+  const text = msg.message.replace(/\s+/g, ' ').trim();
+  const preview = text.length > 90 ? `${text.slice(0, 90)}…` : text;
+
+  await sendWebPushToAdmins({
+    title,
+    body: `${who}: ${preview}`,
+    url: `/admin/support/${msg.ticketId}`,
+  });
+}
+
 export async function sendWebPushToUser(userId: string, payload: PushPayload) {
   if (!ensureVapidConfigured()) return;
   const subscriptions = await prisma.pushSubscription.findMany({ where: { userId } });

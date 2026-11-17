@@ -5,6 +5,7 @@ import { prisma } from '@/lib/prisma';
 import { getAuthUser } from '@/lib/auth';
 import { rateLimit } from '@/lib/rateLimit';
 import { parseJsonBody, tooManyRequests } from '@/lib/http';
+import { notifyAdminSupportMessagePush } from '@/lib/push';
 
 export const dynamic = 'force-dynamic';
 
@@ -87,6 +88,17 @@ export async function POST(
       prisma.supportReply.create({ data: { ticketId: id, message, sender } }),
       prisma.supportMessage.update({ where: { id }, data: updateData }),
     ]);
+
+    // فقط وقتی کاربر ادامه‌ی مکالمه را می‌فرستد به ادمین‌ها نوتیف بده (نه وقتی خود ادمین جواب می‌دهد)
+    if (sender === 'USER') {
+      notifyAdminSupportMessagePush({
+        ticketId: id,
+        senderName: ticket.name,
+        senderPhone: ticket.phone,
+        message,
+        isReply: true,
+      }).catch((err) => console.error('Support reply web push error:', err));
+    }
 
     return NextResponse.json({ success: true, reply, ticket: updatedTicket }, { status: 201 });
 
