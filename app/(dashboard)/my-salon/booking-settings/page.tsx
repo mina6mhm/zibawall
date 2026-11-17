@@ -6,8 +6,8 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
   ChevronRight, Loader2, Store, CalendarClock, Plus, Trash2, PenLine, X, Check,
-  ChevronDown, UsersRound, Timer, CalendarX2, TriangleAlert, Scissors, UserRound,
-  CalendarCheck2, CalendarDays, Wallet, Power,
+  ChevronDown, UsersRound, Timer, CalendarX2, TriangleAlert,
+  CalendarCheck2, CalendarDays, Power,
 } from 'lucide-react';
 import { DateObject } from 'react-multi-date-picker';
 import PersianCalendar, { CalendarDayMarker } from '@/components/ui/PersianCalendar';
@@ -193,7 +193,7 @@ function buildDefaultScheduleFromProfile(salon: {
 const BRAND = '#824c71';
 const ICON = { strokeWidth: 1.75 } as const;
 
-const card = 'bg-white rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.05)]';
+const card = 'bg-white rounded-2xl border border-zinc-200';
 const inputCls =
   'w-full bg-zinc-50 rounded-xl px-3.5 py-3 text-sm outline-none border border-transparent transition focus:bg-white focus:border-[#824c71]/50 focus:ring-2 focus:ring-[#824c71]/10 placeholder:text-zinc-400';
 const miniInputCls =
@@ -275,18 +275,20 @@ function Switch({
   return (
     <button type="button" onClick={onClick} className="shrink-0">
       <div className={`relative ${track} rounded-full transition-colors duration-200 ${on ? 'bg-[#824c71]' : 'bg-zinc-200'}`}>
-        <div className={`absolute ${knob} bg-white rounded-full shadow-sm transition-all duration-200`} />
+        <div className={`absolute ${knob} bg-white rounded-full transition-all duration-200`} />
       </div>
     </button>
   );
 }
 
-function EmptyState({ icon, title, hint }: { icon: ReactNode; title: string; hint?: string }) {
+function EmptyState({ icon, title, hint }: { icon?: ReactNode; title: string; hint?: string }) {
   return (
-    <div className="text-center py-10 bg-white rounded-2xl mb-3">
-      <div className="w-12 h-12 mx-auto mb-3 rounded-2xl bg-zinc-100 text-zinc-400 flex items-center justify-center">
-        {icon}
-      </div>
+    <div className="text-center py-10 bg-white border border-zinc-200 rounded-2xl mb-3">
+      {icon && (
+        <div className="w-12 h-12 mx-auto mb-3 rounded-2xl bg-zinc-100 text-zinc-400 flex items-center justify-center">
+          {icon}
+        </div>
+      )}
       <p className="text-zinc-600 text-sm font-bold">{title}</p>
       {hint && <p className="text-zinc-400 text-xs mt-1">{hint}</p>}
     </div>
@@ -378,7 +380,7 @@ function TabBar({
                 <span
                   className={`relative w-9 h-9 rounded-full flex items-center justify-center text-[13px] font-bold transition-all ${
                     isActive
-                      ? 'bg-[#824c71] text-white shadow-[0_4px_12px_rgba(130,76,113,0.35)]'
+                      ? 'bg-[#824c71] text-white'
                       : isDone
                       ? 'bg-[#824c71]/10 text-[#824c71]'
                       : 'bg-zinc-100 text-zinc-400 group-hover:bg-zinc-200'
@@ -571,7 +573,6 @@ function ServicesTab({
     <div>
       {services.length === 0 ? (
         <EmptyState
-          icon={<Scissors className="w-6 h-6" {...ICON} />}
           title="هنوز خدمتی تعریف نشده"
           hint="خدمات سالن را با مدت زمان و قیمت وارد کنید"
         />
@@ -579,39 +580,14 @@ function ServicesTab({
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 mb-3">
           {services.map((s) => (
             <div key={s.id} className={`${card} p-3.5 transition-opacity ${s.isActive ? '' : 'opacity-60'}`}>
-              <div className="flex items-start justify-between gap-3">
-                <div className="flex items-start gap-3 flex-1 min-w-0">
-                  <IconBadge tone={s.isActive ? 'brand' : 'neutral'}>
-                    <Scissors className="w-[18px] h-[18px]" {...ICON} />
-                  </IconBadge>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <p className="text-sm font-bold text-zinc-900 truncate">{s.name}</p>
-                      {!s.isActive && (
-                        <span className="text-[10px] bg-zinc-200 text-zinc-500 px-1.5 py-0.5 rounded-full font-medium shrink-0">
-                          غیرفعال
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex flex-wrap gap-1.5 text-[11.5px] mt-2">
-                      <span className="inline-flex items-center gap-1 bg-zinc-100 text-zinc-600 rounded-full px-2.5 py-1">
-                        <Timer className="w-3 h-3 text-zinc-400" {...ICON} />
-                        {toPersianDigits(minToDuration(s.durationMin))}
-                      </span>
-                      {s.price > 0 && (
-                        <span className="inline-flex items-center gap-1 bg-zinc-100 text-zinc-600 rounded-full px-2.5 py-1">
-                          <Wallet className="w-3 h-3 text-zinc-400" {...ICON} />
-                          {formatPrice(s.price)} تومان
-                        </span>
-                      )}
-                    </div>
-                    {s.isActive && !servicesWithStaff.has(s.id) && (
-                      <p className="text-[11px] text-amber-600 bg-amber-50 rounded-full px-2.5 py-1 inline-flex items-center gap-1 mt-2">
-                        <TriangleAlert className="w-3 h-3 shrink-0" {...ICON} />
-                        هیچ پرسنلی این خدمت را انجام نمی‌دهد
-                      </p>
-                    )}
-                  </div>
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2 flex-1 min-w-0">
+                  <p className="text-sm font-bold text-zinc-900 truncate">{s.name}</p>
+                  {!s.isActive && (
+                    <span className="text-[10px] bg-zinc-200 text-zinc-500 px-1.5 py-0.5 rounded-full font-medium shrink-0">
+                      غیرفعال
+                    </span>
+                  )}
                 </div>
                 <div className="flex items-center gap-1.5 shrink-0">
                   <IconButton
@@ -633,6 +609,27 @@ function ServicesTab({
                   </IconButton>
                 </div>
               </div>
+
+              {/* مدت زمان و قیمت — هر کدام یک ردیف مجزا، زیر نام و دکمه‌ها */}
+              <div className="mt-3 space-y-1.5">
+                <div className="flex items-center justify-between gap-3 rounded-lg bg-zinc-50 border border-zinc-100 px-3 py-2 text-xs">
+                  <span className="text-zinc-500">مدت زمان</span>
+                  <span className="font-bold text-zinc-800">{toPersianDigits(minToDuration(s.durationMin))}</span>
+                </div>
+                {s.price > 0 && (
+                  <div className="flex items-center justify-between gap-3 rounded-lg bg-zinc-50 border border-zinc-100 px-3 py-2 text-xs">
+                    <span className="text-zinc-500">قیمت</span>
+                    <span className="font-bold text-zinc-800">{formatPrice(s.price)} تومان</span>
+                  </div>
+                )}
+              </div>
+
+              {s.isActive && !servicesWithStaff.has(s.id) && (
+                <p className="text-[11px] text-amber-600 bg-amber-50 rounded-full px-2.5 py-1 inline-flex items-center gap-1 mt-2.5">
+                  <TriangleAlert className="w-3 h-3 shrink-0" {...ICON} />
+                  هیچ پرسنلی این خدمت را انجام نمی‌دهد
+                </p>
+              )}
             </div>
           ))}
         </div>
@@ -813,7 +810,6 @@ function StaffTab({
   if (services.length === 0) {
     return (
       <EmptyState
-        icon={<Scissors className="w-6 h-6" {...ICON} />}
         title="ابتدا خدمات سالن را تعریف کنید"
         hint="بعد از تعریف خدمات، می‌توانید به هر پرسنل خدمات تخصیص دهید"
       />
@@ -855,12 +851,16 @@ function StaffTab({
                           هیچ خدمتی تخصیص داده نشده
                         </p>
                       ) : (
-                        <p className="text-[11px] text-zinc-400 flex items-center gap-1.5 truncate">
-                          <span>{toPersianDigits(String(assignedIds.size))} خدمات تخصیص‌یافته</span>
+                        <div className="space-y-0.5">
+                          <p className="text-[11px] text-zinc-400 leading-5">
+                            {toPersianDigits(String(assignedIds.size))} خدمات تخصیص‌یافته
+                          </p>
                           {s.commissionPercent != null && (
-                            <span className="text-[#824c71] font-medium">· {toPersianDigits(String(s.commissionPercent))}٪ سهم پرسنل</span>
+                            <p className="text-[11px] text-[#824c71] font-medium leading-5">
+                              {toPersianDigits(String(s.commissionPercent))}٪ سهم پرسنل
+                            </p>
                           )}
-                        </p>
+                        </div>
                       )}
                     </div>
                   </div>
@@ -997,7 +997,7 @@ function ClosedRangesEditor({
   );
 
   return (
-    <div className="mb-3 bg-white rounded-xl p-3">
+    <div className="mb-3 bg-white border border-zinc-200 rounded-xl p-3">
       <p className="text-sm font-bold text-zinc-800">بستن یک بازه‌ی ساعتی خاص</p>
       <p className="text-[11px] text-zinc-400 mt-0.5 mb-3 leading-relaxed">
         فقط همین بازه‌ها بسته می‌شه؛ بقیه‌ی همین روز طبق ساعت کاری باز می‌مونه.
@@ -1097,7 +1097,7 @@ function OverrideDayEditor({
   deleting: boolean;
 }) {
   return (
-    <div className="bg-[#824c71]/[0.05] rounded-2xl p-3.5 mb-4">
+    <div className="bg-[#824c71]/[0.05] border border-[#824c71]/20 rounded-2xl p-3.5 mb-4">
       <div className="flex items-center justify-between mb-3.5">
         <p className="text-sm font-bold text-zinc-800">{formatPersianDate(dateStr)}</p>
         <IconButton onClick={onClose}>
@@ -1105,7 +1105,7 @@ function OverrideDayEditor({
         </IconButton>
       </div>
 
-      <div className="flex items-center justify-between mb-3 bg-white rounded-xl p-3">
+      <div className="flex items-center justify-between mb-3 bg-white border border-zinc-200 rounded-xl p-3">
         <div>
           <p className="text-sm font-bold text-zinc-800">{offTitle}</p>
           <p className="text-[11px] text-zinc-400 mt-0.5">{offHint}</p>
@@ -1123,7 +1123,7 @@ function OverrideDayEditor({
           value={note}
           onChange={(e) => onNoteChange(e.target.value)}
           placeholder={notePlaceholder}
-          className="w-full bg-white rounded-xl px-3.5 py-2.5 text-sm outline-none border border-transparent focus:border-[#824c71]/50 placeholder:text-zinc-400"
+          className="w-full bg-white rounded-xl px-3.5 py-2.5 text-sm outline-none border border-zinc-200 focus:border-[#824c71]/50 placeholder:text-zinc-400"
         />
       </div>
 
@@ -1167,7 +1167,7 @@ function OverrideList({
     <div>
       <p className="text-xs font-bold text-zinc-500 mb-2 px-1">{title}</p>
       {items.length === 0 ? (
-        <div className="text-center py-7 bg-white rounded-2xl">
+        <div className="text-center py-7 bg-white border border-zinc-200 rounded-2xl">
           <p className="text-zinc-400 text-xs">{emptyText}</p>
         </div>
       ) : (
@@ -1430,7 +1430,7 @@ function StaffScheduleTab({
             key={s.id}
             onClick={() => setSelectedStaffId(s.id)}
             className={`shrink-0 flex items-center gap-2 pl-4 pr-1.5 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-colors ${
-              selectedStaffId === s.id ? 'bg-[#824c71] text-white' : 'bg-white text-zinc-600'
+              selectedStaffId === s.id ? 'bg-[#824c71] text-white border border-[#824c71]' : 'bg-white text-zinc-600 border border-zinc-200'
             }`}
           >
             <span
@@ -1997,7 +1997,7 @@ export default function BookingSettingsPage() {
       {/* Toggle Card */}
       <div
         className={`rounded-2xl p-3.5 mb-4 flex items-center justify-between gap-4 transition-colors ${
-          bookingEnabled ? 'bg-[#824c71]/[0.07]' : 'bg-white shadow-[0_1px_3px_rgba(0,0,0,0.05)]'
+          bookingEnabled ? 'bg-[#824c71]/[0.07] border border-[#824c71]/25' : 'bg-white border border-zinc-200'
         }`}
       >
         <div className="flex items-center gap-3">
@@ -2024,7 +2024,7 @@ export default function BookingSettingsPage() {
             <Loader2 className="w-5 h-5 text-[#824c71] animate-spin" {...ICON} />
           ) : (
             <div className={`relative w-14 h-7 rounded-full transition-colors duration-300 ${bookingEnabled ? 'bg-[#824c71]' : 'bg-zinc-200'}`}>
-              <div className={`absolute top-1 w-5 h-5 bg-white rounded-full shadow-sm transition-all duration-300 ${bookingEnabled ? 'right-1' : 'right-8'}`} />
+              <div className={`absolute top-1 w-5 h-5 bg-white rounded-full transition-all duration-300 ${bookingEnabled ? 'right-1' : 'right-8'}`} />
             </div>
           )}
         </button>
@@ -2032,7 +2032,7 @@ export default function BookingSettingsPage() {
 
       {/* هشدار خلاصه — خدمات بدون پرسنل یا پرسنل بدون خدمت */}
       {(unlinkedServicesCount > 0 || unlinkedStaffCount > 0) && (
-        <div className="flex items-start gap-3 bg-amber-50 rounded-2xl p-3.5 mb-5">
+        <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-2xl p-3.5 mb-5">
           <IconBadge size="sm" tone="amber">
             <TriangleAlert className="w-4 h-4" {...ICON} />
           </IconBadge>
