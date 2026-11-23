@@ -21,30 +21,14 @@ const toPersianDigits = (str: string) => str.replace(/[0-9]/g, (d) => '۰۱۲۳�
 
 const ICON = { strokeWidth: 1.75 } as const;
 
-// ─── اجزای مشترک ────────────────────────────────────────────────────────────
+type TabKey = "info" | "services" | "portfolio" | "reviews";
 
-// هر بخش بدون خط جداکننده است؛ فاصله‌ی بین بخش‌ها از space-y والد می‌آید
-function Section({ title, count, action, children }: { title?: string; count?: string; action?: ReactNode; children: ReactNode }) {
-  return (
-    <section>
-      {title && (
-        <div className="flex items-baseline justify-between gap-2 mb-3">
-          <div className="flex items-baseline gap-2">
-            <h2 className="text-[15px] font-bold text-zinc-900">{title}</h2>
-            {count && <span className="text-[11px] text-zinc-400">{count}</span>}
-          </div>
-          {action}
-        </div>
-      )}
-      {children}
-    </section>
-  );
-}
+// ─── اجزای مشترک ────────────────────────────────────────────────────────────
 
 // عنوان کوچک در ردیف اول، مقدار در ردیف دوم
 function InfoRow({ label, tone, children }: { label: string; tone?: "red"; children: ReactNode }) {
   return (
-    <div>
+    <div className="py-3.5 first:pt-0 last:pb-0">
       <p className="text-[11px] text-zinc-400 leading-5">{label}</p>
       <div className={`text-[13px] leading-6 ${tone === "red" ? "text-red-500 font-bold" : "text-zinc-800"}`}>
         {children}
@@ -128,6 +112,7 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
   const [showBookingAlert, setShowBookingAlert] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const [showReviewForm, setShowReviewForm] = useState(false);
+  const [activeTab, setActiveTab] = useState<TabKey>("info");
 
   const toggleCategory = (category: string) => {
     setExpandedCategories(prev =>
@@ -372,107 +357,25 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
     if (s.bale) socialLinks.push({ key: 'bale', href: `https://ble.ir/${s.bale.replace('@', '')}`, img: '/Bale.png', alt: 'بله' });
   }
 
-  // دکمه‌ها: نوبت‌دهی (بنفش پررنگ) و تماس (بنفش کمرنگ برند) — بدون سبز
+  // دکمه‌ها: نوبت‌دهی (بنفش پررنگ، بدون آیکن) و تماس (بنفش کمرنگ برند)
   const bookingBtnCls =
     "bg-[#824c71] hover:bg-[#6e3f60] text-white font-bold rounded-xl text-sm transition-colors active:scale-[0.98]";
   const callBtnCls =
-    "bg-[#e3c9dc]/40 hover:bg-[#e3c9dc]/60 text-[#824c71] font-bold rounded-xl text-sm transition-colors active:scale-[0.98] flex items-center justify-center gap-2";
-
-  // دکمه‌ی کوچک (برای ارسال نظر)
-  const smallBtnCls =
-    "bg-[#824c71] hover:bg-[#6e3f60] text-white font-bold rounded-full text-xs px-5 py-2 transition-colors active:scale-[0.98]";
+    "bg-[#e3c9dc]/50 hover:bg-[#e3c9dc]/75 text-[#824c71] font-bold rounded-xl text-sm transition-colors active:scale-[0.98] flex items-center justify-center gap-2";
 
   const starCounts = [5, 4, 3, 2, 1].map((s) => ({
     star: s,
     count: ratedReviews.filter((r) => r.rating === s).length,
   }));
 
-  // ── بخش اطلاعات تماس (موبایل: اولین بخش زیر کاور، دسکتاپ: ستون کناری) ──
-  const infoSection = (
-    <Section title="اطلاعات سالن">
-      <div className="bg-zinc-50 rounded-2xl p-4 space-y-3.5">
-          <InfoRow label="آدرس">
-            <p>{salon.address}</p>
-          </InfoRow>
+  const tabs: { key: TabKey; label: string }[] = [
+    { key: "info", label: "اطلاعات" },
+    { key: "services", label: "خدمات" },
+    ...(salon.portfolios?.length > 0 ? [{ key: "portfolio" as TabKey, label: "نمونه کار" }] : []),
+    { key: "reviews", label: "نظرات" },
+  ];
 
-          {salon.phones?.length > 0 && (
-            <InfoRow label="شماره تماس">
-              <div className="flex flex-col">
-                {salon.phones.map((p: string, i: number) => (
-                  <a key={i} href={`tel:${p}`} className="w-fit hover:text-[#824c71] transition-colors">
-                    {toPersianDigits(p)}
-                  </a>
-                ))}
-              </div>
-            </InfoRow>
-          )}
-
-          {salon.workingHours && (
-            <InfoRow label="ساعت کاری">
-              <p>{salon.workingHours}</p>
-            </InfoRow>
-          )}
-
-          {salon.closedDays?.length > 0 && (
-            <InfoRow label="روزهای تعطیل" tone="red">
-              <p>{salon.closedDays.join('، ')}</p>
-            </InfoRow>
-          )}
-        </div>
-
-      {/* نقشه */}
-      <div
-        onClick={() => setShowRoutingModal(true)}
-        className="relative w-full h-40 bg-zinc-100 rounded-2xl overflow-hidden cursor-pointer group mt-3"
-        >
-          {salon.coordinates && salon.coordinates.length === 2 ? (
-            <>
-              <img
-                src={`https://static-maps.yandex.ru/1.x/?ll=${salon.coordinates[1]},${salon.coordinates[0]}&z=17&l=map&size=600,250&pt=${salon.coordinates[1]},${salon.coordinates[0]},pm2rdm&lang=fa_IR`}
-                alt={`موقعیت ${salon.name}`}
-                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-              />
-              <div className="absolute bottom-2.5 right-2.5 flex items-center gap-1.5 bg-[#824c71] text-white px-3.5 py-2 rounded-full text-[11px] font-bold">
-                <Navigation className="w-3.5 h-3.5" {...ICON} />
-                مسیریابی
-              </div>
-            </>
-          ) : (
-            <div className="w-full h-full flex items-center justify-center">
-              <span className="text-xs text-zinc-400">نقشه ثبت نشده</span>
-            </div>
-          )}
-        </div>
-
-        {/* شبکه‌های اجتماعی */}
-        {socialLinks.length > 0 && (
-          <div className="flex flex-wrap gap-2.5 mt-4">
-            {socialLinks.map((s) => (
-              <a
-                key={s.key}
-                href={s.href}
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label={s.alt}
-                className="flex items-center justify-center w-10 h-10 rounded-full bg-zinc-100 hover:bg-zinc-200 transition-all active:scale-90"
-              >
-                <img src={s.img} alt={s.alt} className="w-5 h-5 object-contain" />
-              </a>
-            ))}
-          </div>
-        )}
-
-        {isAdmin && (
-          <button
-            onClick={() => setShowDeleteModal(true)}
-            className="w-full flex items-center justify-center gap-2 mt-4 py-2.5 rounded-xl bg-red-50 text-red-600 text-xs font-bold hover:bg-red-100 transition-colors"
-          >
-            <Trash2 className="w-3.5 h-3.5" {...ICON} />
-            حذف این کسب‌وکار (ادمین)
-          </button>
-        )}
-      </Section>
-  );
+  const pillCls = "text-[11px] font-bold text-[#824c71] bg-[#e3c9dc]/30 px-3 py-1 rounded-full";
 
   const heroBtn =
     "w-10 h-10 flex items-center justify-center rounded-full bg-white/90 backdrop-blur-md text-zinc-700 active:scale-90 transition-transform";
@@ -506,7 +409,7 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
       {showRoutingModal && salon.coordinates && (
         <Modal onClose={() => setShowRoutingModal(false)}>
           <ModalHeader title="مسیریابی با..." onClose={() => setShowRoutingModal(false)} />
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col divide-y divide-zinc-100">
             {[
               { href: `https://neshan.org/maps/routing?dest_lat=${salon.coordinates[0]}&dest_lng=${salon.coordinates[1]}`, label: "نشان (Neshan)", img: "/neshan.png", alt: "نشان" },
               { href: `https://balad.ir/?lat=${salon.coordinates[0]}&lng=${salon.coordinates[1]}&title=${encodeURIComponent(salon.name)}`, label: "بلد (Balad)", img: "/balad.png", alt: "بلد" },
@@ -517,7 +420,7 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
                 href={r.href}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center justify-between p-3.5 rounded-xl bg-zinc-50 hover:bg-zinc-100 transition-colors"
+                className="flex items-center justify-between py-3.5 hover:opacity-70 transition-opacity"
               >
                 <span className="font-bold text-sm text-zinc-800">{r.label}</span>
                 <img src={r.img} alt={r.alt} className="w-6 h-6 object-contain" />
@@ -531,16 +434,16 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
       {showPhoneModal && salon.phones && salon.phones.length > 1 && (
         <Modal onClose={() => setShowPhoneModal(false)}>
           <ModalHeader title="با کدام شماره تماس بگیرم؟" onClose={() => setShowPhoneModal(false)} />
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col divide-y divide-zinc-100">
             {salon.phones.map((phone: string, idx: number) => (
               <a
                 key={idx}
                 href={`tel:${phone}`}
                 onClick={() => setShowPhoneModal(false)}
-                className="flex items-center justify-between p-3.5 rounded-xl bg-zinc-50 hover:bg-zinc-100 transition-colors"
+                className="flex items-center justify-between py-3.5"
               >
                 <span className="font-bold text-sm text-zinc-800">{toPersianDigits(phone)}</span>
-                <span className="bg-[#824c71] text-white text-[11px] font-bold px-3.5 py-1.5 rounded-full">تماس</span>
+                <span className="bg-[#824c71] text-white text-[11px] font-bold px-4 py-1.5 rounded-full">تماس</span>
               </a>
             ))}
           </div>
@@ -587,15 +490,14 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
       />
 
       {/* ── محتوای اصلی ── */}
-      <div className="max-w-5xl mx-auto pb-28 sm:pb-24 mt-2 sm:mt-6">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8 items-start">
+      <div className="max-w-5xl mx-auto pb-32 sm:pb-24 px-2 sm:px-6 mt-2 sm:mt-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-10 items-start">
 
-          {/* ستون اصلی — یک صفحه‌ی یکپارچه که بخش‌هایش با خط جدا می‌شوند */}
-          <main className="lg:col-span-2 space-y-8">
+          <main className="lg:col-span-2 min-w-0">
 
-            {/* هیرو: عکس + نام سالن روی آن */}
+            {/* کاور — فقط عکس و دکمه‌ها */}
             <div
-              className={`relative w-full h-72 sm:h-[26rem] rounded-3xl overflow-hidden cursor-pointer ${
+              className={`relative w-full h-60 sm:h-80 rounded-3xl overflow-hidden cursor-pointer ${
                 salon.imageUrl ? "bg-zinc-200" : "bg-gradient-to-br from-[#824c71] to-[#5a3350]"
               }`}
               onClick={() => salon.imageUrl && setSelectedImage(salon.imageUrl)}
@@ -603,7 +505,7 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
               {salon.imageUrl && (
                 <img src={salon.imageUrl} alt={salon.name} className="absolute inset-0 w-full h-full object-cover" />
               )}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/5 to-black/30 pointer-events-none" />
+              <div className="absolute inset-x-0 top-0 h-20 bg-gradient-to-b from-black/30 to-transparent pointer-events-none" />
 
               <div className="absolute top-3 inset-x-3 flex items-center justify-between" onClick={(e) => e.stopPropagation()}>
                 <button
@@ -626,236 +528,364 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
                   </button>
                 </div>
               </div>
-
-              <div className="absolute bottom-0 inset-x-0 p-4 pointer-events-none">
-                <h1 className="text-2xl sm:text-3xl font-bold text-white leading-snug">{salon.name}</h1>
-                {(salon.hasHomeService || salon.genderAudience) && (
-                  <div className="flex flex-wrap gap-1.5 mt-2.5">
-                    {salon.hasHomeService && (
-                      <span className="text-[11px] font-bold text-white bg-white/20 backdrop-blur-md px-3 py-1 rounded-full">
-                        خدمات در منزل
-                      </span>
-                    )}
-                    {salon.genderAudience && (
-                      <span className="text-[11px] font-bold text-white bg-white/20 backdrop-blur-md px-3 py-1 rounded-full">
-                        {GENDER_AUDIENCE_LABELS[salon.genderAudience] || salon.genderAudience}
-                      </span>
-                    )}
-                  </div>
-                )}
-              </div>
             </div>
 
-            {/* نمونه کارها */}
-            {salon.portfolios?.length > 0 && (
-              <Section title="نمونه کارها">
-                <div className="flex gap-2 overflow-x-auto pb-1 hide-scrollbar snap-x">
+            {/* نام سالن + امتیاز + برچسب‌ها */}
+            <div className="pt-5 px-1">
+              <h1 className="text-[22px] sm:text-3xl font-bold text-zinc-900 leading-snug">{salon.name}</h1>
+
+              <div className="flex items-center gap-2 mt-2">
+                <Stars value={Math.round(avgRatingNum)} size="w-3.5 h-3.5" />
+                <span className="text-[13px] font-bold text-zinc-800">{toPersianDigits(averageRating)}</span>
+                <span className="text-[12px] text-zinc-400">({toPersianDigits(String(totalVotes))} رای)</span>
+              </div>
+
+              {(salon.hasHomeService || salon.genderAudience) && (
+                <div className="flex flex-wrap gap-1.5 mt-3">
+                  {salon.hasHomeService && <span className={pillCls}>خدمات در منزل</span>}
+                  {salon.genderAudience && (
+                    <span className={pillCls}>
+                      {GENDER_AUDIENCE_LABELS[salon.genderAudience] || salon.genderAudience}
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* تب‌ها — خط زیر آن‌ها بخش‌ها را جدا می‌کند */}
+            <div className="mt-6 flex border-b border-zinc-200">
+              {tabs.map((t) => {
+                const isActive = activeTab === t.key;
+                return (
+                  <button
+                    key={t.key}
+                    type="button"
+                    onClick={() => setActiveTab(t.key)}
+                    className={`flex-1 pb-3 text-[13px] font-bold border-b-2 -mb-px transition-colors ${
+                      isActive
+                        ? "text-[#824c71] border-[#824c71]"
+                        : "text-zinc-400 border-transparent hover:text-zinc-600"
+                    }`}
+                  >
+                    {t.label}
+                    {t.key === "reviews" && textReviews.length > 0 && (
+                      <span className="mr-1 text-[11px] font-medium">({toPersianDigits(String(textReviews.length))})</span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="pt-6">
+
+              {/* ───────── تب اطلاعات ───────── */}
+              {activeTab === "info" && (
+                <div className="space-y-7">
+                  {/* اطلاعات تماس — بین ردیف‌ها خط */}
+                  <div className="divide-y divide-zinc-100">
+                    <InfoRow label="آدرس">
+                      <p>{salon.address}</p>
+                    </InfoRow>
+
+                    {salon.phones?.length > 0 && (
+                      <InfoRow label="شماره تماس">
+                        <p className="flex flex-wrap items-center gap-x-1.5">
+                          {salon.phones.map((p: string, i: number) => (
+                            <span key={i} className="inline-flex items-center gap-x-1.5 whitespace-nowrap">
+                              <a href={`tel:${p}`} className="hover:text-[#824c71] transition-colors">
+                                {toPersianDigits(p)}
+                              </a>
+                              {i < salon.phones.length - 1 && <span className="text-zinc-300">-</span>}
+                            </span>
+                          ))}
+                        </p>
+                      </InfoRow>
+                    )}
+
+                    {salon.workingHours && (
+                      <InfoRow label="ساعت کاری">
+                        <p>{salon.workingHours}</p>
+                      </InfoRow>
+                    )}
+
+                    {salon.closedDays?.length > 0 && (
+                      <InfoRow label="روزهای تعطیل" tone="red">
+                        <p>{salon.closedDays.join('، ')}</p>
+                      </InfoRow>
+                    )}
+                  </div>
+
+                  {/* نقشه */}
+                  <div
+                    onClick={() => setShowRoutingModal(true)}
+                    className="relative w-full h-44 bg-zinc-100 rounded-2xl overflow-hidden cursor-pointer group"
+                  >
+                    {salon.coordinates && salon.coordinates.length === 2 ? (
+                      <>
+                        <img
+                          src={`https://static-maps.yandex.ru/1.x/?ll=${salon.coordinates[1]},${salon.coordinates[0]}&z=17&l=map&size=600,250&pt=${salon.coordinates[1]},${salon.coordinates[0]},pm2rdm&lang=fa_IR`}
+                          alt={`موقعیت ${salon.name}`}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        />
+                        <div className="absolute bottom-2.5 right-2.5 flex items-center gap-1.5 bg-[#824c71] text-white px-3.5 py-2 rounded-full text-[11px] font-bold">
+                          <Navigation className="w-3.5 h-3.5" {...ICON} />
+                          مسیریابی
+                        </div>
+                      </>
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <span className="text-xs text-zinc-400">نقشه ثبت نشده</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* درباره سالن */}
+                  <div className="pt-6 border-t border-zinc-100">
+                    <h2 className="text-[15px] font-bold text-zinc-900 mb-3">درباره سالن</h2>
+                    <p className="text-zinc-600 text-[13px] leading-7 text-justify">
+                      {salon.description || "توضیحاتی ثبت نشده است."}
+                    </p>
+                  </div>
+
+                  {/* شبکه‌های اجتماعی */}
+                  {socialLinks.length > 0 && (
+                    <div className="pt-6 border-t border-zinc-100">
+                      <h2 className="text-[15px] font-bold text-zinc-900 mb-3">ما را دنبال کنید</h2>
+                      <div className="flex flex-wrap gap-2.5">
+                        {socialLinks.map((s) => (
+                          <a
+                            key={s.key}
+                            href={s.href}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            aria-label={s.alt}
+                            className="flex items-center justify-center w-11 h-11 rounded-full bg-[#e3c9dc]/30 hover:bg-[#e3c9dc]/50 transition-all active:scale-90"
+                          >
+                            <img src={s.img} alt={s.alt} className="w-5 h-5 object-contain" />
+                          </a>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {isAdmin && (
+                    <button
+                      onClick={() => setShowDeleteModal(true)}
+                      className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-red-50 text-red-600 text-xs font-bold hover:bg-red-100 transition-colors"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" {...ICON} />
+                      حذف این کسب‌وکار (ادمین)
+                    </button>
+                  )}
+                </div>
+              )}
+
+              {/* ───────── تب خدمات ───────── */}
+              {activeTab === "services" && (
+                <div>
+                  {Object.keys(groupedServices).length > 0 ? (
+                    <div className="divide-y divide-zinc-100">
+                      {Object.entries(groupedServices).map(([category, services]) => {
+                        const isExpanded = expandedCategories.includes(category);
+                        return (
+                          <div key={category} className="py-1 first:pt-0 last:pb-0">
+                            <button
+                              type="button"
+                              onClick={() => toggleCategory(category)}
+                              className="w-full flex items-center justify-between gap-3 py-3 text-right"
+                            >
+                              <div className="flex items-baseline gap-2 min-w-0">
+                                <span className="font-bold text-zinc-800 text-[14px]">{category}</span>
+                                <span className="text-[11px] text-zinc-400">{toPersianDigits(String(services.length))} خدمت</span>
+                              </div>
+                              <ChevronDown
+                                className={`w-[18px] h-[18px] shrink-0 transition-transform ${isExpanded ? "rotate-180 text-[#824c71]" : "text-zinc-400"}`}
+                                {...ICON}
+                              />
+                            </button>
+                            {isExpanded && (
+                              <div className="pb-3 flex flex-wrap gap-1.5">
+                                {services.map((service, index) => (
+                                  <span
+                                    key={index}
+                                    className="text-xs font-medium text-[#824c71] bg-[#e3c9dc]/30 rounded-full px-3 py-1.5"
+                                  >
+                                    {service}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <p className="text-zinc-400 text-xs text-center py-8">خدماتی ثبت نشده است.</p>
+                  )}
+                </div>
+              )}
+
+              {/* ───────── تب نمونه کار ───────── */}
+              {activeTab === "portfolio" && salon.portfolios?.length > 0 && (
+                <div className="grid grid-cols-3 gap-1.5">
                   {salon.portfolios.map((imgUrl: string, index: number) => (
                     <div
                       key={index}
                       onClick={() => setSelectedImage(imgUrl)}
-                      className="w-28 h-28 shrink-0 rounded-2xl overflow-hidden snap-start cursor-pointer bg-zinc-100"
+                      className="aspect-square rounded-xl overflow-hidden cursor-pointer bg-zinc-100"
                     >
                       <img src={imgUrl} alt={`نمونه کار ${index + 1}`} className="w-full h-full object-cover" />
                     </div>
                   ))}
                 </div>
-              </Section>
-            )}
-
-            {/* اطلاعات سالن — فقط موبایل، بعد از نمونه کارها (در دسکتاپ ستون کناری) */}
-            <div className="lg:hidden">{infoSection}</div>
-
-            {/* درباره سالن */}
-            <Section title="درباره سالن">
-              <p className="text-zinc-600 text-[13px] leading-7 text-justify">
-                {salon.description || "توضیحاتی ثبت نشده است."}
-              </p>
-            </Section>
-
-            {/* خدمات */}
-            <Section title="خدمات">
-              {Object.keys(groupedServices).length > 0 ? (
-                <div className="space-y-1">
-                  {Object.entries(groupedServices).map(([category, services]) => {
-                    const isExpanded = expandedCategories.includes(category);
-                    return (
-                      <div key={category}>
-                        <button
-                          type="button"
-                          onClick={() => toggleCategory(category)}
-                          className="w-full flex items-center justify-between gap-3 py-3 text-right"
-                        >
-                          <div className="flex items-baseline gap-2 min-w-0">
-                            <span className="font-bold text-zinc-800 text-[13px]">{category}</span>
-                            <span className="text-[11px] text-zinc-400">{toPersianDigits(String(services.length))} خدمت</span>
-                          </div>
-                          <ChevronDown
-                            className={`w-[18px] h-[18px] shrink-0 transition-transform ${isExpanded ? "rotate-180 text-[#824c71]" : "text-zinc-400"}`}
-                            {...ICON}
-                          />
-                        </button>
-                        {isExpanded && (
-                          <div className="pb-2 flex flex-wrap gap-1.5">
-                            {services.map((service, index) => (
-                              <span
-                                key={index}
-                                className="text-xs font-medium text-[#824c71] bg-[#e3c9dc]/30 rounded-full px-3 py-1.5"
-                              >
-                                {service}
-                              </span>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              ) : (
-                <p className="text-zinc-400 text-xs">خدماتی ثبت نشده است.</p>
               )}
-            </Section>
 
-            {/* امتیاز */}
-            <Section title="امتیاز سالن">
-              <div className="bg-zinc-50 rounded-2xl p-4">
-              <div className="grid grid-cols-[auto_1fr] gap-6 items-center">
-                <div className="flex flex-col items-center text-center">
-                  <span className="text-5xl font-bold text-zinc-900 leading-none">{toPersianDigits(averageRating)}</span>
-                  <div className="mt-2.5">
-                    <Stars value={Math.round(avgRatingNum)} size="w-3.5 h-3.5" />
-                  </div>
-                  <span className="text-[11px] text-zinc-400 mt-1.5">{toPersianDigits(String(totalVotes))} رای</span>
-                </div>
-
-                <div className="space-y-1.5 min-w-0">
-                  {starCounts.map(({ star, count }) => (
-                    <div key={star} className="flex items-center gap-2 text-[11px] text-zinc-400">
-                      <span className="w-2.5 text-center">{toPersianDigits(String(star))}</span>
-                      <div className="flex-1 h-1.5 rounded-full bg-zinc-200 overflow-hidden">
-                        <div
-                          className="h-full rounded-full bg-amber-400"
-                          style={{ width: totalVotes ? `${(count / totalVotes) * 100}%` : "0%" }}
-                        />
+              {/* ───────── تب نظرات ───────── */}
+              {activeTab === "reviews" && (
+                <div>
+                  {/* خلاصه‌ی امتیاز */}
+                  <div className="grid grid-cols-[auto_1fr] gap-6 items-center">
+                    <div className="flex flex-col items-center text-center">
+                      <span className="text-5xl font-bold text-zinc-900 leading-none">{toPersianDigits(averageRating)}</span>
+                      <div className="mt-2.5">
+                        <Stars value={Math.round(avgRatingNum)} size="w-3.5 h-3.5" />
                       </div>
-                      <span className="w-4 text-left">{toPersianDigits(String(count))}</span>
+                      <span className="text-[11px] text-zinc-400 mt-1.5">{toPersianDigits(String(totalVotes))} رای</span>
                     </div>
-                  ))}
-                </div>
-              </div>
 
-              {/* امتیازدهی کاربر — قابل تغییر (بدون پس‌زمینه‌ی رنگی) */}
-              <div className="mt-6">
-                <div className="flex items-center gap-2 mb-2.5">
-                  <p className="text-[13px] font-bold text-zinc-800">
-                    {savedMyRating ? 'امتیاز شما' : 'امتیاز بدهید'}
-                  </p>
-                  {isSubmittingRating && <Loader2 className="w-3.5 h-3.5 text-[#824c71] animate-spin" {...ICON} />}
-                  {ratingSaved && !isSubmittingRating && (
-                    <span className="inline-flex items-center gap-0.5 text-[11px] font-bold text-[#824c71]">
-                      <Check className="w-3 h-3" strokeWidth={2.5} />
-                      ثبت شد
-                    </span>
-                  )}
-                </div>
+                    <div className="space-y-1.5 min-w-0">
+                      {starCounts.map(({ star, count }) => (
+                        <div key={star} className="flex items-center gap-2 text-[11px] text-zinc-400">
+                          <span className="w-2.5 text-center">{toPersianDigits(String(star))}</span>
+                          <div className="flex-1 h-1.5 rounded-full bg-zinc-100 overflow-hidden">
+                            <div
+                              className="h-full rounded-full bg-amber-400"
+                              style={{ width: totalVotes ? `${(count / totalVotes) * 100}%` : "0%" }}
+                            />
+                          </div>
+                          <span className="w-4 text-left">{toPersianDigits(String(count))}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
 
-                <div className="flex items-center gap-1.5" onMouseLeave={() => setHoverRating(0)}>
-                  {[1, 2, 3, 4, 5].map((star) => {
-                    const active = star <= (hoverRating || myRating);
-                    return (
+                  {/* امتیاز شما — با یک خط از بالا جدا شده، بدون پس‌زمینه */}
+                  <div className="mt-6 pt-6 border-t border-zinc-100">
+                    <div className="flex items-center gap-2 mb-2.5">
+                      <p className="text-[13px] font-bold text-zinc-800">
+                        {savedMyRating ? 'امتیاز شما' : 'امتیاز بدهید'}
+                      </p>
+                      {isSubmittingRating && <Loader2 className="w-3.5 h-3.5 text-[#824c71] animate-spin" {...ICON} />}
+                      {ratingSaved && !isSubmittingRating && (
+                        <span className="inline-flex items-center gap-0.5 text-[11px] font-bold text-[#824c71]">
+                          <Check className="w-3 h-3" strokeWidth={2.5} />
+                          ثبت شد
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="flex items-center gap-1.5" onMouseLeave={() => setHoverRating(0)}>
+                      {[1, 2, 3, 4, 5].map((star) => {
+                        const active = star <= (hoverRating || myRating);
+                        return (
+                          <button
+                            key={star}
+                            type="button"
+                            disabled={isSubmittingRating}
+                            onMouseEnter={() => setHoverRating(star)}
+                            onClick={() => handleRatingSubmit(star)}
+                            aria-label={`${star} ستاره`}
+                            className="active:scale-90 transition-transform disabled:opacity-60"
+                          >
+                            <Star className={`w-8 h-8 fill-current ${active ? 'text-amber-400' : 'text-zinc-200'}`} strokeWidth={0} />
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    <p className="text-[11px] text-zinc-400 mt-2.5">
+                      {savedMyRating ? 'برای تغییر، روی ستاره‌ی دلخواه بزنید.' : 'روی ستاره‌ها بزنید.'}
+                    </p>
+                    {ratingError && <p className="text-red-600 text-[11px] font-medium mt-1.5">{ratingError}</p>}
+                  </div>
+
+                  {/* نظرات */}
+                  <div className="mt-6 pt-6 border-t border-zinc-100">
+                    <div className="flex items-center justify-between mb-4">
+                      <h2 className="text-[15px] font-bold text-zinc-900">
+                        نظرات
+                        <span className="text-[11px] font-medium text-zinc-400 mr-2">
+                          {toPersianDigits(String(textReviews.length))} نظر
+                        </span>
+                      </h2>
                       <button
-                        key={star}
                         type="button"
-                        disabled={isSubmittingRating}
-                        onMouseEnter={() => setHoverRating(star)}
-                        onClick={() => handleRatingSubmit(star)}
-                        aria-label={`${star} ستاره`}
-                        className="active:scale-90 transition-transform disabled:opacity-60"
+                        onClick={() => {
+                          setShowReviewForm((v) => !v);
+                          setReviewError("");
+                          setSuccessMessage("");
+                        }}
+                        className="text-xs font-bold text-[#824c71] hover:underline"
                       >
-                        <Star className={`w-8 h-8 fill-current ${active ? 'text-amber-400' : 'text-zinc-300'}`} strokeWidth={0} />
+                        {showReviewForm ? "بستن" : "نوشتن نظر"}
                       </button>
-                    );
-                  })}
-                </div>
+                    </div>
 
-                <p className="text-[11px] text-zinc-400 mt-2.5">
-                  {savedMyRating ? 'برای تغییر، روی ستاره‌ی دلخواه بزنید.' : 'روی ستاره‌ها بزنید.'}
-                </p>
-                {ratingError && <p className="text-red-600 text-[11px] font-medium mt-1.5">{ratingError}</p>}
-              </div>
-              </div>
-            </Section>
+                    {successMessage && (
+                      <div className="mb-4 flex items-center gap-2 bg-[#e3c9dc]/30 text-[#824c71] rounded-xl px-3 py-2.5">
+                        <Check className="w-4 h-4 shrink-0" strokeWidth={2.25} />
+                        <span className="text-xs font-bold">{successMessage}</span>
+                      </div>
+                    )}
 
-            {/* نظرات */}
-            <Section
-              title="نظرات"
-              count={`${toPersianDigits(String(textReviews.length))} نظر`}
-              action={
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowReviewForm((v) => !v);
-                    setReviewError("");
-                    setSuccessMessage("");
-                  }}
-                  className="text-xs font-bold text-[#824c71] hover:underline"
-                >
-                  {showReviewForm ? "بستن" : "نوشتن نظر"}
-                </button>
-              }
-            >
-              {successMessage && (
-                <div className="mb-4 flex items-center gap-2 bg-[#e3c9dc]/25 text-[#824c71] rounded-xl px-3 py-2.5">
-                  <Check className="w-4 h-4 shrink-0" strokeWidth={2.25} />
-                  <span className="text-xs font-bold">{successMessage}</span>
-                </div>
-              )}
+                    {showReviewForm && (
+                      <div className="mb-5">
+                        <textarea
+                          value={reviewText}
+                          onChange={(e) => setReviewText(e.target.value)}
+                          className="w-full border border-zinc-200 rounded-2xl p-3 text-sm outline-none focus:border-[#824c71]/60 focus:ring-2 focus:ring-[#824c71]/10 transition resize-none placeholder:text-zinc-400"
+                          rows={3}
+                          placeholder="تجربه خود را بنویسید..."
+                        />
+                        {reviewError && <p className="text-red-600 text-xs font-medium mt-2">{reviewError}</p>}
+                        <div className="flex justify-end mt-2">
+                          <button type="button" onClick={handleReviewSubmit} className={`px-6 py-2 text-xs ${bookingBtnCls}`}>
+                            ثبت نظر
+                          </button>
+                        </div>
+                      </div>
+                    )}
 
-              {showReviewForm && (
-                <div className="mb-5">
-                  <textarea
-                    value={reviewText}
-                    onChange={(e) => setReviewText(e.target.value)}
-                    className="w-full bg-zinc-50 rounded-2xl p-3 text-sm outline-none focus:bg-white focus:ring-2 focus:ring-[#824c71]/20 transition resize-none placeholder:text-zinc-400"
-                    rows={3}
-                    placeholder="تجربه خود را بنویسید..."
-                  />
-                  {reviewError && <p className="text-red-600 text-xs font-medium mt-2">{reviewError}</p>}
-                  <div className="flex justify-end mt-2">
-                    <button type="button" onClick={handleReviewSubmit} className={smallBtnCls}>
-                      ثبت
-                    </button>
+                    <div className="divide-y divide-zinc-100">
+                      {textReviews.length > 0 ? (
+                        textReviews.map((review) => (
+                          <div key={review.id} className="flex gap-3 py-4 first:pt-0 last:pb-0">
+                            <span className="w-9 h-9 rounded-full bg-[#e3c9dc]/40 text-[#824c71] flex items-center justify-center text-sm font-bold shrink-0">
+                              {String(review.name || "؟").slice(0, 1)}
+                            </span>
+                            <div className="min-w-0 flex-1">
+                              <p className="font-bold text-zinc-800 text-[13px] leading-5">{review.name}</p>
+                              {review.rating > 0 && (
+                                <div className="mt-0.5">
+                                  <Stars value={review.rating} />
+                                </div>
+                              )}
+                              <p className="text-zinc-600 text-[13px] leading-relaxed text-justify mt-1.5 break-words">{review.comment}</p>
+                            </div>
+                          </div>
+                        ))
+                      ) : (
+                        <p className="text-zinc-400 text-xs text-center py-6">هنوز نظری ثبت نشده است.</p>
+                      )}
+                    </div>
                   </div>
                 </div>
               )}
-
-              <div className="space-y-5">
-                {textReviews.length > 0 ? (
-                  textReviews.map((review) => (
-                    <div key={review.id} className="flex gap-3">
-                      <span className="w-9 h-9 rounded-full bg-[#824c71]/10 text-[#824c71] flex items-center justify-center text-sm font-bold shrink-0">
-                        {String(review.name || "؟").slice(0, 1)}
-                      </span>
-                      <div className="min-w-0 flex-1">
-                        <p className="font-bold text-zinc-800 text-[13px] leading-5">{review.name}</p>
-                        {review.rating > 0 && (
-                          <div className="mt-0.5">
-                            <Stars value={review.rating} />
-                          </div>
-                        )}
-                        <p className="text-zinc-600 text-[13px] leading-relaxed text-justify mt-1.5 break-words">{review.comment}</p>
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <p className="text-zinc-400 text-xs text-center py-6">هنوز نظری ثبت نشده است.</p>
-                )}
-              </div>
-            </Section>
+            </div>
           </main>
 
-          {/* ستون کناری — دسکتاپ: دکمه‌ها + اطلاعات */}
-          <aside className="hidden lg:block sticky top-6 space-y-6">
+          {/* ستون کناری — دسکتاپ: دکمه‌ها */}
+          <aside className="hidden lg:block sticky top-6">
             <div className="flex flex-col gap-2.5">
               <button onClick={handleBookingButtonClick} className={`w-full py-3.5 ${bookingBtnCls}`}>
                 نوبت‌دهی آنلاین
@@ -867,23 +897,24 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
                 </a>
               )}
             </div>
-            {infoSection}
           </aside>
 
         </div>
       </div>
 
-      {/* نوار شناور پایین — موبایل (بدون بوردر) */}
-      <div className="fixed bottom-[max(0.75rem,env(safe-area-inset-bottom))] left-2 right-2 z-[60] lg:hidden bg-white/95 backdrop-blur-md rounded-2xl p-2 flex gap-2">
-        <button onClick={handleBookingButtonClick} className={`flex-1 py-3.5 ${bookingBtnCls}`}>
-          نوبت‌دهی آنلاین
-        </button>
-        {primaryPhone && (
-          <a href={`tel:${primaryPhone}`} onClick={handleCallButtonClick} className={`px-6 py-3.5 ${callBtnCls}`}>
-            <Phone className="w-4 h-4" {...ICON} />
-            تماس
-          </a>
-        )}
+      {/* نوار شناور پایین — موبایل (بدون بوردر؛ فقط یک محو شدن سفید پشت دکمه‌ها) */}
+      <div className="fixed bottom-0 inset-x-0 z-[60] lg:hidden px-2 pt-8 pb-[max(0.75rem,env(safe-area-inset-bottom))] bg-gradient-to-t from-white via-white/95 to-transparent pointer-events-none">
+        <div className="flex gap-2 pointer-events-auto">
+          <button onClick={handleBookingButtonClick} className={`flex-1 py-3.5 ${bookingBtnCls}`}>
+            نوبت‌دهی آنلاین
+          </button>
+          {primaryPhone && (
+            <a href={`tel:${primaryPhone}`} onClick={handleCallButtonClick} className={`px-6 py-3.5 ${callBtnCls}`}>
+              <Phone className="w-4 h-4" {...ICON} />
+              تماس
+            </a>
+          )}
+        </div>
       </div>
     </>
   );
