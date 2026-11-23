@@ -367,18 +367,18 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
     if (s.bale) socialLinks.push({ key: 'bale', href: `https://ble.ir/${s.bale.replace('@', '')}`, img: '/Bale.png', alt: 'بله' });
   }
 
-  // دکمه‌ها: نوبت‌دهی (بنفش، بدون آیکن) و تماس (سبز)
+  // دکمه‌ها: نوبت‌دهی (بنفش پررنگ) و تماس (بنفش کمرنگ برند) — بدون سبز
   const bookingBtnCls =
     "bg-[#824c71] hover:bg-[#6e3f60] text-white font-bold rounded-xl text-sm transition-colors active:scale-[0.98]";
   const callBtnCls =
-    "bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-sm transition-colors active:scale-[0.98] flex items-center justify-center gap-2";
+    "bg-[#e3c9dc]/40 hover:bg-[#e3c9dc]/60 text-[#824c71] font-bold rounded-xl text-sm transition-colors active:scale-[0.98] flex items-center justify-center gap-2";
 
   const starCounts = [5, 4, 3, 2, 1].map((s) => ({
     star: s,
     count: ratedReviews.filter((r) => r.rating === s).length,
   }));
 
-  // ── بخش اطلاعات تماس (موبایل: داخل صفحه، دسکتاپ: ستون کناری) ──
+  // ── بخش اطلاعات تماس (موبایل: اولین بخش زیر کاور، دسکتاپ: ستون کناری) ──
   const infoSection = (
     <>
       <Section title="اطلاعات سالن">
@@ -535,7 +535,7 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
                 className="flex items-center justify-between p-3.5 rounded-xl bg-zinc-50 hover:bg-zinc-100 transition-colors"
               >
                 <span className="font-bold text-sm text-zinc-800">{toPersianDigits(phone)}</span>
-                <span className="bg-emerald-600 text-white text-[11px] font-bold px-3.5 py-1.5 rounded-full">تماس</span>
+                <span className="bg-[#824c71] text-white text-[11px] font-bold px-3.5 py-1.5 rounded-full">تماس</span>
               </a>
             ))}
           </div>
@@ -641,23 +641,8 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
               </div>
             </div>
 
-            {/* نوار خلاصه: امتیاز | نظرات | نوبت‌دهی — با خط عمودی */}
-            <div className="grid grid-cols-3 text-center">
-              <div className="py-3.5 border-e border-zinc-100">
-                <p className="text-[11px] text-zinc-400">امتیاز</p>
-                <p className="text-[15px] font-bold text-zinc-900 mt-0.5">{toPersianDigits(averageRating)}</p>
-              </div>
-              <div className="py-3.5 border-e border-zinc-100">
-                <p className="text-[11px] text-zinc-400">نظرات</p>
-                <p className="text-[15px] font-bold text-zinc-900 mt-0.5">{toPersianDigits(String(textReviews.length))}</p>
-              </div>
-              <div className="py-3.5">
-                <p className="text-[11px] text-zinc-400">نوبت‌دهی</p>
-                <p className={`text-[15px] font-bold mt-0.5 ${salon.bookingEnabled ? "text-emerald-600" : "text-zinc-500"}`}>
-                  {salon.bookingEnabled ? "آنلاین" : "تلفنی"}
-                </p>
-              </div>
-            </div>
+            {/* اطلاعات سالن — فقط موبایل، دقیقاً زیر کاور (در دسکتاپ ستون کناری) */}
+            <div className="lg:hidden">{infoSection}</div>
 
             {/* نمونه کارها */}
             {salon.portfolios?.length > 0 && (
@@ -708,7 +693,10 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
                         {isExpanded && (
                           <div className="pb-3.5 flex flex-wrap gap-1.5">
                             {services.map((service, index) => (
-                              <span key={index} className="text-xs text-zinc-700 bg-zinc-100 rounded-full px-3 py-1.5">
+                              <span
+                                key={index}
+                                className="text-xs font-medium text-[#824c71] bg-[#e3c9dc]/30 rounded-full px-3 py-1.5"
+                              >
                                 {service}
                               </span>
                             ))}
@@ -722,9 +710,6 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
                 <p className="text-zinc-400 text-xs">خدماتی ثبت نشده است.</p>
               )}
             </Section>
-
-            {/* اطلاعات تماس — فقط موبایل (در دسکتاپ ستون کناری) */}
-            <div className="lg:hidden">{infoSection}</div>
 
             {/* امتیاز */}
             <Section title="امتیاز سالن">
@@ -753,15 +738,15 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
                 </div>
               </div>
 
-              {/* امتیازدهی کاربر — قابل تغییر */}
-              <div className="mt-5 rounded-xl bg-[#824c71]/[0.06] p-4">
+              {/* امتیازدهی کاربر — قابل تغییر (بدون پس‌زمینه‌ی رنگی) */}
+              <div className="mt-5 pt-5 border-t border-zinc-100">
                 <div className="flex items-center gap-2 mb-2.5">
                   <p className="text-[13px] font-bold text-zinc-800">
                     {savedMyRating ? 'امتیاز شما' : 'امتیاز بدهید'}
                   </p>
                   {isSubmittingRating && <Loader2 className="w-3.5 h-3.5 text-[#824c71] animate-spin" {...ICON} />}
                   {ratingSaved && !isSubmittingRating && (
-                    <span className="inline-flex items-center gap-0.5 text-[11px] font-bold text-emerald-600">
+                    <span className="inline-flex items-center gap-0.5 text-[11px] font-bold text-[#824c71]">
                       <Check className="w-3 h-3" strokeWidth={2.5} />
                       ثبت شد
                     </span>
@@ -781,7 +766,7 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
                         aria-label={`${star} ستاره`}
                         className="active:scale-90 transition-transform disabled:opacity-60"
                       >
-                        <Star className={`w-8 h-8 fill-current ${active ? 'text-amber-400' : 'text-white'}`} strokeWidth={0} />
+                        <Star className={`w-8 h-8 fill-current ${active ? 'text-amber-400' : 'text-zinc-200'}`} strokeWidth={0} />
                       </button>
                     );
                   })}
@@ -797,7 +782,7 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
             {/* نظرات */}
             <Section title="نظرات" count={`${toPersianDigits(String(textReviews.length))} نظر`}>
               {successMessage && (
-                <div className="mb-3 flex items-center gap-2 bg-emerald-50 text-emerald-700 rounded-xl px-3 py-2.5">
+                <div className="mb-3 flex items-center gap-2 bg-[#e3c9dc]/25 text-[#824c71] rounded-xl px-3 py-2.5">
                   <Check className="w-4 h-4 shrink-0" strokeWidth={2.25} />
                   <span className="text-xs font-bold">{successMessage}</span>
                 </div>
@@ -865,8 +850,8 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
         </div>
       </div>
 
-      {/* نوار شناور پایین — موبایل */}
-      <div className="fixed bottom-3 left-2 right-2 z-[60] lg:hidden bg-white/95 backdrop-blur-md border border-zinc-200 rounded-2xl p-2 flex gap-2">
+      {/* نوار شناور پایین — موبایل (بدون بوردر) */}
+      <div className="fixed bottom-[max(0.75rem,env(safe-area-inset-bottom))] left-2 right-2 z-[60] lg:hidden bg-white/95 backdrop-blur-md rounded-2xl p-2 flex gap-2">
         <button onClick={handleBookingButtonClick} className={`flex-1 py-3.5 ${bookingBtnCls}`}>
           نوبت‌دهی آنلاین
         </button>
