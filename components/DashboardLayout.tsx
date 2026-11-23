@@ -82,7 +82,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <div className="flex-1 flex flex-col relative w-full overflow-hidden">
         {/* فضای خالیِ زیر محتوا فقط وقتی نوار پایین نمایش داده می‌شود لازم است */}
         <main
-          className={`flex-1 overflow-y-auto px-2 md:px-8 md:pb-8 ${
+          className={`flex-1 overflow-y-auto px-4 md:px-8 md:pb-8 ${
             isSalonPage ? 'pb-8' : 'pb-[135px]'
           }`}
         >
