@@ -665,7 +665,7 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
 
   return (
     <div className="min-h-screen bg-white" dir="rtl">
-      <div className="max-w-md mx-auto px-5 pt-6 pb-32">
+      <div className="max-w-md mx-auto pt-6 pb-32">
 
         {/* عنوان ثابت بالای صفحه — فاصله از بالای گوشی تا آیکون‌های استپ */}
         <p className="text-center text-xs font-bold text-zinc-400 mb-5">رزرو نوبت{salonName ? ` · ${salonName}` : ''}</p>

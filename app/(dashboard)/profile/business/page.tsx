@@ -289,7 +289,7 @@ export default function BusinessRegistrationPage() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto pt-6 pb-32 px-4 md:pt-8 md:pb-28 md:px-0 animate-fade-in">
+    <div className="max-w-4xl mx-auto pt-6 pb-32 md:pt-8 md:pb-28 md:px-0 animate-fade-in">
 
       {/* هدر و دکمه بازگشت */}
       <div className="flex items-center gap-3 md:gap-4 mb-6 md:mb-8">

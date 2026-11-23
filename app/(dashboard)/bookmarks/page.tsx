@@ -111,7 +111,7 @@ export default function BookmarksPage() {
 
   return (
     <>
-      <div className="max-w-3xl mx-auto min-h-screen bg-white pt-6 pb-32 px-2 md:pt-10">
+      <div className="max-w-3xl mx-auto min-h-screen bg-white pt-6 pb-32 md:pt-10">
         <div className="mb-6 px-0">
           <h1 className="text-[17px] md:text-xl font-extrabold text-zinc-900">نشان‌شده‌ها</h1>
           <p className="text-zinc-500 text-xs md:text-sm mt-0.5">سالن‌هایی که ذخیره کرده‌اید</p>

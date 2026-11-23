@@ -540,7 +540,7 @@ export default function MySalonPage() {
   const currentStaffOption = staffOptions.find((s) => s.staffId === selectedStaffId);
 
   return (
-    <div className="max-w-3xl mx-auto pt-8 pb-32 px-4 md:pt-10 md:px-0">
+    <div className="max-w-3xl mx-auto pt-8 pb-32 md:pt-10 md:px-0">
       {/* هدر */}
       {effectiveTab === 'salon' ? (
         <div className="flex items-center justify-between mb-7">

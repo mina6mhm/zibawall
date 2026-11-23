@@ -582,7 +582,7 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
       />
 
       {/* ── محتوای اصلی ── */}
-      <div className="max-w-5xl mx-auto pb-28 sm:pb-24 px-2 sm:px-6 mt-2 sm:mt-6">
+      <div className="max-w-5xl mx-auto pb-28 sm:pb-24 sm:px-6 mt-2 sm:mt-6">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 lg:gap-5 items-start">
 
           {/* ستون اصلی — یک صفحه‌ی یکپارچه که بخش‌هایش با خط جدا می‌شوند */}

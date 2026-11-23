@@ -1976,7 +1976,7 @@ export default function BookingSettingsPage() {
   const unlinkedStaffCount = staff.filter((s) => (s.bookingServices ?? []).length === 0).length;
 
   return (
-    <div className="max-w-2xl mx-auto pt-8 pb-32 px-2 md:pt-10 md:px-0">
+    <div className="max-w-2xl mx-auto pt-8 pb-32 md:pt-10 md:px-0">
       {/* Header */}
       <div className="flex items-center gap-3 mb-5">
         <Link

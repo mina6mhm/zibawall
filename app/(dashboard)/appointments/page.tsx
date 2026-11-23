@@ -268,14 +268,14 @@ function AppointmentsContent() {
   return (
     <div className="flex flex-col min-h-screen bg-white pb-24">
       {/* هدر — کنارها هم‌فاصله با کارت‌ها */}
-      <div className="bg-white px-2 pt-6 pb-5">
+      <div className="bg-white pt-6 pb-5">
         <div className="max-w-lg mx-auto">
           <h1 className="text-base font-bold text-zinc-900">نوبت‌های من</h1>
           <p className="text-xs text-zinc-500 mt-1">نوبت‌هایی که برای شما ثبت شده است</p>
         </div>
       </div>
 
-      <div className="max-w-lg mx-auto w-full px-2 mt-1">
+      <div className="max-w-lg mx-auto w-full mt-1">
         {notice && (
           <div
             className={`flex items-center gap-2 rounded-[10px] p-3.5 mb-5 text-sm font-medium ${

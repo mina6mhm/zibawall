@@ -381,7 +381,7 @@ export default function BusinessEditPage() {
   const allCategories = Array.from(new Set([...Object.keys(SERVICE_DETAILS), ...Object.keys(customServices)]));
 
   return (
-    <div className="max-w-4xl mx-auto pt-8 pb-28 px-4 md:py-12 md:px-0 animate-fade-in">
+    <div className="max-w-4xl mx-auto pt-8 pb-28 md:py-12 md:px-0 animate-fade-in">
 
       <div className="flex items-center gap-4 mb-8">
 <button type="button" onClick={() => router.back()} className="p-2 hover:bg-zinc-100 rounded-full transition-colors">

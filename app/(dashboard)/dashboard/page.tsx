@@ -579,7 +579,7 @@ export default function DashboardHomePage() {
         )}
 
         {/* هدر چسبان */}
-        <header className="sticky top-0 z-20 bg-white px-2 pt-4 pb-3">
+        <header className="sticky top-0 z-20 bg-white pt-4 pb-3">
           <button
             onClick={() => setIsRegionModalOpen(true)}
             className="group flex items-center gap-2.5 mb-3.5 text-right"
@@ -683,7 +683,7 @@ export default function DashboardHomePage() {
         </section>
 
         {/* لیست سالن‌ها */}
-        <section className="px-2 mt-7">
+        <section className="mt-7">
           <div className="flex items-baseline justify-between mb-4">
             <h2 className="text-[17px] font-extrabold text-zinc-900 truncate">
               {searchQuery ? `نتایج «${searchQuery}»` : 'سالن‌های پیشنهادی'}

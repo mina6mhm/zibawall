@@ -123,7 +123,7 @@ export default function AdminSettlementsPage() {
   const grandTotal = items.reduce((s, i) => s + i.totalOwed, 0);
 
   return (
-    <div className="max-w-2xl mx-auto px-3 sm:px-6 py-6 sm:py-10">
+    <div className="max-w-2xl mx-auto sm:px-6 py-6 sm:py-10">
       <div className="flex items-center gap-2.5 mb-2">
         <Link href="/admin" className="w-9 h-9 flex items-center justify-center rounded-full bg-zinc-50 text-zinc-500">
           <ChevronRight className="w-4 h-4" />

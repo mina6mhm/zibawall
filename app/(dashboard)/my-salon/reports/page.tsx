@@ -239,7 +239,7 @@ export default function SalonReportsPage() {
   }
 
   return (
-    <div className="max-w-3xl mx-auto pt-8 pb-32 px-4 md:pt-10 md:px-0">
+    <div className="max-w-3xl mx-auto pt-8 pb-32 md:pt-10 md:px-0">
       <div className="mb-7">
         <h1 className="text-xl md:text-2xl font-bold text-zinc-900">گزارش درآمد</h1>
         <p className="text-zinc-500 text-xs md:text-sm mt-0.5">{salonName}</p>

@@ -67,7 +67,7 @@ export default function AdminSupportPage() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto px-3 sm:px-6 py-6 sm:py-10">
+    <div className="max-w-2xl mx-auto sm:px-6 py-6 sm:py-10">
       <Link href="/admin" className="inline-flex items-center gap-1 text-sm text-zinc-500 hover:text-zinc-700 mb-4">
         <ChevronRight className="w-4 h-4" /> پنل مدیریت
       </Link>

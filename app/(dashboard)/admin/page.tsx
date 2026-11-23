@@ -81,7 +81,7 @@ export default function AdminHubPage() {
   ];
 
   return (
-    <div className="max-w-2xl mx-auto px-3 sm:px-6 py-6 sm:py-10">
+    <div className="max-w-2xl mx-auto sm:px-6 py-6 sm:py-10">
       <div className="flex items-center gap-2.5 mb-6">
         <div className="w-10 h-10 bg-zinc-100 rounded-xl flex items-center justify-center text-[#824c71] shrink-0">
           <ShieldCheck className="w-5 h-5" strokeWidth={1.5} />
