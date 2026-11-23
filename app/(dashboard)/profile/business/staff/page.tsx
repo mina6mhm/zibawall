@@ -116,7 +116,7 @@ export default function StaffPage() {
 
   return (
     <div className="flex flex-col min-h-screen bg-white pb-24">
-      <div className="max-w-lg mx-auto w-full px-4 pt-6">
+      <div className="max-w-lg mx-auto w-full pt-6">
         <button type="button" onClick={() => router.back()} className="inline-flex items-center gap-1.5 text-sm text-zinc-500 hover:text-zinc-700 transition-colors mb-5">
   <ArrowRight className="w-4 h-4" /> بازگشت
 </button>

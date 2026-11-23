@@ -41,7 +41,7 @@ export default function NewSupportMessagePage() {
     <div className="flex flex-col min-h-screen bg-white">
 
       {/* هدر */}
-      <div className="sticky top-0 z-10 bg-white border-b border-zinc-200 px-4 py-3.5 flex items-center gap-3">
+      <div className="sticky top-0 z-10 bg-white border-b border-zinc-200 py-3.5 flex items-center gap-3">
         <Link
           href="/profile/support"
           className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-zinc-100 transition-colors shrink-0"
@@ -51,7 +51,7 @@ export default function NewSupportMessagePage() {
         <h1 className="text-base font-bold text-zinc-900">پیام جدید</h1>
       </div>
 
-      <div className="max-w-lg mx-auto w-full px-4 py-5 flex-1">
+      <div className="max-w-lg mx-auto w-full py-5 flex-1">
         <textarea
           value={message}
           onChange={(e) => setMessage(e.target.value.slice(0, 2000))}

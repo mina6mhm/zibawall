@@ -193,7 +193,7 @@ export default function ProfilePage() {
     <div className="flex flex-col min-h-screen bg-white pb-24">
  
       {/* هدر */}
-      <div className="bg-white px-4 pt-6 pb-5">
+      <div className="bg-white pt-6 pb-5">
         <div className="max-w-lg mx-auto">
           <div className="flex items-center gap-3.5">
             <div className="w-16 h-16 rounded-full bg-[#824c71]/10 flex items-center justify-center text-[#824c71] shrink-0">
@@ -222,7 +222,7 @@ export default function ProfilePage() {
       </div>
  
       {/* منو */}
-      <div className="max-w-lg mx-auto w-full px-4 mt-1">
+      <div className="max-w-lg mx-auto w-full mt-1">
 
         {userData.role === 'ADMIN' && (
           <Link

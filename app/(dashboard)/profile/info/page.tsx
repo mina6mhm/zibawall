@@ -54,7 +54,7 @@ export default function ProfileInfoPage() {
 
   return (
     <div className="flex flex-col min-h-screen bg-white pb-24">
-      <div className="max-w-lg mx-auto w-full px-4 pt-6">
+      <div className="max-w-lg mx-auto w-full pt-6">
         <h1 className="text-base font-bold text-zinc-900 mb-4">اطلاعات کاربری</h1>
 
         <div className="space-y-4">

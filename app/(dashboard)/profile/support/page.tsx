@@ -53,7 +53,7 @@ export default function SupportListPage() {
     <div className="flex flex-col min-h-screen bg-white">
 
       {/* هدر */}
-      <div className="sticky top-0 z-10 bg-white border-b border-zinc-200 px-4 py-3.5 flex items-center gap-3">
+      <div className="sticky top-0 z-10 bg-white border-b border-zinc-200 py-3.5 flex items-center gap-3">
         <Link
           href="/profile"
           className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-zinc-100 transition-colors shrink-0"
