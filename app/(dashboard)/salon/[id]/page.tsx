@@ -390,10 +390,13 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
               <X className="w-6 h-6 sm:w-8 sm:h-8" {...ICON} />
             </button>
 
-            <div className="w-full h-full sm:hidden flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
+            <div className="w-full h-full sm:hidden flex items-center justify-center p-3" onClick={(e) => e.stopPropagation()}>
               <TransformWrapper initialScale={1} minScale={1} maxScale={4} centerOnInit wheel={{ disabled: true }}>
-                <TransformComponent wrapperClass="!w-full !h-full flex items-center justify-center">
-                  <img src={selectedImage} alt="بزرگنمایی" className="max-w-full max-h-screen object-contain" />
+                <TransformComponent
+                  wrapperClass="!w-full !h-full"
+                  contentClass="!w-full !h-full flex items-center justify-center"
+                >
+                  <img src={selectedImage} alt="بزرگنمایی" className="max-w-full max-h-full object-contain rounded-xl" />
                 </TransformComponent>
               </TransformWrapper>
             </div>
@@ -443,7 +446,7 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
                 className="flex items-center justify-between py-3.5"
               >
                 <span className="font-bold text-sm text-zinc-800">{toPersianDigits(phone)}</span>
-                <span className="bg-[#824c71] text-white text-[11px] font-bold px-4 py-1.5 rounded-full">تماس</span>
+                <span className="text-sm font-bold text-[#824c71]">تماس</span>
               </a>
             ))}
           </div>
@@ -640,7 +643,7 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
                   </div>
 
                   {/* درباره سالن */}
-                  <div className="pt-6 border-t border-zinc-100">
+                  <div>
                     <h2 className="text-[15px] font-bold text-zinc-900 mb-3">درباره سالن</h2>
                     <p className="text-zinc-600 text-[13px] leading-7 text-justify">
                       {salon.description || "توضیحاتی ثبت نشده است."}
@@ -769,9 +772,9 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
                     </div>
                   </div>
 
-                  {/* امتیاز شما — با یک خط از بالا جدا شده، بدون پس‌زمینه */}
-                  <div className="mt-6 pt-6 border-t border-zinc-100">
-                    <div className="flex items-center gap-2 mb-2.5">
+                  {/* امتیاز شما — وسط‌چین و بدون خط */}
+                  <div className="mt-8 flex flex-col items-center text-center">
+                    <div className="flex items-center justify-center gap-2 mb-2.5">
                       <p className="text-[13px] font-bold text-zinc-800">
                         {savedMyRating ? 'امتیاز شما' : 'امتیاز بدهید'}
                       </p>
@@ -784,7 +787,7 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
                       )}
                     </div>
 
-                    <div className="flex items-center gap-1.5" onMouseLeave={() => setHoverRating(0)}>
+                    <div className="flex items-center justify-center gap-1.5" onMouseLeave={() => setHoverRating(0)}>
                       {[1, 2, 3, 4, 5].map((star) => {
                         const active = star <= (hoverRating || myRating);
                         return (
@@ -903,7 +906,7 @@ export default function SalonDetailPage({ params }: { params: Promise<{ id: stri
       </div>
 
       {/* نوار شناور پایین — موبایل (بدون بوردر؛ فقط یک محو شدن سفید پشت دکمه‌ها) */}
-      <div className="fixed bottom-0 inset-x-0 z-[60] lg:hidden px-2 pt-8 pb-[max(0.75rem,env(safe-area-inset-bottom))] bg-gradient-to-t from-white via-white/95 to-transparent pointer-events-none">
+      <div className="fixed bottom-0 inset-x-0 z-[60] lg:hidden px-4 pt-8 pb-[max(0.75rem,env(safe-area-inset-bottom))] bg-gradient-to-t from-white via-white/95 to-transparent pointer-events-none">
         <div className="flex gap-2 pointer-events-auto">
           <button onClick={handleBookingButtonClick} className={`flex-1 py-3.5 ${bookingBtnCls}`}>
             نوبت‌دهی آنلاین
