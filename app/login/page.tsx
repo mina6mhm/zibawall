@@ -37,9 +37,15 @@ function LoginPageInner() {
   const [timeLeft, setTimeLeft] = useState(90);
   const [isTimerActive, setIsTimerActive] = useState(false);
 
-  const [otpValues, setOtpValues] = useState(['', '', '', '', '']);
-  const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
-  const hiddenInputRef = useRef<HTMLInputElement>(null);
+  // کد تایید: یک input واقعی و یکپارچه (روی خانه‌های نمایشی قرار می‌گیرد).
+  // کیبورد موبایل (iOS و اندروید) فقط برای یک فیلد کامل با autocomplete="one-time-code"
+  // کد پیامک‌شده را بالای کیبورد پیشنهاد می‌دهد؛ با لمس آن، کل کد یک‌جا وارد می‌شود.
+  const OTP_LENGTH = 5;
+  const [otp, setOtp] = useState('');
+  const [otpFocused, setOtpFocused] = useState(false);
+  const [otpSession, setOtpSession] = useState(0); // با هر ارسال کد زیاد می‌شود تا WebOTP دوباره گوش دهد
+  const otpInputRef = useRef<HTMLInputElement>(null);
+  const submittedCodeRef = useRef('');
 
   const mobileRegex = /^09\d{9}$/;
   const usernameRegex = /^[a-zA-Z0-9_]{3,20}$/;
@@ -70,29 +76,25 @@ function LoginPageInner() {
   useEffect(() => {
     if (step !== 'otp') return;
 
-    setTimeout(() => hiddenInputRef.current?.focus(), 100);
+    setTimeout(() => otpInputRef.current?.focus(), 100);
 
+    // WebOTP (اندروید/کروم): اگر پیامک به فرمت استاندارد برسد، کد بدون هیچ لمسی وارد می‌شود
+    if (!('OTPCredential' in window)) return;
     const controller = new AbortController();
+    navigator.credentials
+      .get({
+        otp: { transport: ['sms'] },
+        signal: controller.signal,
+      } as CredentialRequestOptions)
+      .then((cred: any) => {
+        if (cred?.code) {
+          setOtp(toEnglishDigits(String(cred.code)).replace(/\D/g, '').slice(0, OTP_LENGTH));
+        }
+      })
+      .catch(() => {});
 
-    if ('OTPCredential' in window) {
-      navigator.credentials
-        .get({
-          otp: { transport: ['sms'] },
-          signal: controller.signal,
-        } as CredentialRequestOptions)
-        .then((otp: any) => {
-          if (otp?.code) {
-            const digits = toEnglishDigits(otp.code).slice(0, 5).split('');
-            setOtpValues(digits);
-          }
-        })
-        .catch(() => {});
-    }
-
-    return () => {
-      controller.abort();
-    };
-  }, [step]);
+    return () => controller.abort();
+  }, [step, otpSession]);
 
   const formatTime = (seconds: number) => {
     const m = Math.floor(seconds / 60).toString().padStart(2, '0');
@@ -131,16 +133,18 @@ function LoginPageInner() {
       setStep('otp');
       setTimeLeft(90);
       setIsTimerActive(true);
-      setOtpValues(['', '', '', '', '']);
+      setOtp('');
+      submittedCodeRef.current = '';
+      setOtpSession((n) => n + 1);
     } catch {
       alert('خطای ارتباط با سرور');
     }
   };
 
-  const handleLoginWithOTP = async () => {
-    const code = otpValues.join('');
+  const handleLoginWithOTP = async (codeArg?: string) => {
+    const code = typeof codeArg === 'string' ? codeArg : otp;
 
-    if (code.length !== 5) {
+    if (code.length !== OTP_LENGTH) {
       alert('کد تایید را کامل وارد کنید');
       return;
     }
@@ -156,6 +160,10 @@ function LoginPageInner() {
 
       if (!res.ok) {
         alert(data.error || 'کد وارد شده اشتباه است');
+        // کد غلط: پاک می‌کنیم تا کاربر دوباره بزند (و تایید خودکار دوباره کار کند)
+        submittedCodeRef.current = '';
+        setOtp('');
+        setTimeout(() => otpInputRef.current?.focus(), 0);
         return;
       }
 
@@ -169,9 +177,19 @@ function LoginPageInner() {
         router.refresh();
       }
     } catch {
+      submittedCodeRef.current = '';
       alert('خطای ارتباط با سرور');
     }
   };
+
+  // به‌محض کامل شدن کد (دستی، پیشنهاد کیبورد یا WebOTP) خودکار تایید می‌شود
+  useEffect(() => {
+    if (step !== 'otp' || otp.length !== OTP_LENGTH) return;
+    if (submittedCodeRef.current === otp) return;
+    submittedCodeRef.current = otp;
+    handleLoginWithOTP(otp);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [otp, step]);
 
   const handleCompleteProfile = async () => {
     const userVal = username.trim();
@@ -213,53 +231,8 @@ function LoginPageInner() {
     }
   };
 
-  const handleHiddenInput = (value: string) => {
-    const englishValue = toEnglishDigits(value);
-    const digits = englishValue.replace(/\D/g, '').slice(0, 5).split('');
-    if (digits.length > 0) {
-      const filled = [...digits, '', '', '', ''].slice(0, 5);
-      setOtpValues(filled);
-      const lastIndex = Math.min(digits.length - 1, 4);
-      setTimeout(() => otpRefs.current[lastIndex]?.focus(), 0);
-    }
-  };
-
-  const handleOtpChange = (index: number, value: string) => {
-    const englishValue = toEnglishDigits(value);
-    if (!/^\d?$/.test(englishValue)) return;
-
-    const newOtpValues = [...otpValues];
-    newOtpValues[index] = englishValue;
-    setOtpValues(newOtpValues);
-
-    if (englishValue && index < otpValues.length - 1) {
-      otpRefs.current[index + 1]?.focus();
-    }
-  };
-
-  const handleOtpKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Backspace') {
-      if (!otpValues[index] && index > 0) {
-        otpRefs.current[index - 1]?.focus();
-      }
-    } else if (e.key === 'Enter') {
-      if (index < otpValues.length - 1) {
-        otpRefs.current[index + 1]?.focus();
-      }
-    }
-  };
-
-  const handleOtpPaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
-    e.preventDefault();
-    const pasted = e.clipboardData?.getData('text') ?? '';
-    const englishPasted = toEnglishDigits(pasted);
-    const digits = englishPasted.replace(/\D/g, '').slice(0, 5).split('');
-    if (digits.length > 0) {
-      const filled = [...digits, '', '', '', ''].slice(0, 5);
-      setOtpValues(filled);
-      const lastIndex = Math.min(digits.length, 4);
-      setTimeout(() => otpRefs.current[lastIndex]?.focus(), 0);
-    }
+  const handleOtpInput = (value: string) => {
+    setOtp(toEnglishDigits(value).replace(/\D/g, '').slice(0, OTP_LENGTH));
   };
 
   return (
@@ -311,36 +284,39 @@ function LoginPageInner() {
             </p>
 
             <div className="relative flex justify-center gap-2 sm:gap-3 mb-4 w-full" dir="ltr">
+              {Array.from({ length: OTP_LENGTH }).map((_, index) => {
+                const active = otpFocused && timeLeft > 0 && index === Math.min(otp.length, OTP_LENGTH - 1);
+                return (
+                  <div
+                    key={index}
+                    aria-hidden="true"
+                    className={`w-11 h-11 sm:w-12 sm:h-12 md:w-14 md:h-14 flex items-center justify-center text-lg sm:text-xl font-medium border rounded-xl transition-all ${
+                      active ? 'border-[#824c71] ring-1 ring-[#824c71]' : 'border-zinc-300'
+                    } ${timeLeft === 0 ? 'opacity-50 bg-zinc-50' : ''}`}
+                  >
+                    {otp[index] ?? ''}
+                  </div>
+                );
+              })}
+              {/* input واقعی: کل ردیف را می‌پوشاند، شفاف است و پیشنهاد کد پیامک را از کیبورد می‌گیرد */}
               <input
-                ref={hiddenInputRef}
+                ref={otpInputRef}
                 type="text"
+                name="otp"
+                id="otp"
                 inputMode="numeric"
                 autoComplete="one-time-code"
-                maxLength={5}
-                defaultValue=""
-                onChange={(e) => {
-                  handleHiddenInput(e.target.value);
-                  e.target.value = '';
-                }}
-                onPaste={handleOtpPaste}
-                style={{ position: 'absolute', opacity: 0.01, width: 1, height: 1, top: 0, left: 0 }}
+                pattern="[0-9]*"
+                maxLength={OTP_LENGTH}
+                value={otp}
+                disabled={timeLeft === 0}
+                aria-label="کد تایید"
+                onChange={(e) => handleOtpInput(e.target.value)}
+                onFocus={() => setOtpFocused(true)}
+                onBlur={() => setOtpFocused(false)}
+                className="absolute inset-0 w-full h-full bg-transparent border-0 outline-none text-transparent caret-transparent selection:bg-transparent"
+                style={{ fontSize: 16 }}
               />
-              {otpValues.map((value, index) => (
-                <input
-                  key={index}
-                  ref={(el) => { otpRefs.current[index] = el; }}
-                  type="text"
-                  inputMode="numeric"
-                  maxLength={1}
-                  autoComplete="one-time-code"
-                  value={value}
-                  disabled={timeLeft === 0}
-                  onChange={(e) => handleOtpChange(index, e.target.value)}
-                  onKeyDown={(e) => handleOtpKeyDown(index, e)}
-                  onPaste={handleOtpPaste}
-                  className="w-11 h-11 sm:w-12 sm:h-12 md:w-14 md:h-14 text-lg sm:text-xl font-medium text-center border border-zinc-300 rounded-xl focus:border-[#824c71] focus:ring-1 focus:ring-[#824c71] outline-none transition-all disabled:opacity-50 disabled:bg-zinc-50"
-                />
-              ))}
             </div>
 
             <button
@@ -369,8 +345,8 @@ function LoginPageInner() {
             </div>
 
             <button
-              onClick={handleLoginWithOTP}
-              disabled={timeLeft === 0 || otpValues.join('').length < 5}
+              onClick={() => handleLoginWithOTP()}
+              disabled={timeLeft === 0 || otp.length < OTP_LENGTH}
               className="w-full bg-[#824c71] hover:bg-[#6d3f5e] text-white rounded-xl py-2.5 sm:py-3 text-sm sm:text-base font-bold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               تایید
