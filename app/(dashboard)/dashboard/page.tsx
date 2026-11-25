@@ -1,7 +1,7 @@
 //app/(dashboard)/dashboard/page.tsx
 'use client';
 
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { CATEGORIES, CATEGORY_MAPPING } from '@/lib/data';
 import RegionFilterModal from '@/components/RegionFilterModal';
@@ -400,26 +400,6 @@ export default function DashboardHomePage() {
   const [showBookingAlert, setShowBookingAlert] = useState(false);
   const [showVpnWarning, setShowVpnWarning] = useState(false);
 
-  // اسکرول این صفحه روی window نیست؛ داخل <main className="overflow-y-auto"> در DashboardLayout انجام می‌شود.
-  // برای همین نزدیک‌ترین والدِ اسکرول‌خور را پیدا می‌کنیم و موقعیت را از همان می‌خوانیم و روی همان برمی‌گردانیم.
-  const rootRef = useRef<HTMLDivElement>(null);
-
-  const getScrollContainer = (): HTMLElement | null => {
-    let el: HTMLElement | null = rootRef.current?.parentElement ?? null;
-    while (el) {
-      const overflowY = window.getComputedStyle(el).overflowY;
-      if (overflowY === 'auto' || overflowY === 'scroll') return el;
-      el = el.parentElement;
-    }
-    return (document.scrollingElement as HTMLElement | null) ?? null;
-  };
-
-  const saveScrollPosition = () => {
-    const container = getScrollContainer();
-    if (!container) return;
-    sessionStorage.setItem(SCROLL_STORAGE_KEY, String(Math.round(container.scrollTop)));
-  };
-
   useEffect(() => {
     let hideTimer: ReturnType<typeof setTimeout>;
     const checkIpLocation = async () => {
@@ -467,17 +447,14 @@ export default function DashboardHomePage() {
     fetchSalonsData();
   }, []);
 
-  // بازگرداندن موقعیت اسکرول بعد از برگشت از صفحه‌ی سالن (یا صفحه‌ی رزرو)
+  // بازگرداندن موقعیت اسکرول بعد از برگشت از صفحه‌ی سالن
   useEffect(() => {
     if (isLoading) return;
     const savedScroll = sessionStorage.getItem(SCROLL_STORAGE_KEY);
     if (!savedScroll) return;
 
     const targetY = parseInt(savedScroll, 10);
-    if (Number.isNaN(targetY)) {
-      sessionStorage.removeItem(SCROLL_STORAGE_KEY);
-      return;
-    }
+    sessionStorage.removeItem(SCROLL_STORAGE_KEY);
 
     let attempts = 0;
     const maxAttempts = 40;
@@ -485,25 +462,15 @@ export default function DashboardHomePage() {
 
     const tryScroll = () => {
       attempts++;
-      const container = getScrollContainer();
-      if (container) {
-        const maxScroll = container.scrollHeight - container.clientHeight;
-        // صبر می‌کنیم تا کارت‌ها به اندازه‌ی کافی رندر شوند و ارتفاع صفحه به نقطه‌ی هدف برسد
-        if (maxScroll >= targetY || attempts >= maxAttempts) {
-          container.scrollTo({ top: targetY, behavior: 'instant' as ScrollBehavior });
-          // کلید فقط بعد از بازگردانیِ واقعی پاک می‌شود (در حالت Strict Mode اجرای اول لغو می‌شود)
-          sessionStorage.removeItem(SCROLL_STORAGE_KEY);
-          return;
-        }
-      } else if (attempts >= maxAttempts) {
-        sessionStorage.removeItem(SCROLL_STORAGE_KEY);
-        return;
+      const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
+      if (maxScroll >= targetY || attempts >= maxAttempts) {
+        window.scrollTo(0, targetY);
+      } else {
+        timeoutId = setTimeout(tryScroll, 50);
       }
-      timeoutId = setTimeout(tryScroll, 50);
     };
     tryScroll();
     return () => clearTimeout(timeoutId);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isLoading]);
 
   const handleBookmarkClick = (salonId: number | string, e: React.MouseEvent) => {
@@ -520,15 +487,12 @@ export default function DashboardHomePage() {
 
   const handleBookingClick = (salon: any, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (salon.bookingEnabled) {
-      saveScrollPosition();
-      router.push(`/salon/${salon.id}/book`);
-    }
+    if (salon.bookingEnabled) router.push(`/salon/${salon.id}/book`);
     else setShowBookingAlert(true);
   };
 
   const handleSalonCardClick = (salonId: number | string) => {
-    saveScrollPosition();
+    sessionStorage.setItem(SCROLL_STORAGE_KEY, String(window.scrollY));
     router.push(`/salon/${salonId}`);
   };
 
@@ -601,7 +565,7 @@ export default function DashboardHomePage() {
 
   return (
     <>
-      <div ref={rootRef} className="flex flex-col min-h-screen bg-white pb-28">
+      <div className="flex flex-col min-h-screen bg-white pb-28">
         {showVpnWarning && (
           <div role="status" className="mx-2 mt-3 flex items-center justify-between gap-3 rounded-2xl bg-amber-50 px-4 py-3">
             <div className="flex items-center gap-2.5 min-w-0">
@@ -633,7 +597,7 @@ export default function DashboardHomePage() {
           </button>
 
           <div className="flex items-center gap-2.5">
-            <label className="flex-1 min-w-0 flex items-center gap-2.5 h-12 px-4 rounded-full bg-zinc-50 transition focus-within:bg-zinc-100">
+            <label className="flex-1 min-w-0 flex items-center gap-2.5 h-12 px-4 rounded-full bg-zinc-50 border border-zinc-200 transition focus-within:bg-white focus-within:border-[#824c71]/50 focus-within:ring-4 focus-within:ring-[#824c71]/10">
               <Search className="w-[18px] h-[18px] text-zinc-400 shrink-0" strokeWidth={2.2} />
               <input
                 type="text"
@@ -650,21 +614,19 @@ export default function DashboardHomePage() {
             </label>
 
             <button
-              onClick={() => setIsFiltersModalOpen(true)}
-              aria-label="فیلترها"
-              className={`relative shrink-0 w-12 h-12 flex items-center justify-center rounded-full transition active:scale-95 ${
-                hasActiveExtraFilters
-                  ? 'bg-[#824c71] text-white'
-                  : 'bg-zinc-50 text-zinc-700'
-              }`}
-            >
-              <SlidersHorizontal className="w-[18px] h-[18px]" strokeWidth={2.2} />
-              {hasActiveExtraFilters && (
-                <span className="absolute -top-1.5 -left-1.5 min-w-[18px] h-[18px] px-1 rounded-full bg-white text-[#824c71] border border-[#824c71] text-[10px] font-extrabold flex items-center justify-center">
-                  {toPersianDigits(String(extraFilterCount))}
-                </span>
-              )}
-            </button>
+  onClick={() => setIsFiltersModalOpen(true)}
+  aria-label="فیلترها"
+  className={`relative shrink-0 w-12 h-12 flex items-center justify-center rounded-full bg-zinc-50 border border-zinc-200 transition active:scale-95 focus-visible:outline-none focus-visible:bg-white focus-visible:border-[#824c71]/50 focus-visible:ring-4 focus-visible:ring-[#824c71]/10 ${
+    hasActiveExtraFilters ? 'text-[#824c71]' : 'text-zinc-700'
+  }`}
+>
+  <SlidersHorizontal className="w-[18px] h-[18px]" strokeWidth={2.2} />
+  {hasActiveExtraFilters && (
+    <span className="absolute -top-1.5 -left-1.5 min-w-[18px] h-[18px] px-1 rounded-full bg-[#824c71] text-white text-[10px] font-extrabold flex items-center justify-center">
+      {toPersianDigits(String(extraFilterCount))}
+    </span>
+  )}
+</button>
           </div>
 
           {showNeighborhoodChips && (
