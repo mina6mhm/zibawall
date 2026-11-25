@@ -56,22 +56,20 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     // قبلاً کلاس «dir-rtl» بود که در تیلویند وجود ندارد و اثری نداشت؛ جهت با attribute اعمال می‌شود.
     // h-dvh به‌جای h-screen: روی موبایل با نوار آدرس مرورگر نمی‌پرد.
     <div className="flex h-dvh bg-white text-zinc-900 font-sans selection:bg-zinc-200" dir="rtl">
-      <aside className="hidden md:flex flex-col w-64 bg-white border-l border-zinc-100 shadow-[0_0_40px_rgba(0,0,0,0.02)] z-20">
-        <div className="p-8 pb-6">
-          <h1 className="text-xl font-black tracking-tighter text-zinc-900">زیباوال</h1>
-        </div>
-        <nav className="flex-1 px-4 space-y-0.5 mt-2 overflow-y-auto">
+      {/* ساید‌بار فقط در دسکتاپ (md به بالا) — کوچک‌تر از قبل (w-64 → w-52) و بدون عنوان «زیباوال» */}
+      <aside className="hidden md:flex flex-col w-52 bg-white border-l border-zinc-100 shadow-[0_0_40px_rgba(0,0,0,0.02)] z-20">
+        <nav className="flex-1 px-3 pt-5 space-y-0.5 overflow-y-auto">
           {navItems.map((item) => {
             const isActive = !!pathname?.startsWith(item.href);
             return (
               <Link
                 key={item.key}
                 href={item.href}
-                className={`flex items-center gap-3 px-3 py-3 rounded-lg transition-colors duration-200 text-[13px] ${
+                className={`flex items-center gap-2.5 px-3 py-2.5 rounded-lg transition-colors duration-200 text-[13px] ${
                   isActive ? 'bg-zinc-50 text-[#824c71] font-semibold' : 'text-zinc-500 hover:text-[#824c71]'
                 }`}
               >
-                <item.icon className="w-[20px] h-[20px]" isActive={isActive} />
+                <item.icon className="w-[18px] h-[18px]" isActive={isActive} />
                 {item.name}
               </Link>
             );
