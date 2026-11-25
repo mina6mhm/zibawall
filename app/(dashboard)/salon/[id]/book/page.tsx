@@ -12,7 +12,6 @@ import PersianCalendar, { CalendarDayMarker } from '@/components/ui/PersianCalen
 import persian from 'react-date-object/calendars/persian';
 import persian_fa from 'react-date-object/locales/persian_fa';
 import { toDateOnlyAnchor } from '@/lib/dateUtils';
-import { BOOKING_APP_FEE } from '@/lib/constants';
 import { openPaymentUrl } from '@/lib/openPaymentUrl';
 import { useOnBrowserReturn } from '@/lib/useBrowserReturn';
 
@@ -23,7 +22,6 @@ type BookingService = {
   name: string;
   durationMin: number;
   price: number;
-  depositAmount?: number;
 };
 
 type StaffOption = { id: string; name: string };
@@ -38,8 +36,6 @@ type CartItem = {
   serviceName: string;
   durationMin: number;
   price: number;
-  /** بیعانه‌ی این خدمت (فقط برای نمایش؛ مبلغ نهایی را سرور از دیتابیس محاسبه می‌کند) */
-  depositAmount: number;
   date: string;
   startTime: string;
   staffId: string;
@@ -395,11 +391,6 @@ function CartItemCard({
           <span className="text-xs font-medium text-zinc-400 shrink-0">{toPersian(formatPrice(item.price))} تومان</span>
         )}
       </div>
-      {item.depositAmount > 0 && (
-        <p className="text-[11px] text-[#824c71] font-medium -mt-2.5 mb-3">
-          بیعانه: {toPersian(formatPrice(item.depositAmount))} تومان
-        </p>
-      )}
 
       <div className="flex flex-col gap-1.5 mb-3">
         <div className="flex items-center gap-3 flex-wrap text-xs text-zinc-700">
@@ -582,7 +573,6 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
     setCart((p) => [...p, {
       serviceId: selectedService.id, serviceName: selectedService.name,
       durationMin: selectedService.durationMin, price: selectedService.price,
-      depositAmount: selectedService.depositAmount ?? 0,
       date: selectedDate, startTime: selectedSlot.time, staffId, staffName,
     }]);
     startNew();
@@ -646,9 +636,6 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
     }
   };
 
-  const totalDeposit = cart.reduce((sum, item) => sum + (item.depositAmount ?? 0), 0);
-  const appFee       = cart.length > 0 ? BOOKING_APP_FEE : 0;
-  const totalPayable = totalDeposit + appFee;
   const closedMarkers = useMemo(() => ({
     ...buildClosedDayMarkers(closedWeekDays),
     ...buildClosedDateMarkers(closedDates),
@@ -725,19 +712,10 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
                   </div>
 
                   <div className="flex items-center gap-2.5 shrink-0">
-                    {(svc.price > 0 || (svc.depositAmount ?? 0) > 0) && (
-                      <div className="flex flex-col items-end gap-0.5">
-                        {svc.price > 0 && (
-                          <span className="text-sm font-bold text-[#824c71]">
-                            {toPersian(formatPrice(svc.price))} تومان
-                          </span>
-                        )}
-                        {(svc.depositAmount ?? 0) > 0 && (
-                          <span className="text-[11px] text-zinc-400">
-                            بیعانه: {toPersian(formatPrice(svc.depositAmount ?? 0))} تومان
-                          </span>
-                        )}
-                      </div>
+                    {svc.price > 0 && (
+                      <span className="text-sm font-bold text-[#824c71]">
+                        {toPersian(formatPrice(svc.price))} تومان
+                      </span>
                     )}
                     {isSelected && (
                       <span className="w-5 h-5 rounded-full bg-[#824c71] flex items-center justify-center shrink-0">
@@ -938,15 +916,6 @@ export default function BookPage({ params }: { params: Promise<{ id: string }> }
                   <Plus className="w-4 h-4" />
                   افزودن نوبت دیگر
                 </button>
-
-                {totalDeposit > 0 && (
-                  <div className="bg-zinc-50 rounded-2xl p-4 mb-5">
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="font-bold text-zinc-700">مبلغ قابل پرداخت</span>
-                      <span className="font-bold text-[#824c71]">{toPersian(formatPrice(totalPayable))} تومان</span>
-                    </div>
-                  </div>
-                )}
 
                 {submitError && (
                   <p className="text-center text-xs text-red-400 mb-4">{submitError}</p>

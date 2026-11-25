@@ -23,7 +23,6 @@ type Appointment = {
   isGroup: boolean;
   status: 'PENDING_PAYMENT' | 'CONFIRMED' | 'CANCELLED';
   paymentStatus: 'PENDING' | 'SUCCESS' | 'FAILED';
-  totalDeposit: number;
   appFee: number;
   totalAmount: number;
   salon: { id: string; name: string; imageUrl: string; address: string };

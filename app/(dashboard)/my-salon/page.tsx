@@ -33,13 +33,11 @@ type Booking = {
   startTime: string;
   services: ServiceItem[];
   staffName: string | null;
-  depositAmount: number;
   appFee: number;
   totalAmount: number;
   status: 'PENDING_PAYMENT' | 'CONFIRMED' | 'CANCELLED';
   paymentStatus: 'PENDING' | 'SUCCESS' | 'FAILED';
   bookingGroupId: string | null;
-  depositSettledAt?: string | null;
 };
 
 type StaffSalonOption = {
@@ -357,22 +355,6 @@ export default function MySalonPage() {
           </div>
         ))}
       </div>
-
-      {/* بیعانه‌ی پرداخت‌شده توسط مشتری + وضعیت واریز آن به کارت سالن‌دار */}
-      {booking.depositAmount > 0 && booking.paymentStatus === 'SUCCESS' && (
-        <div
-          className={`flex items-center justify-between gap-2 rounded-[10px] px-3 py-2 mb-3 text-[11px] ${
-            booking.depositSettledAt ? 'bg-emerald-50' : 'bg-amber-50'
-          }`}
-        >
-          <span className={`font-bold ${booking.depositSettledAt ? 'text-emerald-700' : 'text-amber-700'}`}>
-            بیعانه‌ی پرداخت‌شده: {formatMoney(booking.depositAmount)} تومان
-          </span>
-          <span className={booking.depositSettledAt ? 'text-emerald-600' : 'text-amber-600'}>
-            {booking.depositSettledAt ? 'به کارت شما واریز شد' : 'در انتظار واریز به کارت شما'}
-          </span>
-        </div>
-      )}
 
       {/* ردیف ۳ + ۴: بوردر، سپس وضعیت و قیمت راست / اکشن‌ها چپ */}
       <div className="border-t border-zinc-100 pt-3 flex items-center justify-between gap-3">

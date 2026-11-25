@@ -40,7 +40,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       {
         success: true,
         booking: updated,
-        // اگر نوبت پرداخت‌شده بوده، استرداد بیعانه باید دستی/از طریق پشتیبانی پیگیری شود
+        // اگر نوبت پرداخت‌شده بوده، استرداد مبلغ پرداخت‌شده باید دستی/از طریق پشتیبانی پیگیری شود
         needsRefund: booking.paymentStatus === 'SUCCESS',
       },
       { status: 200 }

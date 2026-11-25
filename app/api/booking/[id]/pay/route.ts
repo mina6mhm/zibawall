@@ -64,7 +64,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
     const { authority, paymentUrl } = await requestZarinpalPayment({
       amountToman: booking.totalAmount,
-      description: `بیعانه نوبت در ${booking.salon.name}`,
+      description: `هزینه‌ی رزرو نوبت در ${booking.salon.name}`,
       callbackUrl,
       mobile: booking.customerPhone,
     });
