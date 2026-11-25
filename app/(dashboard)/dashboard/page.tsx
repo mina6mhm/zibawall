@@ -1,7 +1,7 @@
 //app/(dashboard)/dashboard/page.tsx
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { CATEGORIES, CATEGORY_MAPPING } from '@/lib/data';
 import RegionFilterModal from '@/components/RegionFilterModal';
@@ -400,6 +400,26 @@ export default function DashboardHomePage() {
   const [showBookingAlert, setShowBookingAlert] = useState(false);
   const [showVpnWarning, setShowVpnWarning] = useState(false);
 
+  // اسکرول این صفحه روی window نیست؛ داخل <main className="overflow-y-auto"> در DashboardLayout انجام می‌شود.
+  // برای همین نزدیک‌ترین والدِ اسکرول‌خور را پیدا می‌کنیم و موقعیت را از همان می‌خوانیم و روی همان برمی‌گردانیم.
+  const rootRef = useRef<HTMLDivElement>(null);
+
+  const getScrollContainer = (): HTMLElement | null => {
+    let el: HTMLElement | null = rootRef.current?.parentElement ?? null;
+    while (el) {
+      const overflowY = window.getComputedStyle(el).overflowY;
+      if (overflowY === 'auto' || overflowY === 'scroll') return el;
+      el = el.parentElement;
+    }
+    return (document.scrollingElement as HTMLElement | null) ?? null;
+  };
+
+  const saveScrollPosition = () => {
+    const container = getScrollContainer();
+    if (!container) return;
+    sessionStorage.setItem(SCROLL_STORAGE_KEY, String(Math.round(container.scrollTop)));
+  };
+
   useEffect(() => {
     let hideTimer: ReturnType<typeof setTimeout>;
     const checkIpLocation = async () => {
@@ -447,14 +467,17 @@ export default function DashboardHomePage() {
     fetchSalonsData();
   }, []);
 
-  // بازگرداندن موقعیت اسکرول بعد از برگشت از صفحه‌ی سالن
+  // بازگرداندن موقعیت اسکرول بعد از برگشت از صفحه‌ی سالن (یا صفحه‌ی رزرو)
   useEffect(() => {
     if (isLoading) return;
     const savedScroll = sessionStorage.getItem(SCROLL_STORAGE_KEY);
     if (!savedScroll) return;
 
     const targetY = parseInt(savedScroll, 10);
-    sessionStorage.removeItem(SCROLL_STORAGE_KEY);
+    if (Number.isNaN(targetY)) {
+      sessionStorage.removeItem(SCROLL_STORAGE_KEY);
+      return;
+    }
 
     let attempts = 0;
     const maxAttempts = 40;
@@ -462,15 +485,25 @@ export default function DashboardHomePage() {
 
     const tryScroll = () => {
       attempts++;
-      const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
-      if (maxScroll >= targetY || attempts >= maxAttempts) {
-        window.scrollTo(0, targetY);
-      } else {
-        timeoutId = setTimeout(tryScroll, 50);
+      const container = getScrollContainer();
+      if (container) {
+        const maxScroll = container.scrollHeight - container.clientHeight;
+        // صبر می‌کنیم تا کارت‌ها به اندازه‌ی کافی رندر شوند و ارتفاع صفحه به نقطه‌ی هدف برسد
+        if (maxScroll >= targetY || attempts >= maxAttempts) {
+          container.scrollTo({ top: targetY, behavior: 'instant' as ScrollBehavior });
+          // کلید فقط بعد از بازگردانیِ واقعی پاک می‌شود (در حالت Strict Mode اجرای اول لغو می‌شود)
+          sessionStorage.removeItem(SCROLL_STORAGE_KEY);
+          return;
+        }
+      } else if (attempts >= maxAttempts) {
+        sessionStorage.removeItem(SCROLL_STORAGE_KEY);
+        return;
       }
+      timeoutId = setTimeout(tryScroll, 50);
     };
     tryScroll();
     return () => clearTimeout(timeoutId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isLoading]);
 
   const handleBookmarkClick = (salonId: number | string, e: React.MouseEvent) => {
@@ -487,12 +520,15 @@ export default function DashboardHomePage() {
 
   const handleBookingClick = (salon: any, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (salon.bookingEnabled) router.push(`/salon/${salon.id}/book`);
+    if (salon.bookingEnabled) {
+      saveScrollPosition();
+      router.push(`/salon/${salon.id}/book`);
+    }
     else setShowBookingAlert(true);
   };
 
   const handleSalonCardClick = (salonId: number | string) => {
-    sessionStorage.setItem(SCROLL_STORAGE_KEY, String(window.scrollY));
+    saveScrollPosition();
     router.push(`/salon/${salonId}`);
   };
 
@@ -565,7 +601,7 @@ export default function DashboardHomePage() {
 
   return (
     <>
-      <div className="flex flex-col min-h-screen bg-white pb-28">
+      <div ref={rootRef} className="flex flex-col min-h-screen bg-white pb-28">
         {showVpnWarning && (
           <div role="status" className="mx-2 mt-3 flex items-center justify-between gap-3 rounded-2xl bg-amber-50 px-4 py-3">
             <div className="flex items-center gap-2.5 min-w-0">
