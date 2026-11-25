@@ -135,10 +135,12 @@ export default function BusinessRegistrationPage() {
     setPortfolios(prev => prev.filter((_, i) => i !== index));
   };
 
-  const nextStep = () => {
-    if (step === 1) {
+  // ───── اعتبارسنجی مراحل و پرش مستقیم بین مراحل ─────
+  // فقط مرحله‌ی ۱ فیلد ستاره‌دار دارد. مراحل ۲ و ۳ اجباری ندارند و عکس کاور (مرحله‌ی ۴)
+  // همچنان فقط هنگام ثبت نهایی در handleSubmit چک می‌شود.
+  const getStepError = (target: number): string | null => {
+    if (target === 1) {
       const hasValidPhone = phones.some(phone => phone.trim() !== '');
-
       if (
         !name.trim() ||
         !workingHours.trim() ||
@@ -149,14 +151,34 @@ export default function BusinessRegistrationPage() {
         !hasValidPhone ||
         !genderAudience
       ) {
-        alert('لطفاً تمامی کادرهای ستاره‌دار را پر کنید و مشخص کنید سالن مخصوص بانوان، آقایون یا هر دو است.');
-        return;
+        return 'لطفاً تمامی کادرهای ستاره‌دار را پر کنید و مشخص کنید سالن مخصوص بانوان، آقایون یا هر دو است.';
+      }
+    }
+    return null;
+  };
+
+  // برگشت به مراحل قبل همیشه آزاد است؛ رفتن به مرحله‌ی جلوتر فقط وقتی که تمام مراحل
+  // قبل از آن معتبر باشند. اگر مرحله‌ای نامعتبر بود، کاربر به همان مرحله برگردانده می‌شود.
+  const goToStep = (target: number) => {
+    const next = Math.min(Math.max(target, 1), 4);
+    if (next === step) return;
+
+    if (next > step) {
+      for (let s = 1; s < next; s++) {
+        const error = getStepError(s);
+        if (error) {
+          setStep(s);
+          alert(error);
+          return;
+        }
       }
     }
 
-    setStep(prev => Math.min(prev + 1, 5));
+    setStep(next);
   };
-  const prevStep = () => setStep(prev => Math.max(prev - 1, 1));
+
+  const nextStep = () => goToStep(step + 1);
+  const prevStep = () => goToStep(step - 1);
 
   const handleLocationSelect = (province: string, city: string, neighborhoods: string[] = []) => {
     setSelectedProvince(province);
@@ -316,15 +338,23 @@ export default function BusinessRegistrationPage() {
           { id: 3, title: 'ارتباطات' },
           { id: 4, title: 'تصاویر' },
         ].map((item) => (
-          <div key={item.id} className="flex flex-col items-center gap-2 bg-white md:bg-transparent px-1 md:px-2 z-10" style={{ backgroundColor: 'var(--background, #ffffff)' }}>
-            <div className={`w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center font-bold text-xs md:text-sm transition-colors ${
+          <button
+            key={item.id}
+            type="button"
+            onClick={() => goToStep(item.id)}
+            aria-label={`رفتن به مرحله ${item.id.toLocaleString('fa-IR')}: ${item.title}`}
+            aria-current={step === item.id ? 'step' : undefined}
+            className="flex flex-col items-center gap-2 bg-white md:bg-transparent px-1 md:px-2 z-10 cursor-pointer group"
+            style={{ backgroundColor: 'var(--background, #ffffff)' }}
+          >
+            <div className={`w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center font-bold text-xs md:text-sm transition-colors group-hover:opacity-80 ${
               step >= item.id
                 ? 'bg-[#824c71] text-white'
                 : 'bg-zinc-100 text-zinc-500 border border-zinc-200'
             }`}>
               {step > item.id ? <CheckCircle2 className="w-4 h-4 md:w-5 md:h-5" /> : item.id.toLocaleString('fa-IR')}
             </div>
-          </div>
+          </button>
         ))}
       </div>
 

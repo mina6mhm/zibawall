@@ -254,8 +254,50 @@ export default function BusinessEditPage() {
     setExistingPortfolios(prev => prev.filter((_, i) => i !== index));
   };
 
-  const nextStep = () => setStep(prev => Math.min(prev + 1, 4));
-  const prevStep = () => setStep(prev => Math.max(prev - 1, 1));
+  // ───── اعتبارسنجی مراحل و پرش مستقیم بین مراحل ─────
+  // فقط مرحله‌ی ۱ فیلد ستاره‌دار دارد. مراحل ۲ و ۳ اجباری ندارند و عکس کاور (مرحله‌ی ۴)
+  // همچنان فقط هنگام ثبت نهایی در handleSubmit چک می‌شود.
+  const getStepError = (target: number): string | null => {
+    if (target === 1) {
+      const hasValidPhone = phones.some(phone => phone.trim() !== '');
+      if (
+        !name.trim() ||
+        !workingHours.trim() ||
+        !description.trim() ||
+        !selectedProvince ||
+        !selectedCity ||
+        !address.trim() ||
+        !hasValidPhone ||
+        !genderAudience
+      ) {
+        return 'لطفاً تمامی کادرهای ستاره‌دار را پر کنید و مشخص کنید سالن مخصوص بانوان، آقایون یا هر دو است.';
+      }
+    }
+    return null;
+  };
+
+  // برگشت به مراحل قبل همیشه آزاد است؛ رفتن به مرحله‌ی جلوتر فقط وقتی که تمام مراحل
+  // قبل از آن معتبر باشند. اگر مرحله‌ای نامعتبر بود، کاربر به همان مرحله برگردانده می‌شود.
+  const goToStep = (target: number) => {
+    const next = Math.min(Math.max(target, 1), 4);
+    if (next === step) return;
+
+    if (next > step) {
+      for (let s = 1; s < next; s++) {
+        const error = getStepError(s);
+        if (error) {
+          setStep(s);
+          alert(error);
+          return;
+        }
+      }
+    }
+
+    setStep(next);
+  };
+
+  const nextStep = () => goToStep(step + 1);
+  const prevStep = () => goToStep(step - 1);
 
   const handleLocationSelect = (province: string, city: string, neighborhoods: string[] = []) => {
     setSelectedProvince(province);
@@ -401,8 +443,15 @@ export default function BusinessEditPage() {
           { id: 3, title: 'ارتباطات' },
           { id: 4, title: 'تصاویر' }
         ].map((item) => (
-          <div key={item.id} className="flex flex-col items-center gap-2 bg-white px-2">
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm transition-colors ${
+          <button
+            key={item.id}
+            type="button"
+            onClick={() => goToStep(item.id)}
+            aria-label={`رفتن به مرحله ${item.id.toLocaleString('fa-IR')}: ${item.title}`}
+            aria-current={step === item.id ? 'step' : undefined}
+            className="flex flex-col items-center gap-2 bg-white px-2 cursor-pointer group"
+          >
+            <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm transition-colors group-hover:opacity-80 ${
               step >= item.id ? 'bg-[#824c71] text-white' : 'bg-zinc-100 text-zinc-500 border border-zinc-200'
             }`}>
               {step > item.id ? <CheckCircle2 size={20} /> : item.id.toLocaleString('fa-IR')}
@@ -410,7 +459,7 @@ export default function BusinessEditPage() {
             <span className={`text-xs md:text-sm font-medium ${step >= item.id ? 'text-[#824c71]' : 'text-zinc-400'}`}>
               {item.title}
             </span>
-          </div>
+          </button>
         ))}
       </div>
 

@@ -633,7 +633,7 @@ export default function DashboardHomePage() {
           </button>
 
           <div className="flex items-center gap-2.5">
-            <label className="flex-1 min-w-0 flex items-center gap-2.5 h-12 px-4 rounded-full bg-zinc-50 border border-zinc-200 transition focus-within:bg-white focus-within:border-[#824c71]/50 focus-within:ring-4 focus-within:ring-[#824c71]/10">
+            <label className="flex-1 min-w-0 flex items-center gap-2.5 h-12 px-4 rounded-full bg-zinc-50 transition focus-within:bg-zinc-100">
               <Search className="w-[18px] h-[18px] text-zinc-400 shrink-0" strokeWidth={2.2} />
               <input
                 type="text"
@@ -652,10 +652,10 @@ export default function DashboardHomePage() {
             <button
               onClick={() => setIsFiltersModalOpen(true)}
               aria-label="فیلترها"
-              className={`relative shrink-0 w-12 h-12 flex items-center justify-center rounded-full border transition active:scale-95 ${
+              className={`relative shrink-0 w-12 h-12 flex items-center justify-center rounded-full transition active:scale-95 ${
                 hasActiveExtraFilters
-                  ? 'bg-[#824c71] border-[#824c71] text-white'
-                  : 'bg-white border-zinc-200 text-zinc-700'
+                  ? 'bg-[#824c71] text-white'
+                  : 'bg-zinc-50 text-zinc-700'
               }`}
             >
               <SlidersHorizontal className="w-[18px] h-[18px]" strokeWidth={2.2} />
